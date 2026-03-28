@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 from models import User
 from database import SessionLocal
-from passlib.context import CryptContext
+import bcrypt
 
 from routers import auth, customers, assets, rental, inventory, calibration, as_dispatch
 
@@ -25,9 +25,6 @@ app.include_router(inventory.router)
 app.include_router(calibration.router)
 app.include_router(as_dispatch.router)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
@@ -36,7 +33,7 @@ def on_startup():
         if not db.query(User).filter(User.username == "admin").first():
             admin = User(
                 username="admin",
-                password_hash=pwd_context.hash("admin1234"),
+                password_hash=bcrypt.hashpw("admin1234".encode(), bcrypt.gensalt()).decode(),
                 role="admin",
                 name="관리자",
             )

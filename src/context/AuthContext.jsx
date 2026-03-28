@@ -10,7 +10,12 @@ export function AuthProvider({ children }) {
   })
 
   const login = async (username, password) => {
-    const res = await api.post('/auth/login', { username, password })
+    const formData = new URLSearchParams()
+    formData.append('username', username)
+    formData.append('password', password)
+    const res = await api.post('/auth/login', formData, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
     const { access_token, user: userData } = res.data
     sessionStorage.setItem('tl-token', access_token)
     const u = { id: userData?.username || username, name: userData?.name || username }

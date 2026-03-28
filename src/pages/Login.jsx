@@ -20,8 +20,8 @@ export default function Login() {
       await login(id, pw)
       navigate('/dashboard')
     } catch (err) {
-      const msg = err.response?.data?.detail || '아이디 또는 비밀번호가 일치하지 않습니다.'
-      setError(msg)
+      const detail = err.response?.data?.detail
+      setError(typeof detail === 'object' ? '아이디 또는 비밀번호가 올바르지 않습니다.' : detail || '아이디 또는 비밀번호가 올바르지 않습니다.')
     } finally {
       setLoading(false)
     }

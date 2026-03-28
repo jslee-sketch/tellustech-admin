@@ -12,18 +12,19 @@ export default function Login() {
 
   if (user) return <Navigate to="/dashboard" replace />
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-    setTimeout(() => {
-      if (login(id, pw)) {
-        navigate('/dashboard')
-      } else {
-        setError('아이디 또는 비밀번호가 일치하지 않습니다.')
-        setLoading(false)
-      }
-    }, 400)
+    try {
+      await login(id, pw)
+      navigate('/dashboard')
+    } catch (err) {
+      const msg = err.response?.data?.detail || '아이디 또는 비밀번호가 일치하지 않습니다.'
+      setError(msg)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

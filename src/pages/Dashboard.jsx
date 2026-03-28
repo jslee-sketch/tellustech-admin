@@ -1,4 +1,7 @@
-import { IconTrendUp, IconRental, IconCalibration, IconAS, IconClipboard, IconClock } from '../components/icons'
+import { useEffect, useState } from 'react'
+import { IconTrendUp, IconRental, IconCalibration, IconAS, IconClipboard, IconClock, IconUsers } from '../components/icons'
+import { useAuth } from '../context/AuthContext'
+import api from '../api'
 
 const STATS = [
   { label: '렌탈 계약', value: '147', change: '+12', icon: IconRental, color: 'bg-brand' },
@@ -24,8 +27,31 @@ const ALERTS = [
 ]
 
 export default function Dashboard() {
+  const { user } = useAuth()
+  const [me, setMe] = useState(null)
+
+  useEffect(() => {
+    api.get('/auth/me')
+      .then(res => setMe(res.data))
+      .catch(() => {})
+  }, [])
+
   return (
     <div className="space-y-5">
+      {/* Welcome banner */}
+      {me && (
+        <div className="bg-white rounded-xl border border-border p-4 flex items-center gap-3 shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-brand/10 flex items-center justify-center">
+            <IconUsers width={18} height={18} className="text-brand" />
+          </div>
+          <div>
+            <span className="text-sm font-semibold text-dark">{me.name || user?.name}</span>
+            <span className="text-xs text-gray ml-2">({me.username || user?.id})</span>
+            <span className="text-xs text-gray ml-1">님, 환영합니다</span>
+          </div>
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {STATS.map((s, i) => (

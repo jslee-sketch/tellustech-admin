@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react'
+import api from '../api'
 
 const AuthContext = createContext(null)
 
@@ -8,18 +9,19 @@ export function AuthProvider({ children }) {
     return saved ? JSON.parse(saved) : null
   })
 
-  const login = (id, pw) => {
-    if (id === 'admin' && pw === 'admin1234') {
-      const u = { id: 'admin', name: '관리자' }
-      setUser(u)
-      sessionStorage.setItem('tl-user', JSON.stringify(u))
-      return true
-    }
-    return false
+  const login = async (username, password) => {
+    const res = await api.post('/auth/login', { username, password })
+    const { access_token, user: userData } = res.data
+    sessionStorage.setItem('tl-token', access_token)
+    const u = { id: userData?.username || username, name: userData?.name || username }
+    setUser(u)
+    sessionStorage.setItem('tl-user', JSON.stringify(u))
+    return true
   }
 
   const logout = () => {
     setUser(null)
+    sessionStorage.removeItem('tl-token')
     sessionStorage.removeItem('tl-user')
   }
 

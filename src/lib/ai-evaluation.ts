@@ -192,14 +192,15 @@ export async function computeErpMetrics(
   employeeId: string,
   companyCode: CompanyCode,
 ): Promise<ErpMetrics> {
+  // AsTicket/AsDispatch/Sales 는 거래처 기반으로 companyCode 필드가 없음 — 직원ID만 필터
   const [tickets, dispatches, sales, confirms, leaves] = await Promise.all([
     prisma.asTicket.findMany({
-      where: { companyCode, assignedToId: employeeId, status: "COMPLETED" },
+      where: { assignedToId: employeeId, status: "COMPLETED" },
       select: { receivedAt: true, completedAt: true },
       take: 200,
     }),
     prisma.asDispatch.findMany({
-      where: { companyCode, dispatchedById: employeeId },
+      where: { dispatchEmployeeId: employeeId },
       select: { distanceMatch: true },
       take: 200,
     }),
@@ -250,8 +251,8 @@ export async function computeErpMetrics(
   // 모듈 숙련도: 지금은 50 기본 (추후 audit_log 기반 다양성으로 확장)
   const erpMastery = 50;
 
-  // 근태: UNPAID/ABSENT 타입별 차감
-  const uncovered = leaves.filter((l) => l.leaveType === "U" || l.leaveType === "A");
+  // 근태: KSX(결근) 타입 차감. 연차/병가/출장은 정상.
+  const uncovered = leaves.filter((l) => l.leaveType === "KSX");
   const unCount = uncovered.reduce((s, l) => s + Number(l.days), 0);
   const attendance = Math.max(0, 100 - unCount * 5);
 

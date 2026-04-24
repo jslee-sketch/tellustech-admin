@@ -154,10 +154,22 @@ export function Sidebar() {
           <NavItem entry={HOME} active={HOME.match(pathname)} collapsed={collapsed} />
         </ul>
         {GROUPS.map((g, gi) => (
-          <div key={g.label} className={collapsed ? "mt-1 border-t border-[color:var(--tts-border)] pt-1" : gi === 0 ? "mt-2" : "mt-3"}>
+          <div
+            key={g.label}
+            className={
+              collapsed
+                ? "mt-2 border-t border-[color:var(--tts-border)] pt-2"
+                : gi === 0
+                  ? "mt-3"
+                  : "mt-4 border-t border-[color:var(--tts-border)] pt-3"
+            }
+          >
             {!collapsed && (
-              <div className="px-3 pb-1.5 pt-1 text-[13px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
-                {g.label}
+              <div className="mb-1 flex items-center gap-2 px-3">
+                <span className="h-3.5 w-1 rounded-full bg-[color:var(--tts-accent)]" aria-hidden />
+                <span className="text-[13px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
+                  {g.label}
+                </span>
               </div>
             )}
             <ul className="space-y-0.5 px-2">

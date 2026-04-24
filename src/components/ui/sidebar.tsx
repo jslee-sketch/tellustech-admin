@@ -156,7 +156,7 @@ export function Sidebar() {
         {GROUPS.map((g, gi) => (
           <div key={g.label} className={collapsed ? "mt-1 border-t border-[color:var(--tts-border)] pt-1" : gi === 0 ? "mt-2" : "mt-3"}>
             {!collapsed && (
-              <div className="px-3 pb-1 text-[9px] font-bold uppercase tracking-[0.15em] text-[color:var(--tts-muted)]">
+              <div className="px-3 pb-1.5 pt-1 text-[13px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
                 {g.label}
               </div>
             )}

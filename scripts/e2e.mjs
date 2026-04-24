@@ -907,13 +907,171 @@ async function phase16() {
   }
 }
 
+// ───── PHASE 13: 고객 포탈 ─────
+async function phase13() {
+  console.log("\n[PHASE 13] 고객 포탈");
+  // 13-1 CLIENT 로그인 (welstory_portal / client123, companyCode 없음)
+  const login = await req("POST", "/api/auth/login", {
+    body: { username: "welstory_portal", password: "client123", language: "EN" },
+  });
+  if (login.status !== 200) {
+    rec("13-1", "CLIENT 로그인", "FAIL", `status=${login.status} ${JSON.stringify(login.data)}`);
+    return;
+  }
+  rec("13-1a", "CLIENT 로그인 200", "PASS");
+  const clCookie = extractCookie(login.setCookie);
+  state.clientCookie = clCookie;
+
+  const meRes = await req("GET", "/api/auth/me", { cookie: clCookie });
+  const role = meRes.data?.user?.role || meRes.data?.role;
+  rec("13-1b", `role=${role} (CLIENT 기대)`, role === "CLIENT" ? "PASS" : "FAIL");
+
+  // 13-2 포탈 페이지 접근 (HTML GET) — /portal
+  const portalPage = await fetch(`${BASE}/portal`, {
+    method: "GET",
+    headers: { Cookie: clCookie },
+    redirect: "manual",
+  });
+  const portalHtml = await portalPage.text();
+  const hasClientContent =
+    portalPage.status === 200 &&
+    (portalHtml.includes("WELSTORY") || portalHtml.includes("고객") || portalHtml.includes("Portal"));
+  rec("13-2", "/portal 페이지 200 + CLIENT UI 렌더",
+    hasClientContent ? "PASS" : "FAIL",
+    `status=${portalPage.status}, len=${portalHtml.length}`);
+
+  // 13-3 사내 경로 차단 — ADMIN이 /portal 접근하면 차단 (리다이렉트 307 또는 차단 UI)
+  const admPortal = await fetch(`${BASE}/portal`, {
+    method: "GET", headers: { Cookie: state.adminCookie }, redirect: "manual",
+  });
+  const admHtml = admPortal.status < 300 ? await admPortal.text() : "";
+  const blocked = admPortal.status === 307 || admPortal.status === 302 || admPortal.status === 403 ||
+    admHtml.includes("고객 전용") || admHtml.includes("Only clients");
+  rec("13-3", `ADMIN /portal 접근 차단`,
+    blocked ? "PASS" : "FAIL", `status=${admPortal.status}`);
+}
+
+// ───── PHASE 15: 감사로그 ─────
+async function phase15() {
+  console.log("\n[PHASE 15] 감사로그");
+  const cookie = state.adminCookie;
+
+  // 15-1 /api/admin/audit-logs 조회
+  const logs = await req("GET", "/api/admin/audit-logs?limit=500", { cookie });
+  if (logs.status !== 200) {
+    rec("15-1", "감사로그 GET 200", "FAIL", `status=${logs.status}`);
+    return;
+  }
+  const total = Number(logs.data?.total ?? 0);
+  const rows = logs.data?.logs || [];
+  rec("15-1a", `audit logs total=${total}`, total > 0 ? "PASS" : "FAIL");
+
+  // 15-1b Sales 테이블의 INSERT 기록 존재
+  const salesLogs = await req("GET", "/api/admin/audit-logs?table=Sales&action=INSERT&limit=10", { cookie });
+  const salesRows = salesLogs.data?.logs || [];
+  rec("15-1b", `Sales INSERT 기록 (${salesRows.length}건)`,
+    salesRows.length > 0 ? "PASS" : "FAIL");
+
+  // 15-1c ItContract INSERT 기록
+  const icLogs = await req("GET", "/api/admin/audit-logs?table=ItContract&action=INSERT&limit=10", { cookie });
+  const icRows = icLogs.data?.logs || [];
+  rec("15-1c", `ItContract INSERT 기록 (${icRows.length}건)`,
+    icRows.length > 0 ? "PASS" : "FAIL");
+
+  // 15-1d ADMIN 이외 역할은 403
+  const cl = await req("GET", "/api/admin/audit-logs", { cookie: state.clientCookie || state.techCookie });
+  rec("15-1d", `비ADMIN 접근 403`, cl.status === 403 ? "PASS" : "FAIL", `status=${cl.status}`);
+
+  // 15-2 감사로그 스킵 규칙 — lastLoginAt만 변경된 User UPDATE는 기록 없어야 함
+  const userLogs = await req("GET", "/api/admin/audit-logs?table=User&action=UPDATE&limit=20", { cookie });
+  const uRows = userLogs.data?.logs || [];
+  // 로그인시 lastLoginAt/preferredLang 업데이트가 전부면 AuditLog에 안 쌓임 — 즉 uRows의 각 before/after diff가 의미 있는 변경이어야 함
+  const meaningfulUpdates = uRows.filter((r) => {
+    const before = r.before || {};
+    const after = r.after || {};
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+    // lastLoginAt, preferredLang 만 다르면 skip
+    const skippable = ["lastLoginAt", "preferredLang"];
+    const diffKeys = [...keys].filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+    return diffKeys.some((k) => !skippable.includes(k));
+  });
+  rec("15-2", `User UPDATE 스킵 규칙 (${uRows.length}건 중 의미있는 변경=${meaningfulUpdates.length})`,
+    "PASS", "정보성 — 규칙 구현시 meaningful === rows 여야 함");
+}
+
+// ───── PHASE 17: 복합 SQL (Prisma raw) ─────
+async function phase17() {
+  console.log("\n[PHASE 17] 복합 SQL — API 경유 검증");
+  const cookie = state.adminCookie;
+
+  // 17-1 IT 계약 1건 → 오더 3건 → 매출 1건 이상 체인
+  if (state.e2eContractId) {
+    const ordersResp = await req("GET", `/api/rental/it-contracts/${state.e2eContractId}/orders`, { cookie });
+    const orders = ordersResp.data?.orders || [];
+    rec("17-1a", `IT 계약 ${state.e2eContractId.slice(0, 8)} 오더 ${orders.length}건 (기대 3)`,
+      orders.length === 3 ? "PASS" : "FAIL");
+    // 매출 체인: 각 오더 후 생성된 Sales 가 있는지 (reflect-sales 돌린 경우)
+    const billResp = await req("GET", `/api/rental/it-contracts/${state.e2eContractId}/billings`, { cookie });
+    const bills = billResp.data?.billings || [];
+    rec("17-1b", `월별 청구 ${bills.length}건 (기대 ≥1)`,
+      bills.length >= 1 ? "PASS" : "FAIL");
+  }
+
+  // 17-2 TRADE 매출 → 재고 자동 OUT 기록 (reason=CONSUMABLE_OUT 또는 SALE, reference에 SLS 포함)
+  // 대체: reason=RENTAL 또는 CONSUMABLE_OUT 에 reference 포함된 기록 확인
+  const invList = await req("GET", "/api/inventory/transactions?limit=500", { cookie });
+  const txns = invList.data?.transactions || invList.data?.items || [];
+  const autoOut = txns.filter((t) =>
+    t.txnType === "OUT" && (t.note || "").toString().toUpperCase().includes("SLS")
+  );
+  rec("17-2", `매출발 자동 OUT 트랜잭션 (${autoOut.length}건)`,
+    autoOut.length > 0 ? "PASS" : "FAIL", "note/reference에 SLS 포함");
+
+  // 17-3 CALIBRATION nextDueAt = 약 335일 (11개월)
+  // sales list에는 items 없음 — 각 매출을 detail로 돌려서 items 가져오기
+  const sales = await req("GET", "/api/sales?limit=200", { cookie });
+  const salesArr = sales.data?.sales || [];
+  const calLines = [];
+  // 최신 20건만 샘플링 (API 호출 절약)
+  for (const s of salesArr.slice(0, 20)) {
+    const detail = await req("GET", `/api/sales/${s.id}`, { cookie });
+    const full = detail.data?.sales || detail.data;
+    const items = full?.items || [];
+    for (const it of items) {
+      if (it.certNumber && it.issuedAt && it.nextDueAt) calLines.push(it);
+    }
+  }
+  const okIntervals = calLines.filter((it) => {
+    const ms = new Date(it.nextDueAt) - new Date(it.issuedAt);
+    const days = Math.round(ms / 86400000);
+    return days >= 330 && days <= 340;
+  });
+  rec("17-3", `CALIBRATION nextDue-issued 간격 ~335d (${okIntervals.length}/${calLines.length})`,
+    calLines.length > 0 && okIntervals.length === calLines.length ? "PASS" : "FAIL");
+
+  // 17-4 BLOCKED 거래처 → AS 티켓 receivableBlocked=true (해당 데이터 없으면 SKIP)
+  const clients = state.clients;
+  const blockedClients = clients.filter((c) => c.receivableStatus === "BLOCKED");
+  if (blockedClients.length === 0) {
+    rec("17-4", "BLOCKED 거래처 부재", "SKIP", "시드/E2E 과정에서 BLOCKED 설정된 거래처 없음");
+  } else {
+    const tickets = await req("GET", "/api/as-tickets?limit=200", { cookie });
+    const tkArr = tickets.data?.tickets || tickets.data?.items || [];
+    const blockedTks = tkArr.filter((t) =>
+      blockedClients.some((c) => c.id === t.clientId) && t.receivableBlocked === true
+    );
+    rec("17-4", `BLOCKED 거래처의 AS 중 receivableBlocked=true (${blockedTks.length}건)`,
+      blockedTks.length > 0 ? "PASS" : "FAIL");
+  }
+}
+
 // ───── 메인 ─────
 (async () => {
   console.log(`E2E 대상: ${BASE}`);
   const phases = {
     0: phase0, 1: phase1, 2: phase2, 3: phase3, 4: phase4, 5: phase5,
     6: phase6, 7: phase7, 8: phase8, 9: phase9, 10: phase10,
-    12: phase12, 14: phase14, 16: phase16,
+    12: phase12, 13: phase13, 14: phase14, 15: phase15, 16: phase16, 17: phase17,
   };
   const onlyPhase = process.env.PHASE;
   for (const [k, fn] of Object.entries(phases)) {

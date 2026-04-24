@@ -1,26 +1,161 @@
 @import "tailwindcss";
 
+/* Tellustech ERP 다크 기본 팔레트 — UI 프로토타입의 D 객체와 일치.
+   (docs/ui-prototypes/erp-input-forms.jsx 참조) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --tts-bg: #111113;
+  --tts-card: #1a1a1f;
+  --tts-card-hover: #222228;
+  --tts-input: #1e1e24;
+  --tts-border: #2a2a30;
+  --tts-border-focus: #5b9bd5;
+  --tts-text: #e8e6e1;
+  --tts-sub: #8a8a8a;
+  --tts-muted: #555;
+  --tts-primary: #5b9bd5;
+  --tts-primary-dim: #2a3a4a;
+  --tts-accent: #e8943a;
+  --tts-accent-dim: #3a2a18;
+  --tts-success: #4ade80;
+  --tts-success-dim: #1a2e1a;
+  --tts-danger: #f87171;
+  --tts-danger-dim: #2e1a1a;
+  --tts-warn: #facc15;
+  --tts-warn-dim: #2e2a12;
+  --tts-purple: #a78bfa;
+  --tts-purple-dim: #2a1f3a;
+  --background: var(--tts-bg);
+  --foreground: var(--tts-text);
+}
+
+/* 라이트 모드 — html.light 클래스로 토글 */
+html.light {
+  --tts-bg: #f8f8fa;
+  --tts-card: #ffffff;
+  --tts-card-hover: #f0f0f4;
+  --tts-input: #ffffff;
+  --tts-border: #d8d8e0;
+  --tts-border-focus: #3b82f6;
+  --tts-text: #1a1a1f;
+  --tts-sub: #52525b;
+  --tts-muted: #a1a1aa;
+  --tts-primary: #2563eb;
+  --tts-primary-dim: #dbeafe;
+  --tts-accent: #d97706;
+  --tts-accent-dim: #fef3c7;
+  --tts-success: #16a34a;
+  --tts-success-dim: #dcfce7;
+  --tts-danger: #dc2626;
+  --tts-danger-dim: #fee2e2;
+  --tts-warn: #ca8a04;
+  --tts-warn-dim: #fef9c3;
+  --tts-purple: #7c3aed;
+  --tts-purple-dim: #ede9fe;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-tts-bg: var(--tts-bg);
+  --color-tts-card: var(--tts-card);
+  --color-tts-card-hover: var(--tts-card-hover);
+  --color-tts-input: var(--tts-input);
+  --color-tts-border: var(--tts-border);
+  --color-tts-border-focus: var(--tts-border-focus);
+  --color-tts-text: var(--tts-text);
+  --color-tts-sub: var(--tts-sub);
+  --color-tts-muted: var(--tts-muted);
+  --color-tts-primary: var(--tts-primary);
+  --color-tts-primary-dim: var(--tts-primary-dim);
+  --color-tts-accent: var(--tts-accent);
+  --color-tts-accent-dim: var(--tts-accent-dim);
+  --color-tts-success: var(--tts-success);
+  --color-tts-success-dim: var(--tts-success-dim);
+  --color-tts-danger: var(--tts-danger);
+  --color-tts-danger-dim: var(--tts-danger-dim);
+  --color-tts-warn: var(--tts-warn);
+  --color-tts-warn-dim: var(--tts-warn-dim);
+  --color-tts-purple: var(--tts-purple);
+  --color-tts-purple-dim: var(--tts-purple-dim);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background: var(--tts-bg);
+  color: var(--tts-text);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Pretendard", var(--font-geist-sans), -apple-system, system-ui, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 베트남어/한국어 합자 렌더링 품질 */
+  font-feature-settings: "cv11", "ss01", "ss03";
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--tts-primary-dim);
+  color: var(--tts-text);
+}
+
+/* 스크롤바 (Chromium/WebKit) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--tts-border);
+  border-radius: 6px;
+  border: 2px solid var(--tts-bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tts-muted);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tts-border) transparent;
+}
+
+/* 포커스 링 — 기본 브라우저 outline 대체 */
+*:focus-visible {
+  outline: 2px solid var(--tts-border-focus);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+/* 폼 요소 자동완성 배경색 고정 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--tts-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--tts-input) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 기본 button 커서 */
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* 숫자 input 에서 브라우저 기본 up/down 화살표 제거 */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }

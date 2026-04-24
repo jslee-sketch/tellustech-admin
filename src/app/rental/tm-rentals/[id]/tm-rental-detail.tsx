@@ -1,0 +1,630 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import {
+  Badge,
+  Button,
+  DataTable,
+  Field,
+  ItemCombobox,
+  Note,
+  Row,
+  SectionTitle,
+  Tabs,
+  TextInput,
+} from "@/components/ui";
+import type { DataTableColumn, TabDef } from "@/components/ui";
+
+type RentalCore = {
+  rentalCode: string;
+  clientLabel: string;
+  contractNumber: string;
+  address: string;
+  startDate: string;
+  endDate: string;
+  contractMgrName: string;
+  contractMgrPhone: string;
+  contractMgrEmail: string;
+  technicalMgrName: string;
+  technicalMgrPhone: string;
+  technicalMgrEmail: string;
+  financeMgrName: string;
+  financeMgrPhone: string;
+  financeMgrEmail: string;
+};
+
+type Item = {
+  id: string;
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  options: string;
+  serialNumber: string;
+  startDate: string;
+  endDate: string;
+  salesPrice: string;
+  supplierName: string;
+  purchasePrice: string;
+  commission: string;
+  profit: string;
+};
+
+type Props = {
+  rentalId: string;
+  paymentTerms: number;
+  totalSales: string;
+  totalProfit: string;
+  initial: RentalCore;
+  items: Item[];
+};
+
+const TABS: TabDef[] = [
+  { key: "basic", label: "기본정보", icon: "📋" },
+  { key: "managers", label: "담당자", icon: "👥" },
+  { key: "items", label: "품목/이익", icon: "📦" },
+  { key: "sales", label: "매출 반영", icon: "💰" },
+];
+
+function formatVnd(raw: string | number): string {
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n)) return String(raw);
+  return new Intl.NumberFormat("vi-VN").format(n);
+}
+
+export function TmRentalDetail({
+  rentalId,
+  paymentTerms,
+  totalSales,
+  totalProfit,
+  initial,
+  items: initialItems,
+}: Props) {
+  const router = useRouter();
+  const [active, setActive] = useState("basic");
+  const [core, setCore] = useState<RentalCore>(initial);
+  const [items, setItems] = useState<Item[]>(initialItems);
+  const [savingBasic, setSavingBasic] = useState(false);
+  const [savingMgr, setSavingMgr] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [reflecting, setReflecting] = useState(false);
+  const [reflectResult, setReflectResult] = useState<{ salesNumber: string; id: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const set = <K extends keyof RentalCore>(k: K, v: RentalCore[K]) =>
+    setCore((p) => ({ ...p, [k]: v }));
+
+  async function patch(
+    body: Partial<RentalCore>,
+    setSaving: (v: boolean) => void,
+  ): Promise<boolean> {
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/rental/tm-rentals/${rentalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        setError("저장 실패");
+        return false;
+      }
+      router.refresh();
+      return true;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleBasicSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await patch(
+      {
+        contractNumber: core.contractNumber,
+        address: core.address,
+        startDate: core.startDate,
+        endDate: core.endDate,
+      },
+      setSavingBasic,
+    );
+  }
+
+  async function handleMgrSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await patch(
+      {
+        contractMgrName: core.contractMgrName,
+        contractMgrPhone: core.contractMgrPhone,
+        contractMgrEmail: core.contractMgrEmail,
+        technicalMgrName: core.technicalMgrName,
+        technicalMgrPhone: core.technicalMgrPhone,
+        technicalMgrEmail: core.technicalMgrEmail,
+        financeMgrName: core.financeMgrName,
+        financeMgrPhone: core.financeMgrPhone,
+        financeMgrEmail: core.financeMgrEmail,
+      },
+      setSavingMgr,
+    );
+  }
+
+  async function handleDelete() {
+    if (!window.confirm("이 TM 렌탈을 삭제하시겠습니까? 품목도 함께 제거됩니다.")) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/rental/tm-rentals/${rentalId}`, { method: "DELETE" });
+      if (!res.ok) {
+        setError("삭제 실패");
+        return;
+      }
+      router.push("/rental/tm-rentals");
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleReflect() {
+    if (!window.confirm("현재 품목 기준으로 매출전표를 생성하시겠습니까? (거래처 결제조건으로 미수금 자동 발생)")) {
+      return;
+    }
+    setReflecting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/rental/tm-rentals/${rentalId}/reflect-sales`, { method: "POST" });
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.details?.message ?? body.error ?? "매출 반영 실패");
+        return;
+      }
+      setReflectResult({ salesNumber: body.sales.salesNumber, id: body.sales.id });
+    } finally {
+      setReflecting(false);
+    }
+  }
+
+  return (
+    <div>
+      <Tabs tabs={TABS} active={active} onChange={setActive} />
+
+      {error && (
+        <div className="mb-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">
+          {error}
+        </div>
+      )}
+
+      {active === "basic" && (
+        <form onSubmit={handleBasicSubmit}>
+          <SectionTitle icon="📋" title="기본 정보" />
+          <Row>
+            <Field label="TM 렌탈번호" width="200px">
+              <TextInput value={core.rentalCode} disabled />
+            </Field>
+            <Field label="거래처">
+              <TextInput value={core.clientLabel} disabled />
+            </Field>
+          </Row>
+          <Row>
+            <Field label="계약번호">
+              <TextInput value={core.contractNumber} onChange={(e) => set("contractNumber", e.target.value)} />
+            </Field>
+            <Field label="주소">
+              <TextInput value={core.address} onChange={(e) => set("address", e.target.value)} />
+            </Field>
+          </Row>
+          <Row>
+            <Field label="렌탈 시작" required width="200px">
+              <TextInput
+                type="date"
+                required
+                value={core.startDate}
+                onChange={(e) => set("startDate", e.target.value)}
+              />
+            </Field>
+            <Field label="렌탈 종료" required width="200px">
+              <TextInput
+                type="date"
+                required
+                value={core.endDate}
+                onChange={(e) => set("endDate", e.target.value)}
+              />
+            </Field>
+          </Row>
+
+          <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
+            <Button type="submit" disabled={savingBasic}>
+              {savingBasic ? "저장 중..." : "기본정보 저장"}
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="ml-auto"
+            >
+              {deleting ? "삭제 중..." : "TM 렌탈 삭제"}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {active === "managers" && (
+        <form onSubmit={handleMgrSubmit}>
+          <SectionTitle icon="📋" title="계약 담당자" />
+          <MgrRow prefix="contractMgr" value={core} set={set} />
+          <SectionTitle icon="🔧" title="기술 담당자" />
+          <MgrRow prefix="technicalMgr" value={core} set={set} />
+          <SectionTitle icon="💼" title="재경 담당자" />
+          <MgrRow prefix="financeMgr" value={core} set={set} />
+          <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
+            <Button type="submit" disabled={savingMgr}>
+              {savingMgr ? "저장 중..." : "담당자 저장"}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {active === "items" && (
+        <ItemsTab rentalId={rentalId} items={items} setItems={setItems} totalSales={totalSales} totalProfit={totalProfit} />
+      )}
+
+      {active === "sales" && (
+        <div>
+          <SectionTitle icon="💰" title="매출 자동반영" />
+          <Note tone="info">
+            이 TM 렌탈의 모든 품목을 하나의 매출전표로 변환합니다. 거래처 결제조건({paymentTerms}일)을 적용해
+            미수금(PayableReceivable)이 자동 발생합니다. 반영 후 매출전표에서 추가 편집 가능.
+          </Note>
+          <div className="mt-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-4 text-[13px]">
+            <div className="mb-2">
+              품목 <span className="font-mono font-bold">{items.length}건</span>, 매출 합계{" "}
+              <span className="font-mono font-bold text-[color:var(--tts-primary)]">
+                {formatVnd(totalSales)} VND
+              </span>
+              , 예상 이익{" "}
+              <span className="font-mono font-bold text-[color:var(--tts-success)]">
+                {formatVnd(totalProfit)} VND
+              </span>
+            </div>
+            {reflectResult && (
+              <div className="mt-2 rounded bg-[color:var(--tts-success-dim)] px-3 py-2 text-[color:var(--tts-success)]">
+                ✅ 매출전표{" "}
+                <Link href={`/sales/${reflectResult.id}`} className="font-mono font-bold underline">
+                  {reflectResult.salesNumber}
+                </Link>{" "}
+                가 생성되었습니다.
+              </div>
+            )}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button type="button" onClick={handleReflect} disabled={reflecting || items.length === 0} variant="accent">
+              {reflecting ? "반영 중..." : "💰 매출전표 발행"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MgrRow({
+  prefix,
+  value,
+  set,
+}: {
+  prefix: "contractMgr" | "technicalMgr" | "financeMgr";
+  value: RentalCore;
+  set: <K extends keyof RentalCore>(k: K, v: RentalCore[K]) => void;
+}) {
+  const nk = `${prefix}Name` as keyof RentalCore;
+  const pk = `${prefix}Phone` as keyof RentalCore;
+  const ek = `${prefix}Email` as keyof RentalCore;
+  return (
+    <Row>
+      <Field label="이름">
+        <TextInput value={value[nk]} onChange={(e) => set(nk, e.target.value)} />
+      </Field>
+      <Field label="휴대폰">
+        <TextInput value={value[pk]} onChange={(e) => set(pk, e.target.value)} />
+      </Field>
+      <Field label="이메일">
+        <TextInput type="email" value={value[ek]} onChange={(e) => set(ek, e.target.value)} />
+      </Field>
+    </Row>
+  );
+}
+
+function ItemsTab({
+  rentalId,
+  items,
+  setItems,
+  totalSales,
+  totalProfit,
+}: {
+  rentalId: string;
+  items: Item[];
+  setItems: (v: Item[]) => void;
+  totalSales: string;
+  totalProfit: string;
+}) {
+  const router = useRouter();
+  const [showAdd, setShowAdd] = useState(false);
+  const [draft, setDraft] = useState<Omit<Item, "id" | "profit">>({
+    itemId: "",
+    itemCode: "",
+    itemName: "",
+    options: "",
+    serialNumber: "",
+    startDate: "",
+    endDate: "",
+    salesPrice: "0",
+    supplierName: "",
+    purchasePrice: "",
+    commission: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function reload() {
+    const r = await fetch(`/api/rental/tm-rentals/${rentalId}`).then((r) => r.json());
+    type ApiItem = {
+      id: string;
+      itemId: string;
+      item?: { itemCode: string; name: string } | null;
+      options: string | null;
+      serialNumber: string;
+      startDate: string;
+      endDate: string;
+      salesPrice: unknown;
+      supplierName: string | null;
+      purchasePrice: unknown;
+      commission: unknown;
+      profit: unknown;
+    };
+    setItems(
+      r.rental.items.map((it: ApiItem) => ({
+        id: it.id,
+        itemId: it.itemId,
+        itemCode: it.item?.itemCode ?? "",
+        itemName: it.item?.name ?? "",
+        options: it.options ?? "",
+        serialNumber: it.serialNumber,
+        startDate: it.startDate ? String(it.startDate).slice(0, 10) : "",
+        endDate: it.endDate ? String(it.endDate).slice(0, 10) : "",
+        salesPrice: String(it.salesPrice ?? ""),
+        supplierName: it.supplierName ?? "",
+        purchasePrice: it.purchasePrice === null ? "" : String(it.purchasePrice),
+        commission: it.commission === null ? "" : String(it.commission),
+        profit: it.profit === null ? "" : String(it.profit),
+      })),
+    );
+  }
+
+  function resetDraft() {
+    setDraft({
+      itemId: "",
+      itemCode: "",
+      itemName: "",
+      options: "",
+      serialNumber: "",
+      startDate: "",
+      endDate: "",
+      salesPrice: "0",
+      supplierName: "",
+      purchasePrice: "",
+      commission: "",
+    });
+    setShowAdd(false);
+  }
+
+  async function handleAdd(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErr(null);
+    setSubmitting(true);
+    try {
+      if (!draft.itemId) { setErr("품목 선택 필수"); return; }
+      const res = await fetch(`/api/rental/tm-rentals/${rentalId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemId: draft.itemId,
+          options: draft.options || null,
+          serialNumber: draft.serialNumber,
+          startDate: draft.startDate,
+          endDate: draft.endDate,
+          salesPrice: draft.salesPrice,
+          supplierName: draft.supplierName || null,
+          purchasePrice: draft.purchasePrice || null,
+          commission: draft.commission || null,
+        }),
+      });
+      if (!res.ok) {
+        setErr("품목 추가 실패");
+        return;
+      }
+      resetDraft();
+      await reload();
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("이 품목을 삭제하시겠습니까?")) return;
+    const res = await fetch(`/api/rental/tm-rentals/${rentalId}/items/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      await reload();
+      router.refresh();
+    }
+  }
+
+  const columns: DataTableColumn<Item>[] = [
+    {
+      key: "itemName",
+      label: "품목",
+      render: (v, row) => (
+        <div>
+          <div className="font-semibold">{v as string}</div>
+          {row.options && <div className="text-[11px] text-[color:var(--tts-muted)]">{row.options}</div>}
+        </div>
+      ),
+    },
+    {
+      key: "serialNumber",
+      label: "S/N",
+      width: "140px",
+      render: (v) => <span className="font-mono text-[11px]">{v as string}</span>,
+    },
+    {
+      key: "startDate",
+      label: "기간",
+      width: "160px",
+      render: (_, row) => (
+        <span className="text-[11px]">
+          {row.startDate} ~ {row.endDate}
+        </span>
+      ),
+    },
+    {
+      key: "salesPrice",
+      label: "매출가",
+      width: "110px",
+      align: "right",
+      render: (v) => <span className="font-mono font-bold text-[color:var(--tts-primary)]">{formatVnd(v as string)}</span>,
+    },
+    {
+      key: "supplierName",
+      label: "매입처",
+      width: "120px",
+      render: (v) => (v as string) || <span className="text-[color:var(--tts-muted)]">—</span>,
+    },
+    {
+      key: "purchasePrice",
+      label: "매입가",
+      width: "100px",
+      align: "right",
+      render: (v) => ((v as string) ? formatVnd(v as string) : <span className="text-[color:var(--tts-muted)]">—</span>),
+    },
+    {
+      key: "commission",
+      label: "커미션",
+      width: "100px",
+      align: "right",
+      render: (v) => ((v as string) ? formatVnd(v as string) : <span className="text-[color:var(--tts-muted)]">—</span>),
+    },
+    {
+      key: "profit",
+      label: "이익",
+      width: "110px",
+      align: "right",
+      render: (v) => {
+        const s = v as string;
+        const n = Number(s);
+        const cls = n > 0 ? "text-[color:var(--tts-success)]" : n < 0 ? "text-[color:var(--tts-danger)]" : "";
+        return <span className={`font-mono font-bold ${cls}`}>{formatVnd(s)}</span>;
+      },
+    },
+    {
+      key: "id",
+      label: "",
+      width: "60px",
+      align: "right",
+      render: (_, row) => (
+        <Button size="sm" variant="danger" onClick={() => handleDelete(row.id)}>
+          ×
+        </Button>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between">
+        <SectionTitle icon="📦" title={`품목 / 이익 (${items.length}건)`} />
+        {!showAdd && (
+          <Button size="sm" onClick={() => setShowAdd(true)}>
+            + 품목 추가
+          </Button>
+        )}
+      </div>
+      <Note tone="info">
+        이익 = 매출가 − (매입가 + 커미션). S/N 재고확인 = 느슨 (외부 렌탈 등 자사 재고 아니어도 등록 가능).
+      </Note>
+
+      {showAdd && (
+        <form
+          onSubmit={handleAdd}
+          className="my-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3"
+        >
+          <SectionTitle icon="💰" title="매출 정보" />
+          <Row>
+            <Field label="품목" required>
+              <ItemCombobox
+                value={draft.itemId}
+                onChange={(id) => setDraft((p) => ({ ...p, itemId: id }))}
+                required
+              />
+            </Field>
+            <Field label="옵션">
+              <TextInput value={draft.options} onChange={(e) => setDraft((p) => ({ ...p, options: e.target.value }))} />
+            </Field>
+            <Field label="S/N" required width="180px">
+              <TextInput required value={draft.serialNumber} onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))} />
+            </Field>
+          </Row>
+          <Row>
+            <Field label="기간 시작" required width="180px">
+              <TextInput type="date" required value={draft.startDate} onChange={(e) => setDraft((p) => ({ ...p, startDate: e.target.value }))} />
+            </Field>
+            <Field label="기간 종료" required width="180px">
+              <TextInput type="date" required value={draft.endDate} onChange={(e) => setDraft((p) => ({ ...p, endDate: e.target.value }))} />
+            </Field>
+            <Field label="매출가 (VND)" required width="180px">
+              <TextInput type="number" required value={draft.salesPrice} onChange={(e) => setDraft((p) => ({ ...p, salesPrice: e.target.value }))} />
+            </Field>
+          </Row>
+          <SectionTitle icon="📥" title="매입 정보 (옵션)" />
+          <Row>
+            <Field label="매입처">
+              <TextInput value={draft.supplierName} onChange={(e) => setDraft((p) => ({ ...p, supplierName: e.target.value }))} />
+            </Field>
+            <Field label="매입가 (VND)" width="180px">
+              <TextInput type="number" value={draft.purchasePrice} onChange={(e) => setDraft((p) => ({ ...p, purchasePrice: e.target.value }))} />
+            </Field>
+            <Field label="커미션 (VND)" width="180px">
+              <TextInput type="number" value={draft.commission} onChange={(e) => setDraft((p) => ({ ...p, commission: e.target.value }))} />
+            </Field>
+          </Row>
+          {err && (
+            <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">
+              {err}
+            </div>
+          )}
+          <div className="mt-2 flex gap-2">
+            <Button type="submit" size="sm" disabled={submitting}>
+              {submitting ? "저장 중..." : "품목 추가"}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={resetDraft}>
+              취소
+            </Button>
+          </div>
+        </form>
+      )}
+
+      <DataTable columns={columns} data={items} rowKey={(it) => it.id} emptyMessage="등록된 품목이 없습니다" />
+      {items.length > 0 && (
+        <div className="mt-3 flex flex-wrap justify-end gap-4 text-[13px] font-bold">
+          <div>
+            매출 합계 <Badge tone="primary" className="ml-1">{formatVnd(totalSales)} VND</Badge>
+          </div>
+          <div>
+            이익 합계 <Badge tone="success" className="ml-1">{formatVnd(totalProfit)} VND</Badge>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

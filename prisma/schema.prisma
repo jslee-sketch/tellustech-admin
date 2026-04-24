@@ -1,0 +1,1383 @@
+// Tellustech ERP — Prisma Schema (Phase 1-2 v0.1)
+//
+// 출처: docs/CLAUDE_CODE_개발시작가이드.md 의 "DB 테이블 (44개)" 섹션.
+// 가이드 헤더는 44이지만 세부 목록상 licenses 포함 45개 — 모두 포함.
+// 규칙(CLAUDE.md):
+//   - 회사코드(company_code): TV | VR. 세션 단위로 고정, 자동 WHERE 주입.
+//   - 공유 마스터(company_code 없음): Client, Item, Warehouse 만.
+//   - 그 외 업무 데이터는 company_code 필수. (가이드에서 "회사없음"으로 명시된 테이블 — it_contracts, tm_rentals, calibrations, as_tickets, sales, purchases, expenses — 은 거래처/계약 기반이므로 company_code 없음)
+//   - 자유서술 필드는 contentVi / contentEn / contentKo + originalLang 4필드 구조.
+//
+// Phase 1-2에서 docs/db/ 의 상세 필드 정의서(.docx)와 대조하여 필드·인덱스를 보강할 것.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================================================
+// Enums
+// ==================================================
+
+enum CompanyCode {
+  TV
+  VR
+}
+
+enum BranchType {
+  BN // Bac Ninh (본사)
+  HN // Ha Noi
+  HCM // Ho Chi Minh
+  NT // Nha Trang
+  DN // Da Nang
+}
+
+enum Language {
+  VI
+  EN
+  KO
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  SALES
+  TECH
+  CALIBRATION
+  ACCOUNTING
+  HR
+  CLIENT // 고객 포탈
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum ItemType {
+  PRODUCT // 상품
+  CONSUMABLE // 소모품
+  PART // 부품
+}
+
+enum WarehouseType {
+  INTERNAL // 내부
+  EXTERNAL // 외부
+  CLIENT // 고객
+}
+
+enum ClientGrade {
+  A
+  B
+  C
+  D
+}
+
+enum ReceivableStatus {
+  NORMAL
+  WARNING
+  BLOCKED // 미수금 차단
+}
+
+enum RentalType {
+  IT
+  TM
+}
+
+enum StockCheckMode {
+  STRICT // IT렌탈 — 자사 재고 필수
+  LOOSE // TM렌탈/교정/AS/매출/매입 — 경고만
+}
+
+/// 거래처 업종 — 프로토타입 P1 의 고정 선택지 유지.
+enum Industry {
+  MANUFACTURING
+  LOGISTICS
+  EDUCATION
+  IT
+  OTHER
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  CANCELED
+}
+
+enum BillingMethod {
+  SNMP
+  MANUAL
+  PHOTO
+}
+
+enum InventoryTxnType {
+  IN
+  OUT
+}
+
+enum InventoryReason {
+  PURCHASE
+  SALE
+  CALIBRATION
+  REPAIR
+  RENTAL
+  DEMO
+  RETURN
+  CONSUMABLE_OUT
+}
+
+enum DepreciationMethod {
+  STRAIGHT_LINE
+  DECLINING_BALANCE
+}
+
+enum ASStatus {
+  RECEIVED
+  IN_PROGRESS
+  DISPATCHED
+  COMPLETED
+  CANCELED
+}
+
+enum IncidentType {
+  PRAISE
+  IMPROVEMENT
+}
+
+enum EvaluationGrade {
+  A
+  B
+  C
+  D
+}
+
+enum LeaveType {
+  LT // 연차
+  P // 병가
+  KSX // 결근
+  CT7 // 출장
+  DB // (기획서 원문 코드 유지)
+  TS // 시용
+  KL // 결혼
+  X // 기타
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExpenseType {
+  PURCHASE
+  SALES
+  GENERAL
+}
+
+enum AllocationBasis {
+  QUANTITY
+  AMOUNT
+}
+
+enum PayableReceivableKind {
+  PAYABLE
+  RECEIVABLE
+}
+
+enum PayableReceivableStatus {
+  OPEN
+  PARTIAL
+  PAID
+  WRITTEN_OFF
+}
+
+enum NotificationType {
+  STOCK_LOW
+  AS_NEW
+  CONTRACT_EXPIRING
+  CALIBRATION_DUE
+  RECEIVABLE_OVERDUE
+  SCHEDULE_DUE
+  LICENSE_EXPIRING
+  OTHER
+}
+
+enum FileCategory {
+  PDF
+  PHOTO
+  SIGNATURE
+  RECEIPT
+  OTHER
+}
+
+enum ScheduleConfirmStatus {
+  ON_TIME
+  LATE
+}
+
+enum OnboardingOffboardingStatus {
+  DRAFT
+  SUBMITTED
+  COMPLETED
+}
+
+enum ChatRoomType {
+  DIRECT // 1:1
+  GROUP
+}
+
+// 프로젝트(매출·매입) 분류. TRADE 만 재고 영향, 나머지는 S/N만 기록.
+enum SalesType {
+  TRADE // 판매/구매 — 재고 영향
+  MAINTENANCE // 유지보수 — 기간 표시
+  RENTAL // 렌탈 — 기간 표시
+  CALIBRATION // 교정 — 라인별 성적서
+  REPAIR // 수리
+  OTHER // 기타
+}
+
+// 거래 통화. VND 가 회계 본위 통화(fxRate=1). 외화 거래는 입력 시점 환율을 함께 보관.
+enum Currency {
+  VND
+  USD
+  KRW
+  JPY
+  CNY
+}
+
+// ==================================================
+// 기초등록 (7)
+// ==================================================
+
+model Department {
+  id          String      @id @default(cuid())
+  companyCode CompanyCode
+  code        String
+  name        String
+  branchType  BranchType
+  managerId   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  manager   Employee?  @relation("DepartmentManager", fields: [managerId], references: [id])
+  employees Employee[] @relation("DepartmentMembers")
+
+  @@unique([companyCode, code])
+  @@index([companyCode])
+  @@map("departments")
+}
+
+model Employee {
+  id              String         @id @default(cuid())
+  companyCode     CompanyCode
+  employeeCode    String // TNV-### (TV) / VNV-### (VR)
+  departmentId    String?
+  nameVi          String
+  nameEn          String?
+  nameKo          String?
+  position        String?
+  email           String?
+  phone           String?
+  photoUrl        String?
+  idCardNumber    String?
+  idCardPhotoUrl  String?
+  salary          Decimal?       @db.Decimal(15, 2)
+  insuranceNumber String?
+  contractType    String?
+  contractStart   DateTime?
+  contractEnd     DateTime?
+  hireDate        DateTime?
+  status          EmployeeStatus @default(ACTIVE)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  department         Department?            @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  departmentsManaged Department[]           @relation("DepartmentManager")
+  user               User?
+  payrolls           Payroll[]
+  incentives         Incentive[]
+  leaveRecords       LeaveRecord[]
+  incidentsWritten   Incident[]             @relation("IncidentAuthor")
+  incidentsReceived  Incident[]             @relation("IncidentSubject")
+  peerReviewsGiven   PeerReview[]           @relation("PeerReviewReviewer")
+  peerReviewsGot     PeerReview[]           @relation("PeerReviewSubject")
+  evaluationsOf      Evaluation[]           @relation("EvaluationSubject")
+  regularEvalsGiven  RegularEvaluation[]    @relation("RegularEvalReviewer")
+  regularEvalsGot    RegularEvaluation[]    @relation("RegularEvalSubject")
+  onboarding         OnboardingCard?
+  offboarding        OffboardingCard?
+  asTicketsAssigned  AsTicket[]             @relation("AsAssignee")
+  asDispatches       AsDispatch[]           @relation("DispatchEmployee")
+  scheduleTargets    Schedule[]             @relation("ScheduleTargets")
+  scheduleReports    Schedule[]             @relation("ScheduleReporters")
+  scheduleConfirms   ScheduleConfirmation[]
+  licensesOwned      License[]
+  clientsReferred    Client[]               @relation("EmployeeReferredClients")
+  clientsSalesPic    Client[]               @relation("EmployeeSalesPicClients")
+
+  @@unique([companyCode, employeeCode])
+  @@index([companyCode])
+  @@index([departmentId])
+  @@map("employees")
+}
+
+/// 공유 마스터 — company_code 없음
+model Client {
+  id                  String           @id @default(cuid())
+  clientCode          String           @unique
+  companyNameVi       String
+  companyNameEn       String?
+  companyNameKo       String?
+  representative      String? // 대표자
+  taxCode             String?
+  businessLicenseNo   String?
+  industry            Industry?
+  bankAccountNumber   String?
+  bankName            String?
+  bankHolder          String? // 예금주
+  paymentTerms        Int? // 결제조건 (일). null = 30일 기본으로 해석
+  address             String?
+  phone               String?
+  email               String?
+  emailConsent        Boolean          @default(false) // 마케팅 이메일 수신 동의
+  leadSource          String?
+  referrerId          String? // 거래처가 다른 거래처 소개 (referrerClientId 의미)
+  referrerEmployeeId  String? // 내부 직원이 소개한 경우
+  salesPicId          String? // 영업담당 직원 (sales PIC)
+  grade               ClientGrade?
+  marketingTags       String[] // groupTags 와 동일 의미
+  receivableStatus    ReceivableStatus @default(NORMAL)
+  notes               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  referrer         Client?             @relation("ClientReferrer", fields: [referrerId], references: [id])
+  referrals        Client[]            @relation("ClientReferrer")
+  referrerEmployee Employee?           @relation("EmployeeReferredClients", fields: [referrerEmployeeId], references: [id])
+  salesPic         Employee?           @relation("EmployeeSalesPicClients", fields: [salesPicId], references: [id])
+  contacts         ClientContact[]
+  portalUser       User?               @relation("ClientPortalUser")
+  itContracts      ItContract[]
+  tmRentals        TmRental[]
+  asTickets        AsTicket[]
+  sales            Sales[]
+  purchases        Purchase[]
+  campaigns        MarketingCampaign[] @relation("CampaignClient")
+
+  @@index([referrerEmployeeId])
+  @@index([salesPicId])
+  @@map("clients")
+}
+
+model ClientContact {
+  id        String   @id @default(cuid())
+  clientId  String
+  name      String
+  position  String?
+  phone     String?
+  email     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("client_contacts")
+}
+
+/// 공유 마스터 — company_code 없음. 품목명은 영어로만 관리.
+model Item {
+  id        String   @id @default(cuid())
+  itemCode  String   @unique
+  itemType  ItemType
+  name      String // 품목명 — 영어로만 입력
+  unit      String?
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inventoryStocks       InventoryStock[]
+  inventoryTransactions InventoryTransaction[]
+  assetDepreciations    AssetDepreciation[]
+  salesItems            SalesItem[]
+  purchaseItems         PurchaseItem[]
+  tmRentalItems         TmRentalItem[]
+  itContractEquipment   ItContractEquipment[]
+
+  @@map("items")
+}
+
+/// 공유 마스터 — company_code 없음
+model Warehouse {
+  id            String        @id @default(cuid())
+  code          String        @unique
+  name          String
+  warehouseType WarehouseType
+  branchType    BranchType?
+  location      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  inventoryStocks       InventoryStock[]
+  inventoryTransactions InventoryTransaction[]
+
+  @@map("warehouses")
+}
+
+model Project {
+  id          String      @id @default(cuid())
+  companyCode CompanyCode
+  projectCode String
+  name        String
+  salesType   SalesType
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  sales     Sales[]
+  purchases Purchase[]
+
+  @@unique([companyCode, projectCode])
+  @@index([companyCode])
+  @@map("projects")
+}
+
+// ==================================================
+// 렌탈 + IT계약 (4)
+// ==================================================
+
+/// 가이드: "회사코드 없음(거래처 기반)"
+model ItContract {
+  id                   String         @id @default(cuid())
+  contractNumber       String         @unique // TLS-/VRT-YYMMDD-###
+  clientId             String
+  installationAddress  String?
+  status               ContractStatus @default(DRAFT)
+  startDate            DateTime
+  endDate              DateTime
+  deposit              Decimal?       @db.Decimal(15, 2)
+  installationFee      Decimal?       @db.Decimal(15, 2)
+  deliveryFee          Decimal?       @db.Decimal(15, 2)
+  additionalServiceFee Decimal?       @db.Decimal(15, 2)
+  currency             Currency       @default(VND)
+  fxRate               Decimal        @default(1) @db.Decimal(15, 6)
+  // 담당자 3종 (이름 / HP / Office / Email)
+  contractMgrName      String?
+  contractMgrPhone     String?
+  contractMgrOffice    String?
+  contractMgrEmail     String?
+  technicalMgrName     String?
+  technicalMgrPhone    String?
+  technicalMgrOffice   String?
+  technicalMgrEmail    String?
+  financeMgrName       String?
+  financeMgrPhone      String?
+  financeMgrOffice     String?
+  financeMgrEmail      String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  client          Client                @relation(fields: [clientId], references: [id])
+  monthlyBillings ItMonthlyBilling[]
+  rentalOrders    RentalOrder[]
+  equipment       ItContractEquipment[]
+
+  @@index([clientId])
+  @@index([status])
+  @@map("it_contracts")
+}
+
+/// IT계약의 장비 목록 (복수 S/N + 과금조건).
+/// 하나의 IT계약에 수백 개까지 등록 가능. S/N 은 계약 내에서 유일.
+model ItContractEquipment {
+  id                 String   @id @default(cuid())
+  itContractId       String
+  itemId             String
+  serialNumber       String
+  manufacturer       String?
+  installedAt        DateTime?
+  removedAt          DateTime?
+  monthlyBaseFee     Decimal? @db.Decimal(15, 2)
+  bwIncludedPages    Int?
+  bwOverageRate      Decimal? @db.Decimal(10, 2)
+  colorIncludedPages Int?
+  colorOverageRate   Decimal? @db.Decimal(10, 2)
+  note               String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  itContract ItContract @relation(fields: [itContractId], references: [id], onDelete: Cascade)
+  item       Item       @relation(fields: [itemId], references: [id])
+
+  @@unique([itContractId, serialNumber])
+  @@index([itContractId])
+  @@index([itemId])
+  @@index([serialNumber])
+  @@map("it_contract_equipment")
+}
+
+model ItMonthlyBilling {
+  id                String        @id @default(cuid())
+  itContractId      String
+  billingMonth      DateTime // 첫째 날 기준
+  serialNumber      String
+  counterBw         Int? // 흑백 카운터
+  counterColor      Int? // 컬러 카운터
+  billingMethod     BillingMethod
+  photoUrl          String?
+  customerSignature String? // 전자서명 base64 또는 파일참조
+  yieldVerified     Boolean       @default(false)
+  computedAmount    Decimal?      @db.Decimal(15, 2)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  itContract ItContract @relation(fields: [itContractId], references: [id], onDelete: Cascade)
+
+  @@unique([itContractId, serialNumber, billingMonth])
+  @@index([itContractId])
+  @@index([billingMonth])
+  @@map("it_monthly_billing")
+}
+
+/// 가이드: "매출정보 먼저 + S/N별 매입정보 + 이익자동계산"
+model TmRental {
+  id                String   @id @default(cuid())
+  rentalCode        String   @unique // TM-YYMMDD-###
+  clientId          String
+  contractNumber    String?
+  address           String?
+  // 담당자 3종
+  contractMgrName   String?
+  contractMgrPhone  String?
+  contractMgrEmail  String?
+  technicalMgrName  String?
+  technicalMgrPhone String?
+  technicalMgrEmail String?
+  financeMgrName    String?
+  financeMgrPhone   String?
+  financeMgrEmail   String?
+  startDate         DateTime
+  endDate           DateTime
+  currency          Currency @default(VND)
+  fxRate            Decimal  @default(1) @db.Decimal(15, 6)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  client Client         @relation(fields: [clientId], references: [id])
+  items  TmRentalItem[]
+
+  @@index([clientId])
+  @@map("tm_rentals")
+}
+
+/// TmRental의 품목세트 행 (수백 개 + 엑셀 업로드)
+/// 매출 먼저 + S/N별 매입(매입처/매입금액/커미션) + 이익자동계산
+model TmRentalItem {
+  id            String   @id @default(cuid())
+  tmRentalId    String
+  itemId        String
+  options       String?
+  serialNumber  String
+  startDate     DateTime
+  endDate       DateTime
+  salesPrice    Decimal  @db.Decimal(15, 2)
+  supplierName  String?
+  purchasePrice Decimal? @db.Decimal(15, 2)
+  commission    Decimal? @db.Decimal(15, 2)
+  profit        Decimal? @db.Decimal(15, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tmRental TmRental @relation(fields: [tmRentalId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id])
+
+  @@index([tmRentalId])
+  @@index([itemId])
+  @@index([serialNumber])
+  @@map("tm_rental_items")
+}
+
+model RentalOrder {
+  id           String      @id @default(cuid())
+  companyCode  CompanyCode
+  itContractId String?
+  rentalType   RentalType
+  billingMonth DateTime // 월별 자동 복사
+  amount       Decimal     @db.Decimal(15, 2)
+  editable     Boolean     @default(true)
+  canceled     Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  itContract ItContract? @relation(fields: [itContractId], references: [id])
+
+  @@index([companyCode, billingMonth])
+  @@index([itContractId])
+  @@map("rental_orders")
+}
+
+// ==================================================
+// 재고 + 감가상각 (3)
+// ==================================================
+
+model InventoryStock {
+  id            String      @id @default(cuid())
+  companyCode   CompanyCode
+  itemId        String
+  warehouseId   String
+  branchType    BranchType
+  month         DateTime // 월 단위 스냅샷 (첫째 날)
+  quantity      Int         @default(0)
+  serialNumbers String[] // S/N 목록 (자산 추적용)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  item      Item      @relation(fields: [itemId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@unique([companyCode, itemId, warehouseId, month])
+  @@index([companyCode, branchType])
+  @@map("inventory_stock")
+}
+
+model InventoryTransaction {
+  id             String           @id @default(cuid())
+  companyCode    CompanyCode
+  itemId         String
+  warehouseId    String
+  serialNumber   String?
+  txnType        InventoryTxnType
+  reason         InventoryReason
+  quantity       Int
+  scannedBarcode String?
+  note           String?
+  performedById  String?
+  performedAt    DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  item      Item      @relation(fields: [itemId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@index([companyCode, performedAt])
+  @@index([serialNumber])
+  @@map("inventory_transactions")
+}
+
+model AssetDepreciation {
+  id                 String             @id @default(cuid())
+  companyCode        CompanyCode
+  itemId             String
+  serialNumber       String
+  acquisitionDate    DateTime
+  acquisitionCost    Decimal            @db.Decimal(15, 2)
+  method             DepreciationMethod
+  usefulLifeMonths   Int
+  month              DateTime // 월별 기록
+  depreciationAmount Decimal            @db.Decimal(15, 2)
+  bookValue          Decimal            @db.Decimal(15, 2)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@unique([companyCode, serialNumber, month])
+  @@index([companyCode])
+  @@map("asset_depreciation")
+}
+
+// 교정 모듈 제거됨 — Sales/Purchase 에 projectType=CALIBRATION 으로 편입.
+
+// ==================================================
+// AS + 출동 (2)
+// ==================================================
+
+model AsTicket {
+  id                String    @id @default(cuid())
+  ticketNumber      String    @unique // YY/MM/DD-##
+  clientId          String
+  assignedToId      String?
+  itemId            String?
+  serialNumber      String?
+  status            ASStatus  @default(RECEIVED)
+  receivedAt        DateTime  @default(now())
+  completedAt       DateTime?
+  // 증상(자유서술 AI 번역)
+  symptomVi         String?
+  symptomEn         String?
+  symptomKo         String?
+  originalLang      Language?
+  receivableBlocked Boolean   @default(false) // 미수금 차단 자동 확인
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  client     Client       @relation(fields: [clientId], references: [id])
+  assignedTo Employee?    @relation("AsAssignee", fields: [assignedToId], references: [id])
+  dispatches AsDispatch[]
+  photos     File[]       @relation("AsTicketPhotos")
+
+  @@index([clientId])
+  @@index([status])
+  @@index([serialNumber])
+  @@map("as_tickets")
+}
+
+model AsDispatch {
+  id                 String    @id @default(cuid())
+  asTicketId         String
+  dispatchEmployeeId String?
+  transportMethod    String? // 출동수단
+  originAddress      String?
+  destinationAddress String?
+  googleDistanceKm   Decimal?  @db.Decimal(10, 2)
+  meterPhotoUrl      String?
+  meterOcrKm         Decimal?  @db.Decimal(10, 2)
+  distanceMatch      Boolean?
+  transportCost      Decimal?  @db.Decimal(15, 2)
+  receiptFileId      String?
+  departedAt         DateTime?
+  arrivedAt          DateTime?
+  completedAt        DateTime?
+  note               String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  asTicket         AsTicket  @relation(fields: [asTicketId], references: [id], onDelete: Cascade)
+  dispatchEmployee Employee? @relation("DispatchEmployee", fields: [dispatchEmployeeId], references: [id])
+  receipt          File?     @relation("DispatchReceipt", fields: [receiptFileId], references: [id])
+
+  @@index([asTicketId])
+  @@map("as_dispatches")
+}
+
+// ==================================================
+// 매출 / 매입 (4)
+// ==================================================
+
+/// 가이드: "회사없음 + 영업담당 추가 + 사용기간(optional)"
+model Sales {
+  id               String    @id @default(cuid())
+  salesNumber      String    @unique
+  clientId         String
+  projectId        String?
+  salesEmployeeId  String?
+  warehouseId      String? // TRADE 프로젝트 자동 OUT 대상 창고
+  usagePeriodStart DateTime?
+  usagePeriodEnd   DateTime?
+  totalAmount      Decimal   @db.Decimal(15, 2) // 거래통화(currency) 단위의 합계
+  currency         Currency  @default(VND)
+  fxRate           Decimal   @default(1) @db.Decimal(15, 6) // 1 단위 currency → VND 환산율
+  note             String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  client      Client              @relation(fields: [clientId], references: [id])
+  project     Project?            @relation(fields: [projectId], references: [id])
+  items       SalesItem[]
+  receivables PayableReceivable[] @relation("SalesReceivable")
+
+  @@index([clientId])
+  @@index([projectId])
+  @@map("sales")
+}
+
+model SalesItem {
+  id           String         @id @default(cuid())
+  salesId      String
+  itemId       String
+  serialNumber String?
+  stockCheck   StockCheckMode @default(LOOSE)
+  quantity     Decimal        @db.Decimal(15, 3)
+  unitPrice    Decimal        @db.Decimal(15, 2)
+  amount       Decimal        @db.Decimal(15, 2)
+  // MAINTENANCE/RENTAL 프로젝트 타입 — 라인별 기간(헤더 기간 자동 복사, 라인별 수정 가능)
+  startDate    DateTime?
+  endDate      DateTime?
+  // 교정(CALIBRATION) 프로젝트 타입인 경우 라인별 성적서 1건
+  certNumber   String?        @unique
+  certFileId   String?
+  issuedAt     DateTime?
+  nextDueAt    DateTime?
+  alertedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  sales    Sales @relation(fields: [salesId], references: [id], onDelete: Cascade)
+  item     Item  @relation(fields: [itemId], references: [id])
+  certFile File? @relation(fields: [certFileId], references: [id])
+
+  @@index([salesId])
+  @@index([serialNumber])
+  @@index([itemId])
+  @@index([nextDueAt])
+  @@map("sales_items")
+}
+
+model Purchase {
+  id                   String    @id @default(cuid())
+  purchaseNumber       String    @unique
+  supplierId           String
+  projectId            String?
+  salesEmployeeId      String?
+  warehouseId          String? // TRADE 프로젝트 자동 IN 대상 창고
+  usagePeriodStart     DateTime?
+  usagePeriodEnd       DateTime?
+  totalAmount          Decimal   @db.Decimal(15, 2)
+  currency             Currency  @default(VND)
+  fxRate               Decimal   @default(1) @db.Decimal(15, 6)
+  warehouseInboundDone Boolean   @default(false)
+  note                 String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  supplier Client              @relation(fields: [supplierId], references: [id])
+  project  Project?            @relation(fields: [projectId], references: [id])
+  items    PurchaseItem[]
+  payables PayableReceivable[] @relation("PurchasePayable")
+
+  @@index([supplierId])
+  @@index([projectId])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id           String         @id @default(cuid())
+  purchaseId   String
+  itemId       String
+  serialNumber String?
+  stockCheck   StockCheckMode @default(LOOSE)
+  quantity     Decimal        @db.Decimal(15, 3)
+  unitPrice    Decimal        @db.Decimal(15, 2)
+  amount       Decimal        @db.Decimal(15, 2)
+  // MAINTENANCE/RENTAL 프로젝트 타입 — 라인별 기간(헤더 기간 자동 복사, 라인별 수정 가능)
+  startDate    DateTime?
+  endDate      DateTime?
+  // 교정(CALIBRATION) 프로젝트 타입인 경우 라인별 성적서 1건
+  certNumber   String?        @unique
+  certFileId   String?
+  issuedAt     DateTime?
+  nextDueAt    DateTime?
+  alertedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id])
+  certFile File?    @relation(fields: [certFileId], references: [id])
+
+  @@index([purchaseId])
+  @@index([serialNumber])
+  @@index([itemId])
+  @@index([nextDueAt])
+  @@map("purchase_items")
+}
+
+// ==================================================
+// 인사 + AI평가 (7)
+// ==================================================
+
+model Payroll {
+  id          String      @id @default(cuid())
+  companyCode CompanyCode
+  employeeId  String
+  month       DateTime // 월별 급여명세 (첫째 날)
+  baseSalary  Decimal     @db.Decimal(15, 2)
+  allowances  Decimal     @default(0) @db.Decimal(15, 2)
+  deductions  Decimal     @default(0) @db.Decimal(15, 2)
+  netPay      Decimal     @db.Decimal(15, 2)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, month])
+  @@index([companyCode, month])
+  @@map("payroll")
+}
+
+model Incentive {
+  id          String      @id @default(cuid())
+  companyCode CompanyCode
+  employeeId  String
+  month       DateTime
+  source      String // 'TM' or 'IT'
+  amount      Decimal     @db.Decimal(15, 2)
+  note        String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([companyCode, month])
+  @@index([employeeId])
+  @@map("incentives")
+}
+
+model LeaveRecord {
+  id          String      @id @default(cuid())
+  companyCode CompanyCode
+  leaveCode   String      @unique // LV-YYMMDD-###
+  employeeId  String
+  leaveType   LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  days        Decimal     @db.Decimal(5, 2)
+  reason      String?
+  approverId  String?
+  status      LeaveStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([companyCode, employeeId])
+  @@map("leave_records")
+}
+
+/// 사건기반 수시평가 — 대상자 본인 비공개, 상위만 열람, AI 번역, 50자 이상
+model Incident {
+  id                    String       @id @default(cuid())
+  companyCode           CompanyCode
+  incidentCode          String       @unique // INC-YYMMDD-###
+  authorId              String
+  subjectId             String
+  type                  IncidentType
+  contentVi             String?
+  contentEn             String?
+  contentKo             String?
+  originalLang          Language?
+  evidenceFileId        String?
+  visibilityManagerOnly Boolean      @default(true)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  author   Employee @relation("IncidentAuthor", fields: [authorId], references: [id])
+  subject  Employee @relation("IncidentSubject", fields: [subjectId], references: [id])
+  evidence File?    @relation("IncidentEvidence", fields: [evidenceFileId], references: [id])
+
+  @@index([companyCode, subjectId])
+  @@index([authorId])
+  @@map("incidents")
+}
+
+/// 동료 상호평가 (익명, 치우침 자동감지)
+model PeerReview {
+  id           String      @id @default(cuid())
+  companyCode  CompanyCode
+  reviewerId   String // 내부 저장 (익명 표시)
+  subjectId    String
+  period       DateTime // 평가 기간
+  score        Decimal     @db.Decimal(5, 2)
+  biasDetected Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  reviewer Employee @relation("PeerReviewReviewer", fields: [reviewerId], references: [id])
+  subject  Employee @relation("PeerReviewSubject", fields: [subjectId], references: [id])
+
+  @@index([companyCode, subjectId, period])
+  @@map("peer_reviews")
+}
+
+/// AI 종합평가 (9개 지표, 가중치, 항목별+종합 이유, A/B/C/D, 관리자 ±10%)
+model Evaluation {
+  id                  String          @id @default(cuid())
+  companyCode         CompanyCode
+  evaluationCode      String          @unique // EVAL-YYMMDD-### (AI종합)
+  subjectId           String
+  period              DateTime
+  // 9개 지표: AS TAT / 출동효율 / 매출기여 / ERP입력속도 / ERP마감준수 / ERP숙련도 / 근태 / 동료평가 / 사건평가
+  scoreAsTat          Decimal?        @db.Decimal(5, 2)
+  scoreDispatchEff    Decimal?        @db.Decimal(5, 2)
+  scoreSalesContrib   Decimal?        @db.Decimal(5, 2)
+  scoreErpInputSpeed  Decimal?        @db.Decimal(5, 2)
+  scoreErpDeadline    Decimal?        @db.Decimal(5, 2)
+  scoreErpMastery     Decimal?        @db.Decimal(5, 2)
+  scoreAttendance     Decimal?        @db.Decimal(5, 2)
+  scorePeer           Decimal?        @db.Decimal(5, 2)
+  scoreIncident       Decimal?        @db.Decimal(5, 2)
+  reasonsJson         Json? // 항목별 이유 (AI 생성)
+  totalScore          Decimal         @db.Decimal(5, 2)
+  totalReason         String?
+  grade               EvaluationGrade
+  managerAdjustment   Decimal?        @db.Decimal(5, 2) // ±10%
+  managerAdjustReason String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  subject Employee @relation("EvaluationSubject", fields: [subjectId], references: [id])
+
+  @@index([companyCode, subjectId, period])
+  @@map("evaluations")
+}
+
+/// 정기 인사평가 (5단계, 100점 환산, 질문 사전등록)
+model RegularEvaluation {
+  id              String      @id @default(cuid())
+  companyCode     CompanyCode
+  evaluationCode  String      @unique
+  reviewerId      String
+  subjectId       String
+  deadline        DateTime
+  submittedAt     DateTime?
+  answersJson     Json // 질문 ID -> 5단계 값(10/8/6/4/2)
+  normalizedScore Decimal     @db.Decimal(5, 2) // 100점 만점
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  reviewer Employee @relation("RegularEvalReviewer", fields: [reviewerId], references: [id])
+  subject  Employee @relation("RegularEvalSubject", fields: [subjectId], references: [id])
+
+  @@index([companyCode, subjectId])
+  @@map("regular_evaluations")
+}
+
+// ==================================================
+// 재경 (4)
+// ==================================================
+
+/// 가이드: "회사없음"
+model Expense {
+  id               String      @id @default(cuid())
+  expenseCode      String      @unique // EXP-YYMMDD-###
+  expenseType      ExpenseType
+  linkedSalesId    String?
+  linkedPurchaseId String?
+  amount           Decimal     @db.Decimal(15, 2)
+  currency         Currency    @default(VND)
+  fxRate           Decimal     @default(1) @db.Decimal(15, 6)
+  note             String?
+  incurredAt       DateTime
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  allocations ExpenseAllocation[]
+  payables    PayableReceivable[] @relation("ExpensePayable")
+
+  @@index([expenseType])
+  @@map("expenses")
+}
+
+model ExpenseAllocation {
+  id           String          @id @default(cuid())
+  expenseId    String
+  projectId    String?
+  departmentId String?
+  basis        AllocationBasis
+  weight       Decimal         @db.Decimal(10, 4) // 수량 또는 비율
+  amount       Decimal         @db.Decimal(15, 2)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+  @@map("expense_allocations")
+}
+
+/// 미지급/미수금 — 매출/매입/비용에서 자동 생성 → 목록 선택 → 입금 확인 + 지연사유만 업데이트
+model PayableReceivable {
+  id         String                  @id @default(cuid())
+  kind       PayableReceivableKind
+  salesId    String?
+  purchaseId String?
+  expenseId  String?
+  clientId   String?
+  amount     Decimal                 @db.Decimal(15, 2)
+  paidAmount Decimal                 @default(0) @db.Decimal(15, 2)
+  dueDate    DateTime?
+  status     PayableReceivableStatus @default(OPEN)
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+
+  sales        Sales?        @relation("SalesReceivable", fields: [salesId], references: [id])
+  purchase     Purchase?     @relation("PurchasePayable", fields: [purchaseId], references: [id])
+  expense      Expense?      @relation("ExpensePayable", fields: [expenseId], references: [id])
+  delayReasons DelayReason[]
+
+  @@index([kind, status])
+  @@index([dueDate])
+  @@map("payables_receivables")
+}
+
+/// 지연사유 이력 (날짜+내용 복수기록, AI 번역)
+model DelayReason {
+  id                  String    @id @default(cuid())
+  payableReceivableId String
+  recordedAt          DateTime  @default(now())
+  contentVi           String?
+  contentEn           String?
+  contentKo           String?
+  originalLang        Language?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  payableReceivable PayableReceivable @relation(fields: [payableReceivableId], references: [id], onDelete: Cascade)
+
+  @@index([payableReceivableId])
+  @@map("delay_reasons")
+}
+
+// ==================================================
+// 시스템공통 (7)
+// ==================================================
+
+model User {
+  id               String        @id @default(cuid())
+  username         String        @unique
+  passwordHash     String
+  email            String?       @unique
+  employeeId       String?       @unique
+  clientId         String?       @unique // 고객 포탈 사용자 — role=CLIENT
+  allowedCompanies CompanyCode[]
+  role             UserRole
+  preferredLang    Language      @default(KO)
+  chatDisplayMode  Int           @default(1) // 1/2/3개 언어
+  isActive         Boolean       @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  employee        Employee?        @relation(fields: [employeeId], references: [id])
+  clientAccount   Client?          @relation("ClientPortalUser", fields: [clientId], references: [id])
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  chatMessages    ChatMessage[]
+  chatRoomMembers ChatRoomMember[]
+  filesUploaded   File[]           @relation("FileUploader")
+
+  @@map("users")
+}
+
+model AuditLog {
+  id          String       @id @default(cuid())
+  companyCode CompanyCode?
+  userId      String?
+  tableName   String
+  recordId    String
+  action      String // INSERT / UPDATE / DELETE
+  before      Json?
+  after       Json?
+  occurredAt  DateTime     @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([tableName, recordId])
+  @@index([companyCode, occurredAt])
+  @@map("audit_log")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  companyCode CompanyCode?
+  userId      String
+  type        NotificationType
+  titleVi     String?
+  titleEn     String?
+  titleKo     String?
+  bodyVi      String?
+  bodyEn      String?
+  bodyKo      String?
+  linkUrl     String?
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+model File {
+  id           String       @id @default(cuid())
+  uploaderId   String?
+  category     FileCategory
+  originalName String
+  storedPath   String
+  mimeType     String?
+  sizeBytes    Int?
+  compressed   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  uploader         User?        @relation("FileUploader", fields: [uploaderId], references: [id])
+  salesItemCerts   SalesItem[]
+  purchaseItemCerts PurchaseItem[]
+  asTicketPhotos   AsTicket[]   @relation("AsTicketPhotos")
+  dispatchReceipts AsDispatch[] @relation("DispatchReceipt")
+  incidentEvidence Incident[]   @relation("IncidentEvidence")
+
+  @@map("files")
+}
+
+model MarketingCampaign {
+  id          String       @id @default(cuid())
+  companyCode CompanyCode?
+  name        String
+  type        String // 'SURVEY' or 'EMAIL'
+  clientId    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  contentJson Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  client Client? @relation("CampaignClient", fields: [clientId], references: [id])
+
+  @@map("marketing_campaigns")
+}
+
+model ChatRoom {
+  id          String       @id @default(cuid())
+  companyCode CompanyCode?
+  type        ChatRoomType
+  name        String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  members  ChatRoomMember[]
+  messages ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+model ChatRoomMember {
+  chatRoomId String
+  userId     String
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([chatRoomId, userId])
+  @@map("chat_room_members")
+}
+
+model ChatMessage {
+  id           String   @id @default(cuid())
+  chatRoomId   String
+  senderId     String
+  contentVi    String?
+  contentEn    String?
+  contentKo    String?
+  originalLang Language
+  mentions     String[] // 예: ["AS-26/04/23-01", "TLS-260401-001"]
+  attachmentId String?
+  createdAt    DateTime @default(now())
+
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id])
+
+  @@index([chatRoomId, createdAt])
+  @@map("chat_messages")
+}
+
+// ==================================================
+// 기초등록 확장 (5) — 가이드 헤더는 "4"이지만 licenses 포함 5개
+// ==================================================
+
+model OnboardingCard {
+  id               String                      @id @default(cuid())
+  companyCode      CompanyCode
+  onboardingCode   String                      @unique // ONB-YYMMDD-###
+  employeeId       String                      @unique
+  personalInfo     Json
+  education        Json?
+  consentSignature String?
+  profilePhotoId   String?
+  generatedPdfId   String?
+  status           OnboardingOffboardingStatus @default(DRAFT)
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("onboarding_cards")
+}
+
+model OffboardingCard {
+  id                  String                      @id @default(cuid())
+  companyCode         CompanyCode
+  offboardingCode     String                      @unique // OFF-YYMMDD-###
+  employeeId          String                      @unique
+  returnedItems       Json? // 반납 체크리스트
+  paidItems           Json? // 지급
+  stoppedItems        Json? // 중지
+  issuedItems         Json? // 생성(증명서)
+  hrSignature         String?
+  accountingSignature String?
+  employeeSignature   String?
+  generatedPdfId      String?
+  status              OnboardingOffboardingStatus @default(DRAFT)
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("offboarding_cards")
+}
+
+/// 일정(마감)관리 — 반복주기 + 사전알림 + 대상직원 + 보고대상 + 연관모듈
+model Schedule {
+  id               String      @id @default(cuid())
+  companyCode      CompanyCode
+  scheduleCode     String      @unique // SCH-YYMMDD-###
+  title            String
+  dueAt            DateTime
+  repeatCron       String? // 반복주기
+  alertBeforeHours Int?
+  relatedModule    String? // 연관 모듈명
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  targets       Employee[]             @relation("ScheduleTargets")
+  reporters     Employee[]             @relation("ScheduleReporters")
+  confirmations ScheduleConfirmation[]
+
+  @@index([companyCode, dueAt])
+  @@map("schedules")
+}
+
+/// CFM 이력 — 직원이 모듈에서 CFM 클릭 시 기록, 보고자 알림, 지연 여부
+model ScheduleConfirmation {
+  id          String                @id @default(cuid())
+  scheduleId  String
+  employeeId  String
+  confirmedAt DateTime              @default(now())
+  status      ScheduleConfirmStatus
+  note        String?
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([scheduleId])
+  @@map("schedule_confirmations")
+}
+
+/// 라이선스관리 — 취득/만료/갱신, 사전알림, 갱신 후 차기일정 자동생성
+model License {
+  id                String      @id @default(cuid())
+  companyCode       CompanyCode
+  licenseCode       String      @unique // LIC-YYMMDD-###
+  name              String
+  ownerEmployeeId   String?
+  acquiredAt        DateTime
+  expiresAt         DateTime
+  renewalCost       Decimal?    @db.Decimal(15, 2)
+  alertBeforeDays   Int?
+  certificateFileId String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  owner Employee? @relation(fields: [ownerEmployeeId], references: [id])
+
+  @@index([companyCode, expiresAt])
+  @@map("licenses")
+}

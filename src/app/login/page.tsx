@@ -4,12 +4,20 @@
 // 4필드: 회사코드(TV/VR) · 아이디 · 비밀번호 · 언어(VI/KO/EN).
 // 제출 → POST /api/auth/login → 성공 시 ?next 또는 / 로 이동.
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const LANG_STORAGE_KEY = "tts_preferred_lang";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const nextPath = params.get("next") || "/";

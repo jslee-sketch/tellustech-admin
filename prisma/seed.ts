@@ -202,8 +202,29 @@ async function seedEmployeesAndUsers() {
     },
   });
 
+  // CLIENT 포탈 테스트 계정 — WELSTORY 연결
+  const welstory = await prisma.client.findUnique({
+    where: { clientCode: "CL-000001" },
+    select: { id: true },
+  });
+  if (welstory) {
+    await prisma.user.upsert({
+      where: { username: "welstory_portal" },
+      update: { clientId: welstory.id },
+      create: {
+        username: "welstory_portal",
+        passwordHash: hash("client123"),
+        email: "portal@welstory.example",
+        allowedCompanies: [] as CompanyCode[],
+        role: "CLIENT" as UserRole,
+        preferredLang: "EN" as Language,
+        clientId: welstory.id,
+      },
+    });
+  }
+
   console.log(`  ✓ employees: 2 (TNV-001, VNV-001)`);
-  console.log(`  ✓ users: 4 (admin, vr_admin, tech1, sales1)`);
+  console.log(`  ✓ users: 5 (admin, vr_admin, tech1, sales1, welstory_portal)`);
 }
 
 async function seedWarehouses() {

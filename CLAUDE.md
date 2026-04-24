@@ -78,6 +78,23 @@
 - 가이드에 명시되지 않은 폴더/모듈을 임의 추가하지 말 것. 가이드의 10모듈 구조에 먼저 매핑.
 - `.env`는 커밋 금지 (`.gitignore`에 이미 포함).
 
+## 9. 필드명 매핑 참고 (E2E에서 확인됨, 리팩토링 시 참조)
+
+테스트 계획서·가이드 문서와 실제 API/스키마 간 필드명이 다른 지점. 새 모듈·클라이언트 추가할 때 실제 스키마 기준으로 작성할 것.
+
+| 영역 | 계획/자연어 명칭 | **실제 API/스키마** |
+|---|---|---|
+| 세션 쿠키 | `tts-session` | `tts_session` (underscore) |
+| Schedule | `name`, `repeatType` | `title`, `dueAt` (required) |
+| License | `expiresAt`만 | `name` + `acquiredAt` + `expiresAt` 3종 required |
+| InventoryTransaction | `type: "IN"/"OUT"` | `txnType: "IN"/"OUT"` |
+| InventoryTransaction reason | `"SALE"` 포함 가정 | REASONS = PURCHASE/CALIBRATION/REPAIR/RENTAL/DEMO/RETURN/**CONSUMABLE_OUT** (SALE 없음) |
+| Purchase | `clientId` | `supplierId` |
+| TmRental 자동코드 필드 | `contractNumber` | `rentalCode` (TM-YYMMDD-###) |
+| Incident | `descriptionVi/En/Ko` | `contentVi/contentEn/contentKo` + 최소 한 언어 **50자 이상** + 작성자 empCode 필수 |
+| Stock GET 쿼리파라미터 | `itemId=/warehouseId=` | `item=/warehouse=` |
+| Stock 응답 | `quantity` | `{ stock: [{ ..., onHand }] }` |
+
 ## Phase 상태
 
 - Phase 1-1 완료: Next.js + Prisma + 인증 의존성 세팅.

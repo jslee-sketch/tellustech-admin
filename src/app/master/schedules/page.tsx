@@ -42,7 +42,7 @@ export default async function SchedulesPage() {
         <Card title="일정" count={rows.length}>
           <DataTable
             columns={[
-              { key: "scheduleCode", label: "코드", width: "160px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
+              { key: "scheduleCode", label: "코드", width: "160px", render: (v, row) => <Link href={`/master/schedules/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
               { key: "title", label: "제목" },
               { key: "dueAt", label: "마감", width: "170px", render: (v) => {
                 const d = v as Date;

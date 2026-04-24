@@ -37,7 +37,7 @@ export default async function OffboardingPage() {
         <Card title="퇴사카드" count={rows.length}>
           <DataTable
             columns={[
-              { key: "offboardingCode", label: "코드", width: "170px", render: (v) => <span className="font-mono text-[11px] font-bold">{v as string}</span> },
+              { key: "offboardingCode", label: "코드", width: "170px", render: (v, row) => <Link href={`/hr/offboarding/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
               { key: "employee", label: "직원", render: (_, r) => r.employee ? <span>{r.employee.employeeCode} · {r.employee.nameVi}</span> : "—" },
               { key: "status", label: "상태", width: "110px", render: (v) => <Badge tone={v === "COMPLETED" ? "success" : v === "SUBMITTED" ? "warn" : "neutral"}>{v as string}</Badge> },
               { key: "createdAt", label: "등록일", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },

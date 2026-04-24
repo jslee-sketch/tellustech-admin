@@ -47,7 +47,7 @@ export default async function LicensesPage() {
         <Card title="라이선스" count={rows.length}>
           <DataTable
             columns={[
-              { key: "licenseCode", label: "코드", width: "160px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
+              { key: "licenseCode", label: "코드", width: "160px", render: (v, row) => <Link href={`/master/licenses/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
               { key: "name", label: "라이선스명" },
               { key: "owner", label: "담당자", render: (_, r) => r.owner ? <span>{r.owner.employeeCode} · {r.owner.nameVi}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
               { key: "acquiredAt", label: "취득일", width: "110px", render: (v) => (v as Date).toISOString().slice(0, 10) },

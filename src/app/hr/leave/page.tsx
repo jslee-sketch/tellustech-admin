@@ -48,7 +48,7 @@ export default async function LeavePage() {
         <Card title="연차 신청" count={rows.length}>
           <DataTable
             columns={[
-              { key: "leaveCode", label: "코드", width: "160px", render: (v) => <span className="font-mono text-[11px] font-bold">{v as string}</span> },
+              { key: "leaveCode", label: "코드", width: "160px", render: (v, row) => <Link href={`/hr/leave/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
               { key: "employee", label: "직원", render: (_, r) => <span>{r.employee?.employeeCode} · {r.employee?.nameVi}</span> },
               { key: "leaveType", label: "유형", width: "80px", render: (v) => <Badge tone="primary">{v as string}</Badge> },
               { key: "startDate", label: "시작", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },

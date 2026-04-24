@@ -49,7 +49,7 @@ export default async function ExpensesPage() {
         <Card title="비용" count={rows.length}>
           <DataTable
             columns={[
-              { key: "expenseCode", label: "코드", width: "170px", render: (v) => <span className="font-mono text-[11px] font-bold">{v as string}</span> },
+              { key: "expenseCode", label: "코드", width: "170px", render: (v, row) => <Link href={`/finance/expenses/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
               { key: "incurredAt", label: "발생일", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
               { key: "expenseType", label: "구분", width: "100px", render: (v) => <Badge tone={v === "SALES" ? "accent" : v === "PURCHASE" ? "primary" : "neutral"}>{v === "SALES" ? "매출관련" : v === "PURCHASE" ? "매입관련" : "일반"}</Badge> },
               { key: "amount", label: "금액", width: "150px", align: "right", render: (v) => <span className="font-mono text-[13px] font-bold">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },

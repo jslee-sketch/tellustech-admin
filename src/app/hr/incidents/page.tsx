@@ -50,7 +50,7 @@ export default async function IncidentsPage() {
         <Card title="사건평가" count={rows.length}>
           <DataTable
             columns={[
-              { key: "incidentCode", label: "코드", width: "160px", render: (v) => <span className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)]">{v as string}</span> },
+              { key: "incidentCode", label: "코드", width: "160px", render: (v, row) => <Link href={`/hr/incidents/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
               { key: "type", label: "유형", width: "90px", render: (v) => <Badge tone={v === "PRAISE" ? "success" : "warn"}>{v === "PRAISE" ? "칭찬" : "개선필요"}</Badge> },
               { key: "author", label: "작성자", render: (_, row) => <span>{row.author?.employeeCode} · {row.author?.nameVi}</span> },
               { key: "subject", label: "대상자", render: (_, row) => <span>{row.subject?.employeeCode} · {row.subject?.nameVi}</span> },

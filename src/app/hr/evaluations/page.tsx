@@ -50,7 +50,7 @@ export default async function EvaluationsPage() {
         <Card title="정기 평가" count={rows.length}>
           <DataTable
             columns={[
-              { key: "evaluationCode", label: "코드", width: "170px", render: (v) => <span className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)]">{v as string}</span> },
+              { key: "evaluationCode", label: "코드", width: "170px", render: (v, row) => <Link href={`/hr/evaluations/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
               { key: "reviewer", label: "평가자", render: (_, row) => <span>{row.reviewer?.employeeCode} · {row.reviewer?.nameVi}</span> },
               { key: "subject", label: "피평가자", render: (_, row) => <span>{row.subject?.employeeCode} · {row.subject?.nameVi}</span> },
               { key: "deadline", label: "마감", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },

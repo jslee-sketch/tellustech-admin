@@ -44,6 +44,7 @@ export default async function EvaluationsPage() {
               ]}
               filename="evaluations.xlsx"
             />
+            <Link href="/hr/evaluations/ai" className="rounded-md bg-[color:var(--tts-accent)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">✨ AI 종합평가</Link>
             <Link href="/hr/evaluations/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">+ 정기평가 등록</Link>
           </div>
         </div>

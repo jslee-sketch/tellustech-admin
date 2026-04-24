@@ -53,6 +53,7 @@ const GROUPS: NavGroup[] = [
       { href: "/inventory/stock", label: "재고현황", icon: "📊", match: (p) => p.startsWith("/inventory/stock") },
       { href: "/inventory/transactions", label: "입출고 현황", icon: "🔁", match: (p) => p.startsWith("/inventory/transactions") },
       { href: "/inventory/scan", label: "QR 스캔", icon: "📷", match: (p) => p.startsWith("/inventory/scan") },
+      { href: "/inventory/labels", label: "QR 라벨 인쇄", icon: "🏷️", match: (p) => p.startsWith("/inventory/labels") },
     ],
   },
   {

@@ -63,6 +63,12 @@ export default async function PurchaseDetailPage({ params }: PageProps) {
                 {payable.status}
               </Badge>
             )}
+            <Link
+              href={`/inventory/labels?purchaseId=${purchase.id}`}
+              className="ml-auto rounded-md bg-[color:var(--tts-accent)] px-3 py-1.5 text-[11px] font-bold text-white hover:opacity-90"
+            >
+              🏷️ QR 라벨 인쇄
+            </Link>
           </h1>
           <div className="mt-1 text-[13px] text-[color:var(--tts-sub)]">
             {purchase.supplier.companyNameVi}{" "}

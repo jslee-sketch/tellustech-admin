@@ -907,6 +907,68 @@ async function phase16() {
   }
 }
 
+// ───── PHASE 11: 엑셀 업로드 (API 레벨 — ExcelUploader.onSave 가 실행하는 것과 동일한 경로) ─────
+async function phase11() {
+  console.log("\n[PHASE 11] 엑셀 업로드 (API 레벨 검증)");
+  const cookie = state.adminCookie;
+  const imj = state.clients.find((c) => c.companyNameVi === "IMJ VINA");
+  const tradeProj = state.projects.find((p) => p.salesType === "TRADE");
+  const item = state.items[0];
+  const wh = state.warehouses.find((w) => w.code === "ITMAIN");
+  if (!imj || !tradeProj || !item || !wh) { rec("11-0", "시드 누락", "FAIL"); return; }
+
+  // 매출 헤더 하나 만들고, /items 에 "엑셀 업로드 시뮬레이션" 수행
+  const headerRes = await req("POST", "/api/sales", {
+    cookie,
+    body: {
+      clientId: imj.id, projectId: tradeProj.id, warehouseId: wh.id,
+      items: [],
+    },
+  });
+  if (headerRes.status !== 201 && headerRes.status !== 200) {
+    rec("11-0", "매출 헤더 생성", "FAIL",
+      `status=${headerRes.status} ${JSON.stringify(headerRes.data).slice(0, 150)}`);
+    return;
+  }
+  const salesId = (headerRes.data?.sales || headerRes.data)?.id;
+
+  // 11-5 정상 라인 1건 (엑셀 row → API POST)
+  const okLine = await req("POST", `/api/sales/${salesId}/items`, {
+    cookie,
+    body: { itemId: item.id, quantity: 2, unitPrice: 100000, serialNumber: `XLS-OK-${Date.now()}` },
+  });
+  rec("11-5", "엑셀 정상 라인 → POST 201",
+    okLine.status === 201 || okLine.status === 200 ? "PASS" : "FAIL",
+    `status=${okLine.status} ${JSON.stringify(okLine.data).slice(0, 100)}`);
+
+  // 11-5b 에러 케이스: 없는 itemId
+  const badLine = await req("POST", `/api/sales/${salesId}/items`, {
+    cookie,
+    body: { itemId: "nonexistent-id-xxx", quantity: 1, unitPrice: 100000 },
+  });
+  rec("11-5b", "엑셀 에러 라인 (없는 itemId) → 400/404",
+    badLine.status === 400 || badLine.status === 404 ? "PASS" : "FAIL",
+    `status=${badLine.status} ${JSON.stringify(badLine.data).slice(0, 100)}`);
+
+  // 11-3 품목 자동완성 검증 — 시드 품목 검색
+  const itemsByCode = await req("GET", `/api/master/items?q=Toner`, { cookie });
+  const arr = itemsByCode.data?.items || [];
+  rec("11-3", `품목 검색 q=Toner (${arr.length}건)`,
+    arr.length > 0 ? "PASS" : "FAIL");
+
+  // 11-1 MISA 엑셀 다운로드 (finance/misa-export)
+  const misaRes = await fetch(`${BASE}/api/finance/misa-export?year=2026&month=4`, {
+    headers: { Cookie: cookie },
+  });
+  const misaOk = misaRes.status === 200;
+  const ct = misaRes.headers.get("content-type") || "";
+  const isXlsx = ct.includes("spreadsheetml") || ct.includes("xlsx");
+  const cd = misaRes.headers.get("content-disposition") || "";
+  rec("11-1", `MISA 엑셀 다운로드 (status=${misaRes.status}, xlsx=${isXlsx})`,
+    misaOk && isXlsx && cd.includes("attachment") ? "PASS" : "FAIL",
+    `cd=${cd.slice(0, 80)}`);
+}
+
 // ───── PHASE 13: 고객 포탈 ─────
 async function phase13() {
   console.log("\n[PHASE 13] 고객 포탈");
@@ -1070,7 +1132,7 @@ async function phase17() {
   console.log(`E2E 대상: ${BASE}`);
   const phases = {
     0: phase0, 1: phase1, 2: phase2, 3: phase3, 4: phase4, 5: phase5,
-    6: phase6, 7: phase7, 8: phase8, 9: phase9, 10: phase10,
+    6: phase6, 7: phase7, 8: phase8, 9: phase9, 10: phase10, 11: phase11,
     12: phase12, 13: phase13, 14: phase14, 15: phase15, 16: phase16, 17: phase17,
   };
   const onlyPhase = process.env.PHASE;

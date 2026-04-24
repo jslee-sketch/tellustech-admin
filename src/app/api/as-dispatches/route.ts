@@ -11,7 +11,9 @@ import {
 
 // 출동 등록 API
 // - POST: asTicketId 필수 → 티켓 상태가 RECEIVED/IN_PROGRESS 면 DISPATCHED 로 자동 전환 (트랜잭션)
-// - Google 거리 vs 미터기 OCR 거리 자동비교 (tolerance 10%)
+// - 거리 자동 계산:
+//     · meterOcrKm 직접 전달 OR (departMeterKm + returnMeterKm) → 차분 자동 계산
+//     · Google 1방향 km × 2 = 예상 왕복; 미터기 차분과 10% 이내면 일치
 // - 미터기 사진·영수증은 /api/files 에 업로드 후 id 혹은 stored URL 을 여기로 전달
 // - Google Maps / OCR 실제 연동은 Phase 2+ 후기 (API 키 확보 후)
 
@@ -33,6 +35,20 @@ function parseDecimal(value: unknown, min = 0): string | null {
   return n.toFixed(2);
 }
 
+// 미터기 OCR 값 결정: 직접 전달된 meterOcrKm 우선, 없으면 depart/return 차분.
+function resolveMeterKm(p: Record<string, unknown>): string | null {
+  const direct = parseDecimal(p.meterOcrKm);
+  if (direct) return direct;
+  const dep = Number(p.departMeterKm ?? NaN);
+  const ret = Number(p.returnMeterKm ?? NaN);
+  if (Number.isFinite(dep) && Number.isFinite(ret) && ret >= dep) {
+    const diff = ret - dep;
+    return diff >= 0 ? diff.toFixed(2) : null;
+  }
+  return null;
+}
+
+// Google 1방향 km × 2 ≈ 미터기 차분 (왕복) ± 10%
 function computeDistanceMatch(
   googleKm: string | null,
   meterKm: string | null,
@@ -41,8 +57,9 @@ function computeDistanceMatch(
   const g = Number(googleKm);
   const m = Number(meterKm);
   if (!Number.isFinite(g) || !Number.isFinite(m) || g <= 0) return null;
-  const diff = Math.abs(m - g);
-  return diff <= g * DISTANCE_TOLERANCE_RATIO;
+  const expectedRoundTrip = g * 2;
+  const diff = Math.abs(m - expectedRoundTrip);
+  return diff <= expectedRoundTrip * DISTANCE_TOLERANCE_RATIO;
 }
 
 export async function GET(request: Request) {
@@ -121,7 +138,7 @@ export async function POST(request: Request) {
       }
 
       const googleDistanceKm = parseDecimal(p.googleDistanceKm);
-      const meterOcrKm = parseDecimal(p.meterOcrKm);
+      const meterOcrKm = resolveMeterKm(p);
       const distanceMatch = computeDistanceMatch(googleDistanceKm, meterOcrKm);
 
       const created = await prisma.$transaction(async (tx) => {

@@ -50,7 +50,9 @@ const GROUPS: NavGroup[] = [
   {
     label: "재고",
     items: [
-      { href: "/inventory/stock", label: "재고현황", icon: "📊", match: (p) => p.startsWith("/inventory") },
+      { href: "/inventory/stock", label: "재고현황", icon: "📊", match: (p) => p.startsWith("/inventory/stock") },
+      { href: "/inventory/transactions", label: "입출고 현황", icon: "🔁", match: (p) => p.startsWith("/inventory/transactions") },
+      { href: "/inventory/scan", label: "QR 스캔", icon: "📷", match: (p) => p.startsWith("/inventory/scan") },
     ],
   },
   {

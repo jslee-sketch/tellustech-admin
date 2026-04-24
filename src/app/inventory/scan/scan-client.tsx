@@ -9,13 +9,12 @@ type Props = {
   warehouses: { value: string; label: string }[];
 };
 
+// IN/OUT 사유만 (스캔에선 TRANSFER 제외)
 const REASON_OPTIONS = [
   { value: "PURCHASE", label: "매입" },
-  { value: "CALIBRATION", label: "교정" },
-  { value: "REPAIR", label: "수리" },
-  { value: "RENTAL", label: "렌탈" },
-  { value: "DEMO", label: "데모" },
-  { value: "RETURN", label: "회수" },
+  { value: "RETURN_IN", label: "반품입고" },
+  { value: "OTHER_IN", label: "기타입고" },
+  { value: "SALE", label: "매출" },
   { value: "CONSUMABLE_OUT", label: "소모품출고" },
 ];
 
@@ -103,11 +102,12 @@ export function ScanClient({ items, warehouses }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           itemId,
-          warehouseId,
+          // 스캔은 단순 IN/OUT 가정 — TRANSFER 는 등록폼에서. IN 이면 toWarehouse, OUT 이면 fromWarehouse.
+          ...(txnType === "IN" ? { toWarehouseId: warehouseId } : { fromWarehouseId: warehouseId }),
           txnType,
           reason,
           quantity: "1",
-          serialNumber: lastCode, // 편의상 S/N 과 동일하게 채움 — 사용자가 입출고 폼에서 분리 수정 가능
+          serialNumber: lastCode,
           scannedBarcode: lastCode,
         }),
       });

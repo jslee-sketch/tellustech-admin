@@ -217,13 +217,15 @@ export async function POST(request: Request) {
                 data: itemsData.map((it) => ({ salesId: sales.id, ...it })),
               });
             }
-            // TRADE 프로젝트 — 각 품목라인을 재고 OUT 으로 자동 생성
+            // TRADE 프로젝트 — 각 품목라인을 재고 OUT 으로 자동 생성 (fromWarehouseId=선택창고)
             if (projectType === "TRADE" && warehouseId && itemsData.length > 0) {
               await tx.inventoryTransaction.createMany({
                 data: itemsData.map((it) => ({
                   companyCode: session.companyCode,
                   itemId: it.itemId,
-                  warehouseId,
+                  fromWarehouseId: warehouseId,
+                  toWarehouseId: null,
+                  clientId,
                   serialNumber: it.serialNumber,
                   txnType: "OUT" as const,
                   reason: "SALE" as const,

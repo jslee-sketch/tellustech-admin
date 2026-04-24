@@ -11,7 +11,9 @@ export async function GET(_r: Request, context: RouteContext) {
       where: { id },
       include: {
         item: { select: { itemCode: true, name: true } },
-        warehouse: { select: { code: true, name: true } },
+        fromWarehouse: { select: { code: true, name: true, warehouseType: true } },
+        toWarehouse: { select: { code: true, name: true, warehouseType: true } },
+        client: { select: { clientCode: true, companyNameVi: true } },
       },
     });
     if (!t) return notFound();

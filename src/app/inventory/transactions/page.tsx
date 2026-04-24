@@ -14,9 +14,19 @@ export default async function InventoryTransactionsPage() {
     take: 500,
     include: {
       item: { select: { itemCode: true, name: true } },
-      warehouse: { select: { code: true, name: true } },
+      fromWarehouse: { select: { code: true, name: true, warehouseType: true } },
+      toWarehouse: { select: { code: true, name: true, warehouseType: true } },
+      client: { select: { clientCode: true, companyNameVi: true } },
     },
   });
+
+  // 소속 표시: Internal/Main 창고 → 회사명, External 창고 → 고객명
+  const companyName = session.companyCode === "TV" ? "Tellustech Vina" : "Vietrental";
+  const ownerLabel = (wh: { warehouseType: string } | null, client: { companyNameVi: string } | null) => {
+    if (!wh) return client?.companyNameVi ?? "-";
+    return wh.warehouseType === "EXTERNAL" ? (client?.companyNameVi ?? "-") : companyName;
+  };
+
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-6xl">
@@ -26,7 +36,7 @@ export default async function InventoryTransactionsPage() {
               TELLUSTECH ERP
             </Link>
             <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-              재고 · 입출고
+              재고 · 입출고 현황
               <span className="ml-3 rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-primary)]">
                 {session.companyCode}
               </span>
@@ -37,7 +47,7 @@ export default async function InventoryTransactionsPage() {
               재고 현황 →
             </Link>
             <Link href="/inventory/scan" className="text-[13px] text-[color:var(--tts-accent)] hover:underline">
-              바코드 스캔 →
+              QR 스캔 →
             </Link>
           </div>
         </div>
@@ -46,13 +56,16 @@ export default async function InventoryTransactionsPage() {
             id: t.id,
             itemCode: t.item.itemCode,
             itemName: t.item.name,
-            warehouseCode: t.warehouse.code,
-            warehouseName: t.warehouse.name,
+            fromWarehouseCode: t.fromWarehouse?.code ?? null,
+            fromWarehouseName: t.fromWarehouse?.name ?? null,
+            toWarehouseCode: t.toWarehouse?.code ?? null,
+            toWarehouseName: t.toWarehouse?.name ?? null,
+            owner: ownerLabel(t.toWarehouse ?? t.fromWarehouse, t.client),
             serialNumber: t.serialNumber,
             txnType: t.txnType,
             reason: t.reason,
             quantity: t.quantity,
-            scannedBarcode: t.scannedBarcode,
+            targetEquipmentSN: t.targetEquipmentSN,
             performedAt: t.performedAt.toISOString().slice(0, 16).replace("T", " "),
             note: t.note,
           }))}

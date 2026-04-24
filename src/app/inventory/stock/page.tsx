@@ -21,18 +21,34 @@ type StockRow = {
 export default async function InventoryStockPage() {
   const session = await getSession();
 
-  // Server-side 집계 — /api/inventory/stock 과 같은 로직을 SSR 로 구성.
-  const groups = await prisma.inventoryTransaction.groupBy({
-    by: ["itemId", "warehouseId", "txnType"],
-    where: companyScope(session),
-    _sum: { quantity: true },
-  });
+  // Server-side 집계 — from/to 이중구조:
+  //   창고 X 의 재고 = Σ(toWarehouseId=X) - Σ(fromWarehouseId=X)
+  const baseWhere = companyScope(session);
+  const [ins, outs] = await Promise.all([
+    prisma.inventoryTransaction.groupBy({
+      by: ["itemId", "toWarehouseId"],
+      where: { ...baseWhere, toWarehouseId: { not: null } },
+      _sum: { quantity: true },
+    }),
+    prisma.inventoryTransaction.groupBy({
+      by: ["itemId", "fromWarehouseId"],
+      where: { ...baseWhere, fromWarehouseId: { not: null } },
+      _sum: { quantity: true },
+    }),
+  ]);
   const acc = new Map<string, { itemId: string; warehouseId: string; inQty: number; outQty: number }>();
-  for (const g of groups) {
-    const key = `${g.itemId}|${g.warehouseId}`;
-    const e = acc.get(key) ?? { itemId: g.itemId, warehouseId: g.warehouseId, inQty: 0, outQty: 0 };
-    if (g.txnType === "IN") e.inQty += Number(g._sum.quantity ?? 0);
-    else e.outQty += Number(g._sum.quantity ?? 0);
+  for (const g of ins) {
+    if (!g.toWarehouseId) continue;
+    const key = `${g.itemId}|${g.toWarehouseId}`;
+    const e = acc.get(key) ?? { itemId: g.itemId, warehouseId: g.toWarehouseId, inQty: 0, outQty: 0 };
+    e.inQty += Number(g._sum.quantity ?? 0);
+    acc.set(key, e);
+  }
+  for (const g of outs) {
+    if (!g.fromWarehouseId) continue;
+    const key = `${g.itemId}|${g.fromWarehouseId}`;
+    const e = acc.get(key) ?? { itemId: g.itemId, warehouseId: g.fromWarehouseId, inQty: 0, outQty: 0 };
+    e.outQty += Number(g._sum.quantity ?? 0);
     acc.set(key, e);
   }
   const itemIds = Array.from(new Set(Array.from(acc.values()).map((v) => v.itemId)));

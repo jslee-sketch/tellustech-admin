@@ -119,17 +119,22 @@ enum BillingMethod {
 enum InventoryTxnType {
   IN
   OUT
+  TRANSFER
 }
 
 enum InventoryReason {
-  PURCHASE
-  SALE
+  // IN 사유
+  PURCHASE       // 매입
+  RETURN_IN      // 반품입고
+  OTHER_IN       // 기타입고
+  // OUT 사유
+  SALE           // 매출
+  CONSUMABLE_OUT // 소모품출고 (IT 장비 대상)
+  // TRANSFER 사유
   CALIBRATION
   REPAIR
   RENTAL
   DEMO
-  RETURN
-  CONSUMABLE_OUT
 }
 
 enum DepreciationMethod {
@@ -369,6 +374,7 @@ model Client {
   sales            Sales[]
   purchases        Purchase[]
   campaigns        MarketingCampaign[] @relation("CampaignClient")
+  inventoryTxns    InventoryTransaction[] @relation("InventoryTxnClient")
 
   @@index([referrerEmployeeId])
   @@index([salesPicId])
@@ -425,8 +431,9 @@ model Warehouse {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  inventoryStocks       InventoryStock[]
-  inventoryTransactions InventoryTransaction[]
+  inventoryStocks         InventoryStock[]
+  inventoryTransactionsFrom InventoryTransaction[] @relation("FromWarehouse")
+  inventoryTransactionsTo   InventoryTransaction[] @relation("ToWarehouse")
 
   @@map("warehouses")
 }
@@ -647,26 +654,36 @@ model InventoryStock {
 }
 
 model InventoryTransaction {
-  id             String           @id @default(cuid())
-  companyCode    CompanyCode
-  itemId         String
-  warehouseId    String
-  serialNumber   String?
-  txnType        InventoryTxnType
-  reason         InventoryReason
-  quantity       Int
-  scannedBarcode String?
-  note           String?
-  performedById  String?
-  performedAt    DateTime         @default(now())
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id               String           @id @default(cuid())
+  companyCode      CompanyCode
+  itemId           String
+  fromWarehouseId  String?          // 출고창고 (IN 시 null, OUT/TRANSFER 시 필수)
+  toWarehouseId    String?          // 입고창고 (OUT 시 null 가능, IN/TRANSFER 시 필수)
+  clientId         String?          // External 창고 연관 고객
+  serialNumber     String?
+  txnType          InventoryTxnType
+  reason           InventoryReason
+  quantity         Int
+  scannedBarcode   String?
+  note             String?
+  performedById    String?
+  performedAt      DateTime         @default(now())
+  // 소모품출고 시 대상 장비 추적
+  targetEquipmentSN String?
+  targetContractId  String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  item      Item      @relation(fields: [itemId], references: [id])
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  item          Item       @relation(fields: [itemId], references: [id])
+  fromWarehouse Warehouse? @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse? @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
+  client        Client?    @relation("InventoryTxnClient", fields: [clientId], references: [id])
 
   @@index([companyCode, performedAt])
   @@index([serialNumber])
+  @@index([targetEquipmentSN])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
   @@map("inventory_transactions")
 }
 

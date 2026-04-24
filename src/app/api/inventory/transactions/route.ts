@@ -13,16 +13,19 @@ import {
 } from "@/lib/api-utils";
 import type { InventoryReason, InventoryTxnType } from "@/generated/prisma/client";
 
-const TXN_TYPES: readonly InventoryTxnType[] = ["IN", "OUT"] as const;
+const TXN_TYPES: readonly InventoryTxnType[] = ["IN", "OUT", "TRANSFER"] as const;
 const REASONS: readonly InventoryReason[] = [
-  "PURCHASE",
-  "CALIBRATION",
-  "REPAIR",
-  "RENTAL",
-  "DEMO",
-  "RETURN",
-  "CONSUMABLE_OUT",
+  "PURCHASE", "RETURN_IN", "OTHER_IN",
+  "SALE", "CONSUMABLE_OUT",
+  "CALIBRATION", "REPAIR", "RENTAL", "DEMO",
 ] as const;
+
+// 유형-사유 매핑 (잘못된 조합 차단)
+const REASON_BY_TYPE: Record<InventoryTxnType, readonly InventoryReason[]> = {
+  IN: ["PURCHASE", "RETURN_IN", "OTHER_IN"],
+  OUT: ["SALE", "CONSUMABLE_OUT"],
+  TRANSFER: ["CALIBRATION", "REPAIR", "RENTAL", "DEMO"],
+};
 
 function parseIntOrNull(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
@@ -36,16 +39,28 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const q = trimNonEmpty(url.searchParams.get("q"));
     const itemId = trimNonEmpty(url.searchParams.get("item"));
-    const warehouseId = trimNonEmpty(url.searchParams.get("warehouse"));
+    const warehouseId = trimNonEmpty(url.searchParams.get("warehouse")); // from 또는 to 어디서든
     const txnType = optionalEnum(url.searchParams.get("type"), TXN_TYPES);
     const reason = optionalEnum(url.searchParams.get("reason"), REASONS);
+    const fromDate = trimNonEmpty(url.searchParams.get("from"));
+    const toDate = trimNonEmpty(url.searchParams.get("to"));
 
     const where = {
       ...companyScope(session),
       ...(itemId ? { itemId } : {}),
-      ...(warehouseId ? { warehouseId } : {}),
+      ...(warehouseId
+        ? { OR: [{ fromWarehouseId: warehouseId }, { toWarehouseId: warehouseId }] }
+        : {}),
       ...(txnType ? { txnType } : {}),
       ...(reason ? { reason } : {}),
+      ...(fromDate || toDate
+        ? {
+            performedAt: {
+              ...(fromDate ? { gte: new Date(fromDate) } : {}),
+              ...(toDate ? { lte: new Date(new Date(toDate).setHours(23, 59, 59, 999)) } : {}),
+            },
+          }
+        : {}),
       ...(q
         ? {
             OR: [
@@ -53,6 +68,7 @@ export async function GET(request: Request) {
               { scannedBarcode: { contains: q, mode: "insensitive" as const } },
               { item: { itemCode: { contains: q, mode: "insensitive" as const } } },
               { item: { name: { contains: q, mode: "insensitive" as const } } },
+              { targetEquipmentSN: { contains: q, mode: "insensitive" as const } },
             ],
           }
         : {}),
@@ -64,7 +80,9 @@ export async function GET(request: Request) {
       take: 500,
       include: {
         item: { select: { id: true, itemCode: true, name: true } },
-        warehouse: { select: { id: true, code: true, name: true } },
+        fromWarehouse: { select: { id: true, code: true, name: true, warehouseType: true } },
+        toWarehouse: { select: { id: true, code: true, name: true, warehouseType: true } },
+        client: { select: { id: true, clientCode: true, companyNameVi: true } },
       },
     });
     return ok({ transactions });
@@ -83,31 +101,70 @@ export async function POST(request: Request) {
 
     try {
       const itemId = requireString(p.itemId, "itemId");
-      const warehouseId = requireString(p.warehouseId, "warehouseId");
       const txnType = requireEnum(p.txnType, TXN_TYPES, "txnType");
       const reason = requireEnum(p.reason, REASONS, "reason");
+
+      // 유형-사유 매핑 검증
+      if (!REASON_BY_TYPE[txnType].includes(reason)) {
+        return badRequest("invalid_input", { field: "reason", reason: `not_allowed_for_${txnType}` });
+      }
+
       const quantity = parseIntOrNull(p.quantity);
       if (!quantity) return badRequest("invalid_input", { field: "quantity" });
 
-      const [item, warehouse] = await Promise.all([
-        prisma.item.findUnique({ where: { id: itemId }, select: { id: true } }),
-        prisma.warehouse.findUnique({ where: { id: warehouseId }, select: { id: true } }),
-      ]);
+      const fromWarehouseId = trimNonEmpty(p.fromWarehouseId);
+      const toWarehouseId = trimNonEmpty(p.toWarehouseId);
+      const clientId = trimNonEmpty(p.clientId);
+      const targetEquipmentSN = trimNonEmpty(p.targetEquipmentSN);
+      const targetContractId = trimNonEmpty(p.targetContractId);
+
+      // 유형별 창고 필수성 검증
+      if (txnType === "IN" && !toWarehouseId) {
+        return badRequest("invalid_input", { field: "toWarehouseId", reason: "required_for_IN" });
+      }
+      if (txnType === "OUT" && !fromWarehouseId) {
+        return badRequest("invalid_input", { field: "fromWarehouseId", reason: "required_for_OUT" });
+      }
+      if (txnType === "TRANSFER" && (!fromWarehouseId || !toWarehouseId)) {
+        return badRequest("invalid_input", { field: "warehouses", reason: "both_required_for_TRANSFER" });
+      }
+      // 소모품출고 시 대상장비 S/N 필수
+      if (reason === "CONSUMABLE_OUT" && !targetEquipmentSN) {
+        return badRequest("invalid_input", { field: "targetEquipmentSN", reason: "required_for_consumable" });
+      }
+
+      // 존재성 검증
+      const item = await prisma.item.findUnique({ where: { id: itemId }, select: { id: true } });
       if (!item) return badRequest("invalid_item");
-      if (!warehouse) return badRequest("invalid_warehouse");
+
+      if (fromWarehouseId) {
+        const wh = await prisma.warehouse.findUnique({ where: { id: fromWarehouseId }, select: { id: true } });
+        if (!wh) return badRequest("invalid_warehouse", { field: "fromWarehouseId" });
+      }
+      if (toWarehouseId) {
+        const wh = await prisma.warehouse.findUnique({ where: { id: toWarehouseId }, select: { id: true } });
+        if (!wh) return badRequest("invalid_warehouse", { field: "toWarehouseId" });
+      }
+      if (clientId) {
+        const cl = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
+        if (!cl) return badRequest("invalid_client");
+      }
 
       const created = await prisma.inventoryTransaction.create({
         data: {
           companyCode: session.companyCode,
           itemId,
-          warehouseId,
+          fromWarehouseId: fromWarehouseId ?? null,
+          toWarehouseId: toWarehouseId ?? null,
+          clientId: clientId ?? null,
           serialNumber: trimNonEmpty(p.serialNumber),
           txnType,
           reason,
           quantity,
           scannedBarcode: trimNonEmpty(p.scannedBarcode),
           note: trimNonEmpty(p.note),
-          performedById: session.empCode ? undefined : undefined, // performedById is a string, not linked to Employee FK — stored as-is
+          targetEquipmentSN: targetEquipmentSN ?? null,
+          targetContractId: targetContractId ?? null,
           performedAt: new Date(),
         },
       });

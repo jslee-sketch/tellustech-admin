@@ -11,9 +11,18 @@ import type { CompanyCode } from "@/generated/prisma/client";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
+// 디버그: 마지막 호출 정보 추적 (개발 모드에서 원인 파악)
+export const claudeDebug: { lastError: string | null; lastStatus: number | null } = {
+  lastError: null,
+  lastStatus: null,
+};
+
 async function claudeCall(prompt: string, maxTokens = 2048): Promise<string | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    claudeDebug.lastError = "ANTHROPIC_API_KEY 환경변수 없음";
+    return null;
+  }
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -28,10 +37,17 @@ async function claudeCall(prompt: string, maxTokens = 2048): Promise<string | nu
         messages: [{ role: "user", content: prompt }],
       }),
     });
-    if (!res.ok) return null;
+    claudeDebug.lastStatus = res.status;
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      claudeDebug.lastError = `HTTP ${res.status}: ${errBody.slice(0, 300)}`;
+      return null;
+    }
     const json = (await res.json()) as { content?: { text?: string }[] };
+    claudeDebug.lastError = null;
     return json.content?.[0]?.text ?? null;
-  } catch {
+  } catch (err) {
+    claudeDebug.lastError = err instanceof Error ? err.message : String(err);
     return null;
   }
 }

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, forbidden, ok, requireString, serverError } from "@/lib/api-utils";
-import { generateEvaluationReport, analyzeBiasRisk } from "@/lib/ai-evaluation";
+import { generateEvaluationReport, analyzeBiasRisk, claudeDebug } from "@/lib/ai-evaluation";
 
 // POST /api/hr/evaluations/ai
 // body: { employeeId: "..." } — 해당 직원의 AI 종합 평가 실행
@@ -21,7 +21,11 @@ export async function POST(request: Request) {
       if (emp.companyCode !== session.companyCode) return forbidden();
 
       const report = await generateEvaluationReport(employeeId, session.companyCode);
-      return ok({ report, apiKeyPresent: !!process.env.ANTHROPIC_API_KEY });
+      return ok({
+        report,
+        apiKeyPresent: !!process.env.ANTHROPIC_API_KEY,
+        claudeDebug: { lastError: claudeDebug.lastError, lastStatus: claudeDebug.lastStatus },
+      });
     } catch (err) {
       return serverError(err);
     }

@@ -51,6 +51,20 @@ export default async function ItContractDetailPage({ params }: PageProps) {
   });
   if (!contract) notFound();
 
+  // 소모품 사용 이력 — 계약 장비 S/N 대상으로 CONSUMABLE_OUT 조회
+  const equipmentSNs = contract.equipment.map((e) => e.serialNumber).filter((s): s is string => !!s);
+  const consumables = equipmentSNs.length > 0
+    ? await prisma.inventoryTransaction.findMany({
+        where: {
+          reason: "CONSUMABLE_OUT",
+          targetEquipmentSN: { in: equipmentSNs },
+        },
+        orderBy: { performedAt: "desc" },
+        include: { item: { select: { itemCode: true, name: true } } },
+        take: 200,
+      })
+    : [];
+
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-6xl">
@@ -153,6 +167,44 @@ export default async function ItContractDetailPage({ params }: PageProps) {
         <div className="mt-4">
           <Card title="📥 장비 엑셀 일괄 업로드">
             <EquipmentImport contractId={contract.id} />
+          </Card>
+        </div>
+
+        {/* 소모품 사용 이력 */}
+        <div className="mt-4">
+          <Card title={`🧴 소모품 사용 이력 (${consumables.length}건)`}>
+            {consumables.length === 0 ? (
+              <div className="py-4 text-center text-[12px] text-[color:var(--tts-muted)]">
+                이 계약의 장비 S/N 대상으로 출고된 소모품이 없습니다.<br />
+                <span className="text-[11px]">입출고 등록 시 "소모품출고" 선택 + 대상 장비 S/N 입력하면 여기 표시됩니다.</span>
+              </div>
+            ) : (
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
+                    <th className="py-2 text-left">출고일</th>
+                    <th className="py-2 text-left">대상 장비 S/N</th>
+                    <th className="py-2 text-left">소모품명</th>
+                    <th className="py-2 text-left">소모품 S/N</th>
+                    <th className="py-2 text-left">비고</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consumables.map((c) => (
+                    <tr key={c.id} className="border-b border-[color:var(--tts-border)]/50">
+                      <td className="py-2 font-mono text-[11px]">{c.performedAt.toISOString().slice(0, 10)}</td>
+                      <td className="py-2 font-mono text-[11px] text-[color:var(--tts-accent)]">{c.targetEquipmentSN}</td>
+                      <td className="py-2">
+                        <div className="font-semibold">{c.item.name}</div>
+                        <div className="font-mono text-[10px] text-[color:var(--tts-muted)]">{c.item.itemCode}</div>
+                      </td>
+                      <td className="py-2 font-mono text-[11px]">{c.serialNumber ?? "—"}</td>
+                      <td className="py-2 text-[color:var(--tts-sub)]">{c.note ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </Card>
         </div>
       </div>

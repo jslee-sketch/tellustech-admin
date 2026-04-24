@@ -2,12 +2,19 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { Card } from "@/components/ui";
 import { TransactionsClient } from "./transactions-client";
+import { InventoryImport } from "./inventory-import";
 
 export const dynamic = "force-dynamic";
 
 export default async function InventoryTransactionsPage() {
   const session = await getSession();
+  const [items, warehouses, clients] = await Promise.all([
+    prisma.item.findMany({ orderBy: { itemCode: "desc" }, take: 2000, select: { id: true, itemCode: true, name: true } }),
+    prisma.warehouse.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, warehouseType: true } }),
+    prisma.client.findMany({ orderBy: { clientCode: "asc" }, take: 1000, select: { id: true, clientCode: true, companyNameVi: true } }),
+  ]);
   const txns = await prisma.inventoryTransaction.findMany({
     where: companyScope(session),
     orderBy: { performedAt: "desc" },
@@ -70,6 +77,11 @@ export default async function InventoryTransactionsPage() {
             note: t.note,
           }))}
         />
+        <div className="mt-4">
+          <Card title="📥 엑셀 일괄 업로드">
+            <InventoryImport items={items} warehouses={warehouses} clients={clients} />
+          </Card>
+        </div>
       </div>
     </main>
   );

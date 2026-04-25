@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Row, Select, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type WarehouseFormValue = {
   id?: string;
@@ -16,9 +17,10 @@ export type WarehouseFormValue = {
 type Props = {
   mode: "create" | "edit";
   initial: WarehouseFormValue;
+  lang: Lang;
 };
 
-export function WarehouseForm({ mode, initial }: Props) {
+export function WarehouseForm({ mode, initial, lang }: Props) {
   const router = useRouter();
   const [value, setValue] = useState<WarehouseFormValue>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -52,13 +54,13 @@ export function WarehouseForm({ mode, initial }: Props) {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/warehouses");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setSubmitting(false);
     }
@@ -66,20 +68,20 @@ export function WarehouseForm({ mode, initial }: Props) {
 
   async function handleDelete() {
     if (!value.id) return;
-    if (!window.confirm("이 창고를 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.warehouseDeleteConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/master/warehouses/${value.id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/warehouses");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setDeleting(false);
     }
@@ -88,7 +90,7 @@ export function WarehouseForm({ mode, initial }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       <Row>
-        <Field label="창고코드" required hint="예: BNIT, HNIT" width="200px">
+        <Field label={t("field.warehouseCodeField", lang)} required hint={t("hint.warehouseCodeExample", lang)} width="200px">
           <TextInput
             required
             value={value.code}
@@ -96,7 +98,7 @@ export function WarehouseForm({ mode, initial }: Props) {
             placeholder="BNIT"
           />
         </Field>
-        <Field label="창고명" required>
+        <Field label={t("field.warehouseNameField", lang)} required>
           <TextInput
             required
             value={value.name}
@@ -106,24 +108,24 @@ export function WarehouseForm({ mode, initial }: Props) {
         </Field>
       </Row>
       <Row>
-        <Field label="유형" required width="160px">
+        <Field label={t("field.warehouseTypeField", lang)} required width="160px">
           <Select
             required
             value={value.warehouseType}
             onChange={(e) => set("warehouseType", e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={[
-              { value: "INTERNAL", label: "내부" },
-              { value: "EXTERNAL", label: "외부" },
-              { value: "CLIENT", label: "고객" },
+              { value: "INTERNAL", label: t("whType.INTERNAL", lang) },
+              { value: "EXTERNAL", label: t("whType.EXTERNAL", lang) },
+              { value: "CLIENT", label: t("whType.CLIENT", lang) },
             ]}
           />
         </Field>
-        <Field label="지점 (옵션)" width="200px">
+        <Field label={t("field.branchTypeOpt", lang)} width="200px">
           <Select
             value={value.branchType}
             onChange={(e) => set("branchType", e.target.value)}
-            placeholder="선택 안 함"
+            placeholder={t("placeholder.notSelectedShort", lang)}
             options={[
               { value: "BN", label: "BN (Bắc Ninh)" },
               { value: "HN", label: "HN (Hà Nội)" },
@@ -133,11 +135,11 @@ export function WarehouseForm({ mode, initial }: Props) {
             ]}
           />
         </Field>
-        <Field label="위치 (옵션)">
+        <Field label={t("field.locationOpt", lang)}>
           <TextInput
             value={value.location}
             onChange={(e) => set("location", e.target.value)}
-            placeholder="주소 또는 상세 위치"
+            placeholder={t("placeholder.warehouseAddress", lang)}
           />
         </Field>
       </Row>
@@ -150,10 +152,10 @@ export function WarehouseForm({ mode, initial }: Props) {
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : mode === "create" ? "창고 등록" : "수정 저장"}
+          {submitting ? t("action.saving", lang) : mode === "create" ? t("btn.warehouseRegister", lang) : t("action.update", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/master/warehouses")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
         {mode === "edit" && (
           <Button
@@ -163,7 +165,7 @@ export function WarehouseForm({ mode, initial }: Props) {
             disabled={deleting}
             className="ml-auto"
           >
-            {deleting ? "삭제 중..." : "삭제"}
+            {deleting ? t("action.deleting", lang) : t("action.delete", lang)}
           </Button>
         )}
       </div>
@@ -171,17 +173,17 @@ export function WarehouseForm({ mode, initial }: Props) {
   );
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "duplicate_code":
-      return "동일한 창고코드가 이미 존재합니다.";
+      return t("msg.warehouseDup", lang);
     case "invalid_input":
-      return "입력값이 올바르지 않습니다.";
+      return t("msg.invalidInput", lang);
     case "has_dependent_rows":
-      return "이 창고에 연결된 재고가 있어 삭제할 수 없습니다.";
+      return t("msg.warehouseHasStock", lang);
     case "not_found":
-      return "창고를 찾을 수 없습니다.";
+      return t("msg.warehouseNotFound", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

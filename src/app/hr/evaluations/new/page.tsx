@@ -21,7 +21,7 @@ export default async function NewEvaluationPage() {
         <Link href="/hr/evaluations" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.evaluations.back", L)}</Link>
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.evaluations.new", L)}</h1>
         <Card>
-          <EvaluationNewForm employees={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))} />
+          <EvaluationNewForm lang={L} employees={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))} />
         </Card>
       </div>
     </main>

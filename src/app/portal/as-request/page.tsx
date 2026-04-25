@@ -32,7 +32,7 @@ export default async function PortalAsRequestPage() {
         <Link href="/portal" className="text-[11px] font-bold text-[color:var(--tts-accent)]">{t("page.portal.back", L)}</Link>
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.portal.asRequest", L)}</h1>
         <Card>
-          <PortalAsRequestForm clientId={client.id} defaultLang={session.language} />
+          <PortalAsRequestForm lang={L} clientId={client.id} defaultLang={session.language} />
         </Card>
       </div>
     </main>

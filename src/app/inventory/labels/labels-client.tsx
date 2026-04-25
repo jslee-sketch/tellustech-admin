@@ -4,15 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { Button, Field, Row, Select, TextInput } from "@/components/ui";
 import { LABEL_SPECS, type LabelSize } from "@/lib/qr-label";
+import { t, type Lang } from "@/lib/i18n";
 
 type ItemOpt = { value: string; label: string; itemCode: string; itemName: string };
 type LabelRow = { itemCode: string; itemName: string; serialNumber: string; copies: number; qrUrl?: string };
 type Props = {
   items: ItemOpt[];
   prefill: { itemCode: string; itemName: string; serialNumber: string | null }[];
+  lang: Lang;
 };
 
-export function LabelsClient({ items, prefill }: Props) {
+export function LabelsClient({ items, prefill, lang }: Props) {
   const [rows, setRows] = useState<LabelRow[]>(
     prefill.length > 0
       ? prefill.map((p) => ({ itemCode: p.itemCode, itemName: p.itemName, serialNumber: p.serialNumber ?? "", copies: 1 }))
@@ -59,40 +61,40 @@ export function LabelsClient({ items, prefill }: Props) {
     <div>
       <div className="print:hidden">
         <Row>
-          <Field label="라벨 크기" required width="240px">
+          <Field label={t("field.labelSize", lang)} required width="240px">
             <Select value={size} onChange={(e) => setSize(e.target.value as LabelSize)} options={[
               { value: "LARGE", label: LABEL_SPECS.LARGE.label },
               { value: "MEDIUM", label: LABEL_SPECS.MEDIUM.label },
               { value: "SMALL", label: LABEL_SPECS.SMALL.label },
             ]} />
           </Field>
-          <Field label="페이지당" width="140px">
+          <Field label={t("field.perPage", lang)} width="140px">
             <div className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-sub)]">
-              {spec.perRow * spec.perCol}장
+              {t("label.sheetsCount", lang).replace("{count}", String(spec.perRow * spec.perCol))}
             </div>
           </Field>
         </Row>
 
         <div className="mt-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-3">
-          <div className="mb-2 text-[12px] font-bold text-[color:var(--tts-sub)]">라벨 추가</div>
+          <div className="mb-2 text-[12px] font-bold text-[color:var(--tts-sub)]">{t("label.addLabel", lang)}</div>
           <Row>
-            <Field label="품목" required>
-              <Select value={selectedItemId} onChange={(e) => setSelectedItemId(e.target.value)} placeholder="선택" options={items.map((i) => ({ value: i.value, label: i.label }))} />
+            <Field label={t("field.item", lang)} required>
+              <Select value={selectedItemId} onChange={(e) => setSelectedItemId(e.target.value)} placeholder={t("placeholder.select", lang)} options={items.map((i) => ({ value: i.value, label: i.label }))} />
             </Field>
-            <Field label="S/N" width="200px">
-              <TextInput value={sn} onChange={(e) => setSn(e.target.value)} placeholder="SN-XXX (선택)" />
+            <Field label={t("field.snOpt", lang)} width="200px">
+              <TextInput value={sn} onChange={(e) => setSn(e.target.value)} placeholder={t("placeholder.snOptional", lang)} />
             </Field>
-            <Field label="장수" width="100px">
+            <Field label={t("field.copies", lang)} width="100px">
               <TextInput type="number" value={copies} onChange={(e) => setCopies(e.target.value)} />
             </Field>
             <Field label=" " width="100px">
-              <Button type="button" onClick={addRow}>+ 추가</Button>
+              <Button type="button" onClick={addRow}>{t("btn.addShortPlus", lang)}</Button>
             </Field>
           </Row>
         </div>
 
         <table className="mt-4 w-full text-[12px]">
-          <thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">품목코드</th><th className="py-2 text-left">품목명</th><th className="py-2 text-left">S/N</th><th className="py-2 text-right">장수</th><th className="py-2 text-right">삭제</th></tr></thead>
+          <thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">{t("th.itemCodeTh", lang)}</th><th className="py-2 text-left">{t("th.itemNameTh", lang)}</th><th className="py-2 text-left">{t("th.snTh", lang)}</th><th className="py-2 text-right">{t("th.copies", lang)}</th><th className="py-2 text-right">{t("th.delete", lang)}</th></tr></thead>
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} className="border-b border-[color:var(--tts-border)]/50">
@@ -100,15 +102,15 @@ export function LabelsClient({ items, prefill }: Props) {
                 <td className="py-2">{r.itemName || "-"}</td>
                 <td className="py-2 font-mono">{r.serialNumber || "-"}</td>
                 <td className="py-2 text-right font-mono">{r.copies}</td>
-                <td className="py-2 text-right"><button onClick={() => removeRow(i)} className="text-[color:var(--tts-danger)] hover:underline">삭제</button></td>
+                <td className="py-2 text-right"><button onClick={() => removeRow(i)} className="text-[color:var(--tts-danger)] hover:underline">{t("action.delete", lang)}</button></td>
               </tr>
             ))}
           </tbody>
         </table>
 
         <div className="mt-4 flex items-center gap-3">
-          <Button onClick={() => window.print()}>🖨️ 인쇄</Button>
-          <div className="text-[11px] text-[color:var(--tts-muted)]">총 {allLabels.length}장 · {Math.ceil(allLabels.length / (spec.perRow * spec.perCol))}페이지</div>
+          <Button onClick={() => window.print()}>{t("btn.print", lang)}</Button>
+          <div className="text-[11px] text-[color:var(--tts-muted)]">{t("label.totalSheetsPages", lang).replace("{count}", String(allLabels.length)).replace("{pages}", String(Math.ceil(allLabels.length / (spec.perRow * spec.perCol))))}</div>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type TmRentalRow = {
   id: string;
@@ -24,7 +25,7 @@ function formatVnd(raw: string): string {
   return new Intl.NumberFormat("vi-VN").format(n);
 }
 
-export function TmRentalsClient({ initialData }: { initialData: TmRentalRow[] }) {
+export function TmRentalsClient({ initialData, lang }: { initialData: TmRentalRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -42,7 +43,7 @@ export function TmRentalsClient({ initialData }: { initialData: TmRentalRow[] })
   const columns: DataTableColumn<TmRentalRow>[] = [
     {
       key: "rentalCode",
-      label: "TM 렌탈번호",
+      label: t("col.tmCode", lang),
       width: "160px",
       render: (v, row) => (
         <Link
@@ -55,14 +56,14 @@ export function TmRentalsClient({ initialData }: { initialData: TmRentalRow[] })
     },
     {
       key: "contractNumber",
-      label: "계약번호",
+      label: t("col.contractNumberCol", lang),
       width: "140px",
       render: (v) =>
         v ? <span className="font-mono text-[11px]">{v as string}</span> : <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "clientName",
-      label: "거래처",
+      label: t("col.client", lang),
       render: (_v, row) => (
         <div>
           <span className="font-semibold">{row.clientName}</span>{" "}
@@ -70,25 +71,25 @@ export function TmRentalsClient({ initialData }: { initialData: TmRentalRow[] })
         </div>
       ),
     },
-    { key: "startDate", label: "시작", width: "110px" },
-    { key: "endDate", label: "종료", width: "110px" },
+    { key: "startDate", label: t("col.startCol2", lang), width: "110px" },
+    { key: "endDate", label: t("col.endCol2", lang), width: "110px" },
     {
       key: "itemCount",
-      label: "품목",
+      label: t("col.itemColTm", lang),
       width: "60px",
       align: "right",
       render: (v) => <span className="font-mono text-[12px]">{v as number}</span>,
     },
     {
       key: "totalSales",
-      label: "매출 합계",
+      label: t("col.totalSalesCol", lang),
       width: "140px",
       align: "right",
       render: (v) => <span className="font-mono text-[13px] font-bold">{formatVnd(v as string)}</span>,
     },
     {
       key: "totalProfit",
-      label: "이익 합계",
+      label: t("col.totalProfitCol", lang),
       width: "140px",
       align: "right",
       render: (v) => {
@@ -101,35 +102,35 @@ export function TmRentalsClient({ initialData }: { initialData: TmRentalRow[] })
 
   return (
     <Card
-      title="TM 렌탈"
+      title={t("title.tmRentals", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "rentalCode", header: "렌탈코드" },
-              { key: "contractNumber", header: "계약번호" },
-              { key: "clientCode", header: "거래처코드" },
-              { key: "clientName", header: "거래처명" },
-              { key: "startDate", header: "시작" },
-              { key: "endDate", header: "종료" },
-              { key: "itemCount", header: "품목수" },
-              { key: "totalSales", header: "매출합계" },
-              { key: "totalProfit", header: "이익합계" },
+              { key: "rentalCode", header: t("header.tmCode", lang) },
+              { key: "contractNumber", header: t("header.contractNumberHd", lang) },
+              { key: "clientCode", header: t("header.clientCodeHd", lang) },
+              { key: "clientName", header: t("header.clientNameHd", lang) },
+              { key: "startDate", header: t("header.startHd", lang) },
+              { key: "endDate", header: t("header.endHd", lang) },
+              { key: "itemCount", header: t("header.itemCount", lang) },
+              { key: "totalSales", header: t("header.totalSales", lang) },
+              { key: "totalProfit", header: t("header.totalProfit", lang) },
             ]}
             filename="tm-rentals.xlsx"
           />
           <Link href="/rental/tm-rentals/new">
-            <Button>+ TM 렌탈 등록</Button>
+            <Button>{t("btn.tmRentalRegister", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="TM번호/계약번호/거래처 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchTm", lang)} />
       </div>
-      <DataTable columns={columns} data={filtered} rowKey={(r) => r.id} emptyMessage="등록된 TM 렌탈이 없습니다" />
+      <DataTable columns={columns} data={filtered} rowKey={(r) => r.id} emptyMessage={t("empty.tmRentals", lang)} />
     </Card>
   );
 }

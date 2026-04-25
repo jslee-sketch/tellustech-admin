@@ -24,6 +24,7 @@ export default async function NewItemPage() {
         <Card>
           <ItemForm
             mode="create"
+            lang={L}
             initial={{ itemType: "", name: "", unit: "", category: "" }}
           />
         </Card>

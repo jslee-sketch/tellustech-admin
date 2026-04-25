@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Card, Field, Multilingual, Note, Row, TextInput, Textarea } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type DelayReason = {
   id: string;
@@ -21,9 +22,10 @@ type Props = {
   dueDate: string;
   delayReasons: DelayReason[];
   currentLang: "VI" | "EN" | "KO";
+  lang: Lang;
 };
 
-export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delayReasons, currentLang }: Props) {
+export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delayReasons, currentLang, lang }: Props) {
   const router = useRouter();
   const [paid, setPaid] = useState(String(paidAmount));
   const [due, setDue] = useState(dueDate);
@@ -43,11 +45,11 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
     try {
       const n = Number(paid);
       if (!Number.isFinite(n) || n < 0) {
-        setPayError("금액 형식이 올바르지 않습니다.");
+        setPayError(t("msg.amountInvalidFormat", lang));
         return;
       }
       if (n > amount) {
-        setPayError(`총액 ${amount.toLocaleString("vi-VN")} VND 를 초과할 수 없습니다.`);
+        setPayError(t("msg.amountOver", lang).replace("{amount}", amount.toLocaleString("vi-VN")));
         return;
       }
       const res = await fetch(`/api/finance/payables/${id}`, {
@@ -57,7 +59,7 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        setPayError(j?.error ?? "저장 실패");
+        setPayError(j?.error ?? t("msg.saveFailedShort", lang));
         return;
       }
       router.refresh();
@@ -72,7 +74,7 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
     setReasonError(null);
     try {
       if (!reasonVi.trim() && !reasonEn.trim() && !reasonKo.trim()) {
-        setReasonError("하나 이상의 언어로 사유를 입력하세요.");
+        setReasonError(t("msg.delayReasonOneLang", lang));
         return;
       }
       const res = await fetch(`/api/finance/payables/${id}/delays`, {
@@ -86,7 +88,7 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        setReasonError(j?.error ?? "저장 실패");
+        setReasonError(j?.error ?? t("msg.saveFailedShort", lang));
         return;
       }
       setReasonVi("");
@@ -98,14 +100,14 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
     }
   }
 
-  const payLabel = kind === "RECEIVABLE" ? "입금" : "지급";
+  const payLabel = kind === "RECEIVABLE" ? t("field.deposit2", lang) : t("field.disbursement", lang);
 
   return (
     <div className="space-y-4">
-      <Card title={`${payLabel} 정보`}>
+      <Card title={t("section.payDeposit", lang).replace("{label}", payLabel)}>
         <form onSubmit={handleSavePay}>
           <Row>
-            <Field label={`${payLabel} 금액 (VND)`} required width="240px">
+            <Field label={`${payLabel} ${t("field.amountVnd", lang)}`} required width="240px">
               <TextInput
                 type="number"
                 step="0.01"
@@ -116,22 +118,22 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
                 required
               />
             </Field>
-            <Field label="납기" width="200px">
+            <Field label={t("col.dueDateShort", lang)} width="200px">
               <TextInput type="date" value={due} onChange={(e) => setDue(e.target.value)} />
             </Field>
           </Row>
           {payError && <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{payError}</div>}
           <div className="mt-3 flex gap-2">
             <Button type="submit" disabled={savingPay}>
-              {savingPay ? "저장 중..." : "저장"}
+              {savingPay ? t("action.saving", lang) : t("action.save", lang)}
             </Button>
           </div>
         </form>
       </Card>
 
-      <Card title="지연 사유">
+      <Card title={t("section.delayReason", lang)}>
         {delayReasons.length === 0 ? (
-          <Note tone="info">아직 등록된 지연 사유가 없습니다.</Note>
+          <Note tone="info">{t("msg.noDelayReasonYet", lang)}</Note>
         ) : (
           <ul className="space-y-2">
             {delayReasons.map((d) => (
@@ -145,27 +147,27 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
 
         <form onSubmit={handleAddReason} className="mt-4 border-t border-[color:var(--tts-border)] pt-3">
           <Note tone="info">
-            1개 언어만 입력해도 저장됩니다. (Claude API 연동 시 자동 번역 — 현재는 입력값만 저장)
+            {t("note.delayReasonOneLang", lang)}
           </Note>
           <Row>
             <Field label="VI (Tiếng Việt)">
-              <Textarea rows={2} value={reasonVi} onChange={(e) => setReasonVi(e.target.value)} placeholder="Lý do trì hoãn..." />
+              <Textarea rows={2} value={reasonVi} onChange={(e) => setReasonVi(e.target.value)} placeholder={t("placeholder.reasonVi", lang)} />
             </Field>
           </Row>
           <Row>
             <Field label="KO (한국어)">
-              <Textarea rows={2} value={reasonKo} onChange={(e) => setReasonKo(e.target.value)} placeholder="지연 사유..." />
+              <Textarea rows={2} value={reasonKo} onChange={(e) => setReasonKo(e.target.value)} placeholder={t("placeholder.reasonKo", lang)} />
             </Field>
           </Row>
           <Row>
             <Field label="EN (English)">
-              <Textarea rows={2} value={reasonEn} onChange={(e) => setReasonEn(e.target.value)} placeholder="Delay reason..." />
+              <Textarea rows={2} value={reasonEn} onChange={(e) => setReasonEn(e.target.value)} placeholder={t("placeholder.reasonEn", lang)} />
             </Field>
           </Row>
           {reasonError && <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{reasonError}</div>}
           <div className="mt-3 flex gap-2">
             <Button type="submit" disabled={savingReason} variant="accent">
-              {savingReason ? "추가 중..." : "+ 지연 사유 추가"}
+              {savingReason ? t("btn.adding", lang) : t("btn.addDelayReason", lang)}
             </Button>
           </div>
         </form>

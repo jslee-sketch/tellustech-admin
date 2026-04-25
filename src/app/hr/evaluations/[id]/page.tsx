@@ -29,27 +29,27 @@ export default async function EvaluationDetailPage({ params }: PageProps) {
           <Link href="/hr/evaluations" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.evaluations.back", L)}</Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{r.evaluationCode}</span>
-            <span className="text-[20px] text-[color:var(--tts-accent)]">{Number(r.normalizedScore).toFixed(1)}점</span>
+            <span className="text-[20px] text-[color:var(--tts-accent)]">{t("label.scorePts", L).replace("{score}", Number(r.normalizedScore).toFixed(1))}</span>
           </h1>
         </div>
-        <Card title="개요">
+        <Card title={t("section.evalOverview", L)}>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-            <dt className="text-[color:var(--tts-sub)]">평가자</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.reviewerField", L)}</dt>
             <dd>{r.reviewer.employeeCode} · {r.reviewer.nameVi}</dd>
-            <dt className="text-[color:var(--tts-sub)]">피평가자</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.subjectEvalField", L)}</dt>
             <dd>{r.subject.employeeCode} · {r.subject.nameVi}</dd>
-            <dt className="text-[color:var(--tts-sub)]">마감일</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.deadlineField", L)}</dt>
             <dd>{r.deadline.toISOString().slice(0, 10)}</dd>
-            <dt className="text-[color:var(--tts-sub)]">제출일</dt>
-            <dd>{r.submittedAt ? r.submittedAt.toISOString().slice(0, 10) : "미제출"}</dd>
-            <dt className="text-[color:var(--tts-sub)]">정규화 점수</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.submittedAtField", L)}</dt>
+            <dd>{r.submittedAt ? r.submittedAt.toISOString().slice(0, 10) : t("label.notSubmitted", L)}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.normalizedScore", L)}</dt>
             <dd className="font-bold text-[color:var(--tts-accent)]">{Number(r.normalizedScore).toFixed(2)} / 100</dd>
           </dl>
         </Card>
         <div className="mt-4">
-          <Card title="답변 (5단계: 10/8/6/4/2)">
+          <Card title={t("label.answers5Step", L)}>
             <table className="w-full text-[13px]">
-              <thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">질문</th><th className="py-2 text-right">점수</th></tr></thead>
+              <thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">{t("th.questionTh", L)}</th><th className="py-2 text-right">{t("th.scoreTh", L)}</th></tr></thead>
               <tbody>
                 {Object.entries(answers).map(([q, s]) => (
                   <tr key={q} className="border-b border-[color:var(--tts-border)]/50"><td className="py-2">{q}</td><td className="py-2 text-right font-mono">{s}</td></tr>

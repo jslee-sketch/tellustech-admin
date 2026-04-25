@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Badge, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type StockRow = {
   itemId: string;
@@ -16,7 +17,7 @@ export type StockRow = {
   onHand: number;
 };
 
-export function StockClient({ initialData }: { initialData: StockRow[] }) {
+export function StockClient({ initialData, lang }: { initialData: StockRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [onHandOnly, setOnHandOnly] = useState(false);
 
@@ -37,7 +38,7 @@ export function StockClient({ initialData }: { initialData: StockRow[] }) {
   const columns: DataTableColumn<StockRow>[] = [
     {
       key: "warehouseCode",
-      label: "창고",
+      label: t("col.warehouseStock", lang),
       width: "160px",
       render: (_, row) => (
         <div>
@@ -48,7 +49,7 @@ export function StockClient({ initialData }: { initialData: StockRow[] }) {
     },
     {
       key: "itemCode",
-      label: "품목",
+      label: t("col.itemStock", lang),
       render: (_, row) => (
         <div>
           <div className="font-semibold">{row.itemName}</div>
@@ -58,21 +59,21 @@ export function StockClient({ initialData }: { initialData: StockRow[] }) {
     },
     {
       key: "inQty",
-      label: "누적 입고",
+      label: t("col.cumIn", lang),
       width: "100px",
       align: "right",
       render: (v) => <span className="font-mono text-[12px] text-[color:var(--tts-success)]">{v as number}</span>,
     },
     {
       key: "outQty",
-      label: "누적 출고",
+      label: t("col.cumOut", lang),
       width: "100px",
       align: "right",
       render: (v) => <span className="font-mono text-[12px] text-[color:var(--tts-danger)]">{v as number}</span>,
     },
     {
       key: "onHand",
-      label: "현재 재고",
+      label: t("col.currentStock", lang),
       width: "110px",
       align: "right",
       render: (v) => {
@@ -86,39 +87,39 @@ export function StockClient({ initialData }: { initialData: StockRow[] }) {
     },
     {
       key: "onHand",
-      label: "상태",
+      label: t("col.statusStock", lang),
       width: "90px",
       render: (v) => {
         const n = v as number;
-        return n > 0 ? <Badge tone="success">재고있음</Badge> : n === 0 ? <Badge tone="neutral">0</Badge> : <Badge tone="danger">음수</Badge>;
+        return n > 0 ? <Badge tone="success">{t("label.inStock", lang)}</Badge> : n === 0 ? <Badge tone="neutral">{t("label.zeroStock", lang)}</Badge> : <Badge tone="danger">{t("label.negStock", lang)}</Badge>;
       },
     },
   ];
 
   return (
-    <Card title="실시간 재고 현황" count={filtered.length} action={
+    <Card title={t("title.stockRealtime", lang)} count={filtered.length} action={
       <ExcelDownload
         rows={filtered}
         columns={[
-          { key: "itemCode", header: "품목코드" },
-          { key: "itemName", header: "품목명" },
-          { key: "warehouseCode", header: "창고코드" },
-          { key: "warehouseName", header: "창고명" },
-          { key: "inQty", header: "입고" },
-          { key: "outQty", header: "출고" },
-          { key: "onHand", header: "재고" },
+          { key: "itemCode", header: t("header.stockItemCode", lang) },
+          { key: "itemName", header: t("header.stockItemName", lang) },
+          { key: "warehouseCode", header: t("header.stockWhCode", lang) },
+          { key: "warehouseName", header: t("header.stockWhName", lang) },
+          { key: "inQty", header: t("header.stockIn", lang) },
+          { key: "outQty", header: t("header.stockOut", lang) },
+          { key: "onHand", header: t("header.stockOnHand", lang) },
         ]}
         filename="inventory-stock.xlsx"
       />
     }>
       <div className="mb-3 flex flex-wrap gap-3">
-        <SearchBar value={q} onChange={setQ} placeholder="창고/품목 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchStock", lang)} />
         <label className="inline-flex items-center gap-2 text-[13px] text-[color:var(--tts-text)]">
           <input type="checkbox" checked={onHandOnly} onChange={(e) => setOnHandOnly(e.target.checked)} />
-          재고 있는 것만
+          {t("label.onlyInStock", lang)}
         </label>
       </div>
-      <DataTable columns={columns} data={filtered} rowKey={(s) => `${s.warehouseId}|${s.itemId}`} emptyMessage="집계된 재고가 없습니다" />
+      <DataTable columns={columns} data={filtered} rowKey={(s) => `${s.warehouseId}|${s.itemId}`} emptyMessage={t("empty.stockData", lang)} />
     </Card>
   );
 }

@@ -41,48 +41,48 @@ export default async function PayablesPage() {
           <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
           <h1 className="mt-1 text-2xl font-extrabold">{t("page.payables.title", L)}</h1>
           <div className="mt-2 text-[13px] text-[color:var(--tts-sub)]">
-            미해결 합계 <span className="ml-1 font-mono font-bold text-[color:var(--tts-danger)]">{new Intl.NumberFormat("vi-VN").format(totalOutstanding)} VND</span>
+            {t("page.payables.outstandingTotal", L)} <span className="ml-1 font-mono font-bold text-[color:var(--tts-danger)]">{new Intl.NumberFormat("vi-VN").format(totalOutstanding)} VND</span>
           </div>
         </div>
         <div className="mb-3 flex justify-end">
           <ExcelDownload
             rows={data}
             columns={[
-              { key: "kind", header: "구분" },
-              { key: "status", header: "상태" },
-              { key: "ref", header: "전표" },
-              { key: "clientLabel", header: "거래처" },
-              { key: "amount", header: "금액(VND)" },
-              { key: "paidAmount", header: "입금/지급(VND)" },
-              { key: "outstanding", header: "잔액(VND)" },
-              { key: "dueDate", header: "납기" },
+              { key: "kind", header: t("col.kind", L) },
+              { key: "status", header: t("col.statusShort", L) },
+              { key: "ref", header: t("col.refReceipt", L) },
+              { key: "clientLabel", header: t("col.client", L) },
+              { key: "amount", header: t("col.amountVndCol", L) },
+              { key: "paidAmount", header: t("col.paidVnd", L) },
+              { key: "outstanding", header: t("col.outstanding", L) },
+              { key: "dueDate", header: t("col.dueDateShort", L) },
             ]}
             filename={`payables-${new Date().toISOString().slice(0, 10)}.xlsx`}
           />
         </div>
-        <Card title="미수금/미지급금" count={data.length}>
+        <Card title={t("title.payables", L)} count={data.length}>
           <DataTable
             columns={[
-              { key: "kind", label: "구분", width: "90px", render: (v, r) => <Link href={`/finance/payables/${r.id}`} className="hover:underline"><Badge tone={v === "RECEIVABLE" ? "success" : "warn"}>{v === "RECEIVABLE" ? "미수" : "미지급"}</Badge></Link> },
-              { key: "status", label: "상태", width: "100px", render: (v) => <Badge tone={v === "PAID" ? "success" : v === "PARTIAL" ? "accent" : v === "WRITTEN_OFF" ? "neutral" : "warn"}>{v as string}</Badge> },
-              { key: "ref", label: "전표", width: "160px", render: (v, r) => <Link href={`/finance/payables/${r.id}`} className="font-mono text-[11px] text-[color:var(--tts-accent)] hover:underline">{v as string}</Link> },
-              { key: "clientLabel", label: "거래처", render: (_, r) => (
+              { key: "kind", label: t("col.kind", L), width: "90px", render: (v, r) => <Link href={`/finance/payables/${r.id}`} className="hover:underline"><Badge tone={v === "RECEIVABLE" ? "success" : "warn"}>{v === "RECEIVABLE" ? t("kind.AR", L) : t("kind.AP", L)}</Badge></Link> },
+              { key: "status", label: t("col.statusShort", L), width: "100px", render: (v) => <Badge tone={v === "PAID" ? "success" : v === "PARTIAL" ? "accent" : v === "WRITTEN_OFF" ? "neutral" : "warn"}>{v as string}</Badge> },
+              { key: "ref", label: t("col.refReceipt", L), width: "160px", render: (v, r) => <Link href={`/finance/payables/${r.id}`} className="font-mono text-[11px] text-[color:var(--tts-accent)] hover:underline">{v as string}</Link> },
+              { key: "clientLabel", label: t("col.client", L), render: (_, r) => (
                 <span>
                   {r.clientLabel}
-                  {r.clientBlocked && <span className="ml-2"><Badge tone="danger">차단</Badge></span>}
+                  {r.clientBlocked && <span className="ml-2"><Badge tone="danger">{t("label.AR_blocked", L)}</Badge></span>}
                 </span>
               ) },
-              { key: "amount", label: "금액", width: "130px", align: "right", render: (v) => <span className="font-mono text-[12px]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-              { key: "paidAmount", label: "입금/지급", width: "130px", align: "right", render: (v) => <span className="font-mono text-[12px] text-[color:var(--tts-success)]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-              { key: "outstanding", label: "잔액", width: "130px", align: "right", render: (v) => {
+              { key: "amount", label: t("field.amount", L), width: "130px", align: "right", render: (v) => <span className="font-mono text-[12px]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
+              { key: "paidAmount", label: t("col.paidVnd", L), width: "130px", align: "right", render: (v) => <span className="font-mono text-[12px] text-[color:var(--tts-success)]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
+              { key: "outstanding", label: t("field.outstanding", L), width: "130px", align: "right", render: (v) => {
                 const n = Number(v);
                 return <span className={`font-mono text-[13px] font-bold ${n > 0 ? "text-[color:var(--tts-danger)]" : ""}`}>{new Intl.NumberFormat("vi-VN").format(n)}</span>;
               } },
-              { key: "dueDate", label: "납기", width: "110px" },
+              { key: "dueDate", label: t("col.dueDateShort", L), width: "110px" },
             ]}
             data={data}
             rowKey={(r) => r.id}
-            emptyMessage="미수금/미지급 없음"
+            emptyMessage={t("empty.payables", L)}
           />
         </Card>
       </div>

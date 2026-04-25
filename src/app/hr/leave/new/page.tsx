@@ -21,7 +21,7 @@ export default async function NewLeavePage() {
         <Link href="/hr/leave" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.leave.back", L)}</Link>
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.leave.new", L)}</h1>
         <Card>
-          <LeaveNewForm employees={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))} />
+          <LeaveNewForm lang={L} employees={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))} />
         </Card>
       </div>
     </main>

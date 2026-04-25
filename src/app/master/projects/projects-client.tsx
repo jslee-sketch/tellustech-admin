@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { BadgeTone, DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type ProjectRow = {
   id: string;
@@ -21,16 +22,16 @@ const salesTone: Record<string, BadgeTone> = {
   OTHER: "neutral",
 };
 
-const salesLabel: Record<string, string> = {
-  TRADE: "판매/구매",
-  MAINTENANCE: "유지보수",
-  RENTAL: "렌탈",
-  CALIBRATION: "교정",
-  REPAIR: "수리",
-  OTHER: "기타",
+const salesShortKey: Record<string, string> = {
+  TRADE: "salesTypeShort.TRADE",
+  MAINTENANCE: "salesTypeShort.MAINTENANCE",
+  RENTAL: "salesTypeShort.RENTAL",
+  CALIBRATION: "salesTypeShort.CALIBRATION",
+  REPAIR: "salesTypeShort.REPAIR",
+  OTHER: "salesTypeShort.OTHER",
 };
 
-export function ProjectsClient({ initialData }: { initialData: ProjectRow[] }) {
+export function ProjectsClient({ initialData, lang }: { initialData: ProjectRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [type, setType] = useState("all");
 
@@ -49,7 +50,7 @@ export function ProjectsClient({ initialData }: { initialData: ProjectRow[] }) {
   const columns: DataTableColumn<ProjectRow>[] = [
     {
       key: "projectCode",
-      label: "프로젝트코드",
+      label: t("col.projectCode", lang),
       width: "140px",
       render: (v, row) => (
         <Link href={`/master/projects/${row.id}`} className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
@@ -57,7 +58,7 @@ export function ProjectsClient({ initialData }: { initialData: ProjectRow[] }) {
     },
     {
       key: "name",
-      label: "프로젝트명",
+      label: t("col.projectName", lang),
       render: (v, row) => (
         <Link href={`/master/projects/${row.id}`} className="font-semibold hover:underline">
           {v as string}
@@ -66,47 +67,48 @@ export function ProjectsClient({ initialData }: { initialData: ProjectRow[] }) {
     },
     {
       key: "salesType",
-      label: "매출유형",
+      label: t("col.salesType", lang),
       width: "140px",
       render: (v) => {
         const s = v as string;
-        return <Badge tone={salesTone[s] ?? "neutral"}>{salesLabel[s] ?? s}</Badge>;
+        const key = salesShortKey[s];
+        return <Badge tone={salesTone[s] ?? "neutral"}>{key ? t(key, lang) : s}</Badge>;
       },
     },
   ];
 
   return (
     <Card
-      title="프로젝트 관리"
+      title={t("title.projectsMgmt", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "projectCode", header: "프로젝트코드" },
-              { key: "name", header: "프로젝트명" },
-              { key: "salesType", header: "타입" },
+              { key: "projectCode", header: t("header.projectCode", lang) },
+              { key: "name", header: t("header.projectName", lang) },
+              { key: "salesType", header: t("header.salesType", lang) },
             ]}
             filename={`projects-${new Date().toISOString().slice(0, 10)}.xlsx`}
           />
           <Link href="/master/projects/new">
-            <Button>+ 프로젝트 추가</Button>
+            <Button>{t("btn.addProject", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="코드 또는 이름 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchProject", lang)} />
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 매출유형</option>
-          {Object.entries(salesLabel).map(([k, v]) => (
+          <option value="all">{t("filter.allSalesType", lang)}</option>
+          {Object.keys(salesShortKey).map((k) => (
             <option key={k} value={k}>
-              {v}
+              {t(salesShortKey[k], lang)}
             </option>
           ))}
         </select>
@@ -115,7 +117,7 @@ export function ProjectsClient({ initialData }: { initialData: ProjectRow[] }) {
         columns={columns}
         data={filtered}
         rowKey={(p) => p.id}
-        emptyMessage="등록된 프로젝트가 없습니다"
+        emptyMessage={t("empty.projects", lang)}
       />
     </Card>
   );

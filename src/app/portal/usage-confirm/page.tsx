@@ -11,11 +11,11 @@ export default async function PortalUsageConfirmPage() {
   const session = await getSession();
   const L = session.language;
   if (session.role !== "CLIENT") {
-    return <div className="p-8">고객 전용 페이지입니다.</div>;
+    return <div className="p-8">{t("msg.clientOnly", L)}</div>;
   }
   const user = await prisma.user.findUnique({ where: { id: session.sub }, include: { clientAccount: true } });
   if (!user?.clientAccount) {
-    return <div className="p-8">거래처가 연결되어 있지 않습니다.</div>;
+    return <div className="p-8">{t("msg.noClientLink", L)}</div>;
   }
   const client = user.clientAccount;
 
@@ -49,12 +49,13 @@ export default async function PortalUsageConfirmPage() {
 
         {billings.length === 0 ? (
           <Card>
-            <Note tone="info">미컨펌 빌링이 없습니다. 모든 월의 사용량 컨펌이 완료되어 있습니다.</Note>
+            <Note tone="info">{t("msg.allMonthsConfirmed", L)}</Note>
           </Card>
         ) : (
           Array.from(grouped.entries()).map(([contractNumber, items]) => (
-            <Card key={contractNumber} title={`계약 ${contractNumber}`} count={items.length}>
+            <Card key={contractNumber} title={t("label.contractLabel", L).replace("{num}", contractNumber)} count={items.length}>
               <PortalUsageConfirmForm
+                lang={L}
                 billings={items.map((b) => ({
                   id: b.id,
                   serialNumber: b.serialNumber,

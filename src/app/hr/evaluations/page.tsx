@@ -37,32 +37,32 @@ export default async function EvaluationsPage() {
                 score: Number(r.normalizedScore).toFixed(1),
               }))}
               columns={[
-                { key: "code", header: "코드" },
-                { key: "reviewer", header: "평가자" },
-                { key: "subject", header: "피평가자" },
-                { key: "deadline", header: "마감" },
-                { key: "submitted", header: "제출" },
-                { key: "score", header: "점수(100)" },
+                { key: "code", header: t("header.evalCode", L) },
+                { key: "reviewer", header: t("header.reviewer", L) },
+                { key: "subject", header: t("header.subjectEval", L) },
+                { key: "deadline", header: t("header.deadline", L) },
+                { key: "submitted", header: t("header.submitted", L) },
+                { key: "score", header: t("header.score100", L) },
               ]}
               filename="evaluations.xlsx"
             />
-            <Link href="/hr/evaluations/ai" className="rounded-md bg-[color:var(--tts-accent)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">✨ AI 종합평가</Link>
+            <Link href="/hr/evaluations/ai" className="rounded-md bg-[color:var(--tts-accent)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("btn.aiCompositeEval", L)}</Link>
             <Link href="/hr/evaluations/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("page.evaluations.new", L)}</Link>
           </div>
         </div>
-        <Card title="정기 평가" count={rows.length}>
+        <Card title={t("title.evaluationsList", L)} count={rows.length}>
           <DataTable
             columns={[
-              { key: "evaluationCode", label: "코드", width: "170px", render: (v, row) => <Link href={`/hr/evaluations/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "reviewer", label: "평가자", render: (_, row) => <span>{row.reviewer?.employeeCode} · {row.reviewer?.nameVi}</span> },
-              { key: "subject", label: "피평가자", render: (_, row) => <span>{row.subject?.employeeCode} · {row.subject?.nameVi}</span> },
-              { key: "deadline", label: "마감", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "submittedAt", label: "제출", width: "110px", render: (v) => v ? <Badge tone="success">{(v as Date).toISOString().slice(0, 10)}</Badge> : <Badge tone="warn">미제출</Badge> },
-              { key: "normalizedScore", label: "점수(100)", width: "100px", align: "right", render: (v) => <span className="font-mono font-bold">{Number(v).toFixed(1)}</span> },
+              { key: "evaluationCode", label: t("col.evalCode", L), width: "170px", render: (v, row) => <Link href={`/hr/evaluations/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
+              { key: "reviewer", label: t("col.reviewer", L), render: (_, row) => <span>{row.reviewer?.employeeCode} · {row.reviewer?.nameVi}</span> },
+              { key: "subject", label: t("col.subjectEval", L), render: (_, row) => <span>{row.subject?.employeeCode} · {row.subject?.nameVi}</span> },
+              { key: "deadline", label: t("col.deadlineCol", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
+              { key: "submittedAt", label: t("col.submittedCol", L), width: "110px", render: (v) => v ? <Badge tone="success">{(v as Date).toISOString().slice(0, 10)}</Badge> : <Badge tone="warn">{t("label.notSubmitted", L)}</Badge> },
+              { key: "normalizedScore", label: t("col.score100Col", L), width: "100px", align: "right", render: (v) => <span className="font-mono font-bold">{Number(v).toFixed(1)}</span> },
             ]}
             data={rows}
             rowKey={(r) => r.id}
-            emptyMessage="등록된 평가가 없습니다"
+            emptyMessage={t("empty.evaluations", L)}
           />
         </Card>
       </div>

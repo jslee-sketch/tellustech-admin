@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Note, Row, Select, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type ItemFormValue = {
   id?: string;
@@ -16,9 +17,10 @@ export type ItemFormValue = {
 type Props = {
   mode: "create" | "edit";
   initial: ItemFormValue;
+  lang: Lang;
 };
 
-export function ItemForm({ mode, initial }: Props) {
+export function ItemForm({ mode, initial, lang }: Props) {
   const router = useRouter();
   const [value, setValue] = useState<ItemFormValue>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -37,7 +39,7 @@ export function ItemForm({ mode, initial }: Props) {
         mode === "create" ? "/api/master/items" : `/api/master/items/${value.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
       if (!/^[\x20-\x7E]+$/.test(value.name)) {
-        setError("품목명은 영어(ASCII)로만 입력할 수 있습니다.");
+        setError(t("msg.itemAsciiOnly", lang));
         setSubmitting(false);
         return;
       }
@@ -54,13 +56,13 @@ export function ItemForm({ mode, initial }: Props) {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/items");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setSubmitting(false);
     }
@@ -68,20 +70,20 @@ export function ItemForm({ mode, initial }: Props) {
 
   async function handleDelete() {
     if (!value.id) return;
-    if (!window.confirm("이 품목을 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.itemDeleteConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/master/items/${value.id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/items");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setDeleting(false);
     }
@@ -90,42 +92,42 @@ export function ItemForm({ mode, initial }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       {mode === "create" && (
-        <Note tone="info">품목코드는 저장 시 자동 생성됩니다 — 형식: ITM-YYMMDD-###</Note>
+        <Note tone="info">{t("note.itemAutoCode", lang)}</Note>
       )}
       {mode === "edit" && value.itemCode && (
         <div className="mb-3 text-[12px] text-[color:var(--tts-muted)]">
-          품목코드: <span className="font-mono text-[color:var(--tts-primary)]">{value.itemCode}</span>
+          {t("label.itemCodeShort", lang)} <span className="font-mono text-[color:var(--tts-primary)]">{value.itemCode}</span>
         </div>
       )}
 
       <Row>
-        <Field label="구분" required width="160px">
+        <Field label={t("field.itemTypeField", lang)} required width="160px">
           <Select
             required
             value={value.itemType}
             onChange={(e) => set("itemType", e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={[
-              { value: "PRODUCT", label: "상품" },
-              { value: "CONSUMABLE", label: "소모품" },
-              { value: "PART", label: "부품" },
+              { value: "PRODUCT", label: t("itemType.PRODUCT", lang) },
+              { value: "CONSUMABLE", label: t("itemType.CONSUMABLE", lang) },
+              { value: "PART", label: t("itemType.PART", lang) },
             ]}
           />
         </Field>
-        <Field label="단위 (옵션)" width="140px" hint="예: ea, box, L">
+        <Field label={t("field.unitOpt", lang)} width="140px" hint={t("hint.unitExample", lang)}>
           <TextInput value={value.unit} onChange={(e) => set("unit", e.target.value)} placeholder="ea" />
         </Field>
-        <Field label="카테고리 (옵션)" hint="예: D330 토너, T&M">
+        <Field label={t("field.categoryOpt", lang)} hint={t("hint.categoryExample", lang)}>
           <TextInput
             value={value.category}
             onChange={(e) => set("category", e.target.value)}
-            placeholder="자유 입력"
+            placeholder={t("placeholder.note", lang)}
           />
         </Field>
       </Row>
 
       <Row>
-        <Field label="품목명 (영어 전용)" required hint="ASCII 영문·숫자·공백만 입력 가능">
+        <Field label={t("field.itemNameAscii", lang)} required hint={t("hint.itemNameAscii", lang)}>
           <TextInput
             required
             value={value.name}
@@ -144,10 +146,10 @@ export function ItemForm({ mode, initial }: Props) {
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : mode === "create" ? "품목 등록" : "수정 저장"}
+          {submitting ? t("action.saving", lang) : mode === "create" ? t("page.items.new", lang) : t("action.update", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/master/items")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
         {mode === "edit" && (
           <Button
@@ -157,7 +159,7 @@ export function ItemForm({ mode, initial }: Props) {
             disabled={deleting}
             className="ml-auto"
           >
-            {deleting ? "삭제 중..." : "삭제"}
+            {deleting ? t("action.deleting", lang) : t("action.delete", lang)}
           </Button>
         )}
       </div>
@@ -165,17 +167,17 @@ export function ItemForm({ mode, initial }: Props) {
   );
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "duplicate_code":
-      return "동일한 품목코드가 존재합니다 (자동 생성 중 충돌). 다시 시도해 주세요.";
+      return t("msg.itemDuplicate", lang);
     case "invalid_input":
-      return "입력값이 올바르지 않습니다.";
+      return t("msg.invalidInput", lang);
     case "has_dependent_rows":
-      return "이 품목에 연결된 재고·거래 이력이 있어 삭제할 수 없습니다.";
+      return t("msg.itemHasDeps", lang);
     case "not_found":
-      return "품목을 찾을 수 없습니다.";
+      return t("msg.itemNotFound", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

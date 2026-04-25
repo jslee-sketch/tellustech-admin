@@ -35,6 +35,7 @@ export default async function NewDepartmentPage() {
         <Card>
           <DepartmentForm
             mode="create"
+            lang={L}
             initial={{
               code: "",
               name: "",

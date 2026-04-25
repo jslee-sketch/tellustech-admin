@@ -27,11 +27,12 @@ export default async function ItemsPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
             {t("page.items.title", L)}
             <span className="ml-3 rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-accent)]">
-              공유 마스터
+              {t("label.sharedMaster2", L)}
             </span>
           </h1>
         </div>
         <ItemsClient
+          lang={L}
           initialData={items.map((i) => ({
             id: i.id,
             itemCode: i.itemCode,

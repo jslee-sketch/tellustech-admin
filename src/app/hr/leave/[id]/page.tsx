@@ -29,17 +29,17 @@ export default async function LeaveDetailPage({ params }: PageProps) {
             <Badge tone={tones[r.status] ?? "accent"}>{r.status}</Badge>
           </h1>
         </div>
-        <Card title="상세">
+        <Card title={t("section.leaveDetail", L)}>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-            <dt className="text-[color:var(--tts-sub)]">신청자</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.applicant", L)}</dt>
             <dd>{r.employee.employeeCode} · {r.employee.nameVi}</dd>
-            <dt className="text-[color:var(--tts-sub)]">유형</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.leaveTypeField", L)}</dt>
             <dd>{r.leaveType}</dd>
-            <dt className="text-[color:var(--tts-sub)]">기간</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.leavePeriod", L)}</dt>
             <dd>{r.startDate.toISOString().slice(0,10)} ~ {r.endDate.toISOString().slice(0,10)}</dd>
-            <dt className="text-[color:var(--tts-sub)]">일수</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.leaveDays", L)}</dt>
             <dd>{Number(r.days)}</dd>
-            <dt className="text-[color:var(--tts-sub)]">사유</dt>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.leaveReason", L)}</dt>
             <dd className="whitespace-pre-wrap">{r.reason ?? "-"}</dd>
           </dl>
         </Card>

@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
-export function PortalAsRequestForm({ clientId, defaultLang }: { clientId: string; defaultLang: string }) {
+export function PortalAsRequestForm({ clientId, defaultLang, lang }: { clientId: string; defaultLang: string; lang: Lang }) {
   const router = useRouter();
   const [serialNumber, setSerialNumber] = useState("");
   const [originalLang, setOriginalLang] = useState(defaultLang);
@@ -34,10 +35,10 @@ export function PortalAsRequestForm({ clientId, defaultLang }: { clientId: strin
       });
       const body = await res.json();
       if (!res.ok) {
-        setError("요청 저장 실패");
+        setError(t("msg.asReqFailed", lang));
         return;
       }
-      setDone(body.ticket?.ticketNumber ?? "접수됨");
+      setDone(body.ticket?.ticketNumber ?? "OK");
       setSerialNumber(""); setSymptomVi(""); setSymptomEn(""); setSymptomKo("");
       router.refresh();
     } finally {
@@ -47,17 +48,17 @@ export function PortalAsRequestForm({ clientId, defaultLang }: { clientId: strin
 
   return (
     <form onSubmit={handleSubmit}>
-      <Note tone="info">장비 S/N(선택)과 증상을 입력해 주세요. 접수 후 담당 엔지니어가 연락드립니다.</Note>
+      <Note tone="info">{t("note.asPortalNote", lang)}</Note>
       {done && (
         <div className="my-3 rounded-md bg-[color:var(--tts-success-dim)] px-3 py-2 text-[color:var(--tts-success)]">
-          ✅ 접수 완료 — 전표번호 {done}
+          {t("msg.asReceived", lang).replace("{num}", done)}
         </div>
       )}
       <Row>
-        <Field label="장비 S/N (옵션)">
+        <Field label={t("field.equipSnOpt", lang)}>
           <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="SN-..." />
         </Field>
-        <Field label="기본 언어" required width="160px">
+        <Field label={t("field.defaultLang", lang)} required width="160px">
           <Select
             required
             value={originalLang}
@@ -71,21 +72,21 @@ export function PortalAsRequestForm({ clientId, defaultLang }: { clientId: strin
         </Field>
       </Row>
       <Row>
-        <Field label="증상 (VI)">
+        <Field label={t("field.symptomVi", lang)}>
           <Textarea rows={3} value={symptomVi} onChange={(e) => setSymptomVi(e.target.value)} />
         </Field>
       </Row>
       <Row>
-        <Field label="증상 (KO)">
+        <Field label={t("field.symptomKo", lang)}>
           <Textarea rows={3} value={symptomKo} onChange={(e) => setSymptomKo(e.target.value)} />
         </Field>
-        <Field label="증상 (EN)">
+        <Field label={t("field.symptomEn", lang)}>
           <Textarea rows={3} value={symptomEn} onChange={(e) => setSymptomEn(e.target.value)} />
         </Field>
       </Row>
       {error && <div className="mt-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
       <div className="mt-3">
-        <Button type="submit" disabled={submitting}>{submitting ? "접수 중..." : "AS 접수"}</Button>
+        <Button type="submit" disabled={submitting}>{submitting ? t("btn.asReceiving", lang) : t("btn.asReceive", lang)}</Button>
       </div>
     </form>
   );

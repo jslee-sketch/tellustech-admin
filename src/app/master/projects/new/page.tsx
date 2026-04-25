@@ -24,6 +24,7 @@ export default async function NewProjectPage() {
         <Card>
           <ProjectForm
             mode="create"
+            lang={L}
             initial={{
               projectCode: "",
               name: "",

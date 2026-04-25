@@ -28,22 +28,22 @@ export default async function OnboardingDetailPage({ params }: PageProps) {
             <Badge tone={r.status === "COMPLETED" ? "success" : "accent"}>{r.status}</Badge>
           </h1>
         </div>
-        <Card title="입사자">
+        <Card title={t("section.onboardingPerson", L)}>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-            <dt className="text-[color:var(--tts-sub)]">사원코드</dt><dd className="font-mono">{r.employee.employeeCode}</dd>
-            <dt className="text-[color:var(--tts-sub)]">이름(VI)</dt><dd>{r.employee.nameVi}</dd>
-            <dt className="text-[color:var(--tts-sub)]">이름(EN)</dt><dd>{r.employee.nameEn ?? "-"}</dd>
-            <dt className="text-[color:var(--tts-sub)]">생성</dt><dd className="font-mono">{r.createdAt.toISOString().slice(0, 10)}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("label.empCodeLabel", L)}</dt><dd className="font-mono">{r.employee.employeeCode}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("label.empNameVi", L)}</dt><dd>{r.employee.nameVi}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("label.empNameEn", L)}</dt><dd>{r.employee.nameEn ?? "-"}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("label.created", L)}</dt><dd className="font-mono">{r.createdAt.toISOString().slice(0, 10)}</dd>
           </dl>
         </Card>
         <div className="mt-4">
-          <Card title="개인정보 (raw)">
+          <Card title={t("section.personalInfoRaw", L)}>
             <pre className="whitespace-pre-wrap font-mono text-[11px] text-[color:var(--tts-sub)]">{JSON.stringify(r.personalInfo ?? {}, null, 2)}</pre>
           </Card>
         </div>
         {r.education !== null && r.education !== undefined && (
           <div className="mt-4">
-            <Card title="학력">
+            <Card title={t("section.education", L)}>
               <pre className="whitespace-pre-wrap font-mono text-[11px] text-[color:var(--tts-sub)]">{JSON.stringify(r.education, null, 2)}</pre>
             </Card>
           </div>

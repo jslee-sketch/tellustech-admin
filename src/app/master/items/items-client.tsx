@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Badge, Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { BadgeTone, DataTableColumn } from "@/components/ui";
 import { ItemsImport } from "./items-import";
+import { t, type Lang } from "@/lib/i18n";
 
 export type ItemRow = {
   id: string;
@@ -21,13 +22,13 @@ const typeTone: Record<string, BadgeTone> = {
   PART: "warn",
 };
 
-const typeLabel: Record<string, string> = {
-  PRODUCT: "상품",
-  CONSUMABLE: "소모품",
-  PART: "부품",
+const typeLabelKey: Record<string, string> = {
+  PRODUCT: "itemType.PRODUCT",
+  CONSUMABLE: "itemType.CONSUMABLE",
+  PART: "itemType.PART",
 };
 
-export function ItemsClient({ initialData }: { initialData: ItemRow[] }) {
+export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [type, setType] = useState("all");
 
@@ -47,7 +48,7 @@ export function ItemsClient({ initialData }: { initialData: ItemRow[] }) {
   const columns: DataTableColumn<ItemRow>[] = [
     {
       key: "itemCode",
-      label: "품목코드",
+      label: t("col.itemCode", lang),
       width: "180px",
       render: (v, row) => (
         <Link href={`/master/items/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
@@ -55,7 +56,7 @@ export function ItemsClient({ initialData }: { initialData: ItemRow[] }) {
     },
     {
       key: "name",
-      label: "품목명",
+      label: t("col.itemNameCol", lang),
       render: (v, row) => (
         <Link href={`/master/items/${row.id}`} className="font-semibold hover:underline">
           {v as string}
@@ -64,71 +65,72 @@ export function ItemsClient({ initialData }: { initialData: ItemRow[] }) {
     },
     {
       key: "itemType",
-      label: "구분",
+      label: t("col.itemTypeCol", lang),
       width: "80px",
       render: (v) => {
         const s = v as string;
-        return <Badge tone={typeTone[s] ?? "neutral"}>{typeLabel[s] ?? s}</Badge>;
+        const key = typeLabelKey[s];
+        return <Badge tone={typeTone[s] ?? "neutral"}>{key ? t(key, lang) : s}</Badge>;
       },
     },
     {
       key: "unit",
-      label: "단위",
+      label: t("col.unit", lang),
       width: "80px",
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "category",
-      label: "카테고리",
+      label: t("col.category", lang),
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
   ];
 
   return (
     <Card
-      title="품목 관리"
+      title={t("title.itemsMgmt", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "itemCode", header: "품목코드" },
-              { key: "name", header: "품목명" },
-              { key: "itemType", header: "구분" },
-              { key: "unit", header: "단위" },
-              { key: "category", header: "카테고리" },
+              { key: "itemCode", header: t("col.itemCode", lang) },
+              { key: "name", header: t("col.itemNameCol", lang) },
+              { key: "itemType", header: t("col.itemTypeCol", lang) },
+              { key: "unit", header: t("col.unit", lang) },
+              { key: "category", header: t("col.category", lang) },
             ]}
             filename={`items-${new Date().toISOString().slice(0, 10)}.xlsx`}
             sheetName="Items"
           />
           <Link href="/master/items/new">
-            <Button>+ 품목 추가</Button>
+            <Button>{t("btn.addItemBtn", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="코드/이름/카테고리 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchItem", lang)} />
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 구분</option>
-          <option value="PRODUCT">상품</option>
-          <option value="CONSUMABLE">소모품</option>
-          <option value="PART">부품</option>
+          <option value="all">{t("filter.allTypes", lang)}</option>
+          <option value="PRODUCT">{t("itemType.PRODUCT", lang)}</option>
+          <option value="CONSUMABLE">{t("itemType.CONSUMABLE", lang)}</option>
+          <option value="PART">{t("itemType.PART", lang)}</option>
         </select>
       </div>
       <DataTable
         columns={columns}
         data={filtered}
         rowKey={(it) => it.id}
-        emptyMessage="등록된 품목이 없습니다"
+        emptyMessage={t("empty.items", lang)}
       />
       <div className="mt-4">
-        <ItemsImport />
+        <ItemsImport lang={lang} />
       </div>
     </Card>
   );

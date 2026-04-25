@@ -98,10 +98,10 @@ export default async function InventoryStockPage() {
             </h1>
           </div>
           <Link href="/inventory/transactions" className="text-[13px] text-[color:var(--tts-primary)] hover:underline">
-            {L === "VI" ? "Lịch sử xuất nhập →" : L === "EN" ? "Transaction history →" : "입출고 이력 →"}
+            {t("link.transactionHistory", L)}
           </Link>
         </div>
-        <StockClient initialData={stock} />
+        <StockClient lang={L} initialData={stock} />
 
         <div className="mt-6">
           {await renderInventoryItems(session, L)}

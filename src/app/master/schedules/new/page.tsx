@@ -22,6 +22,7 @@ export default async function NewSchedulePage() {
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.schedules.new", L)}</h1>
         <Card>
           <ScheduleNewForm
+            lang={L}
             employeeOptions={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))}
           />
         </Card>

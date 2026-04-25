@@ -34,33 +34,33 @@ export default async function LeavePage() {
                 status: r.status,
               }))}
               columns={[
-                { key: "code", header: "코드" },
-                { key: "emp", header: "직원" },
-                { key: "type", header: "유형" },
-                { key: "start", header: "시작" },
-                { key: "end", header: "종료" },
-                { key: "days", header: "일수" },
-                { key: "status", header: "상태" },
+                { key: "code", header: t("header.leaveCode", L) },
+                { key: "emp", header: t("header.employee", L) },
+                { key: "type", header: t("header.leaveType", L) },
+                { key: "start", header: t("header.startLv", L) },
+                { key: "end", header: t("header.endLv", L) },
+                { key: "days", header: t("header.daysLv", L) },
+                { key: "status", header: t("header.statusLv", L) },
               ]}
               filename="leaves.xlsx"
             />
             <Link href="/hr/leave/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("page.leave.new", L)}</Link>
           </div>
         </div>
-        <Card title="연차 신청" count={rows.length}>
+        <Card title={t("title.leaveList", L)} count={rows.length}>
           <DataTable
             columns={[
-              { key: "leaveCode", label: "코드", width: "160px", render: (v, row) => <Link href={`/hr/leave/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
-              { key: "employee", label: "직원", render: (_, r) => <span>{r.employee?.employeeCode} · {r.employee?.nameVi}</span> },
-              { key: "leaveType", label: "유형", width: "80px", render: (v) => <Badge tone="primary">{v as string}</Badge> },
-              { key: "startDate", label: "시작", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "endDate", label: "종료", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "days", label: "일수", width: "70px", align: "right", render: (v) => <span className="font-mono text-[11px]">{Number(v).toFixed(1)}</span> },
-              { key: "status", label: "상태", width: "90px", render: (v) => <Badge tone={v === "APPROVED" ? "success" : v === "REJECTED" ? "danger" : "warn"}>{v as string}</Badge> },
+              { key: "leaveCode", label: t("col.leaveCode", L), width: "160px", render: (v, row) => <Link href={`/hr/leave/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
+              { key: "employee", label: t("col.employeeHr", L), render: (_, r) => <span>{r.employee?.employeeCode} · {r.employee?.nameVi}</span> },
+              { key: "leaveType", label: t("col.leaveType", L), width: "80px", render: (v) => <Badge tone="primary">{v as string}</Badge> },
+              { key: "startDate", label: t("col.leaveStart", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
+              { key: "endDate", label: t("col.leaveEnd", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
+              { key: "days", label: t("col.leaveDays", L), width: "70px", align: "right", render: (v) => <span className="font-mono text-[11px]">{Number(v).toFixed(1)}</span> },
+              { key: "status", label: t("col.leaveStatus", L), width: "90px", render: (v) => <Badge tone={v === "APPROVED" ? "success" : v === "REJECTED" ? "danger" : "warn"}>{v as string}</Badge> },
             ]}
             data={rows}
             rowKey={(r) => r.id}
-            emptyMessage="연차 기록 없음"
+            emptyMessage={t("empty.leave", L)}
           />
         </Card>
       </div>

@@ -47,15 +47,15 @@ export default async function PayableDetailPage({ params }: PageProps) {
         <Card>
           <div className="grid grid-cols-2 gap-3 text-[13px]">
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">전표</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("col.refReceipt", L)}</div>
               <div className="font-mono font-semibold">{refNumber}</div>
             </div>
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">거래처</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("field.client", L)}</div>
               <div>{partner ? `${partner.clientCode} · ${partner.companyNameVi}` : "—"}</div>
             </div>
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">상태</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("col.statusShort", L)}</div>
               <div>
                 <Badge tone={pr.status === "PAID" ? "success" : pr.status === "PARTIAL" ? "accent" : pr.status === "WRITTEN_OFF" ? "neutral" : "warn"}>
                   {pr.status}
@@ -63,19 +63,19 @@ export default async function PayableDetailPage({ params }: PageProps) {
               </div>
             </div>
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">납기</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("col.dueDateShort", L)}</div>
               <div className="font-mono">{pr.dueDate ? pr.dueDate.toISOString().slice(0, 10) : "—"}</div>
             </div>
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">금액</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("field.amount", L)}</div>
               <div className="font-mono">{new Intl.NumberFormat("vi-VN").format(amount)} VND</div>
             </div>
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">{pr.kind === "RECEIVABLE" ? "입금" : "지급"}</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{pr.kind === "RECEIVABLE" ? t("field.deposit2", L) : t("field.disbursement", L)}</div>
               <div className="font-mono text-[color:var(--tts-success)]">{new Intl.NumberFormat("vi-VN").format(paid)} VND</div>
             </div>
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">잔액</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("field.outstanding", L)}</div>
               <div className={`font-mono font-bold ${outstanding > 0 ? "text-[color:var(--tts-danger)]" : ""}`}>
                 {new Intl.NumberFormat("vi-VN").format(outstanding)} VND
               </div>
@@ -99,12 +99,13 @@ export default async function PayableDetailPage({ params }: PageProps) {
               originalLang: d.originalLang ?? "VI",
             }))}
             currentLang={session.language}
+            lang={L}
           />
         </div>
 
         <div className="mt-4">
           <Note tone="info">
-            입금/지급 금액을 수정하면 상태가 자동 전환됩니다. 전액 입금 시 PAID, 일부 입금 시 PARTIAL, 0 시 OPEN.
+            {t("msg.payableInfoNote", L)}
           </Note>
         </div>
       </div>

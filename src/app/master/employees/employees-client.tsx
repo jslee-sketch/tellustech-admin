@@ -154,7 +154,7 @@ export function EmployeesClient({ initialData, lang }: { initialData: EmployeeRo
         emptyMessage={t("empty.employees", lang)}
       />
       <div className="mt-4">
-        <EmployeesImport />
+        <EmployeesImport lang={lang} />
       </div>
     </Card>
   );

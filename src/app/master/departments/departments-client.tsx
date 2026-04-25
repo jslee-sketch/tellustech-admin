@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type DepartmentRow = {
   id: string;
@@ -15,7 +16,7 @@ export type DepartmentRow = {
   companyCode: string;
 };
 
-export function DepartmentsClient({ initialData }: { initialData: DepartmentRow[] }) {
+export function DepartmentsClient({ initialData, lang }: { initialData: DepartmentRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [branch, setBranch] = useState<string>("all");
 
@@ -31,7 +32,7 @@ export function DepartmentsClient({ initialData }: { initialData: DepartmentRow[
   const columns: DataTableColumn<DepartmentRow>[] = [
     {
       key: "code",
-      label: "부서코드",
+      label: t("col.deptCode", lang),
       width: "120px",
       render: (v, row) => (
         <Link href={`/master/departments/${row.id}`} className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
@@ -39,7 +40,7 @@ export function DepartmentsClient({ initialData }: { initialData: DepartmentRow[
     },
     {
       key: "name",
-      label: "부서명",
+      label: t("col.deptName", lang),
       render: (v, row) => (
         <Link href={`/master/departments/${row.id}`} className="font-semibold hover:underline">
           {v as string}
@@ -48,13 +49,13 @@ export function DepartmentsClient({ initialData }: { initialData: DepartmentRow[
     },
     {
       key: "branchType",
-      label: "지점",
+      label: t("col.branch", lang),
       width: "80px",
       render: (v) => <Badge tone="primary">{v as string}</Badge>,
     },
     {
       key: "managerLabel",
-      label: "관리자",
+      label: t("col.deptManager", lang),
       render: (v) =>
         v ? (
           <span className="text-[13px]">{v as string}</span>
@@ -64,7 +65,7 @@ export function DepartmentsClient({ initialData }: { initialData: DepartmentRow[
     },
     {
       key: "companyCode",
-      label: "회사",
+      label: t("col.companyShort", lang),
       width: "60px",
       render: (v) => <Badge tone="accent">{v as string}</Badge>,
     },
@@ -72,35 +73,35 @@ export function DepartmentsClient({ initialData }: { initialData: DepartmentRow[
 
   return (
     <Card
-      title="부서(지점) 관리"
+      title={t("title.deptMgmt", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "code", header: "부서코드" },
-              { key: "name", header: "부서명" },
-              { key: "branchType", header: "지점" },
-              { key: "managerLabel", header: "부서장" },
-              { key: "companyCode", header: "회사" },
+              { key: "code", header: t("header.deptCode", lang) },
+              { key: "name", header: t("header.deptName", lang) },
+              { key: "branchType", header: t("col.branch", lang) },
+              { key: "managerLabel", header: t("header.deptHead", lang) },
+              { key: "companyCode", header: t("header.company", lang) },
             ]}
             filename={`departments-${new Date().toISOString().slice(0, 10)}.xlsx`}
           />
           <Link href="/master/departments/new">
-            <Button>+ 부서 추가</Button>
+            <Button>{t("btn.addDept", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="부서코드 또는 부서명 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchDept", lang)} />
         <select
           value={branch}
           onChange={(e) => setBranch(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 지점</option>
+          <option value="all">{t("filter.allBranches", lang)}</option>
           <option value="BN">BN (Bắc Ninh)</option>
           <option value="HN">HN (Hà Nội)</option>
           <option value="HCM">HCM (Hồ Chí Minh)</option>
@@ -112,7 +113,7 @@ export function DepartmentsClient({ initialData }: { initialData: DepartmentRow[
         columns={columns}
         data={filtered}
         rowKey={(d) => d.id}
-        emptyMessage="등록된 부서가 없습니다"
+        emptyMessage={t("empty.departments", lang)}
       />
     </Card>
   );

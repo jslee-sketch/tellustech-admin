@@ -35,6 +35,7 @@ export default async function EditItemPage({ params }: PageProps) {
         <Card>
           <ItemForm
             mode="edit"
+            lang={L}
             initial={{
               id: item.id,
               itemCode: item.itemCode,

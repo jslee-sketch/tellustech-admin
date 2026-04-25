@@ -29,12 +29,11 @@ export default async function ChatPage() {
           <Link href="/chat/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("page.chat.new", L)}</Link>
         </div>
         <Note tone="info">
-          메시지 전송 시 Claude API 로 나머지 언어 자동 번역 (API 키 설정 필요 — 없으면 원문만 저장).
-          실시간 푸시는 WebSocket 서버 가동 필요 — 현재는 전송 후 수동 새로고침 방식. 방 생성/입장은 API (<span className="font-mono">/api/chat/rooms</span>) 에서 호출.
+          {t("note.chatTranslateInfo", L)}<span className="font-mono">/api/chat/rooms</span>{t("note.chatTranslateInfoSuffix", L)}
         </Note>
-        <Card title="내 채팅방" count={rooms.length}>
+        <Card title={t("label.myChatRooms", L)} count={rooms.length}>
           {rooms.length === 0 ? (
-            <p className="text-[13px] text-[color:var(--tts-muted)]">참여 중인 채팅방이 없습니다.</p>
+            <p className="text-[13px] text-[color:var(--tts-muted)]">{t("msg.noChatRooms", L)}</p>
           ) : (
             <ul className="space-y-2">
               {rooms.map((r) => (
@@ -47,9 +46,9 @@ export default async function ChatPage() {
                       <span className="font-semibold">
                         {r.type === "DIRECT"
                           ? r.members.map((m) => m.user.username).join(", ")
-                          : r.name ?? `그룹 (${r._count.members}명)`}
+                          : r.name ?? t("label.groupCount", L).replace("{count}", String(r._count.members))}
                       </span>
-                      <span className="text-[11px] text-[color:var(--tts-muted)]">{r._count.messages} 메시지 · {r.updatedAt.toISOString().slice(0, 16).replace("T", " ")}</span>
+                      <span className="text-[11px] text-[color:var(--tts-muted)]">{t("label.messagesCount", L).replace("{count}", String(r._count.messages))} · {r.updatedAt.toISOString().slice(0, 16).replace("T", " ")}</span>
                     </div>
                   </Link>
                 </li>

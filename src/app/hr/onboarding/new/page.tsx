@@ -28,7 +28,7 @@ export default async function NewOnboardingPage() {
         <Link href="/hr/onboarding" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.onboarding.back", L)}</Link>
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.onboarding.new", L)}</h1>
         <Card>
-          <OnboardingNewForm employees={options} />
+          <OnboardingNewForm lang={L} employees={options} />
         </Card>
       </div>
     </main>

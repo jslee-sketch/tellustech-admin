@@ -21,7 +21,7 @@ export default async function NewLicensePage() {
         <Link href="/master/licenses" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.licenses.back", L)}</Link>
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.licenses.new", L)}</h1>
         <Card>
-          <LicenseNewForm employeeOptions={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))} />
+          <LicenseNewForm lang={L} employeeOptions={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))} />
         </Card>
       </div>
     </main>

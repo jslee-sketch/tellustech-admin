@@ -44,6 +44,7 @@ export default async function EditDepartmentPage({ params }: PageProps) {
         <Card>
           <DepartmentForm
             mode="edit"
+            lang={L}
             initial={{
               id: dept.id,
               code: dept.code,

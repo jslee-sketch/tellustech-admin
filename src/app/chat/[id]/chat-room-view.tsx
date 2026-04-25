@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Button, Select, Textarea } from "@/components/ui";
+import { t, type Lang as I18nLang } from "@/lib/i18n";
 
 type Lang = "VI" | "EN" | "KO";
 
@@ -22,11 +23,12 @@ type Props = {
   currentUserId: string;
   currentLanguage: Lang;
   initialMessages: Message[];
+  lang: I18nLang;
 };
 
 const LANG_LABELS: Record<Lang, string> = { VI: "Tiếng Việt", EN: "English", KO: "한국어" };
 
-export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMessages }: Props) {
+export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMessages, lang }: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [displayLang, setDisplayLang] = useState<Lang>(currentLanguage);
   const [content, setContent] = useState("");
@@ -85,8 +87,8 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
   }, [roomId]);
 
   useEffect(() => {
-    const t = setInterval(poll, 5000);
-    return () => clearInterval(t);
+    const tm = setInterval(poll, 5000);
+    return () => clearInterval(tm);
   }, [poll]);
 
   useEffect(() => {
@@ -107,7 +109,7 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        setError(j?.error ?? "전송 실패");
+        setError(j?.error ?? t("msg.sendFailed", lang));
         return;
       }
       setContent("");
@@ -133,7 +135,7 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
     <div className="flex flex-col">
       <div className="mb-3 flex items-center justify-between">
         <div className="text-[11px] text-[color:var(--tts-muted)]">
-          표시 언어 — 번역본이 없으면 원문 표시
+          {t("label.displayLang", lang)}
         </div>
         <Select
           value={displayLang}
@@ -152,7 +154,7 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
         className="h-[480px] overflow-y-auto rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3"
       >
         {messages.length === 0 ? (
-          <p className="text-center text-[12px] text-[color:var(--tts-muted)]">아직 메시지가 없습니다. 첫 메시지를 보내보세요.</p>
+          <p className="text-center text-[12px] text-[color:var(--tts-muted)]">{t("msg.noMessagesYet", lang)}</p>
         ) : (
           <ul className="space-y-2">
             {messages.map((m) => {
@@ -173,7 +175,7 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
                           onClick={() => setShowOriginal((s) => ({ ...s, [m.id]: !s[m.id] }))}
                           className="text-[10px] text-[color:var(--tts-muted)] hover:underline"
                         >
-                          {showOriginal[m.id] ? "원문 숨기기" : `원문 보기 (${LANG_LABELS[m.originalLang]})`}
+                          {showOriginal[m.id] ? t("label.hideOriginal", lang) : t("label.viewOriginal", lang).replace("{lang}", LANG_LABELS[m.originalLang])}
                         </button>
                         {showOriginal[m.id] && hasOriginalDifferent && (
                           <div className="mt-1 whitespace-pre-wrap border-t border-[color:var(--tts-border)] pt-1 text-[12px] text-[color:var(--tts-sub)]">
@@ -200,7 +202,7 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
 
       <form onSubmit={handleSend} className="mt-3">
         <div className="mb-2 flex items-center gap-2">
-          <span className="text-[11px] text-[color:var(--tts-muted)]">원문 언어</span>
+          <span className="text-[11px] text-[color:var(--tts-muted)]">{t("label.originalLangLbl", lang)}</span>
           <Select
             value={originalLang}
             onChange={(e) => setOriginalLang(e.target.value as Lang)}
@@ -211,13 +213,13 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
             ]}
             className="w-24"
           />
-          <span className="text-[10px] text-[color:var(--tts-muted)]">저장 시 Claude API가 나머지 2개 언어로 자동 번역 (API 키 없으면 원문만 저장)</span>
+          <span className="text-[10px] text-[color:var(--tts-muted)]">{t("label.aiAutoTranslateNote", lang)}</span>
         </div>
         <Textarea
           rows={2}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="메시지 입력 — Shift+Enter 줄바꿈, Enter 전송"
+          placeholder={t("placeholder.chatInput", lang)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -228,7 +230,7 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
         {error && <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
         <div className="mt-2 flex justify-end">
           <Button type="submit" disabled={sending || !content.trim()}>
-            {sending ? "전송 중..." : "전송"}
+            {sending ? t("btn.sending", lang) : t("btn.send", lang)}
           </Button>
         </div>
       </form>

@@ -35,6 +35,7 @@ export default async function EditWarehousePage({ params }: PageProps) {
         <Card>
           <WarehouseForm
             mode="edit"
+            lang={L}
             initial={{
               id: w.id,
               code: w.code,

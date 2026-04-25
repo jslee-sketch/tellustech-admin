@@ -3,45 +3,48 @@
 import { useRouter } from "next/navigation";
 import { ExcelUploader } from "@/components/ui";
 import type { UploaderColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 const INDUSTRIES = ["MANUFACTURING", "LOGISTICS", "EDUCATION", "IT", "OTHER"] as const;
 
-const columns: UploaderColumn[] = [
-  { key: "companyNameVi", header: "거래처명", required: true, validate: (raw) => ({ normalized: raw }) },
-  { key: "ceoName", header: "대표자", validate: (raw) => ({ normalized: raw }) },
-  { key: "phone", header: "전화번호", validate: (raw) => {
-      const s = raw.replace(/\s/g, "");
-      if (s && !/^[+\d\-()]{5,}$/.test(s)) return { error: "숫자/하이픈/괄호만" };
-      return { normalized: s };
+function buildColumns(lang: Lang): UploaderColumn[] {
+  return [
+    { key: "companyNameVi", header: t("header.companyNameVi", lang), required: true, validate: (raw) => ({ normalized: raw }) },
+    { key: "ceoName", header: t("header.ceoName", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "phone", header: t("header.phoneNumber", lang), validate: (raw) => {
+        const s = raw.replace(/\s/g, "");
+        if (s && !/^[+\d\-()]{5,}$/.test(s)) return { error: t("msg.phoneFormatOnly", lang) };
+        return { normalized: s };
+      },
     },
-  },
-  { key: "taxCode", header: "사업자번호", validate: (raw) => ({ normalized: raw }) },
-  { key: "address", header: "주소", validate: (raw) => ({ normalized: raw }) },
-  { key: "industry", header: "업종", validate: (raw) => {
-      const v = raw.toUpperCase();
-      if (v && !(INDUSTRIES as readonly string[]).includes(v)) return { error: INDUSTRIES.join("|") };
-      return { normalized: v };
+    { key: "taxCode", header: t("header.taxCode", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "address", header: t("header.address", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "industry", header: t("header.industry", lang), validate: (raw) => {
+        const v = raw.toUpperCase();
+        if (v && !(INDUSTRIES as readonly string[]).includes(v)) return { error: INDUSTRIES.join("|") };
+        return { normalized: v };
+      },
     },
-  },
-  { key: "paymentTerms", header: "결제조건(일)", validate: (raw) => {
-      if (!raw) return { normalized: "" };
-      const n = Number(raw);
-      if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return { error: "정수 0 이상" };
-      return { normalized: String(n) };
+    { key: "paymentTerms", header: t("header.paymentTerms", lang), validate: (raw) => {
+        if (!raw) return { normalized: "" };
+        const n = Number(raw);
+        if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return { error: t("msg.intGteZero", lang) };
+        return { normalized: String(n) };
+      },
     },
-  },
-  { key: "bankName", header: "은행명", validate: (raw) => ({ normalized: raw }) },
-  { key: "bankAccount", header: "계좌번호", validate: (raw) => ({ normalized: raw }) },
-  { key: "bankHolder", header: "예금주", validate: (raw) => ({ normalized: raw }) },
-];
+    { key: "bankName", header: t("header.bankName", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "bankAccount", header: t("header.bankAccount", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "bankHolder", header: t("header.bankHolder", lang), validate: (raw) => ({ normalized: raw }) },
+  ];
+}
 
-export function ClientsImport() {
+export function ClientsImport({ lang }: { lang: Lang }) {
   const router = useRouter();
   return (
     <ExcelUploader
-      title="거래처 일괄 업로드"
+      title={t("title.clientsImport", lang)}
       templateName="clients-template.xlsx"
-      columns={columns}
+      columns={buildColumns(lang)}
       onSave={async (rows) => {
         let ok = 0;
         let failed = 0;
@@ -68,7 +71,7 @@ export function ClientsImport() {
           router.refresh();
           return { ok: true };
         }
-        return { ok: false, message: `${ok}건 성공 · ${failed}건 실패` };
+        return { ok: false, message: t("msg.uploadResultPartial", lang).replace("{ok}", String(ok)).replace("{failed}", String(failed)) };
       }}
     />
   );

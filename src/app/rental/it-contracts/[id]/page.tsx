@@ -174,7 +174,7 @@ export default async function ItContractDetailPage({ params }: PageProps) {
         </Card>
         <div className="mt-4">
           <Card title={t("page.itContract.import", L)}>
-            <EquipmentImport contractId={contract.id} />
+            <EquipmentImport contractId={contract.id} lang={L} />
           </Card>
         </div>
 

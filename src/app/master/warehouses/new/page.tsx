@@ -24,6 +24,7 @@ export default async function NewWarehousePage() {
         <Card>
           <WarehouseForm
             mode="create"
+            lang={L}
             initial={{ code: "", name: "", warehouseType: "", branchType: "", location: "" }}
           />
         </Card>

@@ -27,7 +27,7 @@ export default async function NewOffboardingPage() {
         <Link href="/hr/offboarding" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.offboarding.back", L)}</Link>
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.offboarding.new", L)}</h1>
         <Card>
-          <OffboardingNewForm employees={options} />
+          <OffboardingNewForm lang={L} employees={options} />
         </Card>
       </div>
     </main>

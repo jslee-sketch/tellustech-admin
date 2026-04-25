@@ -34,40 +34,40 @@ export default async function LicensesPage() {
                 renewalCost: r.renewalCost ? Number(r.renewalCost) : 0,
               }))}
               columns={[
-                { key: "licenseCode", header: "라이선스코드" },
-                { key: "name", header: "라이선스명" },
-                { key: "owner", header: "담당자" },
-                { key: "acquiredAt", header: "취득일" },
-                { key: "expiresAt", header: "만료일" },
-                { key: "renewalCost", header: "갱신비용(VND)" },
+                { key: "licenseCode", header: t("header.licenseCode", L) },
+                { key: "name", header: t("header.licenseName", L) },
+                { key: "owner", header: t("header.licenseOwner", L) },
+                { key: "acquiredAt", header: t("header.acquiredAt", L) },
+                { key: "expiresAt", header: t("header.expiresAt", L) },
+                { key: "renewalCost", header: t("header.renewalCostVnd", L) },
               ]}
               filename={`licenses-${new Date().toISOString().slice(0, 10)}.xlsx`}
             />
             <Link href="/master/licenses/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("page.licenses.new", L)}</Link>
           </div>
         </div>
-        <Card title="라이선스" count={rows.length}>
+        <Card title={t("title.licenses", L)} count={rows.length}>
           <DataTable
             columns={[
-              { key: "licenseCode", label: "코드", width: "160px", render: (v, row) => <Link href={`/master/licenses/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "name", label: "라이선스명" },
-              { key: "owner", label: "담당자", render: (_, r) => r.owner ? <span>{r.owner.employeeCode} · {r.owner.nameVi}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
-              { key: "acquiredAt", label: "취득일", width: "110px", render: (v) => (v as Date).toISOString().slice(0, 10) },
-              { key: "expiresAt", label: "만료일", width: "140px", render: (v) => {
+              { key: "licenseCode", label: t("col.licenseCode", L), width: "160px", render: (v, row) => <Link href={`/master/licenses/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
+              { key: "name", label: t("col.licenseName", L) },
+              { key: "owner", label: t("col.licenseOwner", L), render: (_, r) => r.owner ? <span>{r.owner.employeeCode} · {r.owner.nameVi}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
+              { key: "acquiredAt", label: t("col.acquiredAtCol", L), width: "110px", render: (v) => (v as Date).toISOString().slice(0, 10) },
+              { key: "expiresAt", label: t("col.expiresAtCol", L), width: "140px", render: (v) => {
                 const d = v as Date;
                 const left = Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                 return (
                   <span>
                     <span className="font-mono text-[11px]">{d.toISOString().slice(0, 10)}</span>{" "}
-                    {left < 0 ? <Badge tone="danger">만료</Badge> : left < 30 ? <Badge tone="warn">D-{left}</Badge> : null}
+                    {left < 0 ? <Badge tone="danger">{t("label.expired", L)}</Badge> : left < 30 ? <Badge tone="warn">D-{left}</Badge> : null}
                   </span>
                 );
               } },
-              { key: "renewalCost", label: "갱신비용", width: "140px", align: "right", render: (v) => v ? <span className="font-mono text-[12px]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
+              { key: "renewalCost", label: t("col.renewalCost", L), width: "140px", align: "right", render: (v) => v ? <span className="font-mono text-[12px]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
             ]}
             data={rows}
             rowKey={(r) => r.id}
-            emptyMessage="등록된 라이선스 없음"
+            emptyMessage={t("empty.licenses", L)}
           />
         </Card>
       </div>

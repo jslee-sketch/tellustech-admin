@@ -42,7 +42,7 @@ export default async function ChatRoomPage({ params }: PageProps) {
           .filter((m) => m.user.id !== session.sub)
           .map((m) => m.user.username)
           .join(", ")
-      : room.name ?? `그룹 (${room.members.length}명)`;
+      : room.name ?? t("label.groupCount", L).replace("{count}", String(room.members.length));
 
   const memberLabel = room.members.map((m) => m.user.username).join(", ");
 
@@ -52,15 +52,16 @@ export default async function ChatRoomPage({ params }: PageProps) {
         <Link href="/chat" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.chat.back", L)}</Link>
         <div className="mt-1 mb-3 flex items-end justify-between">
           <h1 className="text-2xl font-extrabold">{title}</h1>
-          <span className="text-[11px] text-[color:var(--tts-muted)]">{room.type === "DIRECT" ? "1:1" : "그룹"} · {room.members.length}명</span>
+          <span className="text-[11px] text-[color:var(--tts-muted)]">{room.type === "DIRECT" ? t("label.chatRoomTypeOneOne", L) : t("label.chatRoomTypeGroup", L)} · {t("label.peopleCount", L).replace("{count}", String(room.members.length))}</span>
         </div>
-        <div className="mb-3 text-[11px] text-[color:var(--tts-sub)]">멤버: {memberLabel}</div>
+        <div className="mb-3 text-[11px] text-[color:var(--tts-sub)]">{t("label.members", L).replace("{names}", memberLabel)}</div>
 
         <Card>
           <ChatRoomView
             roomId={room.id}
             currentUserId={session.sub}
             currentLanguage={session.language}
+            lang={L}
             initialMessages={initialMessages.map((m) => ({
               id: m.id,
               senderId: m.senderId,

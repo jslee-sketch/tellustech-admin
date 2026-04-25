@@ -82,7 +82,7 @@ export default async function InventoryTransactionsPage() {
         />
         <div className="mt-4">
           <Card title={t("page.invTxn.import", L)}>
-            <InventoryImport items={items} warehouses={warehouses} clients={clients} />
+            <InventoryImport items={items} warehouses={warehouses} clients={clients} lang={L} />
           </Card>
         </div>
       </div>

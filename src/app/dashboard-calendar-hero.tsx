@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { t, type Lang } from "@/lib/i18n";
 
 type AggEvent = {
   id: string;
@@ -16,29 +17,31 @@ type AggEvent = {
   badge?: "GREEN" | "YELLOW" | "RED" | null;
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  SCHEDULE_DEADLINE: "일정 마감",
-  WEEKLY_REPORT: "회의 마감",
-  CONTRACT_EXPIRY: "IT계약 만료",
-  CERT_EXPIRY: "성적서 만료",
-  LICENSE_EXPIRY: "라이선스 만료",
-  AR_DUE: "미수금 납기",
-  LEAVE: "연차/휴가",
-  AS_DISPATCH: "AS 출동",
-  RENTAL_ORDER: "렌탈 오더",
-  BIRTHDAY: "직원 생일",
-  HOLIDAY_VN: "🇻🇳 공휴일",
-  HOLIDAY_KR: "🇰🇷 공휴일",
-  CUSTOM: "이벤트",
+const TYPE_KEY: Record<string, string> = {
+  SCHEDULE_DEADLINE: "type.SCHEDULE_DEADLINE",
+  WEEKLY_REPORT: "type.WEEKLY_REPORT",
+  CONTRACT_EXPIRY: "type.CONTRACT_EXPIRY",
+  CERT_EXPIRY: "type.CERT_EXPIRY",
+  LICENSE_EXPIRY: "type.LICENSE_EXPIRY",
+  AR_DUE: "type.AR_DUE",
+  LEAVE: "type.LEAVE",
+  AS_DISPATCH: "type.AS_DISPATCH",
+  RENTAL_ORDER: "type.RENTAL_ORDER",
+  BIRTHDAY: "type.BIRTHDAY",
+  HOLIDAY_VN: "type.HOLIDAY_VN",
+  HOLIDAY_KR: "type.HOLIDAY_KR",
+  CUSTOM: "type.CUSTOM",
 };
 
-function dateLabel(iso: string): { day: string; weekday: string; month: string } {
+const WEEKDAY_KEYS = ["weekday.sun", "weekday.mon", "weekday.tue", "weekday.wed", "weekday.thu", "weekday.fri", "weekday.sat"];
+
+function dateLabel(iso: string, lang: Lang): { day: string; weekday: string; month: string } {
   const d = new Date(iso);
-  const wk = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  const wk = t(WEEKDAY_KEYS[d.getDay()], lang);
   return {
     day: String(d.getDate()).padStart(2, "0"),
     weekday: wk,
-    month: `${d.getMonth() + 1}월`,
+    month: `${d.getMonth() + 1}${t("monthSuffix", lang)}`.trim() || `${d.getMonth() + 1}`,
   };
 }
 
@@ -49,11 +52,11 @@ function badgeColor(b: AggEvent["badge"]): string {
   return "var(--tts-sub)";
 }
 
-export function DashboardCalendarHero() {
+export function DashboardCalendarHero({ lang }: { lang: Lang }) {
   const [events, setEvents] = useState<AggEvent[]>([]);
   const [idx, setIdx] = useState(0);
   const today = useMemo(() => new Date(), []);
-  const todayLabel = useMemo(() => dateLabel(today.toISOString()), [today]);
+  const todayLabel = useMemo(() => dateLabel(today.toISOString(), lang), [today, lang]);
 
   // 향후 14일 이벤트 로드
   useEffect(() => {
@@ -81,14 +84,14 @@ export function DashboardCalendarHero() {
   const [fading, setFading] = useState(false);
   useEffect(() => {
     if (events.length <= 1) return;
-    const t = setInterval(() => {
+    const tm = setInterval(() => {
       setFading(true);
       window.setTimeout(() => {
         setIdx((i) => (i + 1) % events.length);
         setFading(false);
       }, 350); // fade-out 350ms 후 인덱스 교체
     }, 5000);
-    return () => clearInterval(t);
+    return () => clearInterval(tm);
   }, [events.length]);
 
   function jumpTo(i: number) {
@@ -98,6 +101,7 @@ export function DashboardCalendarHero() {
   }
 
   const cur = events[idx];
+  const weekdaySuffix = t("weekday.suffix", lang);
 
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
@@ -109,14 +113,14 @@ export function DashboardCalendarHero() {
         <div className="flex flex-col items-center justify-center rounded-lg bg-[color:var(--tts-accent)] px-4 py-3 text-white shadow-md">
           <div className="text-[11px] font-bold uppercase tracking-wider opacity-90">{todayLabel.month}</div>
           <div className="text-[36px] font-black leading-none">{todayLabel.day}</div>
-          <div className="text-[12px] font-bold opacity-90">{todayLabel.weekday}요일</div>
+          <div className="text-[12px] font-bold opacity-90">{todayLabel.weekday}{weekdaySuffix}</div>
         </div>
         <div className="flex-1">
-          <div className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)]">CALENDAR</div>
-          <div className="mt-1 text-[16px] font-extrabold text-[color:var(--tts-text)]">📅 통합 캘린더</div>
-          <div className="mt-1 text-[12px] text-[color:var(--tts-sub)]">12개 모듈 일정 한눈에</div>
+          <div className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)]">{t("label.calendarToday", lang)}</div>
+          <div className="mt-1 text-[16px] font-extrabold text-[color:var(--tts-text)]">{t("label.calendarHero", lang)}</div>
+          <div className="mt-1 text-[12px] text-[color:var(--tts-sub)]">{t("label.calendarHeroSub", lang)}</div>
           <div className="mt-2 inline-block rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[11px] font-bold text-[color:var(--tts-accent)]">
-            {events.length} 건 다음 14일
+            {t("label.calendarUpcoming", lang).replace("{count}", String(events.length))}
           </div>
         </div>
         <div className="text-[24px] text-[color:var(--tts-accent)] opacity-50 transition group-hover:translate-x-1 group-hover:opacity-100">→</div>
@@ -126,7 +130,7 @@ export function DashboardCalendarHero() {
       <div className="relative overflow-hidden rounded-xl border border-[color:var(--tts-border)] bg-[color:var(--tts-card)]">
         {events.length === 0 ? (
           <div className="flex h-[120px] items-center justify-center text-[13px] text-[color:var(--tts-muted)]">
-            다가오는 일정이 없습니다.
+            {t("label.calendarEmpty", lang)}
           </div>
         ) : cur ? (
           <Link
@@ -148,7 +152,7 @@ export function DashboardCalendarHero() {
               {/* 날짜 블럭 */}
               <div className="flex flex-col items-center justify-center text-center">
                 {(() => {
-                  const dl = dateLabel(cur.start);
+                  const dl = dateLabel(cur.start, lang);
                   return (
                     <>
                       <div className="text-[10px] font-bold tracking-wider text-[color:var(--tts-sub)]">{dl.month}</div>
@@ -163,11 +167,11 @@ export function DashboardCalendarHero() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: cur.color ?? "var(--tts-primary)" }}>
-                    {TYPE_LABEL[cur.type] ?? cur.type}
+                    {TYPE_KEY[cur.type] ? t(TYPE_KEY[cur.type], lang) : cur.type}
                   </span>
                   {cur.badge && (
                     <span className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: badgeColor(cur.badge) }}>
-                      {cur.badge === "RED" ? "🔴 초과" : cur.badge === "YELLOW" ? "🟡 임박" : "🟢 여유"}
+                      {cur.badge === "RED" ? t("badge.overdueShort", lang) : cur.badge === "YELLOW" ? t("badge.soonShort", lang) : t("badge.okShort", lang)}
                     </span>
                   )}
                 </div>
@@ -175,7 +179,7 @@ export function DashboardCalendarHero() {
                   {cur.title}
                 </div>
                 {cur.assignee && (
-                  <div className="mt-0.5 text-[12px] text-[color:var(--tts-sub)]">담당: {cur.assignee}</div>
+                  <div className="mt-0.5 text-[12px] text-[color:var(--tts-sub)]">{t("label.calendarAssignee", lang).replace("{name}", cur.assignee)}</div>
                 )}
               </div>
 
@@ -185,7 +189,7 @@ export function DashboardCalendarHero() {
                   <button
                     key={i}
                     type="button"
-                    aria-label={`${i + 1}번 이벤트`}
+                    aria-label={t("label.eventNumber", lang).replace("{n}", String(i + 1))}
                     onClick={(e) => { e.preventDefault(); jumpTo(i); }}
                     className="h-1.5 w-1.5 rounded-full transition"
                     style={{ background: i === idx ? "var(--tts-accent)" : "color-mix(in srgb, var(--tts-sub) 40%, transparent)" }}

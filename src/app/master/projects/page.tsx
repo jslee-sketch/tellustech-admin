@@ -33,6 +33,7 @@ export default async function ProjectsPage() {
           </h1>
         </div>
         <ProjectsClient
+          lang={L}
           initialData={projects.map((p) => ({
             id: p.id,
             projectCode: p.projectCode,

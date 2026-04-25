@@ -21,7 +21,7 @@ export default async function NewChatRoomPage() {
         <Link href="/chat" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.chat.back", L)}</Link>
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.chat.new", L)}</h1>
         <Card>
-          <ChatNewForm users={users.map((u) => ({ value: u.id, label: `${u.username} · ${u.role}` }))} />
+          <ChatNewForm lang={L} users={users.map((u) => ({ value: u.id, label: `${u.username} · ${u.role}` }))} />
         </Card>
       </div>
     </main>

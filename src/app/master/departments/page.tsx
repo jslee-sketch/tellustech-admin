@@ -23,6 +23,7 @@ export default async function DepartmentsPage() {
       <div className="mx-auto max-w-5xl">
         <Breadcrumb companyCode={session.companyCode} L={session.language} />
         <DepartmentsClient
+          lang={session.language}
           initialData={departments.map((d) => ({
             id: d.id,
             code: d.code,

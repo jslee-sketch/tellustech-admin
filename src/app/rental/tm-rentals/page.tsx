@@ -32,6 +32,7 @@ export default async function TmRentalsPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.tmRental.title", L)}</h1>
         </div>
         <TmRentalsClient
+          lang={L}
           initialData={rentals.map((r) => ({
             id: r.id,
             rentalCode: r.rentalCode,

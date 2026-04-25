@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Note, Row, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 // 거래처 최초 등록 폼 — 필수 정보만 받아 생성한 뒤, 상세 페이지로 이동해
 // CRM 6탭에서 세부 정보를 입력한다.
 
-export function ClientNewForm() {
+export function ClientNewForm({ lang }: { lang: Lang }) {
   const router = useRouter();
   const [companyNameVi, setCompanyNameVi] = useState("");
   const [companyNameEn, setCompanyNameEn] = useState("");
@@ -35,14 +36,14 @@ export function ClientNewForm() {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? "등록에 실패했습니다.");
+        setError(data.details?.message ?? t("msg.clientRegFailed", lang));
         return;
       }
       const data = (await res.json()) as { client: { id: string } };
       router.push(`/master/clients/${data.client.id}`);
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setSubmitting(false);
     }
@@ -51,12 +52,11 @@ export function ClientNewForm() {
   return (
     <form onSubmit={handleSubmit}>
       <Note tone="info">
-        거래처코드는 자동 생성됩니다 — 형식 <span className="font-mono">CL-YYMMDD-###</span>.
-        등록 후 상세 페이지에서 계좌 · 담당자 · 영업관리 · 마케팅 정보를 편집할 수 있습니다.
+        {t("note.clientAutoCode", lang)}
       </Note>
 
       <Row>
-        <Field label="거래처명 (베트남어)" required>
+        <Field label={t("field.companyNameViLong", lang)} required>
           <TextInput
             required
             value={companyNameVi}
@@ -64,7 +64,7 @@ export function ClientNewForm() {
             placeholder="CÔNG TY TNHH ..."
           />
         </Field>
-        <Field label="거래처명 (영어, 옵션)">
+        <Field label={t("field.companyNameEnOpt", lang)}>
           <TextInput
             value={companyNameEn}
             onChange={(e) => setCompanyNameEn(e.target.value)}
@@ -73,19 +73,19 @@ export function ClientNewForm() {
         </Field>
       </Row>
       <Row>
-        <Field label="MST (사업자번호)" width="200px">
+        <Field label={t("field.taxCodeMST", lang)} width="200px">
           <TextInput value={taxCode} onChange={(e) => setTaxCode(e.target.value)} placeholder="0123456789" />
         </Field>
-        <Field label="전화번호">
+        <Field label={t("field.phoneField", lang)}>
           <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="024-xxxx-xxxx" />
         </Field>
       </Row>
       <Row>
-        <Field label="주소">
+        <Field label={t("field.addrField", lang)}>
           <TextInput
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="상세 주소"
+            placeholder={t("placeholder.installAddr", lang)}
           />
         </Field>
       </Row>
@@ -98,10 +98,10 @@ export function ClientNewForm() {
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : "거래처 등록하고 상세 열기"}
+          {submitting ? t("action.saving", lang) : t("btn.clientCreateOpen", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/master/clients")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
       </div>
     </form>

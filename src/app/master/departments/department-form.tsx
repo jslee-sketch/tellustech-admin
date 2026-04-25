@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Row, Select, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 // 부서 등록/수정 공통 폼. mode 에 따라 POST/PATCH 분기.
 // managerOptions: 같은 회사 직원 목록(옵션). 지금은 간단 인라인 select.
@@ -22,9 +23,10 @@ type Props = {
   managerOptions: { value: string; label: string }[];
   sessionCompany: string;
   allowedCompanies: string[];
+  lang: Lang;
 };
 
-export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, allowedCompanies }: Props) {
+export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, allowedCompanies, lang }: Props) {
   const router = useRouter();
   const [value, setValue] = useState<DepartmentFormValue>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -59,13 +61,13 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/departments");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setSubmitting(false);
     }
@@ -73,20 +75,20 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
 
   async function handleDelete() {
     if (!value.id) return;
-    if (!window.confirm("이 부서를 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.deptDeleteConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/master/departments/${value.id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/departments");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setDeleting(false);
     }
@@ -97,7 +99,7 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
   return (
     <form onSubmit={handleSubmit}>
       <Row>
-        <Field label="회사코드" required width="180px">
+        <Field label={t("field.companyCode", lang)} required width="180px">
           {companyEditable ? (
             <Select
               required
@@ -109,12 +111,12 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
             <TextInput value={value.companyCode} disabled />
           )}
         </Field>
-        <Field label="지점 구분" required width="200px">
+        <Field label={t("field.branchKind", lang)} required width="200px">
           <Select
             required
             value={value.branchType}
             onChange={(e) => set("branchType", e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={[
               { value: "BN", label: "BN (Bắc Ninh)" },
               { value: "HN", label: "HN (Hà Nội)" },
@@ -127,7 +129,7 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
       </Row>
 
       <Row>
-        <Field label="부서코드" required hint="예: TVBN, VRHCM" width="220px">
+        <Field label={t("field.deptCodeField", lang)} required hint={t("hint.deptCodeExample", lang)} width="220px">
           <TextInput
             required
             value={value.code}
@@ -135,22 +137,22 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
             placeholder="TVBN"
           />
         </Field>
-        <Field label="부서명" required>
+        <Field label={t("field.deptNameField", lang)} required>
           <TextInput
             required
             value={value.name}
             onChange={(e) => set("name", e.target.value)}
-            placeholder="TV 박닌 본사"
+            placeholder={t("placeholder.deptNameExample", lang)}
           />
         </Field>
       </Row>
 
       <Row>
-        <Field label="관리자 (옵션)" hint="부서장 역할 직원 선택">
+        <Field label={t("field.managerOpt", lang)} hint={t("hint.deptManagerHint", lang)}>
           <Select
             value={value.managerId ?? ""}
             onChange={(e) => set("managerId", e.target.value || null)}
-            placeholder="선택 안 함"
+            placeholder={t("placeholder.notSelectedShort", lang)}
             options={managerOptions}
           />
         </Field>
@@ -164,10 +166,10 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : mode === "create" ? "부서 등록" : "수정 저장"}
+          {submitting ? t("action.saving", lang) : mode === "create" ? t("btn.deptRegister", lang) : t("action.update", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/master/departments")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
         {mode === "edit" && (
           <Button
@@ -177,7 +179,7 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
             disabled={deleting}
             className="ml-auto"
           >
-            {deleting ? "삭제 중..." : "삭제"}
+            {deleting ? t("action.deleting", lang) : t("action.delete", lang)}
           </Button>
         )}
       </div>
@@ -187,23 +189,23 @@ export function DepartmentForm({ mode, initial, managerOptions, sessionCompany, 
   );
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "duplicate_code":
-      return "해당 회사에 동일한 부서코드가 이미 존재합니다.";
+      return t("msg.deptDup", lang);
     case "invalid_input":
-      return "입력값이 올바르지 않습니다.";
+      return t("msg.invalidInput", lang);
     case "invalid_manager":
-      return "선택한 관리자는 이 회사 소속이 아닙니다.";
+      return t("msg.deptInvalidMgr", lang);
     case "company_not_allowed":
-      return "선택한 회사에 권한이 없습니다.";
+      return t("msg.companyForbidden", lang);
     case "has_dependent_employees":
-      return "이 부서에 배정된 직원이 있어 삭제할 수 없습니다.";
+      return t("msg.deptHasEmployees", lang);
     case "forbidden":
-      return "권한이 없습니다.";
+      return t("msg.forbidden", lang);
     case "not_found":
-      return "부서를 찾을 수 없습니다.";
+      return t("msg.deptNotFound", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

@@ -24,14 +24,15 @@ export default async function AiEvaluationPage() {
           <Link href="/hr/evaluations" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.evaluations.back", L)}</Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
             {t("page.evaluations.ai", L)}
-            <span className="ml-3 rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[11px] text-[color:var(--tts-accent)]">Beta</span>
+            <span className="ml-3 rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[11px] text-[color:var(--tts-accent)]">{t("label.aiBeta", L)}</span>
           </h1>
           <p className="mt-1 text-[12px] text-[color:var(--tts-sub)]">
-            9지표 가중합 + Claude API 사건/편향 분석. API 키 없으면 규칙기반 점수만 산출.
+            {t("label.aiDescription", L)}
           </p>
         </div>
         <Card>
           <AiEvaluationClient
+            lang={L}
             employees={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))}
           />
         </Card>

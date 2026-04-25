@@ -22,6 +22,7 @@ export default async function NewIncidentPage() {
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.incidents.new", L)}</h1>
         <Card>
           <IncidentNewForm
+            lang={L}
             defaultLang={session.language}
             subjectOptions={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))}
           />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { t } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 import { Badge, Card, DataTable } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export default async function AuditLogsPage() {
     return (
       <main className="flex-1 p-8">
         <div className="mx-auto max-w-3xl">
-          <Card title="접근 제한">관리자(ADMIN)만 접근 가능한 페이지입니다.</Card>
+          <Card title={t("label.accessRestricted", L)}>{t("msg.adminOnly", L)}</Card>
         </div>
       </main>
     );
@@ -33,7 +33,7 @@ export default async function AuditLogsPage() {
     tableName: l.tableName,
     action: l.action,
     recordId: l.recordId,
-    beforeAfter: summarizeChange(l.before, l.after, l.action),
+    beforeAfter: summarizeChange(l.before, l.after, l.action, L),
   }));
 
   return (
@@ -42,17 +42,17 @@ export default async function AuditLogsPage() {
         <div className="mb-6">
           <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
           <h1 className="mt-1 text-2xl font-extrabold">{t("page.audit.title", L)}</h1>
-          <div className="mt-1 text-[12px] text-[color:var(--tts-muted)]">모든 INSERT/UPDATE/DELETE 기록 · 최근 300건</div>
+          <div className="mt-1 text-[12px] text-[color:var(--tts-muted)]">{t("label.auditNote", L)}</div>
         </div>
         <Card count={rows.length}>
           <DataTable
             columns={[
-              { key: "occurredAt", label: "시각", width: "170px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
-              { key: "companyCode", label: "회사", width: "60px" },
-              { key: "username", label: "사용자", width: "120px" },
+              { key: "occurredAt", label: t("col.auditTime", L), width: "170px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
+              { key: "companyCode", label: t("col.auditCompany", L), width: "60px" },
+              { key: "username", label: t("col.auditUser", L), width: "120px" },
               {
                 key: "action",
-                label: "작업",
+                label: t("col.auditAction", L),
                 width: "80px",
                 render: (v) => {
                   const s = v as string;
@@ -60,11 +60,11 @@ export default async function AuditLogsPage() {
                   return <Badge tone={tone}>{s}</Badge>;
                 },
               },
-              { key: "tableName", label: "테이블", width: "160px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
-              { key: "recordId", label: "Record ID", width: "220px", render: (v) => <span className="font-mono text-[10px] text-[color:var(--tts-muted)]">{v as string}</span> },
+              { key: "tableName", label: t("col.auditTable", L), width: "160px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
+              { key: "recordId", label: t("col.auditRecordId", L), width: "220px", render: (v) => <span className="font-mono text-[10px] text-[color:var(--tts-muted)]">{v as string}</span> },
               {
                 key: "beforeAfter",
-                label: "변경 내용",
+                label: t("col.auditChange", L),
                 render: (_, r) => (
                   <pre className="whitespace-pre-wrap text-[10px] text-[color:var(--tts-sub)]">{r.beforeAfter}</pre>
                 ),
@@ -72,7 +72,7 @@ export default async function AuditLogsPage() {
             ]}
             data={rows}
             rowKey={(r) => r.id}
-            emptyMessage="기록된 감사 로그가 없습니다"
+            emptyMessage={t("empty.auditLogs", L)}
           />
         </Card>
       </div>
@@ -80,7 +80,7 @@ export default async function AuditLogsPage() {
   );
 }
 
-function summarizeChange(before: unknown, after: unknown, action: string): string {
+function summarizeChange(before: unknown, after: unknown, action: string, lang: Lang): string {
   if (action === "INSERT") {
     return "+ " + JSON.stringify(truncate(after), null, 0);
   }
@@ -97,7 +97,7 @@ function summarizeChange(before: unknown, after: unknown, action: string): strin
         diffs.push(`${k}: ${JSON.stringify(b[k])} → ${JSON.stringify(a[k])}`);
       }
     }
-    return diffs.length === 0 ? "(변경 없음)" : diffs.slice(0, 5).join("\n");
+    return diffs.length === 0 ? t("label.auditNoChange", lang) : diffs.slice(0, 5).join("\n");
   }
   return "";
 }

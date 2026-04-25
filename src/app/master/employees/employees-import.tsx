@@ -4,53 +4,54 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ExcelUploader } from "@/components/ui";
 import type { UploaderColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type RefData = { departmentCodes: string[] };
 
 const ROLES = ["ADMIN", "MANAGER", "SALES", "TECH", "CALIBRATION", "ACCOUNTING", "HR"] as const;
 
-function buildColumns(ref: RefData): UploaderColumn[] {
+function buildColumns(ref: RefData, lang: Lang): UploaderColumn[] {
   return [
-    { key: "nameVi", header: "성명", required: true, validate: (raw) => ({ normalized: raw }) },
-    { key: "departmentCode", header: "부서코드", required: true, validate: (raw) => {
-        if (!ref.departmentCodes.includes(raw)) return { error: `부서 없음. 유효: ${ref.departmentCodes.slice(0, 5).join(", ")}...` };
+    { key: "nameVi", header: t("header.empName", lang), required: true, validate: (raw) => ({ normalized: raw }) },
+    { key: "departmentCode", header: t("header.deptCodeRef", lang), required: true, validate: (raw) => {
+        if (!ref.departmentCodes.includes(raw)) return { error: t("msg.deptCodeNotFound", lang).replace("{sample}", ref.departmentCodes.slice(0, 5).join(", ")) };
         return { normalized: raw };
       },
     },
-    { key: "position", header: "직책", validate: (raw) => ({ normalized: raw }) },
-    { key: "role", header: "권한", validate: (raw) => {
+    { key: "position", header: t("header.position", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "role", header: t("header.role", lang), validate: (raw) => {
         const v = raw.toUpperCase();
         if (v && !(ROLES as readonly string[]).includes(v)) return { error: ROLES.join("|") };
         return { normalized: v };
       },
     },
-    { key: "hireDate", header: "입사일", validate: (raw) => {
+    { key: "hireDate", header: t("header.hireDate", lang), validate: (raw) => {
         if (!raw) return { normalized: "" };
         if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: "YYYY-MM-DD" };
         return { normalized: raw };
       },
     },
-    { key: "phone", header: "전화번호", validate: (raw) => ({ normalized: raw.replace(/\s/g, "") }) },
-    { key: "idCardNumber", header: "CCCD", validate: (raw) => ({ normalized: raw }) },
-    { key: "dateOfBirth", header: "생년월일", validate: (raw) => {
+    { key: "phone", header: t("header.phoneNumberCol", lang), validate: (raw) => ({ normalized: raw.replace(/\s/g, "") }) },
+    { key: "idCardNumber", header: t("header.idCardNumber", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "dateOfBirth", header: t("header.dateOfBirth", lang), validate: (raw) => {
         if (!raw) return { normalized: "" };
         if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: "YYYY-MM-DD" };
         return { normalized: raw };
       },
     },
-    { key: "salary", header: "기본급", validate: (raw) => {
+    { key: "salary", header: t("header.salary", lang), validate: (raw) => {
         if (!raw) return { normalized: "" };
         const n = Number(raw);
-        if (!Number.isFinite(n) || n < 0) return { error: "숫자 0 이상" };
+        if (!Number.isFinite(n) || n < 0) return { error: t("msg.numberGteZero", lang) };
         return { normalized: String(n) };
       },
     },
-    { key: "bankName", header: "은행명", validate: (raw) => ({ normalized: raw }) },
-    { key: "bankAccount", header: "계좌번호", validate: (raw) => ({ normalized: raw }) },
+    { key: "bankName", header: t("header.bankNameCol", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "bankAccount", header: t("header.bankAccountCol", lang), validate: (raw) => ({ normalized: raw }) },
   ];
 }
 
-export function EmployeesImport() {
+export function EmployeesImport({ lang }: { lang: Lang }) {
   const router = useRouter();
   const [ref, setRef] = useState<RefData | null>(null);
 
@@ -64,13 +65,13 @@ export function EmployeesImport() {
       .catch(() => setRef({ departmentCodes: [] }));
   }, []);
 
-  if (!ref) return <div className="text-[12px] text-[color:var(--tts-muted)]">참조 데이터 로드 중...</div>;
+  if (!ref) return <div className="text-[12px] text-[color:var(--tts-muted)]">{t("msg.refLoading", lang)}</div>;
 
   return (
     <ExcelUploader
-      title="직원 일괄 업로드"
+      title={t("title.employeesImport", lang)}
       templateName="employees-template.xlsx"
-      columns={buildColumns(ref)}
+      columns={buildColumns(ref, lang)}
       onSave={async (rows) => {
         let ok = 0;
         let failed = 0;
@@ -98,7 +99,7 @@ export function EmployeesImport() {
           router.refresh();
           return { ok: true };
         }
-        return { ok: false, message: `${ok}건 성공 · ${failed}건 실패` };
+        return { ok: false, message: t("msg.uploadResultPartial", lang).replace("{ok}", String(ok)).replace("{failed}", String(failed)) };
       }}
     />
   );

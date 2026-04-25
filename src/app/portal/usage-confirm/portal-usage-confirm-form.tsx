@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, Note } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type Billing = {
   id: string;
@@ -13,7 +14,7 @@ type Billing = {
   computedAmount: string | null;
 };
 
-export function PortalUsageConfirmForm({ billings }: { billings: Billing[] }) {
+export function PortalUsageConfirmForm({ billings, lang }: { billings: Billing[]; lang: Lang }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export function PortalUsageConfirmForm({ billings }: { billings: Billing[] }) {
   function captureSignature(billingId: string) {
     // 간이 전자서명 — 사용자가 이름을 입력하면 그것을 base64 텍스트로 저장.
     // 본격 캔버스 서명은 components/signature-canvas.tsx 로 추후 통합.
-    const name = prompt("성함을 입력하시면 전자서명으로 처리됩니다");
+    const name = prompt(t("msg.signaturePromptName", lang));
     if (!name) return;
     const stamp = `signed:${name}@${new Date().toISOString()}`;
     const b64 = typeof window !== "undefined" ? window.btoa(unescape(encodeURIComponent(stamp))) : stamp;
@@ -32,7 +33,7 @@ export function PortalUsageConfirmForm({ billings }: { billings: Billing[] }) {
   async function confirm(billingId: string) {
     const sig = signaturePreview[billingId];
     if (!sig) {
-      setError("먼저 전자서명을 입력해 주세요.");
+      setError(t("msg.signFirst", lang));
       return;
     }
     setBusy(billingId);
@@ -45,7 +46,7 @@ export function PortalUsageConfirmForm({ billings }: { billings: Billing[] }) {
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body?.error ?? "컨펌 실패");
+        setError(body?.error ?? t("msg.confirmFailed", lang));
         return;
       }
       router.refresh();
@@ -60,12 +61,12 @@ export function PortalUsageConfirmForm({ billings }: { billings: Billing[] }) {
       <table className="w-full text-[13px]">
         <thead>
           <tr className="text-left text-[color:var(--tts-muted)]">
-            <th className="py-1">월</th>
-            <th>S/N</th>
-            <th className="text-right">흑백</th>
-            <th className="text-right">컬러</th>
-            <th className="text-right">청구액</th>
-            <th>컨펌</th>
+            <th className="py-1">{t("th.month", lang)}</th>
+            <th>{t("th.snTM", lang)}</th>
+            <th className="text-right">{t("th.bw", lang)}</th>
+            <th className="text-right">{t("th.color", lang)}</th>
+            <th className="text-right">{t("th.chargeAmount", lang)}</th>
+            <th>{t("th.confirmCol", lang)}</th>
           </tr>
         </thead>
         <tbody>
@@ -82,10 +83,10 @@ export function PortalUsageConfirmForm({ billings }: { billings: Billing[] }) {
                   onClick={() => captureSignature(b.id)}
                   className="text-[color:var(--tts-primary)] hover:underline"
                 >
-                  서명 {signaturePreview[b.id] ? "✓" : ""}
+                  {t("label.signature", lang)} {signaturePreview[b.id] ? "✓" : ""}
                 </button>
                 <Button onClick={() => confirm(b.id)} disabled={busy === b.id || !signaturePreview[b.id]}>
-                  {busy === b.id ? "..." : "확인"}
+                  {busy === b.id ? "..." : t("btn.confirmShort", lang)}
                 </Button>
               </td>
             </tr>

@@ -122,7 +122,7 @@ export default async function Home() {
         </div>
 
         {/* 캘린더 히어로 — 좌: 오늘 캘린더 미니 카드, 우: 다가오는 일정 자동 캐러셀 */}
-        <DashboardCalendarHero />
+        <DashboardCalendarHero lang={L} />
 
         {/* KPI */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">

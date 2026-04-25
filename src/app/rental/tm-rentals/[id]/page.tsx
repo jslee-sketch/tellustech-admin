@@ -107,7 +107,7 @@ export default async function TmRentalDetailPage({ params }: PageProps) {
         </Card>
         <div className="mt-4">
           <Card title={t("page.tmRental.import", L)}>
-            <TmItemsImport rentalId={rental.id} />
+            <TmItemsImport rentalId={rental.id} lang={L} />
           </Card>
         </div>
       </div>

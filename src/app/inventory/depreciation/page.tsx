@@ -41,6 +41,7 @@ export default async function DepreciationPage() {
         </div>
         <Card>
           <DepreciationClient
+            lang={L}
             initialData={rows.map((r) => ({
               id: r.id,
               itemCode: r.item.itemCode,

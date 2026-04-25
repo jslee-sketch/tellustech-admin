@@ -31,29 +31,29 @@ export default async function ExpenseDetailPage({ params }: PageProps) {
             <span className="text-[16px] text-[color:var(--tts-accent)]">{Number(r.amount).toLocaleString()} {r.currency}</span>
           </h1>
         </div>
-        <Card title="개요">
+        <Card title={t("section.expenseOverview", L)}>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-            <dt className="text-[color:var(--tts-sub)]">유형</dt><dd>{r.expenseType}</dd>
-            <dt className="text-[color:var(--tts-sub)]">금액</dt><dd className="font-mono">{Number(r.amount).toLocaleString()} {r.currency}</dd>
-            <dt className="text-[color:var(--tts-sub)]">환율</dt><dd className="font-mono">{Number(r.fxRate)}</dd>
-            <dt className="text-[color:var(--tts-sub)]">발생일</dt><dd className="font-mono">{r.incurredAt.toISOString().slice(0, 10)}</dd>
-            <dt className="text-[color:var(--tts-sub)]">연관 매출</dt><dd className="font-mono">{r.linkedSalesId ?? "-"}</dd>
-            <dt className="text-[color:var(--tts-sub)]">연관 매입</dt><dd className="font-mono">{r.linkedPurchaseId ?? "-"}</dd>
-            <dt className="text-[color:var(--tts-sub)]">비고</dt><dd>{r.note ?? "-"}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.expType", L)}</dt><dd>{r.expenseType}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.amountField", L)}</dt><dd className="font-mono">{Number(r.amount).toLocaleString()} {r.currency}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.fxRateField", L)}</dt><dd className="font-mono">{Number(r.fxRate)}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("col.incurredAt", L)}</dt><dd className="font-mono">{r.incurredAt.toISOString().slice(0, 10)}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.linkedSalesField", L)}</dt><dd className="font-mono">{r.linkedSalesId ?? "-"}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.linkedPurchaseField", L)}</dt><dd className="font-mono">{r.linkedPurchaseId ?? "-"}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.noteField", L)}</dt><dd>{r.note ?? "-"}</dd>
           </dl>
         </Card>
         <div className="mt-4">
-          <Card title={`배분 (${r.allocations.length})`}>
-            {r.allocations.length === 0 ? <div className="text-[12px] text-[color:var(--tts-muted)]">배분 내역 없음</div> : (
-              <table className="w-full text-[12px]"><thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">프로젝트</th><th className="py-2 text-left">부서</th><th className="py-2 text-left">기준</th><th className="py-2 text-right">비율</th><th className="py-2 text-right">금액</th></tr></thead><tbody>
+          <Card title={t("label.allocations", L).replace("{count}", String(r.allocations.length))}>
+            {r.allocations.length === 0 ? <div className="text-[12px] text-[color:var(--tts-muted)]">{t("msg.noAllocations", L)}</div> : (
+              <table className="w-full text-[12px]"><thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">{t("th.projectId", L)}</th><th className="py-2 text-left">{t("th.departmentId", L)}</th><th className="py-2 text-left">{t("th.basis", L)}</th><th className="py-2 text-right">{t("th.weight", L)}</th><th className="py-2 text-right">{t("th.amountTh", L)}</th></tr></thead><tbody>
                 {r.allocations.map((a) => (<tr key={a.id} className="border-b border-[color:var(--tts-border)]/50"><td className="py-2 font-mono">{a.projectId ?? "-"}</td><td className="py-2 font-mono">{a.departmentId ?? "-"}</td><td className="py-2">{a.basis}</td><td className="py-2 text-right font-mono">{Number(a.weight)}</td><td className="py-2 text-right font-mono">{Number(a.amount).toLocaleString()}</td></tr>))}
               </tbody></table>
             )}
           </Card>
         </div>
         <div className="mt-4">
-          <Card title={`미지급 (${r.payables.length})`}>
-            {r.payables.length === 0 ? <div className="text-[12px] text-[color:var(--tts-muted)]">미지급 없음</div> : (
+          <Card title={t("label.payablesCount", L).replace("{count}", String(r.payables.length))}>
+            {r.payables.length === 0 ? <div className="text-[12px] text-[color:var(--tts-muted)]">{t("msg.noPayables", L)}</div> : (
               <ul className="space-y-1 text-[12px]">{r.payables.map((p) => <li key={p.id} className="font-mono">{p.status} · {Number(p.amount).toLocaleString()} (paid {Number(p.paidAmount).toLocaleString()})</li>)}</ul>
             )}
           </Card>

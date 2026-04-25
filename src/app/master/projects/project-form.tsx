@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Row, Select, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type ProjectFormValue = {
   id?: string;
@@ -16,18 +17,19 @@ type Props = {
   mode: "create" | "edit";
   initial: ProjectFormValue;
   allowedCompanies: string[];
+  lang: Lang;
 };
 
-const SALES_OPTIONS = [
-  { value: "TRADE", label: "판매/구매 (재고영향)" },
-  { value: "MAINTENANCE", label: "유지보수 (기간)" },
-  { value: "RENTAL", label: "렌탈 (기간)" },
-  { value: "CALIBRATION", label: "교정 (성적서)" },
-  { value: "REPAIR", label: "수리" },
-  { value: "OTHER", label: "기타" },
+const SALES_OPTION_KEYS: { value: string; key: string }[] = [
+  { value: "TRADE", key: "salesTypeFull.TRADE" },
+  { value: "MAINTENANCE", key: "salesTypeFull.MAINTENANCE" },
+  { value: "RENTAL", key: "salesTypeFull.RENTAL" },
+  { value: "CALIBRATION", key: "salesTypeFull.CALIBRATION" },
+  { value: "REPAIR", key: "salesTypeFull.REPAIR" },
+  { value: "OTHER", key: "salesTypeFull.OTHER" },
 ];
 
-export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
+export function ProjectForm({ mode, initial, allowedCompanies, lang }: Props) {
   const router = useRouter();
   const [value, setValue] = useState<ProjectFormValue>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -58,13 +60,13 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/projects");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setSubmitting(false);
     }
@@ -72,20 +74,20 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
 
   async function handleDelete() {
     if (!value.id) return;
-    if (!window.confirm("이 프로젝트를 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.projectDeleteConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/master/projects/${value.id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/projects");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setDeleting(false);
     }
@@ -96,7 +98,7 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       <Row>
-        <Field label="회사코드" required width="180px">
+        <Field label={t("field.companyCode", lang)} required width="180px">
           {companyEditable ? (
             <Select
               required
@@ -108,7 +110,7 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
             <TextInput value={value.companyCode} disabled />
           )}
         </Field>
-        <Field label="프로젝트코드" required hint="예: IT0003, TM_R" width="220px">
+        <Field label={t("field.projectCodeField", lang)} required hint={t("hint.projectCodeExample", lang)} width="220px">
           <TextInput
             required
             value={value.projectCode}
@@ -117,18 +119,18 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
             disabled={mode === "edit"}
           />
         </Field>
-        <Field label="매출유형" required width="180px">
+        <Field label={t("field.salesTypeField", lang)} required width="180px">
           <Select
             required
             value={value.salesType}
             onChange={(e) => set("salesType", e.target.value)}
-            placeholder="선택"
-            options={SALES_OPTIONS}
+            placeholder={t("placeholder.select", lang)}
+            options={SALES_OPTION_KEYS.map((o) => ({ value: o.value, label: t(o.key, lang) }))}
           />
         </Field>
       </Row>
       <Row>
-        <Field label="프로젝트명" required>
+        <Field label={t("field.projectNameField", lang)} required>
           <TextInput
             required
             value={value.name}
@@ -146,10 +148,10 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : mode === "create" ? "프로젝트 등록" : "수정 저장"}
+          {submitting ? t("action.saving", lang) : mode === "create" ? t("btn.projectRegister", lang) : t("action.update", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/master/projects")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
         {mode === "edit" && (
           <Button
@@ -159,7 +161,7 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
             disabled={deleting}
             className="ml-auto"
           >
-            {deleting ? "삭제 중..." : "삭제"}
+            {deleting ? t("action.deleting", lang) : t("action.delete", lang)}
           </Button>
         )}
       </div>
@@ -167,19 +169,19 @@ export function ProjectForm({ mode, initial, allowedCompanies }: Props) {
   );
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "duplicate_code":
-      return "해당 회사에 동일한 프로젝트코드가 존재합니다.";
+      return t("msg.projectDup", lang);
     case "invalid_input":
-      return "입력값이 올바르지 않습니다.";
+      return t("msg.invalidInput", lang);
     case "company_not_allowed":
-      return "선택한 회사에 권한이 없습니다.";
+      return t("msg.companyForbidden", lang);
     case "has_dependent_rows":
-      return "이 프로젝트에 연결된 매출/매입이 있어 삭제할 수 없습니다.";
+      return t("msg.projectHasDeps", lang);
     case "not_found":
-      return "프로젝트를 찾을 수 없습니다.";
+      return t("msg.projectNotFound", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

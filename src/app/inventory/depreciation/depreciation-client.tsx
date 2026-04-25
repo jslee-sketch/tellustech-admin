@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { Badge, Button, DataTable, Field, Note, Row, SectionTitle, Select, TextInput } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type DepRow = {
   id: string;
@@ -28,9 +29,11 @@ function formatVnd(raw: string | number): string {
 export function DepreciationClient({
   initialData,
   itemOptions,
+  lang,
 }: {
   initialData: DepRow[];
   itemOptions: { value: string; label: string }[];
+  lang: Lang;
 }) {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
@@ -79,7 +82,7 @@ export function DepreciationClient({
       });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.details?.message ?? "등록 실패");
+        setError(body.details?.message ?? t("msg.assetRegFailed", lang));
         return;
       }
       setShowAdd(false);
@@ -100,13 +103,13 @@ export function DepreciationClient({
   const columns: DataTableColumn<DepRow>[] = [
     {
       key: "serialNumber",
-      label: "S/N",
+      label: t("col.serial", lang),
       width: "160px",
       render: (v) => <span className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)]">{v as string}</span>,
     },
     {
       key: "itemName",
-      label: "품목",
+      label: t("col.itemColShort", lang),
       render: (_, row) => (
         <div>
           <div className="font-semibold">{row.itemName}</div>
@@ -114,28 +117,28 @@ export function DepreciationClient({
         </div>
       ),
     },
-    { key: "acquisitionDate", label: "취득일", width: "110px" },
+    { key: "acquisitionDate", label: t("col.acquisitionDate", lang), width: "110px" },
     {
       key: "acquisitionCost",
-      label: "취득가",
+      label: t("col.acquisitionCost", lang),
       width: "140px",
       align: "right",
       render: (v) => <span className="font-mono text-[12px]">{formatVnd(v as string)}</span>,
     },
     {
       key: "method",
-      label: "방식",
+      label: t("col.depMethod", lang),
       width: "110px",
       render: (v) => (
         <Badge tone={v === "STRAIGHT_LINE" ? "primary" : "accent"}>
-          {v === "STRAIGHT_LINE" ? "정액법" : "정률법"}
+          {v === "STRAIGHT_LINE" ? t("method.straightLine", lang) : t("method.declining", lang)}
         </Badge>
       ),
     },
-    { key: "month", label: "최신 월", width: "100px" },
+    { key: "month", label: t("col.latestMonth", lang), width: "100px" },
     {
       key: "bookValue",
-      label: "잔존가",
+      label: t("col.bookValue", lang),
       width: "140px",
       align: "right",
       render: (v) => <span className="font-mono text-[13px] font-bold text-[color:var(--tts-success)]">{formatVnd(v as string)}</span>,
@@ -145,58 +148,57 @@ export function DepreciationClient({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <SectionTitle icon="📉" title={`자산 현황 (${filtered.length}건)`} />
-        {!showAdd && <Button size="sm" onClick={() => setShowAdd(true)}>+ 자산 등록</Button>}
+        <SectionTitle icon="📉" title={t("label.assetStatusCount", lang).replace("{count}", String(filtered.length))} />
+        {!showAdd && <Button size="sm" onClick={() => setShowAdd(true)}>{t("btn.addAsset", lang)}</Button>}
       </div>
       <Note tone="info">
-        자산 등록 시 취득일부터 사용연수(월) 만큼의 월별 감가상각 스케줄을 즉시 생성합니다. 정액법(매월 동일) /
-        정률법(잔존가×2/수명, double declining) 중 선택. 재등록 시 중복 에러.
+        {t("note.depreciationInfo", lang)}
       </Note>
 
       {showAdd && (
         <form onSubmit={handleSubmit} className="my-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3">
           <Row>
-            <Field label="품목" required>
-              <Select required value={draft.itemId} onChange={(e) => setDraft((p) => ({ ...p, itemId: e.target.value }))} placeholder="선택" options={itemOptions} />
+            <Field label={t("field.item", lang)} required>
+              <Select required value={draft.itemId} onChange={(e) => setDraft((p) => ({ ...p, itemId: e.target.value }))} placeholder={t("placeholder.select", lang)} options={itemOptions} />
             </Field>
-            <Field label="S/N" required width="200px">
+            <Field label={t("col.serial", lang)} required width="200px">
               <TextInput required value={draft.serialNumber} onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))} />
             </Field>
           </Row>
           <Row>
-            <Field label="취득일" required width="200px">
+            <Field label={t("field.acquisitionDate", lang)} required width="200px">
               <TextInput type="date" required value={draft.acquisitionDate} onChange={(e) => setDraft((p) => ({ ...p, acquisitionDate: e.target.value }))} />
             </Field>
-            <Field label="취득가 (VND)" required width="200px">
+            <Field label={t("field.acquisitionCost", lang)} required width="200px">
               <TextInput type="number" required value={draft.acquisitionCost} onChange={(e) => setDraft((p) => ({ ...p, acquisitionCost: e.target.value }))} />
             </Field>
-            <Field label="사용연수 (월)" required width="160px">
+            <Field label={t("field.usefulLife", lang)} required width="160px">
               <TextInput type="number" required value={draft.usefulLifeMonths} onChange={(e) => setDraft((p) => ({ ...p, usefulLifeMonths: e.target.value }))} />
             </Field>
-            <Field label="방식" required width="160px">
+            <Field label={t("field.depMethod", lang)} required width="160px">
               <Select
                 required
                 value={draft.method}
                 onChange={(e) => setDraft((p) => ({ ...p, method: e.target.value }))}
                 options={[
-                  { value: "STRAIGHT_LINE", label: "정액법" },
-                  { value: "DECLINING_BALANCE", label: "정률법" },
+                  { value: "STRAIGHT_LINE", label: t("method.straightLine", lang) },
+                  { value: "DECLINING_BALANCE", label: t("method.declining", lang) },
                 ]}
               />
             </Field>
           </Row>
           {error && <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
           <div className="mt-2 flex gap-2">
-            <Button type="submit" size="sm" disabled={submitting}>{submitting ? "저장 중..." : "자산 등록"}</Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setShowAdd(false)}>취소</Button>
+            <Button type="submit" size="sm" disabled={submitting}>{submitting ? t("action.saving", lang) : t("btn.assetRegister", lang)}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setShowAdd(false)}>{t("action.cancel", lang)}</Button>
           </div>
         </form>
       )}
 
       <div className="mb-2">
-        <TextInput value={snFilter} onChange={(e) => setSnFilter(e.target.value)} placeholder="S/N 또는 품목 검색..." />
+        <TextInput value={snFilter} onChange={(e) => setSnFilter(e.target.value)} placeholder={t("placeholder.searchAssetSn", lang)} />
       </div>
-      <DataTable columns={columns} data={filtered} rowKey={(r) => r.serialNumber} emptyMessage="등록된 자산이 없습니다" />
+      <DataTable columns={columns} data={filtered} rowKey={(r) => r.serialNumber} emptyMessage={t("empty.assets", lang)} />
     </div>
   );
 }

@@ -38,6 +38,7 @@ export default async function EditProjectPage({ params }: PageProps) {
         <Card>
           <ProjectForm
             mode="edit"
+            lang={L}
             initial={{
               id: project.id,
               projectCode: project.projectCode,

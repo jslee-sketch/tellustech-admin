@@ -176,7 +176,7 @@ export function ClientsClient({ initialData, lang }: { initialData: ClientRow[];
         emptyMessage={t("empty.clients", lang)}
       />
       <div className="mt-4">
-        <ClientsImport />
+        <ClientsImport lang={lang} />
       </div>
     </Card>
   );

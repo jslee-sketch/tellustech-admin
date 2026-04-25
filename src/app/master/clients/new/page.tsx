@@ -22,7 +22,7 @@ export default async function NewClientPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.clients.new", L)}</h1>
         </div>
         <Card>
-          <ClientNewForm />
+          <ClientNewForm lang={L} />
         </Card>
       </div>
     </main>

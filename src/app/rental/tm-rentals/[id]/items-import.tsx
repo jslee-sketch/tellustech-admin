@@ -4,64 +4,65 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ExcelUploader } from "@/components/ui";
 import type { UploaderColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type ItemRef = { id: string; itemCode: string; name: string };
 
-function buildColumns(items: ItemRef[]): UploaderColumn[] {
+function buildColumns(items: ItemRef[], lang: Lang): UploaderColumn[] {
   const codeSet = new Set(items.map((i) => i.itemCode));
   const nameSet = new Set(items.map((i) => i.name));
   return [
-    { key: "itemCode", header: "품목코드", required: true, validate: (raw) => {
+    { key: "itemCode", header: t("header.itemCode", lang), required: true, validate: (raw) => {
         if (codeSet.has(raw)) return { normalized: raw };
         if (nameSet.has(raw)) {
           const match = items.find((i) => i.name === raw);
           return { normalized: match?.itemCode ?? raw };
         }
-        return { error: "품목코드/품목명 DB에 없음" };
+        return { error: t("msg.itemCodeOrNameDb", lang) };
       },
     },
-    { key: "options", header: "옵션", validate: (raw) => ({ normalized: raw }) },
-    { key: "serialNumber", header: "S/N", required: true, validate: (raw, _r, all) => {
-        const dup = all.filter((r) => r["S/N"] === raw).length;
-        if (dup > 1) return { error: "파일 내 S/N 중복" };
+    { key: "options", header: t("header.itemOptions", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "serialNumber", header: t("header.serial", lang), required: true, validate: (raw, _r, all) => {
+        const dup = all.filter((r) => r[t("header.serial", lang)] === raw || r["S/N"] === raw).length;
+        if (dup > 1) return { error: t("msg.snDup", lang) };
         return { normalized: raw };
       },
     },
-    { key: "startDate", header: "렌탈시작일", required: true, validate: (raw) => {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: "YYYY-MM-DD" };
+    { key: "startDate", header: t("header.startDate", lang), required: true, validate: (raw) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: t("msg.dateFormat", lang) };
         return { normalized: raw };
       },
     },
-    { key: "endDate", header: "렌탈종료일", required: true, validate: (raw) => {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: "YYYY-MM-DD" };
+    { key: "endDate", header: t("header.endDate", lang), required: true, validate: (raw) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: t("msg.dateFormat", lang) };
         return { normalized: raw };
       },
     },
-    { key: "salesPrice", header: "매출단가", required: true, validate: (raw) => {
+    { key: "salesPrice", header: t("header.salesPriceUnit", lang), required: true, validate: (raw) => {
         const n = Number(raw);
-        if (!Number.isFinite(n) || n < 0) return { error: "숫자 ≥0" };
+        if (!Number.isFinite(n) || n < 0) return { error: t("msg.numberGteZeroShort", lang) };
         return { normalized: String(n) };
       },
     },
-    { key: "supplierName", header: "매입처", validate: (raw) => ({ normalized: raw }) },
-    { key: "purchasePrice", header: "매입금액", validate: (raw) => {
+    { key: "supplierName", header: t("header.supplierName", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "purchasePrice", header: t("header.purchaseAmount", lang), validate: (raw) => {
         if (!raw) return { normalized: "" };
         const n = Number(raw);
-        if (!Number.isFinite(n) || n < 0) return { error: "숫자" };
+        if (!Number.isFinite(n) || n < 0) return { error: t("msg.numberOnly", lang) };
         return { normalized: String(n) };
       },
     },
-    { key: "commission", header: "커미션", validate: (raw) => {
+    { key: "commission", header: t("header.commissionH", lang), validate: (raw) => {
         if (!raw) return { normalized: "" };
         const n = Number(raw);
-        if (!Number.isFinite(n) || n < 0) return { error: "숫자" };
+        if (!Number.isFinite(n) || n < 0) return { error: t("msg.numberOnly", lang) };
         return { normalized: String(n) };
       },
     },
   ];
 }
 
-export function TmItemsImport({ rentalId }: { rentalId: string }) {
+export function TmItemsImport({ rentalId, lang }: { rentalId: string; lang: Lang }) {
   const router = useRouter();
   const [items, setItems] = useState<ItemRef[] | null>(null);
 
@@ -69,13 +70,13 @@ export function TmItemsImport({ rentalId }: { rentalId: string }) {
     fetch("/api/master/items").then((r) => r.json()).then((j) => setItems(j?.items ?? [])).catch(() => setItems([]));
   }, []);
 
-  if (!items) return <div className="text-[12px] text-[color:var(--tts-muted)]">품목 참조 로드 중...</div>;
+  if (!items) return <div className="text-[12px] text-[color:var(--tts-muted)]">{t("msg.itemRefLoading", lang)}</div>;
 
   return (
     <ExcelUploader
-      title="TM 렌탈 품목 일괄 업로드"
+      title={t("title.tmItemsImport", lang)}
       templateName="tm-rental-items-template.xlsx"
-      columns={buildColumns(items)}
+      columns={buildColumns(items, lang)}
       onSave={async (rows) => {
         let ok = 0, failed = 0;
         for (const r of rows) {
@@ -99,7 +100,7 @@ export function TmItemsImport({ rentalId }: { rentalId: string }) {
           if (res.ok) ok++; else failed++;
         }
         if (failed === 0) { router.refresh(); return { ok: true }; }
-        return { ok: false, message: `${ok}건 성공 · ${failed}건 실패` };
+        return { ok: false, message: t("msg.uploadResultPartial", lang).replace("{ok}", String(ok)).replace("{failed}", String(failed)) };
       }}
     />
   );

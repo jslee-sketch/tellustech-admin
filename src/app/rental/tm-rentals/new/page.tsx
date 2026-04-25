@@ -29,6 +29,7 @@ export default async function NewTmRentalPage() {
         </div>
         <Card>
           <TmRentalNewForm
+            lang={L}
             clients={clients.map((c) => ({
               id: c.id,
               label: `${c.clientCode} · ${c.companyNameVi}`,

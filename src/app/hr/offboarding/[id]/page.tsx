@@ -18,10 +18,10 @@ export default async function OffboardingDetailPage({ params }: PageProps) {
   });
   if (!r) notFound();
   const checklists: [string, unknown][] = [
-    ["반납 (returned)", r.returnedItems],
-    ["지급 (paid)", r.paidItems],
-    ["중지 (stopped)", r.stoppedItems],
-    ["생성/증명서 (issued)", r.issuedItems],
+    [t("section.returned", L), r.returnedItems],
+    [t("section.paid", L), r.paidItems],
+    [t("section.stopped", L), r.stoppedItems],
+    [t("section.issued", L), r.issuedItems],
   ];
 
   return (
@@ -34,10 +34,10 @@ export default async function OffboardingDetailPage({ params }: PageProps) {
             <Badge tone={r.status === "COMPLETED" ? "success" : "accent"}>{r.status}</Badge>
           </h1>
         </div>
-        <Card title="퇴사자">
+        <Card title={t("section.offboardingPerson", L)}>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-            <dt className="text-[color:var(--tts-sub)]">사원</dt><dd>{r.employee.employeeCode} · {r.employee.nameVi}</dd>
-            <dt className="text-[color:var(--tts-sub)]">생성</dt><dd className="font-mono">{r.createdAt.toISOString().slice(0, 10)}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("label.empLabel", L)}</dt><dd>{r.employee.employeeCode} · {r.employee.nameVi}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("label.created", L)}</dt><dd className="font-mono">{r.createdAt.toISOString().slice(0, 10)}</dd>
           </dl>
         </Card>
         {checklists.map(([label, json]) => json !== null && json !== undefined ? (

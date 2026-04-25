@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { BadgeTone, DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type WarehouseRow = {
   id: string;
@@ -20,13 +21,13 @@ const typeTone: Record<string, BadgeTone> = {
   CLIENT: "purple",
 };
 
-const typeLabel: Record<string, string> = {
-  INTERNAL: "내부",
-  EXTERNAL: "외부",
-  CLIENT: "고객",
+const typeLabelKey: Record<string, string> = {
+  INTERNAL: "whType.INTERNAL",
+  EXTERNAL: "whType.EXTERNAL",
+  CLIENT: "whType.CLIENT",
 };
 
-export function WarehousesClient({ initialData }: { initialData: WarehouseRow[] }) {
+export function WarehousesClient({ initialData, lang }: { initialData: WarehouseRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [type, setType] = useState("all");
 
@@ -46,7 +47,7 @@ export function WarehousesClient({ initialData }: { initialData: WarehouseRow[] 
   const columns: DataTableColumn<WarehouseRow>[] = [
     {
       key: "code",
-      label: "창고코드",
+      label: t("col.warehouseCode", lang),
       width: "120px",
       render: (v, row) => (
         <Link href={`/master/warehouses/${row.id}`} className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
@@ -54,7 +55,7 @@ export function WarehousesClient({ initialData }: { initialData: WarehouseRow[] 
     },
     {
       key: "name",
-      label: "창고명",
+      label: t("col.warehouseName", lang),
       render: (v, row) => (
         <Link href={`/master/warehouses/${row.id}`} className="font-semibold hover:underline">
           {v as string}
@@ -63,67 +64,68 @@ export function WarehousesClient({ initialData }: { initialData: WarehouseRow[] 
     },
     {
       key: "warehouseType",
-      label: "유형",
+      label: t("col.warehouseType", lang),
       width: "80px",
       render: (v) => {
         const s = v as string;
-        return <Badge tone={typeTone[s] ?? "neutral"}>{typeLabel[s] ?? s}</Badge>;
+        const key = typeLabelKey[s];
+        return <Badge tone={typeTone[s] ?? "neutral"}>{key ? t(key, lang) : s}</Badge>;
       },
     },
     {
       key: "branchType",
-      label: "지점",
+      label: t("col.branchType", lang),
       width: "80px",
       render: (v) =>
         v ? <Badge tone="accent">{v as string}</Badge> : <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "location",
-      label: "위치",
+      label: t("col.location", lang),
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
   ];
 
   return (
     <Card
-      title="창고 관리"
+      title={t("title.warehousesMgmt", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "code", header: "창고코드" },
-              { key: "name", header: "창고명" },
-              { key: "warehouseType", header: "타입" },
-              { key: "branchType", header: "지점" },
+              { key: "code", header: t("header.warehouseCode", lang) },
+              { key: "name", header: t("header.warehouseName", lang) },
+              { key: "warehouseType", header: t("header.warehouseType", lang) },
+              { key: "branchType", header: t("header.branchType", lang) },
             ]}
             filename={`warehouses-${new Date().toISOString().slice(0, 10)}.xlsx`}
           />
           <Link href="/master/warehouses/new">
-            <Button>+ 창고 추가</Button>
+            <Button>{t("btn.addWarehouse", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="창고코드/이름/위치 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchWarehouse", lang)} />
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 유형</option>
-          <option value="INTERNAL">내부</option>
-          <option value="EXTERNAL">외부</option>
-          <option value="CLIENT">고객</option>
+          <option value="all">{t("filter.allWhTypes", lang)}</option>
+          <option value="INTERNAL">{t("whType.INTERNAL", lang)}</option>
+          <option value="EXTERNAL">{t("whType.EXTERNAL", lang)}</option>
+          <option value="CLIENT">{t("whType.CLIENT", lang)}</option>
         </select>
       </div>
       <DataTable
         columns={columns}
         data={filtered}
         rowKey={(w) => w.id}
-        emptyMessage="등록된 창고가 없습니다"
+        emptyMessage={t("empty.warehouses", lang)}
       />
     </Card>
   );

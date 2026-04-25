@@ -31,32 +31,32 @@ export default async function SchedulesPage() {
                 repeatCron: r.repeatCron ?? "",
               }))}
               columns={[
-                { key: "scheduleCode", header: "일정코드" },
-                { key: "title", header: "제목" },
-                { key: "dueAt", header: "마감일" },
-                { key: "repeatCron", header: "반복" },
+                { key: "scheduleCode", header: t("header.scheduleCode", L) },
+                { key: "title", header: t("header.scheduleTitle", L) },
+                { key: "dueAt", header: t("header.scheduleDue", L) },
+                { key: "repeatCron", header: t("header.scheduleRepeat", L) },
               ]}
               filename={`schedules-${new Date().toISOString().slice(0, 10)}.xlsx`}
             />
             <Link href="/master/schedules/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("page.schedules.new", L)}</Link>
           </div>
         </div>
-        <Card title="일정" count={rows.length}>
+        <Card title={t("title.schedules", L)} count={rows.length}>
           <DataTable
             columns={[
-              { key: "scheduleCode", label: "코드", width: "160px", render: (v, row) => <Link href={`/master/schedules/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "title", label: "제목" },
-              { key: "dueAt", label: "마감", width: "170px", render: (v) => {
+              { key: "scheduleCode", label: t("col.scheduleCode", L), width: "160px", render: (v, row) => <Link href={`/master/schedules/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
+              { key: "title", label: t("col.scheduleTitle", L) },
+              { key: "dueAt", label: t("col.scheduleDeadline", L), width: "170px", render: (v) => {
                 const d = v as Date;
                 const left = Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                return <span className="font-mono text-[11px]">{d.toISOString().slice(0, 10)} {left >= 0 ? `(D-${left})` : <Badge tone="danger">만료</Badge>}</span>;
+                return <span className="font-mono text-[11px]">{d.toISOString().slice(0, 10)} {left >= 0 ? `(D-${left})` : <Badge tone="danger">{t("label.expiredBadge", L)}</Badge>}</span>;
               } },
-              { key: "repeatCron", label: "반복", width: "100px", render: (v) => (v as string | null) ?? "—" },
-              { key: "_count", label: "타깃/보고/CFM", width: "140px", render: (_, r) => <span className="font-mono text-[11px]">{r._count.targets}/{r._count.reporters}/{r._count.confirmations}</span> },
+              { key: "repeatCron", label: t("col.scheduleRepeat", L), width: "100px", render: (v) => (v as string | null) ?? "—" },
+              { key: "_count", label: t("col.scheduleTrc", L), width: "140px", render: (_, r) => <span className="font-mono text-[11px]">{r._count.targets}/{r._count.reporters}/{r._count.confirmations}</span> },
             ]}
             data={rows}
             rowKey={(r) => r.id}
-            emptyMessage="등록된 일정이 없습니다"
+            emptyMessage={t("empty.schedules", L)}
           />
         </Card>
       </div>

@@ -34,33 +34,33 @@ export default async function ExpensesPage() {
                 note: r.note ?? "",
               }))}
               columns={[
-                { key: "code", header: "비용코드" },
-                { key: "date", header: "발생일" },
-                { key: "type", header: "구분" },
-                { key: "amount", header: "금액(원화)" },
-                { key: "currency", header: "통화" },
-                { key: "fxRate", header: "환율" },
-                { key: "vndAmount", header: "금액(VND)" },
-                { key: "note", header: "비고" },
+                { key: "code", header: t("header.expenseCode", L) },
+                { key: "date", header: t("col.incurredAt", L) },
+                { key: "type", header: t("col.expenseType", L) },
+                { key: "amount", header: t("header.expenseAmountVnd", L) },
+                { key: "currency", header: t("field.currency", L) },
+                { key: "fxRate", header: t("header.fxRate", L) },
+                { key: "vndAmount", header: t("header.amountVnd", L) },
+                { key: "note", header: t("header.note", L) },
               ]}
               filename="expenses.xlsx"
             />
             <Link href="/finance/expenses/new"><Button>{t("page.expenses.new", L)}</Button></Link>
           </div>
         </div>
-        <Card title="비용" count={rows.length}>
+        <Card title={t("title.expenses", L)} count={rows.length}>
           <DataTable
             columns={[
-              { key: "expenseCode", label: "코드", width: "170px", render: (v, row) => <Link href={`/finance/expenses/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "incurredAt", label: "발생일", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "expenseType", label: "구분", width: "100px", render: (v) => <Badge tone={v === "SALES" ? "accent" : v === "PURCHASE" ? "primary" : "neutral"}>{v === "SALES" ? "매출관련" : v === "PURCHASE" ? "매입관련" : "일반"}</Badge> },
-              { key: "amount", label: "금액", width: "150px", align: "right", render: (v) => <span className="font-mono text-[13px] font-bold">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-              { key: "_count", label: "원가배분", width: "100px", align: "right", render: (_, r) => <span className="font-mono text-[11px]">{r._count.allocations}건</span> },
-              { key: "note", label: "비고", render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span> },
+              { key: "expenseCode", label: t("col.expenseCode", L), width: "170px", render: (v, row) => <Link href={`/finance/expenses/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
+              { key: "incurredAt", label: t("col.incurredAt", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
+              { key: "expenseType", label: t("col.expenseType", L), width: "100px", render: (v) => <Badge tone={v === "SALES" ? "accent" : v === "PURCHASE" ? "primary" : "neutral"}>{v === "SALES" ? t("expenseTypeShort.SALES", L) : v === "PURCHASE" ? t("expenseTypeShort.PURCHASE", L) : t("expenseTypeShort.GENERAL", L)}</Badge> },
+              { key: "amount", label: t("field.amount", L), width: "150px", align: "right", render: (v) => <span className="font-mono text-[13px] font-bold">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
+              { key: "_count", label: t("col.allocCount", L), width: "100px", align: "right", render: (_, r) => <span className="font-mono text-[11px]">{t("col.cases", L).replace("{count}", String(r._count.allocations))}</span> },
+              { key: "note", label: t("col.note", L), render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span> },
             ]}
             data={rows}
             rowKey={(r) => r.id}
-            emptyMessage="등록된 비용 없음"
+            emptyMessage={t("empty.expenses", L)}
           />
         </Card>
       </div>

@@ -32,25 +32,25 @@ export default async function ScheduleDetailPage({ params }: PageProps) {
             <span className="text-[16px]">{r.title}</span>
           </h1>
         </div>
-        <Card title="개요">
+        <Card title={t("section.scheduleOverview", L)}>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
-            <dt className="text-[color:var(--tts-sub)]">마감</dt><dd className="font-mono">{r.dueAt.toISOString().slice(0, 16).replace("T", " ")}</dd>
-            <dt className="text-[color:var(--tts-sub)]">반복(cron)</dt><dd className="font-mono">{r.repeatCron ?? "-"}</dd>
-            <dt className="text-[color:var(--tts-sub)]">알림 (시간 전)</dt><dd>{r.alertBeforeHours ?? "-"}</dd>
-            <dt className="text-[color:var(--tts-sub)]">연관 모듈</dt><dd>{r.relatedModule ?? "-"}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.scheduleDue", L)}</dt><dd className="font-mono">{r.dueAt.toISOString().slice(0, 16).replace("T", " ")}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.scheduleRepeat", L)}</dt><dd className="font-mono">{r.repeatCron ?? "-"}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.alertBefore", L)}</dt><dd>{r.alertBeforeHours ?? "-"}</dd>
+            <dt className="text-[color:var(--tts-sub)]">{t("field.relatedModule", L)}</dt><dd>{r.relatedModule ?? "-"}</dd>
           </dl>
         </Card>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <Card title={`대상자 (${r.targets.length})`}>
-            <ul className="space-y-1 text-[12px]">{r.targets.map((t) => <li key={t.employeeCode}><span className="font-mono text-[color:var(--tts-accent)]">{t.employeeCode}</span> · {t.nameVi}</li>)}</ul>
+          <Card title={t("label.targetsCount", L).replace("{count}", String(r.targets.length))}>
+            <ul className="space-y-1 text-[12px]">{r.targets.map((tg) => <li key={tg.employeeCode}><span className="font-mono text-[color:var(--tts-accent)]">{tg.employeeCode}</span> · {tg.nameVi}</li>)}</ul>
           </Card>
-          <Card title={`보고대상 (${r.reporters.length})`}>
-            <ul className="space-y-1 text-[12px]">{r.reporters.map((t) => <li key={t.employeeCode}><span className="font-mono text-[color:var(--tts-accent)]">{t.employeeCode}</span> · {t.nameVi}</li>)}</ul>
+          <Card title={t("label.reportersCount", L).replace("{count}", String(r.reporters.length))}>
+            <ul className="space-y-1 text-[12px]">{r.reporters.map((tg) => <li key={tg.employeeCode}><span className="font-mono text-[color:var(--tts-accent)]">{tg.employeeCode}</span> · {tg.nameVi}</li>)}</ul>
           </Card>
         </div>
         <div className="mt-4">
-          <Card title={`확인기록 (${r.confirmations.length})`}>
-            <table className="w-full text-[12px]"><thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">일시</th><th className="py-2 text-left">직원</th><th className="py-2 text-left">상태</th><th className="py-2 text-left">메모</th></tr></thead><tbody>
+          <Card title={t("label.confirmsCount", L).replace("{count}", String(r.confirmations.length))}>
+            <table className="w-full text-[12px]"><thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">{t("th.dateTime", L)}</th><th className="py-2 text-left">{t("th.employee", L)}</th><th className="py-2 text-left">{t("th.statusTh", L)}</th><th className="py-2 text-left">{t("th.memo", L)}</th></tr></thead><tbody>
               {r.confirmations.map((c) => (
                 <tr key={c.id} className="border-b border-[color:var(--tts-border)]/50"><td className="py-2 font-mono">{c.confirmedAt.toISOString().slice(0, 16).replace("T", " ")}</td><td className="py-2">{c.employee.employeeCode} · {c.employee.nameVi}</td><td className="py-2">{c.status}</td><td className="py-2">{c.note ?? ""}</td></tr>
               ))}

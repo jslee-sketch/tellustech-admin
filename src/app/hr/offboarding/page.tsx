@@ -26,27 +26,27 @@ export default async function OffboardingPage() {
             <ExcelDownload
               rows={rows.map((r) => ({ code: r.offboardingCode, emp: r.employee ? `${r.employee.employeeCode} · ${r.employee.nameVi}` : "", status: r.status, date: r.createdAt.toISOString().slice(0, 10) }))}
               columns={[
-                { key: "code", header: "코드" },
-                { key: "emp", header: "직원" },
-                { key: "status", header: "상태" },
-                { key: "date", header: "등록일" },
+                { key: "code", header: t("header.codeH", L) },
+                { key: "emp", header: t("header.employee", L) },
+                { key: "status", header: t("header.statusH", L) },
+                { key: "date", header: t("header.createdAt", L) },
               ]}
               filename="offboarding.xlsx"
             />
             <Link href="/hr/offboarding/new"><Button>{t("page.offboarding.new", L)}</Button></Link>
           </div>
         </div>
-        <Card title="퇴사카드" count={rows.length}>
+        <Card title={t("title.offboardingCard", L)} count={rows.length}>
           <DataTable
             columns={[
-              { key: "offboardingCode", label: "코드", width: "170px", render: (v, row) => <Link href={`/hr/offboarding/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
-              { key: "employee", label: "직원", render: (_, r) => r.employee ? <span>{r.employee.employeeCode} · {r.employee.nameVi}</span> : "—" },
-              { key: "status", label: "상태", width: "110px", render: (v) => <Badge tone={v === "COMPLETED" ? "success" : v === "SUBMITTED" ? "warn" : "neutral"}>{v as string}</Badge> },
-              { key: "createdAt", label: "등록일", width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
+              { key: "offboardingCode", label: t("col.codeHr", L), width: "170px", render: (v, row) => <Link href={`/hr/offboarding/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
+              { key: "employee", label: t("col.employeeHr", L), render: (_, r) => r.employee ? <span>{r.employee.employeeCode} · {r.employee.nameVi}</span> : "—" },
+              { key: "status", label: t("col.statusHr", L), width: "110px", render: (v) => <Badge tone={v === "COMPLETED" ? "success" : v === "SUBMITTED" ? "warn" : "neutral"}>{v as string}</Badge> },
+              { key: "createdAt", label: t("col.createdAtHr", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
             ]}
             data={rows}
             rowKey={(r) => r.id}
-            emptyMessage="등록된 퇴사카드 없음"
+            emptyMessage={t("empty.offboardingCards", L)}
           />
         </Card>
       </div>

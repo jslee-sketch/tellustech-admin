@@ -14,8 +14,9 @@ import {
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
 import type { ContractStatus, Currency } from "@/generated/prisma/client";
 
-// IT계약 API — 공유(회사코드 없음, 거래처 기반).
-// 계약번호 prefix:  TV 세션 → TLS-YYMMDD-### , VR 세션 → VRT-YYMMDD-###
+// IT계약 API — 거래처 기반(회사코드 컬럼 없음).
+// 계약번호 prefix 로 회사 분리: TV 세션 → TLS- , VR 세션 → VRT-
+// GET 회사 분리 정책: 일반 사용자는 자기 회사 prefix 만, ADMIN/MANAGER 는 양사 모두 + ?company=TV|VR 명시 필터.
 
 const STATUSES: readonly ContractStatus[] = ["DRAFT", "ACTIVE", "EXPIRED", "CANCELED"] as const;
 const CURRENCIES: readonly Currency[] = ["VND", "USD", "KRW", "JPY", "CNY"] as const;
@@ -40,17 +41,26 @@ function parseDecimalOrNull(value: unknown): string | null {
   return n.toFixed(2);
 }
 
-// GET 리스트 — ?q, ?status, ?client
+// GET 리스트 — ?q, ?status, ?client, ?company(ADMIN/MANAGER 가 명시 시)
 export async function GET(request: Request) {
-  return withSessionContext(async () => {
+  return withSessionContext(async (session) => {
     const url = new URL(request.url);
     const q = trimNonEmpty(url.searchParams.get("q"));
     const status = optionalEnum(url.searchParams.get("status"), STATUSES);
     const clientId = trimNonEmpty(url.searchParams.get("client"));
+    const explicitCompany = url.searchParams.get("company");
+
+    // 회사 prefix 필터 결정: 일반 사용자는 강제 자기 회사, ADMIN/MANAGER 는 명시 시만 필터.
+    const isAdmin = ["ADMIN", "MANAGER"].includes(session.role);
+    const targetCompany: "TV" | "VR" | null = isAdmin
+      ? (explicitCompany === "TV" || explicitCompany === "VR" ? explicitCompany : null)
+      : session.companyCode;
+    const companyPrefix = targetCompany ? contractPrefix(targetCompany) : null;
 
     const where = {
       ...(status ? { status } : {}),
       ...(clientId ? { clientId } : {}),
+      ...(companyPrefix ? { contractNumber: { startsWith: `${companyPrefix}-` } } : {}),
       ...(q
         ? {
             OR: [

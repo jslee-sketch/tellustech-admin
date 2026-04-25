@@ -413,14 +413,15 @@ model ClientContact {
 
 /// 공유 마스터 — company_code 없음. 품목명은 영어로만 관리.
 model Item {
-  id        String   @id @default(cuid())
-  itemCode  String   @unique
-  itemType  ItemType
-  name      String // 품목명 — 영어로만 입력
-  unit      String?
-  category  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  itemCode      String   @unique
+  itemType      ItemType
+  name          String // 품목명 — 영어로만 입력
+  unit          String?
+  category      String?
+  reorderPoint  Int? // 재고부족 알림 임계치 — null 이면 알림 없음(소모품 계열에서만 의미)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   inventoryStocks       InventoryStock[]
   inventoryTransactions InventoryTransaction[]
@@ -576,6 +577,9 @@ model ItContractEquipment {
   bwOverageRate      Decimal? @db.Decimal(10, 2)
   colorIncludedPages Int?
   colorOverageRate   Decimal? @db.Decimal(10, 2)
+  // SNMP 자동수집용 — IP 와 모델. 둘 다 null 이면 mock fallback.
+  deviceIp           String?
+  deviceModel        String?
   note               String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -662,8 +666,9 @@ model TmRentalItem {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  tmRental TmRental @relation(fields: [tmRentalId], references: [id], onDelete: Cascade)
-  item     Item     @relation(fields: [itemId], references: [id])
+  tmRental         TmRental    @relation(fields: [tmRentalId], references: [id], onDelete: Cascade)
+  item             Item        @relation(fields: [itemId], references: [id])
+  reflectedInSales SalesItem[] @relation("TmRentalSalesItemSource")
 
   @@index([tmRentalId])
   @@index([itemId])
@@ -904,34 +909,38 @@ model Sales {
 }
 
 model SalesItem {
-  id           String         @id @default(cuid())
-  salesId      String
-  itemId       String
-  serialNumber String?
-  stockCheck   StockCheckMode @default(LOOSE)
-  quantity     Decimal        @db.Decimal(15, 3)
-  unitPrice    Decimal        @db.Decimal(15, 2)
-  amount       Decimal        @db.Decimal(15, 2)
+  id                 String         @id @default(cuid())
+  salesId            String
+  itemId             String
+  serialNumber       String?
+  stockCheck         StockCheckMode @default(LOOSE)
+  quantity           Decimal        @db.Decimal(15, 3)
+  unitPrice          Decimal        @db.Decimal(15, 2)
+  amount             Decimal        @db.Decimal(15, 2)
   // MAINTENANCE/RENTAL 프로젝트 타입 — 라인별 기간(헤더 기간 자동 복사, 라인별 수정 가능)
-  startDate    DateTime?
-  endDate      DateTime?
+  startDate          DateTime?
+  endDate            DateTime?
   // 교정(CALIBRATION) 프로젝트 타입인 경우 라인별 성적서 1건
-  certNumber   String?        @unique
-  certFileId   String?
-  issuedAt     DateTime?
-  nextDueAt    DateTime?
-  alertedAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  certNumber         String?        @unique
+  certFileId         String?
+  issuedAt           DateTime?
+  nextDueAt          DateTime?
+  alertedAt          DateTime?
+  // TmRental → Sales 자동반영의 출처 (있으면 reflect-sales 가 1:1 복제한 것)
+  sourceTmRentalItemId String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
-  sales    Sales @relation(fields: [salesId], references: [id], onDelete: Cascade)
-  item     Item  @relation(fields: [itemId], references: [id])
-  certFile File? @relation(fields: [certFileId], references: [id])
+  sales              Sales         @relation(fields: [salesId], references: [id], onDelete: Cascade)
+  item               Item          @relation(fields: [itemId], references: [id])
+  certFile           File?         @relation(fields: [certFileId], references: [id])
+  sourceTmRentalItem TmRentalItem? @relation("TmRentalSalesItemSource", fields: [sourceTmRentalItemId], references: [id])
 
   @@index([salesId])
   @@index([serialNumber])
   @@index([itemId])
   @@index([nextDueAt])
+  @@index([sourceTmRentalItemId])
   @@map("sales_items")
 }
 
@@ -1199,24 +1208,27 @@ model ExpenseAllocation {
 
 /// 미지급/미수금 — 매출/매입/비용에서 자동 생성 → 목록 선택 → 입금 확인 + 지연사유만 업데이트
 model PayableReceivable {
-  id         String                  @id @default(cuid())
-  kind       PayableReceivableKind
-  salesId    String?
-  purchaseId String?
-  expenseId  String?
-  clientId   String?
-  amount     Decimal                 @db.Decimal(15, 2)
-  paidAmount Decimal                 @default(0) @db.Decimal(15, 2)
-  dueDate    DateTime?
-  status     PayableReceivableStatus @default(OPEN)
-  createdAt  DateTime                @default(now())
-  updatedAt  DateTime                @updatedAt
+  id          String                  @id @default(cuid())
+  // 회사코드 — 자동생성 시 매출/매입의 sourceCompany 가 주입됨. 기존 행은 NULL(공유 거래처 정책 호환).
+  companyCode CompanyCode?
+  kind        PayableReceivableKind
+  salesId     String?
+  purchaseId  String?
+  expenseId   String?
+  clientId    String?
+  amount      Decimal                 @db.Decimal(15, 2)
+  paidAmount  Decimal                 @default(0) @db.Decimal(15, 2)
+  dueDate     DateTime?
+  status      PayableReceivableStatus @default(OPEN)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
 
   sales        Sales?        @relation("SalesReceivable", fields: [salesId], references: [id])
   purchase     Purchase?     @relation("PurchasePayable", fields: [purchaseId], references: [id])
   expense      Expense?      @relation("ExpensePayable", fields: [expenseId], references: [id])
   delayReasons DelayReason[]
 
+  @@index([companyCode, kind])
   @@index([kind, status])
   @@index([dueDate])
   @@map("payables_receivables")

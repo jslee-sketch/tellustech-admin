@@ -244,6 +244,7 @@ export async function POST(request: Request) {
             const vndAmount = (Number(totalAmount) * Number(fxRate)).toFixed(2);
             await tx.payableReceivable.create({
               data: {
+                companyCode: session.companyCode,
                 kind: "PAYABLE",
                 purchaseId: purchase.id,
                 clientId: supplierId,

@@ -13,6 +13,7 @@ import {
 } from "@/lib/api-utils";
 import { withUniqueRetry } from "@/lib/code-generator";
 import { fillTranslations } from "@/lib/translate";
+import { createTranslatedNotification } from "@/lib/notifications";
 import type { ASStatus, Language } from "@/generated/prisma/client";
 
 // AS 접수 API
@@ -109,9 +110,16 @@ export async function POST(request: Request) {
       if (!client) return badRequest("invalid_client");
 
       const assignedToId = trimNonEmpty(p.assignedToId);
+      let assignedToUserId: string | null = null;
+      let assignedToCompanyCode: "TV" | "VR" | null = null;
       if (assignedToId) {
-        const e = await prisma.employee.findUnique({ where: { id: assignedToId } });
+        const e = await prisma.employee.findUnique({
+          where: { id: assignedToId },
+          select: { id: true, companyCode: true, user: { select: { id: true } } },
+        });
         if (!e) return badRequest("invalid_assignee");
+        assignedToUserId = e.user?.id ?? null;
+        assignedToCompanyCode = e.companyCode;
       }
 
       const itemId = trimNonEmpty(p.itemId);
@@ -177,6 +185,23 @@ export async function POST(request: Request) {
         },
         { attempts: 5, isConflict: isUniqueConstraintError },
       );
+
+      // 담당자 알림 (AS_NEW) — Employee→User 매핑 있을 때만, 실패해도 본 응답엔 영향 없음
+      if (assignedToUserId) {
+        const sourceLang: Language = (filled.vi ? "VI" : filled.en ? "EN" : "KO");
+        const sourceText = filled[sourceLang.toLowerCase() as "vi" | "en" | "ko"] ?? "";
+        const titleKo = `새 AS 접수 — ${created.ticketNumber}`;
+        const bodyKo = `${created.client.companyNameVi} · ${sourceText.slice(0, 80)}`;
+        createTranslatedNotification({
+          userId: assignedToUserId,
+          companyCode: assignedToCompanyCode,
+          type: "AS_NEW",
+          originalLang: "KO",
+          title: titleKo,
+          body: bodyKo,
+          linkUrl: `/as/tickets/${created.id}`,
+        }).catch((e) => console.error("[as-tickets] notification failed", e));
+      }
 
       return ok({ ticket: created, warning: receivableBlocked ? "receivable_blocked" : null }, { status: 201 });
     } catch (err) {

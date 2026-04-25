@@ -78,3 +78,29 @@ export function resolveStoredPath(storedPath: string): string {
   }
   return abs;
 }
+
+// 서버에서 직접 생성한 바이트 버퍼를 파일로 저장 (PDF 자동생성, 리포트 export 등).
+export async function saveGeneratedFile(input: {
+  bytes: Uint8Array | Buffer;
+  fileName: string; // ex) "onboarding-ONB-260425-001.pdf"
+}): Promise<StoredFile> {
+  const now = new Date();
+  const yyyy = String(now.getFullYear());
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dirRel = path.join(yyyy, mm);
+  const dirAbs = path.join(UPLOAD_ROOT, dirRel);
+  await fs.mkdir(dirAbs, { recursive: true });
+
+  const ext = path.extname(input.fileName).toLowerCase().slice(0, 8) || "";
+  const fileName = `${randomUUID()}${ext}`;
+  const relPath = path.join(dirRel, fileName).replaceAll("\\", "/");
+  const absPath = path.join(dirAbs, fileName);
+  const bytes = Buffer.isBuffer(input.bytes) ? input.bytes : Buffer.from(input.bytes);
+  await fs.writeFile(absPath, bytes);
+  return {
+    storedPath: relPath,
+    absolutePath: absPath,
+    sizeBytes: bytes.byteLength,
+    compressed: false,
+  };
+}

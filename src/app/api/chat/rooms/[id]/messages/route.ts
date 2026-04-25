@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, handleFieldError, notFound, ok, optionalEnum, requireString, serverError, trimNonEmpty } from "@/lib/api-utils";
 import { translateText } from "@/lib/translate";
+import { emitChatMessage } from "@/lib/chat-bus";
 import type { Language } from "@/generated/prisma/client";
 
 const LANGS: readonly Language[] = ["VI", "EN", "KO"] as const;
@@ -89,6 +90,13 @@ export async function POST(request: Request, context: RouteContext) {
       });
       // 채팅방 lastUpdated 갱신 (updatedAt 은 Prisma 가 자동)
       await prisma.chatRoom.update({ where: { id }, data: { updatedAt: new Date() } });
+      // 동일 프로세스 내 SSE 구독자에게 push
+      emitChatMessage({
+        chatRoomId: id,
+        messageId: msg.id,
+        senderId: session.sub,
+        ts: msg.createdAt.toISOString(),
+      });
       return ok({ message: msg }, { status: 201 });
     } catch (err) {
       const h = handleFieldError(err); if (h) return h;

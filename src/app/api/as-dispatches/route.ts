@@ -137,7 +137,19 @@ export async function POST(request: Request) {
         if (!f) return badRequest("invalid_receipt");
       }
 
-      const googleDistanceKm = parseDecimal(p.googleDistanceKm);
+      let googleDistanceKm = parseDecimal(p.googleDistanceKm);
+      const originAddress = trimNonEmpty(p.originAddress);
+      const destinationAddress = trimNonEmpty(p.destinationAddress);
+      // 클라이언트가 보내지 않았고 양쪽 주소가 있으면 Google Distance Matrix 자동 호출
+      if (!googleDistanceKm && originAddress && destinationAddress) {
+        try {
+          const { googleDistanceKm: lookup } = await import("@/lib/distance-matrix");
+          const r = await lookup(originAddress, destinationAddress);
+          if (r) googleDistanceKm = r.km.toFixed(2);
+        } catch (err) {
+          console.warn("[as-dispatches] distance-matrix lookup failed:", err);
+        }
+      }
       const meterOcrKm = resolveMeterKm(p);
       const distanceMatch = computeDistanceMatch(googleDistanceKm, meterOcrKm);
 
@@ -150,8 +162,8 @@ export async function POST(request: Request) {
             asTicketId,
             dispatchEmployeeId: dispatchEmployeeId ?? null,
             transportMethod: trimNonEmpty(p.transportMethod),
-            originAddress: trimNonEmpty(p.originAddress),
-            destinationAddress: trimNonEmpty(p.destinationAddress),
+            originAddress,
+            destinationAddress,
             googleDistanceKm,
             meterPhotoUrl: trimNonEmpty(p.meterPhotoUrl),
             meterOcrKm,

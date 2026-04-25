@@ -25,15 +25,57 @@ export type SnmpReading = {
 };
 
 /**
- * 실제 SNMP 쿼리를 수행. 현재는 mock 값 반환.
- * 실물 연동 시 net-snmp 의 `session.get([...oids])` 로 교체.
+ * 실제 SNMP 쿼리. SNMP_REAL=1 환경변수 + net-snmp 패키지 설치 시 실물 호출.
+ * 그 외(개발/스테이징)에는 deterministic mock 으로 매일 증가하는 숫자 반환.
+ *
+ * IP 가 null/빈문자열이면 mock 으로 fallback (DB 마이그레이션 직후 deviceIp 미입력 상태).
  */
 export async function fetchSnmpCounters(
   model: DeviceModel,
-  ip: string,
+  ip: string | null,
 ): Promise<SnmpReading> {
-  // TODO: net-snmp 연동. 지금은 deterministic mock 으로 테스트용 값 반환.
-  // IP + 오늘 날짜 기반으로 숫자 생성 → 매일 조금씩 증가하는 것처럼.
+  const useReal = process.env.SNMP_REAL === "1" && ip;
+  const safeIp = ip ?? "0.0.0.0";
+
+  if (useReal) {
+    try {
+      // 동적 require — 패키지 미설치 시 에러를 잡아 mock 으로 fallback.
+      // 타입 어노테이션은 unknown 으로 보존.
+      const snmp = await import("net-snmp" as string).catch(() => null) as
+        | { createSession: (target: string, community: string) => { get: (oids: string[], cb: (err: unknown, varbinds: { value: number | bigint }[]) => void) => void; close: () => void } }
+        | null;
+      if (!snmp) {
+        return mockReading(model, safeIp, "net-snmp_not_installed");
+      }
+      const community = process.env.SNMP_COMMUNITY ?? "public";
+      const session = snmp.createSession(safeIp, community);
+      const oids = [SNMP_OIDS[model].bw, SNMP_OIDS[model].color];
+      const varbinds = await new Promise<{ value: number | bigint }[]>((resolve, reject) => {
+        session.get(oids, (err: unknown, vb: { value: number | bigint }[]) => {
+          session.close();
+          if (err) reject(err); else resolve(vb);
+        });
+      });
+      return {
+        model,
+        ip: safeIp,
+        counterBw: Number(varbinds[0]?.value ?? 0),
+        counterColor: Number(varbinds[1]?.value ?? 0),
+        fetchedAt: new Date(),
+        success: true,
+      };
+    } catch (err) {
+      return {
+        model, ip: safeIp, counterBw: null, counterColor: null,
+        fetchedAt: new Date(), success: false, error: String(err),
+      };
+    }
+  }
+
+  return mockReading(model, safeIp);
+}
+
+function mockReading(model: DeviceModel, ip: string, note?: string): SnmpReading {
   const seed = Array.from(ip).reduce((s, c) => s + c.charCodeAt(0), 0);
   const dayOffset = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
   return {
@@ -43,14 +85,15 @@ export async function fetchSnmpCounters(
     counterColor: 200 + seed * 2 + dayOffset * 30,
     fetchedAt: new Date(),
     success: true,
+    ...(note ? { error: `mock(${note})` } : {}),
   };
 }
 
 /**
- * 여러 장비 동시 쿼리. 실패한 것은 success=false 로 반환.
+ * 여러 장비 동시 쿼리. 실패한 것은 success=false 로 반환. ip null 허용.
  */
 export async function fetchSnmpBatch(
-  targets: { model: DeviceModel; ip: string; serialNumber: string }[],
+  targets: { model: DeviceModel; ip: string | null; serialNumber: string }[],
 ): Promise<Array<SnmpReading & { serialNumber: string }>> {
   const results = await Promise.allSettled(
     targets.map(async (t) => ({
@@ -63,7 +106,7 @@ export async function fetchSnmpBatch(
       ? r.value
       : {
           model: targets[i].model,
-          ip: targets[i].ip,
+          ip: targets[i].ip ?? "0.0.0.0",
           serialNumber: targets[i].serialNumber,
           counterBw: null,
           counterColor: null,

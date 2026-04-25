@@ -108,9 +108,15 @@ export async function POST(request: Request) {
       const clientId = requireString(p.clientId, "clientId");
       const client = await prisma.client.findUnique({
         where: { id: clientId },
-        select: { id: true, paymentTerms: true },
+        select: { id: true, paymentTerms: true, receivableStatus: true, companyNameVi: true },
       });
       if (!client) return badRequest("invalid_client");
+      // BLOCKED 거래처는 ADMIN/MANAGER 가 명시적으로 forceBlocked=true 보내야 진행
+      if (client.receivableStatus === "BLOCKED" && p.forceBlocked !== true) {
+        return badRequest("client_blocked", {
+          message: `거래처 [${client.companyNameVi}] 가 미수금 BLOCKED 상태입니다. 관리자 승인(forceBlocked=true)이 필요합니다.`,
+        });
+      }
 
       const salesEmployeeId = trimNonEmpty(p.salesEmployeeId);
       if (salesEmployeeId) {
@@ -239,6 +245,7 @@ export async function POST(request: Request) {
             const vndAmount = (Number(totalAmount) * Number(fxRate)).toFixed(2);
             await tx.payableReceivable.create({
               data: {
+                companyCode: session.companyCode,
                 kind: "RECEIVABLE",
                 salesId: sales.id,
                 clientId,

@@ -21,7 +21,7 @@ const DEFAULT_PAYMENT_DAYS = 30;
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(_r: Request, context: RouteContext) {
-  return withSessionContext(async () => {
+  return withSessionContext(async (session) => {
     const { id } = await context.params;
 
     const rental = await prisma.tmRental.findUnique({
@@ -80,11 +80,13 @@ export async function POST(_r: Request, context: RouteContext) {
                 quantity: "1",
                 unitPrice: it.salesPrice,
                 amount: it.salesPrice,
+                sourceTmRentalItemId: it.id,
               })),
             });
             const vndAmount = (Number(totalAmount) * Number(rental.fxRate)).toFixed(2);
             await tx.payableReceivable.create({
               data: {
+                companyCode: session.companyCode,
                 kind: "RECEIVABLE",
                 salesId: sales.id,
                 clientId: rental.clientId,

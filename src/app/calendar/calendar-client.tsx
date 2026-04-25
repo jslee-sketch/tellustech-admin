@@ -6,6 +6,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Button, Field, Note, TextInput, Textarea } from "@/components/ui";
+import { pickDailyScenes, type Scene } from "./daily-scenes";
 
 type EventType =
   | "SCHEDULE_DEADLINE" | "WEEKLY_REPORT" | "CONTRACT_EXPIRY" | "CERT_EXPIRY"
@@ -87,9 +88,29 @@ function MultiSelect({
   );
 }
 
+function SceneCard({ flag, country, scene }: { flag: string; country: string; scene: Scene }) {
+  return (
+    <div
+      className="relative flex min-h-[88px] flex-1 items-center gap-3 overflow-hidden rounded-xl px-4 py-3 text-white shadow-md"
+      style={{ background: scene.gradient }}
+    >
+      {/* 장식 — 큰 이모지를 우측에 흐리게 깔아 분위기 전환 */}
+      <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[88px] leading-none opacity-25 select-none">
+        {scene.emoji}
+      </div>
+      <div className="relative z-10">
+        <div className="text-[11px] font-bold tracking-[0.15em] opacity-80">{flag} {country}</div>
+        <div className="mt-0.5 text-[16px] font-extrabold drop-shadow">{scene.title}</div>
+        <div className="text-[12px] opacity-90">{scene.caption}</div>
+      </div>
+    </div>
+  );
+}
+
 export function CalendarClient({ canManage }: { canManage: boolean }) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [events, setEvents] = useState<AggEvent[]>([]);
+  const scenes = useMemo(() => pickDailyScenes(new Date()), []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -182,6 +203,12 @@ export function CalendarClient({ canManage }: { canManage: boolean }) {
 
   return (
     <div>
+      {/* 오늘의 풍경 — 좌(VN) / 우(KR), 매일 자동 회전 */}
+      <div className="mb-4 flex gap-3">
+        <SceneCard flag="🇻🇳" country="Vietnam" scene={scenes.vn} />
+        <SceneCard flag="🇰🇷" country="Korea" scene={scenes.kr} />
+      </div>
+
       {/* 필터 바 */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input

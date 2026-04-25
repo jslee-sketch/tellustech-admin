@@ -188,7 +188,7 @@ export function BacklogPanel({
                 <td className="text-[12px]">{r.salesEmployee ? r.salesEmployee.name : "—"}</td>
                 <td className="text-[12px]">{r.representativeItem ?? "—"}</td>
                 <td className="text-right font-mono text-[12px]">{r.amount ? Number(r.amount).toLocaleString() : "—"}</td>
-                <td>{r.status === "OPEN" ? <Badge tone="success">🟢 Open</Badge> : r.status === "NG" ? <Badge tone="danger">🔴 NG</Badge> : <Badge tone="neutral">Close</Badge>}</td>
+                <td>{r.status === "OPEN" ? <Badge tone="danger">🔴 Open</Badge> : r.status === "CLOSE" ? <Badge tone="primary">🔵 Close</Badge> : <Badge tone="neutral">⚪ NG</Badge>}</td>
                 <td className="font-mono text-[11px]">{r.expectedCloseDate ? r.expectedCloseDate.slice(0, 10) : "—"}</td>
                 <td>
                   {r.confirmedAt ? <span title={r.confirmedAt}>✅</span> : (
@@ -207,16 +207,16 @@ export function BacklogPanel({
                 <tr key={r.id + "-h"} className="bg-[color:var(--tts-row-hover,rgba(255,255,255,0.02))]">
                   <td colSpan={10} className="px-3 py-2">
                     <div className="space-y-2">
-                      {/* 상태 변경 버튼 */}
+                      {/* 상태 변경 버튼 — Open(빨강)=영업진행, Close(파랑)=계약체결완료, NG(회색)=무산 */}
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-bold text-[color:var(--tts-muted)]">상태 변경:</span>
                         {(["OPEN", "CLOSE", "NG"] as const).map((s) => {
                           const active = r.status === s;
                           const tone =
-                            s === "OPEN"  ? "bg-emerald-600 hover:bg-emerald-500" :
-                            s === "CLOSE" ? "bg-slate-500 hover:bg-slate-400" :
-                                            "bg-rose-600 hover:bg-rose-500";
-                          const label = s === "OPEN" ? "🟢 Open" : s === "CLOSE" ? "Close" : "🔴 NG";
+                            s === "OPEN"  ? "bg-rose-600 hover:bg-rose-500" :
+                            s === "CLOSE" ? "bg-blue-600 hover:bg-blue-500" :
+                                            "bg-slate-500 hover:bg-slate-400";
+                          const label = s === "OPEN" ? "🔴 Open" : s === "CLOSE" ? "🔵 Close" : "⚪ NG";
                           return (
                             <button
                               key={s}

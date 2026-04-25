@@ -23,6 +23,8 @@ const TYPES: readonly CalendarEventType[] = [
 ] as const;
 const LANGS: readonly Language[] = ["VI", "EN", "KO"] as const;
 
+type Badge = "GREEN" | "YELLOW" | "RED" | null;
+
 type AggEvent = {
   id: string;
   title: string;
@@ -33,7 +35,18 @@ type AggEvent = {
   color?: string | null;
   linkedUrl?: string | null;
   module?: string;
+  assignee?: string | null; // 표시용 — 직원명/거래처명/null
+  badge?: Badge;            // 🟢🟡🔴 (뱃지 의미가 있는 type 만)
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function calcBadge(deadline: Date, now: Date): Badge {
+  const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / DAY_MS);
+  if (diffDays < 0) return "RED";
+  if (diffDays <= 3) return "YELLOW";
+  return "GREEN";
+}
 
 const COLORS: Record<CalendarEventType, string> = {
   SCHEDULE_DEADLINE: "#3b82f6", // blue
@@ -78,18 +91,24 @@ export async function GET(request: Request) {
   return withSessionContext(async (session) => {
     try {
       const { start, end } = parseRange(request);
+      const now = new Date();
       const events: AggEvent[] = [];
 
       // 1) Schedule 마감
       const schedules = await prisma.schedule.findMany({
         where: { companyCode: session.companyCode, dueAt: { gte: start, lte: end } },
-        select: { id: true, title: true, dueAt: true },
+        select: {
+          id: true, title: true, dueAt: true,
+          targets: { select: { nameVi: true }, take: 3 },
+        },
       });
       for (const s of schedules) {
         events.push({
           id: `sch:${s.id}`, title: `📋 ${s.title}`, start: s.dueAt.toISOString(), allDay: false,
           type: "SCHEDULE_DEADLINE", color: COLORS.SCHEDULE_DEADLINE,
           linkedUrl: `/master/schedules/${s.id}`,
+          assignee: s.targets.map((t) => t.nameVi).join(", ") || null,
+          badge: calcBadge(s.dueAt, now),
         });
       }
 
@@ -100,13 +119,14 @@ export async function GET(request: Request) {
           start: fri.toISOString(), allDay: false,
           type: "WEEKLY_REPORT", color: COLORS.WEEKLY_REPORT,
           linkedUrl: "/weekly-report",
+          badge: calcBadge(fri, now),
         });
       }
 
       // 3) IT 계약 만료
       const contracts = await prisma.itContract.findMany({
         where: { endDate: { gte: start, lte: end } },
-        select: { id: true, contractNumber: true, endDate: true },
+        select: { id: true, contractNumber: true, endDate: true, client: { select: { companyNameVi: true } } },
       });
       for (const c of contracts) {
         events.push({
@@ -114,28 +134,41 @@ export async function GET(request: Request) {
           start: c.endDate.toISOString(), allDay: true,
           type: "CONTRACT_EXPIRY", color: COLORS.CONTRACT_EXPIRY,
           linkedUrl: `/rental/it-contracts/${c.id}`,
+          assignee: c.client.companyNameVi,
+          badge: calcBadge(c.endDate, now),
         });
       }
 
       // 4) 성적서 만료
       const certs = await prisma.salesItem.findMany({
         where: { nextDueAt: { gte: start, lte: end } },
-        select: { id: true, certNumber: true, nextDueAt: true, salesId: true },
+        select: {
+          id: true, certNumber: true, nextDueAt: true, salesId: true,
+          sales: { select: { salesEmployeeId: true, client: { select: { companyNameVi: true } } } },
+        },
       });
+      const certEmpIds = Array.from(new Set(certs.map((c) => c.sales.salesEmployeeId).filter((x): x is string => !!x)));
+      const certEmps = certEmpIds.length > 0
+        ? await prisma.employee.findMany({ where: { id: { in: certEmpIds } }, select: { id: true, nameVi: true } })
+        : [];
+      const certEmpMap = new Map(certEmps.map((e) => [e.id, e.nameVi]));
       for (const ci of certs) {
         if (!ci.nextDueAt) continue;
+        const empName = ci.sales.salesEmployeeId ? certEmpMap.get(ci.sales.salesEmployeeId) ?? null : null;
         events.push({
           id: `ct:${ci.id}`, title: `🟤 성적서 만료 — ${ci.certNumber ?? ci.id.slice(-6)}`,
           start: ci.nextDueAt.toISOString(), allDay: true,
           type: "CERT_EXPIRY", color: COLORS.CERT_EXPIRY,
           linkedUrl: `/sales/${ci.salesId}`,
+          assignee: empName ?? ci.sales.client?.companyNameVi ?? null,
+          badge: calcBadge(ci.nextDueAt, now),
         });
       }
 
       // 5) 라이선스 만료
       const licenses = await prisma.license.findMany({
         where: { companyCode: session.companyCode, expiresAt: { gte: start, lte: end } },
-        select: { id: true, licenseCode: true, name: true, expiresAt: true },
+        select: { id: true, licenseCode: true, name: true, expiresAt: true, owner: { select: { nameVi: true } } },
       });
       for (const l of licenses) {
         events.push({
@@ -143,6 +176,8 @@ export async function GET(request: Request) {
           start: l.expiresAt.toISOString(), allDay: true,
           type: "LICENSE_EXPIRY", color: COLORS.LICENSE_EXPIRY,
           linkedUrl: `/master/licenses`,
+          assignee: l.owner?.nameVi ?? null,
+          badge: calcBadge(l.expiresAt, now),
         });
       }
 
@@ -153,15 +188,26 @@ export async function GET(request: Request) {
           status: { in: ["OPEN", "PARTIAL"] },
           dueDate: { gte: start, lte: end },
         },
-        select: { id: true, amount: true, dueDate: true, sales: { select: { salesNumber: true } } },
+        select: {
+          id: true, amount: true, dueDate: true,
+          sales: { select: { salesNumber: true, salesEmployeeId: true, client: { select: { companyNameVi: true } } } },
+        },
       });
+      const arEmpIds = Array.from(new Set(receivables.map((r) => r.sales?.salesEmployeeId).filter((x): x is string => !!x)));
+      const arEmps = arEmpIds.length > 0
+        ? await prisma.employee.findMany({ where: { id: { in: arEmpIds } }, select: { id: true, nameVi: true } })
+        : [];
+      const arEmpMap = new Map(arEmps.map((e) => [e.id, e.nameVi]));
       for (const r of receivables) {
         if (!r.dueDate) continue;
+        const empName = r.sales?.salesEmployeeId ? arEmpMap.get(r.sales.salesEmployeeId) ?? null : null;
         events.push({
           id: `ar:${r.id}`, title: `💰 미수금 — ${r.sales?.salesNumber ?? r.id.slice(-6)}`,
           start: r.dueDate.toISOString(), allDay: true,
           type: "AR_DUE", color: COLORS.AR_DUE,
           linkedUrl: `/finance/payables`,
+          assignee: empName ?? r.sales?.client?.companyNameVi ?? null,
+          badge: calcBadge(r.dueDate, now),
         });
       }
 
@@ -181,13 +227,18 @@ export async function GET(request: Request) {
           start: lv.startDate.toISOString(), end: lv.endDate.toISOString(), allDay: true,
           type: "LEAVE", color: COLORS.LEAVE,
           linkedUrl: `/hr/leave`,
+          assignee: lv.employee.nameVi,
         });
       }
 
       // 8) AS 출동
       const dispatches = await prisma.asDispatch.findMany({
         where: { departedAt: { gte: start, lte: end } },
-        select: { id: true, departedAt: true, asTicket: { select: { ticketNumber: true } } },
+        select: {
+          id: true, departedAt: true,
+          asTicket: { select: { ticketNumber: true } },
+          dispatchEmployee: { select: { nameVi: true } },
+        },
       });
       for (const d of dispatches) {
         if (!d.departedAt) continue;
@@ -196,13 +247,17 @@ export async function GET(request: Request) {
           start: d.departedAt.toISOString(), allDay: false,
           type: "AS_DISPATCH", color: COLORS.AS_DISPATCH,
           linkedUrl: `/as/dispatches/${d.id}`,
+          assignee: d.dispatchEmployee?.nameVi ?? null,
         });
       }
 
       // 9) 렌탈 오더 (월 첫째 날 표기)
       const orders = await prisma.rentalOrder.findMany({
         where: { companyCode: session.companyCode, billingMonth: { gte: start, lte: end } },
-        select: { id: true, billingMonth: true, amount: true, itContract: { select: { contractNumber: true } } },
+        select: {
+          id: true, billingMonth: true, amount: true,
+          itContract: { select: { contractNumber: true, client: { select: { companyNameVi: true } } } },
+        },
       });
       for (const o of orders) {
         events.push({
@@ -210,6 +265,7 @@ export async function GET(request: Request) {
           start: o.billingMonth.toISOString(), allDay: true,
           type: "RENTAL_ORDER", color: COLORS.RENTAL_ORDER,
           linkedUrl: `/rental/it-contracts`,
+          assignee: o.itContract?.client?.companyNameVi ?? null,
         });
       }
 
@@ -220,7 +276,6 @@ export async function GET(request: Request) {
       });
       for (const e of employees) {
         if (!e.birthDate) continue;
-        // 시작 연도부터 종료 연도까지 매년 birthday
         for (let y = start.getUTCFullYear(); y <= end.getUTCFullYear(); y++) {
           const d = new Date(Date.UTC(y, e.birthDate.getUTCMonth(), e.birthDate.getUTCDate()));
           if (d >= start && d <= end) {
@@ -228,6 +283,7 @@ export async function GET(request: Request) {
               id: `bd:${e.id}:${y}`, title: `🎂 ${e.nameVi} 생일`,
               start: d.toISOString(), allDay: true,
               type: "BIRTHDAY", color: COLORS.BIRTHDAY,
+              assignee: e.nameVi,
             });
           }
         }
@@ -259,6 +315,7 @@ export async function GET(request: Request) {
         select: {
           id: true, title: true, titleKo: true, startDate: true, endDate: true, allDay: true,
           eventType: true, color: true, linkedUrl: true, eventCode: true,
+          assignee: { select: { nameVi: true } },
         },
         take: 500,
       });
@@ -272,6 +329,7 @@ export async function GET(request: Request) {
           type: c.eventType,
           color: c.color ?? COLORS[c.eventType],
           linkedUrl: c.linkedUrl,
+          assignee: c.assignee?.nameVi ?? null,
         });
       }
 

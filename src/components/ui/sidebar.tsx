@@ -197,20 +197,23 @@ export function Sidebar() {
           {(["VI", "EN", "KO"] as const).map((l) => {
             const active = currentLang === l;
             return (
-            <button
-              key={l}
-              type="button"
-              onClick={() => changeLang(l)}
-              disabled={changingLang}
-              className={`flex-1 rounded px-1 py-1 text-[10px] font-bold transition disabled:opacity-50 ${
-                active
-                  ? "bg-[color:var(--tts-primary)] text-white shadow"
-                  : "text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-              }`}
-              title={l === "VI" ? "Tiếng Việt" : l === "EN" ? "English" : "한국어"}
-            >
-              {l}
-            </button>
+              <button
+                key={l}
+                type="button"
+                onClick={() => changeLang(l)}
+                disabled={changingLang}
+                style={active
+                  ? { backgroundColor: "var(--tts-primary)", color: "#fff", fontWeight: 800 }
+                  : undefined}
+                className={`flex-1 rounded px-1 py-1 text-[10px] font-bold transition disabled:opacity-50 ${
+                  active
+                    ? "shadow"
+                    : "text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
+                }`}
+                title={l === "VI" ? "Tiếng Việt" : l === "EN" ? "English" : "한국어"}
+              >
+                {l}
+              </button>
             );
           })}
         </div>

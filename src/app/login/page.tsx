@@ -6,6 +6,7 @@
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { t, type Lang } from "@/lib/i18n";
 
 const LANG_STORAGE_KEY = "tts_preferred_lang";
 
@@ -47,7 +48,7 @@ function LoginForm() {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(mapError(data.error));
+        setError(mapError(data.error, language as Lang));
         return;
       }
       if (typeof window !== "undefined") {
@@ -56,7 +57,7 @@ function LoginForm() {
       router.push(nextPath);
       router.refresh();
     } catch {
-      setError("네트워크 오류. 잠시 후 다시 시도하세요.");
+      setError(t("login.netError", language as Lang));
     } finally {
       setSubmitting(false);
     }
@@ -75,11 +76,11 @@ function LoginForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <Field label="회사코드" required>
+          <Field label={t("login.companyCode", language as Lang)} required>
             <Select
               value={companyCode}
               onChange={setCompanyCode}
-              placeholder="회사 선택"
+              placeholder={t("login.selectCompany", language as Lang)}
               options={[
                 { v: "TV", l: "TV — Tellustech Vina" },
                 { v: "VR", l: "VR — Vietrental" },
@@ -88,17 +89,17 @@ function LoginForm() {
             />
           </Field>
 
-          <Field label="아이디" required>
+          <Field label={t("login.username", language as Lang)} required>
             <TextInput
               value={username}
               onChange={setUsername}
-              placeholder="사원코드 또는 아이디"
+              placeholder={t("login.usernamePh", language as Lang)}
               autoComplete="username"
               required
             />
           </Field>
 
-          <Field label="비밀번호" required>
+          <Field label={t("login.password", language as Lang)} required>
             <TextInput
               type="password"
               value={password}
@@ -109,7 +110,7 @@ function LoginForm() {
             />
           </Field>
 
-          <Field label="언어">
+          <Field label={t("login.language", language as Lang)}>
             <Select
               value={language}
               onChange={setLanguage}
@@ -132,7 +133,7 @@ function LoginForm() {
             disabled={submitting}
             className="mt-2 w-full rounded-lg bg-[color:var(--tts-primary)] py-3 text-[15px] font-bold text-white disabled:opacity-60"
           >
-            {submitting ? "로그인 중..." : "로그인"}
+            {submitting ? t("login.signingIn", language as Lang) : t("login.signIn", language as Lang)}
           </button>
         </form>
       </div>
@@ -140,16 +141,16 @@ function LoginForm() {
   );
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "invalid_credentials":
-      return "아이디 또는 비밀번호가 올바르지 않습니다.";
+      return t("login.invalidCred", lang);
     case "company_not_allowed":
-      return "선택한 회사에 접근 권한이 없습니다.";
+      return t("login.companyDenied", lang);
     case "invalid_input":
-      return "입력값을 확인해 주세요.";
+      return t("login.invalidInput", lang);
     default:
-      return "로그인에 실패했습니다.";
+      return t("login.failed", lang);
   }
 }
 

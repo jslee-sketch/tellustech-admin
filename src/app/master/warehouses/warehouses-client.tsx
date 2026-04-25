@@ -48,8 +48,8 @@ export function WarehousesClient({ initialData }: { initialData: WarehouseRow[] 
       key: "code",
       label: "창고코드",
       width: "120px",
-      render: (v) => (
-        <span className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)]">{v as string}</span>
+      render: (v, row) => (
+        <Link href={`/master/warehouses/${row.id}`} className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
       ),
     },
     {

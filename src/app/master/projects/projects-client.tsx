@@ -51,8 +51,8 @@ export function ProjectsClient({ initialData }: { initialData: ProjectRow[] }) {
       key: "projectCode",
       label: "프로젝트코드",
       width: "140px",
-      render: (v) => (
-        <span className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)]">{v as string}</span>
+      render: (v, row) => (
+        <Link href={`/master/projects/${row.id}`} className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
       ),
     },
     {

@@ -63,8 +63,10 @@ export function ClientsClient({ initialData }: { initialData: ClientRow[] }) {
       key: "clientCode",
       label: "거래처코드",
       width: "150px",
-      render: (v) => (
-        <span className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)]">{v as string}</span>
+      render: (v, row) => (
+        <Link href={`/master/clients/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">
+          {v as string}
+        </Link>
       ),
     },
     {

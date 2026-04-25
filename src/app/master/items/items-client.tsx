@@ -49,8 +49,8 @@ export function ItemsClient({ initialData }: { initialData: ItemRow[] }) {
       key: "itemCode",
       label: "품목코드",
       width: "180px",
-      render: (v) => (
-        <span className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)]">{v as string}</span>
+      render: (v, row) => (
+        <Link href={`/master/items/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
       ),
     },
     {

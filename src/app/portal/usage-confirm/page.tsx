@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card, Note } from "@/components/ui";
 import { PortalUsageConfirmForm } from "./portal-usage-confirm-form";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PortalUsageConfirmPage() {
   const session = await getSession();
+  const L = session.language;
   if (session.role !== "CLIENT") {
     return <div className="p-8">고객 전용 페이지입니다.</div>;
   }
@@ -42,8 +44,8 @@ export default async function PortalUsageConfirmPage() {
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-3xl">
-        <Link href="/portal" className="text-[11px] font-bold text-[color:var(--tts-accent)]">← 포탈</Link>
-        <h1 className="mt-1 mb-4 text-2xl font-extrabold text-[color:var(--tts-text)]">월별 사용량 컨펌</h1>
+        <Link href="/portal" className="text-[11px] font-bold text-[color:var(--tts-accent)]">{t("page.portal.back", L)}</Link>
+        <h1 className="mt-1 mb-4 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.portal.usage", L)}</h1>
 
         {billings.length === 0 ? (
           <Card>

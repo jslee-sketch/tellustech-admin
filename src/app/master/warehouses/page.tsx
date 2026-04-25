@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { WarehousesClient } from "./warehouses-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function WarehousesPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const warehouses = await prisma.warehouse.findMany({
     orderBy: [{ branchType: "asc" }, { code: "asc" }],
   });
@@ -22,7 +24,7 @@ export default async function WarehousesPage() {
             TELLUSTECH ERP
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            기초등록 · 창고
+            {t("page.warehouses.title", L)}
             <span className="ml-3 rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-accent)]">
               공유 마스터
             </span>

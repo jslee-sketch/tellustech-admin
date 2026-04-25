@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { IncidentNewForm } from "./incident-new-form";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewIncidentPage() {
   const session = await getSession();
+  const L = session.language;
   const employees = await prisma.employee.findMany({
     where: { companyCode: session.companyCode, status: "ACTIVE" },
     orderBy: { employeeCode: "asc" },
@@ -16,8 +18,8 @@ export default async function NewIncidentPage() {
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-3xl">
-        <Link href="/hr/incidents" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">← 사건평가 목록</Link>
-        <h1 className="mt-1 mb-3 text-2xl font-extrabold">사건기반 수시평가 등록</h1>
+        <Link href="/hr/incidents" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.incidents.back", L)}</Link>
+        <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.incidents.new", L)}</h1>
         <Card>
           <IncidentNewForm
             defaultLang={session.language}

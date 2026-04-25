@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { ChatRoomView } from "./chat-room-view";
 
@@ -11,6 +12,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function ChatRoomPage({ params }: PageProps) {
   const session = await getSession();
+  const L = session.language;
   const { id } = await params;
 
   const room = await prisma.chatRoom.findFirst({
@@ -47,7 +49,7 @@ export default async function ChatRoomPage({ params }: PageProps) {
   return (
     <main className="flex-1 p-6">
       <div className="mx-auto max-w-3xl">
-        <Link href="/chat" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">← 채팅</Link>
+        <Link href="/chat" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.chat.back", L)}</Link>
         <div className="mt-1 mb-3 flex items-end justify-between">
           <h1 className="text-2xl font-extrabold">{title}</h1>
           <span className="text-[11px] text-[color:var(--tts-muted)]">{room.type === "DIRECT" ? "1:1" : "그룹"} · {room.members.length}명</span>

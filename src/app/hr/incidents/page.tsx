@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function IncidentsPage() {
   const session = await getSession();
+  const L = session.language;
   const rows = await prisma.incident.findMany({
     where: { companyCode: session.companyCode },
     orderBy: { createdAt: "desc" },
@@ -22,7 +24,7 @@ export default async function IncidentsPage() {
         <div className="mb-6 flex items-end justify-between">
           <div>
             <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
-            <h1 className="mt-1 text-2xl font-extrabold">HR · 사건기반 수시평가</h1>
+            <h1 className="mt-1 text-2xl font-extrabold">{t("page.incidents.title", L)}</h1>
           </div>
           <div className="flex gap-2">
             <ExcelDownload
@@ -44,7 +46,7 @@ export default async function IncidentsPage() {
               ]}
               filename="incidents.xlsx"
             />
-            <Link href="/hr/incidents/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">+ 사건평가 등록</Link>
+            <Link href="/hr/incidents/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("page.incidents.new", L)}</Link>
           </div>
         </div>
         <Card title="사건평가" count={rows.length}>

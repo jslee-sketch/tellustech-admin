@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { ExpenseNewForm } from "./expense-new-form";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewExpensePage() {
   const session = await getSession();
+  const L = session.language;
   const [projects, depts, sales, purchases] = await Promise.all([
     prisma.project.findMany({ where: companyScope(session), orderBy: { projectCode: "asc" }, select: { id: true, projectCode: true, name: true } }),
     prisma.department.findMany({ where: companyScope(session), orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
@@ -26,8 +28,8 @@ export default async function NewExpensePage() {
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-3xl">
-        <Link href="/finance/expenses" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">← 비용 목록</Link>
-        <h1 className="mt-1 mb-3 text-2xl font-extrabold">비용 등록</h1>
+        <Link href="/finance/expenses" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.expenses.back", L)}</Link>
+        <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.expenses.new", L)}</h1>
         <Card>
           <ExpenseNewForm
             projects={projects.map((p) => ({ value: p.id, label: `${p.projectCode} · ${p.name}` }))}

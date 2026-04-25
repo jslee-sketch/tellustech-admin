@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Button, Card, DataTable, ExcelDownload } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
   const session = await getSession();
+  const L = session.language;
   const rows = await prisma.onboardingCard.findMany({
     where: { companyCode: session.companyCode },
     orderBy: { createdAt: "desc" }, take: 200,
@@ -18,7 +20,7 @@ export default async function OnboardingPage() {
         <div className="mb-6 flex justify-between items-center">
           <div>
             <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
-            <h1 className="mt-1 text-2xl font-extrabold">HR · 입사카드</h1>
+            <h1 className="mt-1 text-2xl font-extrabold">{t("page.onboarding.title", L)}</h1>
           </div>
           <div className="flex gap-2">
             <ExcelDownload
@@ -31,7 +33,7 @@ export default async function OnboardingPage() {
               ]}
               filename="onboarding.xlsx"
             />
-            <Link href="/hr/onboarding/new"><Button>+ 입사카드 등록</Button></Link>
+            <Link href="/hr/onboarding/new"><Button>{t("page.onboarding.new", L)}</Button></Link>
           </div>
         </div>
         <Card title="입사카드" count={rows.length}>

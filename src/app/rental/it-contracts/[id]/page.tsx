@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card } from "@/components/ui";
 import { ItContractDetail } from "./it-contract-detail";
 import { EquipmentImport } from "./equipment-import";
@@ -35,7 +36,8 @@ function decimalToInput(d: { toString(): string } | null): string {
 
 export default async function ItContractDetailPage({ params }: PageProps) {
   const { id } = await params;
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
 
   const contract = await prisma.itContract.findUnique({
     where: { id },
@@ -78,7 +80,7 @@ export default async function ItContractDetailPage({ params }: PageProps) {
             href="/rental/it-contracts"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← IT 계약 목록
+            {t("page.itContract.back", L)}
           </Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{contract.contractNumber}</span>
@@ -170,7 +172,7 @@ export default async function ItContractDetailPage({ params }: PageProps) {
           />
         </Card>
         <div className="mt-4">
-          <Card title="📥 장비 엑셀 일괄 업로드">
+          <Card title={t("page.itContract.import", L)}>
             <EquipmentImport contractId={contract.id} />
           </Card>
         </div>

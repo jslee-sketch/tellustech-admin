@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { DepartmentForm } from "../department-form";
 
@@ -12,6 +13,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function EditDepartmentPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
+  const L = session.language;
   const dept = await prisma.department.findUnique({ where: { id } });
   if (!dept) notFound();
   if (!session.allowedCompanies.includes(dept.companyCode)) notFound();
@@ -31,10 +33,10 @@ export default async function EditDepartmentPage({ params }: PageProps) {
               href="/master/departments"
               className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
             >
-              ← 부서 목록
+              {t("page.departments.back", L)}
             </Link>
             <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-              부서 수정
+              {t("page.departments.detail", L)}
               <span className="ml-3 font-mono text-[14px] text-[color:var(--tts-primary)]">{dept.code}</span>
             </h1>
           </div>

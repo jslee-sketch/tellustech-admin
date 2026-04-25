@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { TmRentalNewForm } from "./tm-rental-new-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewTmRentalPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const clients = await prisma.client.findMany({
     orderBy: { clientCode: "desc" },
     take: 200,
@@ -21,9 +23,9 @@ export default async function NewTmRentalPage() {
             href="/rental/tm-rentals"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← TM 렌탈 목록
+            {t("page.tmRental.back", L)}
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">TM 렌탈 등록</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.tmRental.new", L)}</h1>
         </div>
         <Card>
           <TmRentalNewForm

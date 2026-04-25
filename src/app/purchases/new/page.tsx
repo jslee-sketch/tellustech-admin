@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { PurchaseNewForm } from "./purchase-new-form";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewPurchasePage() {
   const session = await getSession();
+  const L = session.language;
   const [suppliers, projects, warehouses, employees] = await Promise.all([
     prisma.client.findMany({
       orderBy: { clientCode: "desc" },
@@ -38,9 +40,9 @@ export default async function NewPurchasePage() {
             href="/purchases"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← 매입 목록
+            {t("page.purchases.back", L)}
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">매입 등록</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.purchases.new", L)}</h1>
         </div>
         <Card>
           <PurchaseNewForm

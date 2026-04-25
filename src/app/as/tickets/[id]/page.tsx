@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card } from "@/components/ui";
 import { AsTicketDetail } from "./as-ticket-detail";
 
@@ -27,6 +28,7 @@ const statusTone: Record<string, "neutral" | "primary" | "accent" | "success" | 
 export default async function AsTicketDetailPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
+  const L = session.language;
 
   const ticket = await prisma.asTicket.findUnique({
     where: { id },
@@ -62,7 +64,7 @@ export default async function AsTicketDetailPage({ params }: PageProps) {
             href="/as/tickets"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← AS 목록
+            {t("page.asTickets.back", L)}
           </Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{ticket.ticketNumber}</span>

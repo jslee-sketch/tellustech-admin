@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,8 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function ScheduleDetailPage({ params }: PageProps) {
   const { id } = await params;
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const r = await prisma.schedule.findUnique({
     where: { id },
     include: {
@@ -24,7 +26,7 @@ export default async function ScheduleDetailPage({ params }: PageProps) {
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
-          <Link href="/master/schedules" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">← 일정 목록</Link>
+          <Link href="/master/schedules" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.schedules.back", L)}</Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{r.scheduleCode}</span>
             <span className="text-[16px]">{r.title}</span>

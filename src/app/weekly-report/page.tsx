@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { WeeklyReportShell } from "./weekly-report-shell";
 
@@ -21,6 +22,7 @@ function nextFridayDeadline(): Date {
 
 export default async function WeeklyReportPage() {
   const session = await getSession();
+  const L = session.language;
   if (session.role === "CLIENT") return <div className="p-8">고객 포탈에서 접근할 수 없습니다.</div>;
 
   const deadline = nextFridayDeadline();
@@ -66,7 +68,7 @@ export default async function WeeklyReportPage() {
         <div className="mb-6 flex items-end justify-between">
           <div>
             <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
-            <h1 className="mt-1 text-2xl font-extrabold">주간회의자료</h1>
+            <h1 className="mt-1 text-2xl font-extrabold">{t("page.weekly.title", L)}</h1>
           </div>
           <div className="text-right">
             <div className="text-[11px] text-[color:var(--tts-muted)]">금주 마감</div>

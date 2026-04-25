@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { ScheduleNewForm } from "./schedule-new-form";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewSchedulePage() {
   const session = await getSession();
+  const L = session.language;
   const employees = await prisma.employee.findMany({
     where: { companyCode: session.companyCode, status: "ACTIVE" },
     orderBy: { employeeCode: "asc" },
@@ -16,8 +18,8 @@ export default async function NewSchedulePage() {
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-3xl">
-        <Link href="/master/schedules" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">← 일정 목록</Link>
-        <h1 className="mt-1 mb-3 text-2xl font-extrabold">일정(마감) 등록</h1>
+        <Link href="/master/schedules" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.schedules.back", L)}</Link>
+        <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.schedules.new", L)}</h1>
         <Card>
           <ScheduleNewForm
             employeeOptions={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))}

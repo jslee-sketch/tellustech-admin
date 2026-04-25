@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { OnboardingNewForm } from "./onboarding-new-form";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewOnboardingPage() {
   const session = await getSession();
+  const L = session.language;
   // 이미 입사카드가 있는 직원 제외
   const existing = await prisma.onboardingCard.findMany({
     where: { companyCode: session.companyCode },
@@ -23,8 +25,8 @@ export default async function NewOnboardingPage() {
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-3xl">
-        <Link href="/hr/onboarding" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">← 입사카드 목록</Link>
-        <h1 className="mt-1 mb-3 text-2xl font-extrabold">입사카드 등록</h1>
+        <Link href="/hr/onboarding" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.onboarding.back", L)}</Link>
+        <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.onboarding.new", L)}</h1>
         <Card>
           <OnboardingNewForm employees={options} />
         </Card>

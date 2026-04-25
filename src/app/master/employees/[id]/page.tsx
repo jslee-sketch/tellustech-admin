@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { EmployeeForm } from "../employee-form";
 
@@ -17,6 +18,7 @@ function dateToInput(d: Date | null): string {
 export default async function EditEmployeePage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
+  const L = session.language;
 
   const emp = await prisma.employee.findUnique({
     where: { id },
@@ -40,10 +42,10 @@ export default async function EditEmployeePage({ params }: PageProps) {
             href="/master/employees"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← 직원 목록
+            {t("page.employees.back", L)}
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            직원 수정
+            {t("page.employees.detail", L)}
             <span className="ml-3 font-mono text-[13px] text-[color:var(--tts-primary)]">
               {emp.employeeCode}
             </span>

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { ItContractsClient } from "./it-contracts-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function ItContractsPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const contracts = await prisma.itContract.findMany({
     orderBy: { contractNumber: "desc" },
     take: 500,
@@ -26,7 +28,7 @@ export default async function ItContractsPage() {
           >
             TELLUSTECH ERP
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">렌탈 · IT 계약</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.itContract.title", L)}</h1>
         </div>
         <ItContractsClient
           initialData={contracts.map((c) => ({

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Button, Card, DataTable, ExcelDownload } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExpensesPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const rows = await prisma.expense.findMany({
     orderBy: { incurredAt: "desc" }, take: 500,
     include: { _count: { select: { allocations: true } } },
@@ -17,7 +19,7 @@ export default async function ExpensesPage() {
         <div className="mb-6 flex justify-between items-center">
           <div>
             <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
-            <h1 className="mt-1 text-2xl font-extrabold">재경 · 비용</h1>
+            <h1 className="mt-1 text-2xl font-extrabold">{t("page.expenses.title", L)}</h1>
           </div>
           <div className="flex gap-2">
             <ExcelDownload
@@ -43,7 +45,7 @@ export default async function ExpensesPage() {
               ]}
               filename="expenses.xlsx"
             />
-            <Link href="/finance/expenses/new"><Button>+ 비용 등록</Button></Link>
+            <Link href="/finance/expenses/new"><Button>{t("page.expenses.new", L)}</Button></Link>
           </div>
         </div>
         <Card title="비용" count={rows.length}>

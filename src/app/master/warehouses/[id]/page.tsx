@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { WarehouseForm } from "../warehouse-form";
 
@@ -11,7 +12,8 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function EditWarehousePage({ params }: PageProps) {
   const { id } = await params;
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const w = await prisma.warehouse.findUnique({ where: { id } });
   if (!w) notFound();
 
@@ -23,10 +25,10 @@ export default async function EditWarehousePage({ params }: PageProps) {
             href="/master/warehouses"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← 창고 목록
+            {t("page.warehouses.back", L)}
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            창고 수정
+            {t("page.warehouses.detail", L)}
             <span className="ml-3 font-mono text-[14px] text-[color:var(--tts-primary)]">{w.code}</span>
           </h1>
         </div>

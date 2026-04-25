@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { TmRentalsClient } from "./tm-rentals-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function TmRentalsPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const rentals = await prisma.tmRental.findMany({
     orderBy: { rentalCode: "desc" },
     take: 500,
@@ -27,7 +29,7 @@ export default async function TmRentalsPage() {
           >
             TELLUSTECH ERP
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">렌탈 · TM 렌탈</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.tmRental.title", L)}</h1>
         </div>
         <TmRentalsClient
           initialData={rentals.map((r) => ({

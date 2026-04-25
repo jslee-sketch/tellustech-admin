@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { ClientsClient } from "./clients-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClientsPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const clients = await prisma.client.findMany({
     orderBy: { clientCode: "desc" },
     take: 500,
@@ -24,7 +26,7 @@ export default async function ClientsPage() {
             TELLUSTECH ERP
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            기초등록 · 거래처
+            {t("page.clients.title", L)}
             <span className="ml-3 rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-accent)]">
               공유 마스터
             </span>

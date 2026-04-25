@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function PayablesPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const rows = await prisma.payableReceivable.findMany({
     orderBy: [{ status: "asc" }, { dueDate: "asc" }],
     take: 500,
@@ -37,7 +39,7 @@ export default async function PayablesPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-6">
           <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
-          <h1 className="mt-1 text-2xl font-extrabold">재경 · 미수/미지급</h1>
+          <h1 className="mt-1 text-2xl font-extrabold">{t("page.payables.title", L)}</h1>
           <div className="mt-2 text-[13px] text-[color:var(--tts-sub)]">
             미해결 합계 <span className="ml-1 font-mono font-bold text-[color:var(--tts-danger)]">{new Intl.NumberFormat("vi-VN").format(totalOutstanding)} VND</span>
           </div>

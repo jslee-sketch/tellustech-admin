@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card, Note } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function ChatPage() {
   const session = await getSession();
+  const L = session.language;
   const rooms = await prisma.chatRoom.findMany({
     where: { members: { some: { userId: session.sub } } },
     orderBy: { updatedAt: "desc" },
@@ -22,9 +24,9 @@ export default async function ChatPage() {
         <div className="mb-6 flex items-end justify-between">
           <div>
             <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
-            <h1 className="mt-1 text-2xl font-extrabold">💬 채팅</h1>
+            <h1 className="mt-1 text-2xl font-extrabold">{t("page.chat.title", L)}</h1>
           </div>
-          <Link href="/chat/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">+ 채팅방 생성</Link>
+          <Link href="/chat/new" className="rounded-md bg-[color:var(--tts-primary)] px-3 py-2 text-[12px] font-bold text-white hover:opacity-90">{t("page.chat.new", L)}</Link>
         </div>
         <Note tone="info">
           메시지 전송 시 Claude API 로 나머지 언어 자동 번역 (API 키 설정 필요 — 없으면 원문만 저장).

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { DispatchNewForm } from "./dispatch-new-form";
 
@@ -15,6 +16,7 @@ export default async function NewDispatchPage({ searchParams }: PageProps) {
   if (!ticketId) notFound(); // 출동은 항상 특정 AS 에서 진입
 
   const session = await getSession();
+  const L = session.language;
 
   const ticket = await prisma.asTicket.findUnique({
     where: { id: ticketId },
@@ -39,10 +41,10 @@ export default async function NewDispatchPage({ searchParams }: PageProps) {
             href={`/as/tickets/${ticket.id}`}
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← AS 전표
+            {t("page.dispatches.backTickets", L)}
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            출동 등록
+            {t("page.dispatches.new", L)}
             <span className="ml-3 font-mono text-[14px] text-[color:var(--tts-primary)]">{ticket.ticketNumber}</span>
           </h1>
         </div>

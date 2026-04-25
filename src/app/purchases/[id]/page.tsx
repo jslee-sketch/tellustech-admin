@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { Badge, Card } from "@/components/ui";
 import { PurchaseDetail } from "./purchase-detail";
 import { PurchaseItemsImport } from "./items-import";
@@ -14,6 +15,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function PurchaseDetailPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
+  const L = session.language;
 
   const purchase = await prisma.purchase.findUnique({
     where: { id },
@@ -52,7 +54,7 @@ export default async function PurchaseDetailPage({ params }: PageProps) {
             href="/purchases"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← 매입 목록
+            {t("page.purchases.back", L)}
           </Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{purchase.purchaseNumber}</span>
@@ -123,7 +125,7 @@ export default async function PurchaseDetailPage({ params }: PageProps) {
           />
         </Card>
         <div className="mt-4">
-          <Card title="📥 라인 엑셀 일괄 업로드">
+          <Card title={t("page.purchases.import", L)}>
             <PurchaseItemsImport purchaseId={purchase.id} />
           </Card>
         </div>

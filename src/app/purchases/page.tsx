@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { PurchasesClient } from "./purchases-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function PurchasesListPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const purchases = await prisma.purchase.findMany({
     orderBy: { purchaseNumber: "desc" },
     take: 500,
@@ -28,7 +30,7 @@ export default async function PurchasesListPage() {
           >
             TELLUSTECH ERP
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">매입 관리</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.purchases.title", L)}</h1>
         </div>
         <PurchasesClient
           initialData={purchases.map((s) => ({

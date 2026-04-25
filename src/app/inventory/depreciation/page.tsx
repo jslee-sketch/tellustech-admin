@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { DepreciationClient } from "./depreciation-client";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DepreciationPage() {
   const session = await getSession();
+  const L = session.language;
   const [rows, items] = await Promise.all([
     prisma.assetDepreciation.findMany({
       where: companyScope(session),
@@ -31,7 +33,7 @@ export default async function DepreciationPage() {
             TELLUSTECH ERP
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            재고 · 감가상각
+            {t("page.depreciation.title", L)}
             <span className="ml-3 rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-primary)]">
               {session.companyCode}
             </span>

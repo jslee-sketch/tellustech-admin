@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { TransactionsClient } from "./transactions-client";
 import { InventoryImport } from "./inventory-import";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function InventoryTransactionsPage() {
   const session = await getSession();
+  const L = session.language;
   const [items, warehouses, clients] = await Promise.all([
     prisma.item.findMany({ orderBy: { itemCode: "desc" }, take: 2000, select: { id: true, itemCode: true, name: true } }),
     prisma.warehouse.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, warehouseType: true } }),
@@ -43,7 +45,7 @@ export default async function InventoryTransactionsPage() {
               TELLUSTECH ERP
             </Link>
             <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-              재고 · 입출고 현황
+              {t("page.invTxn.title", L)}
               <span className="ml-3 rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-primary)]">
                 {session.companyCode}
               </span>
@@ -78,7 +80,7 @@ export default async function InventoryTransactionsPage() {
           }))}
         />
         <div className="mt-4">
-          <Card title="📥 엑셀 일괄 업로드">
+          <Card title={t("page.invTxn.import", L)}>
             <InventoryImport items={items} warehouses={warehouses} clients={clients} />
           </Card>
         </div>

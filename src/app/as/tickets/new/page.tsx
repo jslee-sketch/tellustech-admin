@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { AsTicketNewForm } from "./as-ticket-new-form";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewAsTicketPage() {
   const session = await getSession();
+  const L = session.language;
 
   const [clients, items, employees] = await Promise.all([
     prisma.client.findMany({
@@ -35,9 +37,9 @@ export default async function NewAsTicketPage() {
             href="/as/tickets"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← AS 목록
+            {t("page.asTickets.back", L)}
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">AS 접수</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.asTickets.new", L)}</h1>
         </div>
         <Card>
           <AsTicketNewForm

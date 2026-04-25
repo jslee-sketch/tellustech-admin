@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { DepartmentForm } from "../department-form";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewDepartmentPage() {
   const session = await getSession();
+  const L = session.language;
   // 현재 세션 회사(또는 관리자라면 첫 허용 회사)의 직원 목록
   const defaultCompany = session.companyCode;
   const employees = await prisma.employee.findMany({
@@ -25,9 +27,9 @@ export default async function NewDepartmentPage() {
               href="/master/departments"
               className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
             >
-              ← 부서 목록
+              {t("page.departments.back", L)}
             </Link>
-            <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">부서 등록</h1>
+            <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.departments.new", L)}</h1>
           </div>
         </div>
         <Card>

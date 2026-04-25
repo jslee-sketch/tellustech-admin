@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card } from "@/components/ui";
 import { DispatchDetail } from "./dispatch-detail";
 import { DispatchPartsSection } from "./dispatch-parts";
@@ -13,6 +14,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function DispatchDetailPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
+  const L = session.language;
 
   const dispatch = await prisma.asDispatch.findUnique({
     where: { id },
@@ -61,10 +63,10 @@ export default async function DispatchDetailPage({ params }: PageProps) {
             href="/as/dispatches"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← 출동 목록
+            {t("page.dispatches.back", L)}
           </Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            출동 상세
+            {t("page.dispatches.detail", L)}
             <Link
               href={`/as/tickets/${dispatch.asTicket.id}`}
               className="font-mono text-[15px] text-[color:var(--tts-primary)] hover:underline"

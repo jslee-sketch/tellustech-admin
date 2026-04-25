@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { StockClient } from "./stock-client";
 import { InventoryItemsSection } from "./inventory-items-section";
 
@@ -21,6 +22,7 @@ type StockRow = {
 
 export default async function InventoryStockPage() {
   const session = await getSession();
+  const L = session.language;
 
   // Server-side 집계 — from/to 이중구조:
   //   창고 X 의 재고 = Σ(toWarehouseId=X) - Σ(fromWarehouseId=X)
@@ -89,7 +91,7 @@ export default async function InventoryStockPage() {
               TELLUSTECH ERP
             </Link>
             <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-              재고 · 현황
+              {t("page.stock.title", L)}
               <span className="ml-3 rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-primary)]">
                 {session.companyCode}
               </span>

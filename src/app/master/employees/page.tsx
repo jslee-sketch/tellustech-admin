@@ -2,12 +2,14 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { EmployeesClient } from "./employees-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmployeesPage() {
   const session = await getSession();
+  const L = session.language;
   const employees = await prisma.employee.findMany({
     where: companyScope(session),
     orderBy: [{ status: "asc" }, { employeeCode: "asc" }],
@@ -25,7 +27,7 @@ export default async function EmployeesPage() {
             TELLUSTECH ERP
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            기초등록 · 직원
+            {t("page.employees.title", L)}
             <span className="ml-3 rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-primary)]">
               {session.companyCode}
             </span>

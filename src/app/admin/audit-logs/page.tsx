@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card, DataTable } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuditLogsPage() {
   const session = await getSession();
+  const L = session.language;
   if (session.role !== "ADMIN") {
     return (
       <main className="flex-1 p-8">
@@ -39,7 +41,7 @@ export default async function AuditLogsPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6">
           <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
-          <h1 className="mt-1 text-2xl font-extrabold">🧾 감사 로그 (Audit Log)</h1>
+          <h1 className="mt-1 text-2xl font-extrabold">{t("page.audit.title", L)}</h1>
           <div className="mt-1 text-[12px] text-[color:var(--tts-muted)]">모든 INSERT/UPDATE/DELETE 기록 · 최근 300건</div>
         </div>
         <Card count={rows.length}>

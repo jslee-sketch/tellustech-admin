@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { SalesClient } from "./sales-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function SalesListPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const sales = await prisma.sales.findMany({
     orderBy: { salesNumber: "desc" },
     take: 500,
@@ -28,7 +30,7 @@ export default async function SalesListPage() {
           >
             TELLUSTECH ERP
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">매출 관리</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.sales.title", L)}</h1>
         </div>
         <SalesClient
           initialData={sales.map((s) => ({

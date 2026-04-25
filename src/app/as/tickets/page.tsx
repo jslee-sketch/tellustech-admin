@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { TicketsClient } from "./tickets-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function AsTicketsPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const tickets = await prisma.asTicket.findMany({
     orderBy: { receivedAt: "desc" },
     take: 500,
@@ -27,7 +29,7 @@ export default async function AsTicketsPage() {
           >
             TELLUSTECH ERP
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">AS 관리 · 접수</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.asTickets.title", L)}</h1>
         </div>
         <TicketsClient
           initialData={tickets.map((t) => ({

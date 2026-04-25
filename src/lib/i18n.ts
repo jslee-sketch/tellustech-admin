@@ -97,6 +97,175 @@ const DICT: Dict = {
   "badge.RED":    { vi: "🔴 Quá hạn",   en: "🔴 Overdue", ko: "🔴 초과" },
   "badge.YELLOW": { vi: "🟡 Sắp tới",   en: "🟡 Soon",    ko: "🟡 임박" },
   "badge.GREEN":  { vi: "🟢 Còn thời gian", en: "🟢 OK",  ko: "🟢 여유" },
+
+  // ── 공통 액션 / 라벨 ──
+  "action.back":          { vi: "← Quay lại",        en: "← Back",            ko: "← 뒤로" },
+  "action.list":          { vi: "Danh sách",         en: "List",              ko: "목록" },
+  "action.new":           { vi: "+ Tạo mới",         en: "+ New",             ko: "+ 등록" },
+  "action.create":        { vi: "Tạo",               en: "Create",            ko: "생성" },
+  "action.edit":          { vi: "Sửa",               en: "Edit",              ko: "수정" },
+  "action.save":          { vi: "Lưu",               en: "Save",              ko: "저장" },
+  "action.delete":        { vi: "Xoá",               en: "Delete",            ko: "삭제" },
+  "action.cancel":        { vi: "Huỷ",               en: "Cancel",            ko: "취소" },
+  "action.detail":        { vi: "Chi tiết",          en: "Detail",            ko: "상세" },
+  "action.export":        { vi: "Xuất Excel",        en: "Export Excel",      ko: "엑셀 다운로드" },
+  "action.import":        { vi: "Nhập Excel",        en: "Import Excel",      ko: "엑셀 일괄 업로드" },
+
+  // ── 매출 ──
+  "page.sales.title":     { vi: "Quản lý doanh thu", en: "Sales",             ko: "매출 관리" },
+  "page.sales.new":       { vi: "Tạo đơn doanh thu", en: "New Sales",         ko: "매출 등록" },
+  "page.sales.detail":    { vi: "Chi tiết doanh thu", en: "Sales Detail",     ko: "매출 상세" },
+  "page.sales.back":      { vi: "← Danh sách doanh thu", en: "← Back to Sales", ko: "← 매출 목록" },
+  "page.sales.import":    { vi: "📥 Nhập dòng (Excel)", en: "📥 Import Lines (Excel)", ko: "📥 라인 엑셀 일괄 업로드" },
+
+  // ── 매입 ──
+  "page.purchases.title": { vi: "Quản lý mua hàng",  en: "Purchases",         ko: "매입 관리" },
+  "page.purchases.new":   { vi: "Tạo phiếu mua",     en: "New Purchase",      ko: "매입 등록" },
+  "page.purchases.detail":{ vi: "Chi tiết mua hàng", en: "Purchase Detail",   ko: "매입 상세" },
+  "page.purchases.back":  { vi: "← Danh sách mua hàng", en: "← Back to Purchases", ko: "← 매입 목록" },
+  "page.purchases.import":{ vi: "📥 Nhập dòng (Excel)", en: "📥 Import Lines (Excel)", ko: "📥 라인 엑셀 일괄 업로드" },
+
+  // ── 마스터 · 거래처 ──
+  "page.clients.title":   { vi: "Dữ liệu gốc · Khách hàng", en: "Master · Clients", ko: "기초등록 · 거래처" },
+  "page.clients.new":     { vi: "Tạo khách hàng",    en: "New Client",        ko: "거래처 등록" },
+  "page.clients.detail":  { vi: "Chi tiết khách hàng", en: "Client Detail",   ko: "거래처 상세" },
+  "page.clients.back":    { vi: "← Danh sách khách hàng", en: "← Back to Clients", ko: "← 거래처 목록" },
+
+  // ── 마스터 · 품목 ──
+  "page.items.title":     { vi: "Dữ liệu gốc · Mặt hàng", en: "Master · Items", ko: "기초등록 · 품목" },
+  "page.items.new":       { vi: "Tạo mặt hàng",      en: "New Item",          ko: "품목 등록" },
+  "page.items.detail":    { vi: "Sửa mặt hàng",      en: "Edit Item",         ko: "품목 수정" },
+  "page.items.back":      { vi: "← Danh sách mặt hàng", en: "← Back to Items", ko: "← 품목 목록" },
+
+  // ── 마스터 · 직원 ──
+  "page.employees.title": { vi: "Dữ liệu gốc · Nhân viên", en: "Master · Employees", ko: "기초등록 · 직원" },
+  "page.employees.new":   { vi: "Tạo nhân viên",     en: "New Employee",      ko: "직원 등록" },
+  "page.employees.detail":{ vi: "Sửa nhân viên",     en: "Edit Employee",     ko: "직원 수정" },
+  "page.employees.back":  { vi: "← Danh sách nhân viên", en: "← Back to Employees", ko: "← 직원 목록" },
+
+  // ── 마스터 · 부서 ──
+  "page.departments.title":  { vi: "Dữ liệu gốc · Phòng ban", en: "Master · Departments", ko: "기초등록 · 부서" },
+  "page.departments.new":    { vi: "Tạo phòng ban",  en: "New Department",    ko: "부서 등록" },
+  "page.departments.detail": { vi: "Sửa phòng ban",  en: "Edit Department",   ko: "부서 수정" },
+  "page.departments.back":   { vi: "← Danh sách phòng ban", en: "← Back to Departments", ko: "← 부서 목록" },
+
+  // ── 마스터 · 창고 ──
+  "page.warehouses.title":   { vi: "Dữ liệu gốc · Kho hàng", en: "Master · Warehouses", ko: "기초등록 · 창고" },
+  "page.warehouses.new":     { vi: "Tạo kho",        en: "New Warehouse",     ko: "창고 등록" },
+  "page.warehouses.detail":  { vi: "Sửa kho",        en: "Edit Warehouse",    ko: "창고 수정" },
+  "page.warehouses.back":    { vi: "← Danh sách kho", en: "← Back to Warehouses", ko: "← 창고 목록" },
+
+  // ── 마스터 · 프로젝트 ──
+  "page.projects.title":     { vi: "Dữ liệu gốc · Dự án", en: "Master · Projects", ko: "기초등록 · 프로젝트" },
+  "page.projects.new":       { vi: "Tạo dự án",      en: "New Project",       ko: "프로젝트 등록" },
+  "page.projects.detail":    { vi: "Sửa dự án",      en: "Edit Project",      ko: "프로젝트 수정" },
+  "page.projects.back":      { vi: "← Danh sách dự án", en: "← Back to Projects", ko: "← 프로젝트 목록" },
+
+  // ── 마스터 · 일정/CFM ──
+  "page.schedules.title":    { vi: "Quản lý lịch trình · CFM", en: "Schedules · CFM", ko: "일정(마감) 관리 · CFM" },
+  "page.schedules.new":      { vi: "Tạo lịch trình", en: "New Schedule",      ko: "일정(마감) 등록" },
+  "page.schedules.detail":   { vi: "Chi tiết lịch trình", en: "Schedule Detail", ko: "일정 상세" },
+  "page.schedules.back":     { vi: "← Danh sách lịch trình", en: "← Back to Schedules", ko: "← 일정 목록" },
+
+  // ── 마스터 · 라이선스 ──
+  "page.licenses.title":     { vi: "Quản lý giấy phép", en: "Licenses",       ko: "라이선스 관리" },
+  "page.licenses.new":       { vi: "Tạo giấy phép",  en: "New License",       ko: "라이선스 등록" },
+  "page.licenses.detail":    { vi: "Chi tiết giấy phép", en: "License Detail", ko: "라이선스 상세" },
+  "page.licenses.back":      { vi: "← Danh sách giấy phép", en: "← Back to Licenses", ko: "← 라이선스 목록" },
+
+  // ── 렌탈 · IT 계약 ──
+  "page.itContract.title":   { vi: "Cho thuê · Hợp đồng IT", en: "Rental · IT Contracts", ko: "렌탈 · IT 계약" },
+  "page.itContract.new":     { vi: "Tạo hợp đồng IT", en: "New IT Contract",  ko: "IT 계약 등록" },
+  "page.itContract.detail":  { vi: "Chi tiết hợp đồng IT", en: "IT Contract Detail", ko: "IT 계약 상세" },
+  "page.itContract.back":    { vi: "← Danh sách hợp đồng IT", en: "← Back to IT Contracts", ko: "← IT 계약 목록" },
+  "page.itContract.import":  { vi: "📥 Nhập thiết bị (Excel)", en: "📥 Import Equipment (Excel)", ko: "📥 장비 엑셀 일괄 업로드" },
+
+  // ── 렌탈 · TM ──
+  "page.tmRental.title":     { vi: "Cho thuê · TM",  en: "Rental · TM",       ko: "렌탈 · TM 렌탈" },
+  "page.tmRental.new":       { vi: "Tạo TM Rental",  en: "New TM Rental",     ko: "TM 렌탈 등록" },
+  "page.tmRental.detail":    { vi: "Chi tiết TM Rental", en: "TM Rental Detail", ko: "TM 렌탈 상세" },
+  "page.tmRental.back":      { vi: "← Danh sách TM Rental", en: "← Back to TM Rental", ko: "← TM 렌탈 목록" },
+  "page.tmRental.import":    { vi: "📥 Nhập mặt hàng (Excel)", en: "📥 Import Items (Excel)", ko: "📥 품목 엑셀 일괄 업로드" },
+
+  // ── AS · 접수 ──
+  "page.asTickets.title":    { vi: "Quản lý BH · Tiếp nhận", en: "AS · Tickets", ko: "AS 관리 · 접수" },
+  "page.asTickets.new":      { vi: "Tiếp nhận AS",   en: "New AS Ticket",     ko: "AS 접수" },
+  "page.asTickets.detail":   { vi: "Chi tiết AS",    en: "AS Ticket Detail",  ko: "AS 상세" },
+  "page.asTickets.back":     { vi: "← Danh sách AS", en: "← Back to AS",      ko: "← AS 목록" },
+
+  // ── AS · 출동 ──
+  "page.dispatches.title":   { vi: "AS · Xuất phái", en: "AS · Dispatches",   ko: "AS · 출동" },
+  "page.dispatches.new":     { vi: "Tạo xuất phái",  en: "New Dispatch",      ko: "출동 등록" },
+  "page.dispatches.detail":  { vi: "Chi tiết xuất phái", en: "Dispatch Detail", ko: "출동 상세" },
+  "page.dispatches.back":    { vi: "← Danh sách xuất phái", en: "← Back to Dispatches", ko: "← 출동 목록" },
+  "page.dispatches.backTickets": { vi: "← Phiếu AS", en: "← AS Tickets",      ko: "← AS 전표" },
+
+  // ── 재고 ──
+  "page.stock.title":        { vi: "Kho · Tồn kho",  en: "Inventory · Stock", ko: "재고 · 현황" },
+  "page.invTxn.title":       { vi: "Kho · Xuất nhập", en: "Inventory · Transactions", ko: "재고 · 입출고 현황" },
+  "page.invTxn.new":         { vi: "Tạo phiếu xuất nhập", en: "New Transaction", ko: "입출고 등록" },
+  "page.invTxn.back":        { vi: "← Xuất nhập",    en: "← Transactions",    ko: "← 입출고 현황" },
+  "page.invTxn.import":      { vi: "📥 Nhập (Excel)", en: "📥 Import (Excel)", ko: "📥 엑셀 일괄 업로드" },
+  "page.qrScan.title":       { vi: "📷 Quét QR Xuất nhập", en: "📷 QR Scan I/O", ko: "📷 QR 스캔 입출고" },
+  "page.qrLabel.title":      { vi: "In nhãn QR",     en: "QR Label Print",    ko: "QR 라벨 인쇄" },
+  "page.depreciation.title": { vi: "Kho · Khấu hao", en: "Inventory · Depreciation", ko: "재고 · 감가상각" },
+
+  // ── HR ──
+  "page.onboarding.title":   { vi: "HR · Tiếp nhận NV", en: "HR · Onboarding", ko: "HR · 입사카드" },
+  "page.onboarding.new":     { vi: "Tạo phiếu tiếp nhận", en: "New Onboarding", ko: "입사카드 등록" },
+  "page.onboarding.detail":  { vi: "Chi tiết tiếp nhận", en: "Onboarding Detail", ko: "입사카드 상세" },
+  "page.onboarding.back":    { vi: "← Danh sách tiếp nhận", en: "← Back to Onboarding", ko: "← 입사카드 목록" },
+
+  "page.offboarding.title":  { vi: "HR · Nghỉ việc", en: "HR · Offboarding",  ko: "HR · 퇴사카드" },
+  "page.offboarding.new":    { vi: "Tạo phiếu nghỉ việc", en: "New Offboarding", ko: "퇴사카드 등록" },
+  "page.offboarding.detail": { vi: "Chi tiết nghỉ việc", en: "Offboarding Detail", ko: "퇴사카드 상세" },
+  "page.offboarding.back":   { vi: "← Danh sách nghỉ việc", en: "← Back to Offboarding", ko: "← 퇴사카드 목록" },
+
+  "page.incidents.title":    { vi: "HR · Đánh giá theo sự kiện", en: "HR · Incident Evaluation", ko: "HR · 사건기반 수시평가" },
+  "page.incidents.new":      { vi: "Tạo đánh giá sự kiện", en: "New Incident", ko: "사건기반 수시평가 등록" },
+  "page.incidents.detail":   { vi: "Chi tiết sự kiện", en: "Incident Detail", ko: "사건평가 상세" },
+  "page.incidents.back":     { vi: "← Danh sách sự kiện", en: "← Back to Incidents", ko: "← 사건평가 목록" },
+
+  "page.evaluations.title":  { vi: "HR · Đánh giá định kỳ", en: "HR · Evaluations", ko: "HR · 정기 인사평가" },
+  "page.evaluations.new":    { vi: "Tạo đánh giá định kỳ", en: "New Evaluation", ko: "정기 인사평가 등록" },
+  "page.evaluations.detail": { vi: "Chi tiết đánh giá", en: "Evaluation Detail", ko: "정기평가 상세" },
+  "page.evaluations.back":   { vi: "← Danh sách đánh giá", en: "← Back to Evaluations", ko: "← 정기평가 목록" },
+  "page.evaluations.ai":     { vi: "Đánh giá tổng hợp AI", en: "AI Comprehensive Evaluation", ko: "AI 종합 인사평가" },
+
+  "page.leave.title":        { vi: "HR · Nghỉ phép",  en: "HR · Leave",       ko: "HR · 연차/휴가" },
+  "page.leave.new":          { vi: "Đăng ký nghỉ phép", en: "New Leave Request", ko: "연차/휴가 신청" },
+  "page.leave.detail":       { vi: "Chi tiết nghỉ phép", en: "Leave Detail",  ko: "연차 상세" },
+  "page.leave.back":         { vi: "← Danh sách nghỉ phép", en: "← Back to Leave", ko: "← 연차 목록" },
+
+  // ── Finance ──
+  "page.payables.title":     { vi: "Tài chính · Phải thu/Phải trả", en: "Finance · AR/AP", ko: "재경 · 미수/미지급" },
+  "page.payables.detail":    { vi: "Chi tiết phải thu/trả", en: "AR/AP Detail", ko: "미수/미지급 상세" },
+  "page.payables.back":      { vi: "← Phải thu/trả", en: "← AR/AP",           ko: "← 미수/미지급" },
+  "page.payables.AR":        { vi: "Phải thu",       en: "Receivable",        ko: "미수금" },
+  "page.payables.AP":        { vi: "Phải trả",       en: "Payable",           ko: "미지급금" },
+
+  "page.expenses.title":     { vi: "Tài chính · Chi phí", en: "Finance · Expenses", ko: "재경 · 비용" },
+  "page.expenses.new":       { vi: "Tạo chi phí",    en: "New Expense",       ko: "비용 등록" },
+  "page.expenses.detail":    { vi: "Chi tiết chi phí", en: "Expense Detail",  ko: "비용 상세" },
+  "page.expenses.back":      { vi: "← Danh sách chi phí", en: "← Back to Expenses", ko: "← 비용 목록" },
+
+  // ── Calendar / Weekly ──
+  "page.calendar.title":     { vi: "Lịch",           en: "Calendar",          ko: "캘린더" },
+  "page.weekly.title":       { vi: "Họp tuần",       en: "Weekly Meeting",    ko: "주간회의자료" },
+
+  // ── Chat ──
+  "page.chat.title":         { vi: "💬 Trò chuyện",  en: "💬 Chat",           ko: "💬 채팅" },
+  "page.chat.new":           { vi: "Tạo phòng chat", en: "New Chat Room",     ko: "채팅방 생성" },
+  "page.chat.back":          { vi: "← Trò chuyện",   en: "← Chat",            ko: "← 채팅" },
+
+  // ── Admin ──
+  "page.audit.title":        { vi: "🧾 Nhật ký kiểm toán (Audit Log)", en: "🧾 Audit Log", ko: "🧾 감사 로그 (Audit Log)" },
+
+  // ── Portal ──
+  "page.portal.back":        { vi: "← Cổng KH",      en: "← Portal",          ko: "← 포탈" },
+  "page.portal.usage":       { vi: "Xác nhận sử dụng theo tháng", en: "Monthly Usage Confirmation", ko: "월별 사용량 컨펌" },
+  "page.portal.supplies":    { vi: "📦 Yêu cầu vật tư", en: "📦 Supplies Request", ko: "📦 소모품 요청" },
+  "page.portal.asRequest":   { vi: "Yêu cầu BH",     en: "AS Request",        ko: "AS 요청" },
 };
 
 export function t(key: string, lang: Lang): string {

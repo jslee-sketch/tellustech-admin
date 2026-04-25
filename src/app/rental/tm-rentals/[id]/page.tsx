@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card } from "@/components/ui";
 import { TmRentalDetail } from "./tm-rental-detail";
 import { TmItemsImport } from "./items-import";
@@ -19,7 +20,8 @@ function dec(d: { toString(): string } | null): string {
 
 export default async function TmRentalDetailPage({ params }: PageProps) {
   const { id } = await params;
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const rental = await prisma.tmRental.findUnique({
     where: { id },
     include: {
@@ -51,7 +53,7 @@ export default async function TmRentalDetailPage({ params }: PageProps) {
             href="/rental/tm-rentals"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← TM 렌탈 목록
+            {t("page.tmRental.back", L)}
           </Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{rental.rentalCode}</span>
@@ -103,7 +105,7 @@ export default async function TmRentalDetailPage({ params }: PageProps) {
           />
         </Card>
         <div className="mt-4">
-          <Card title="📥 품목 엑셀 일괄 업로드">
+          <Card title={t("page.tmRental.import", L)}>
             <TmItemsImport rentalId={rental.id} />
           </Card>
         </div>

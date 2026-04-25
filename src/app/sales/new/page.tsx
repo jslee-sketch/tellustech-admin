@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
+import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { SalesNewForm } from "./sales-new-form";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewSalesPage() {
   const session = await getSession();
+  const L = session.language;
 
   const [clients, projects, warehouses, employees] = await Promise.all([
     prisma.client.findMany({
@@ -40,9 +42,9 @@ export default async function NewSalesPage() {
             href="/sales"
             className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline"
           >
-            ← 매출 목록
+            {t("page.sales.back", L)}
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">매출 등록</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.sales.new", L)}</h1>
         </div>
         <Card>
           <SalesNewForm

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { DispatchesClient } from "./dispatches-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function DispatchesPage() {
-  await getSession();
+  const session = await getSession();
+  const L = session.language;
   const dispatches = await prisma.asDispatch.findMany({
     orderBy: { createdAt: "desc" },
     take: 500,
@@ -28,7 +30,7 @@ export default async function DispatchesPage() {
           >
             TELLUSTECH ERP
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">AS · 출동</h1>
+          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.dispatches.title", L)}</h1>
         </div>
         <DispatchesClient
           initialData={dispatches.map((d) => ({

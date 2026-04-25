@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { Badge, Card, Multilingual } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function IncidentDetailPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
+  const L = session.language;
   const r = await prisma.incident.findUnique({
     where: { id },
     include: {
@@ -23,7 +25,7 @@ export default async function IncidentDetailPage({ params }: PageProps) {
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6">
-          <Link href="/hr/incidents" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">← 사건평가 목록</Link>
+          <Link href="/hr/incidents" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">{t("page.incidents.back", L)}</Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{r.incidentCode}</span>
             <Badge tone={r.type === "PRAISE" ? "success" : "warn"}>{r.type === "PRAISE" ? "칭찬" : "개선필요"}</Badge>

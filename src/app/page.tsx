@@ -5,6 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import LogoutButton from "./logout-button";
+import { DashboardCalendarHero } from "./dashboard-calendar-hero";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,9 @@ export default async function Home() {
           <LogoutButton />
         </div>
 
+        {/* 캘린더 히어로 — 좌: 오늘 캘린더 미니 카드, 우: 다가오는 일정 자동 캐러셀 */}
+        <DashboardCalendarHero />
+
         {/* KPI */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <KpiCard label="이번달 매출" value={`${new Intl.NumberFormat("vi-VN").format(monthSalesVnd)} ₫`} sub={`${salesCount}건`} accent="primary" />
@@ -171,6 +175,10 @@ export default async function Home() {
           ]} />
           <NavCard title="협업" subtitle="Collaboration" accent="accent" items={[
             { href: "/chat", label: "채팅", icon: "💬" },
+          ]} />
+          <NavCard title="회의" subtitle="Weekly Meeting" accent="purple" items={[
+            { href: "/weekly-report", label: "Backlog/업무진행", icon: "📋" },
+            { href: "/calendar", label: "캘린더", icon: "📅" },
           ]} />
         </div>
       </div>

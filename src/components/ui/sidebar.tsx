@@ -74,7 +74,7 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "주간회의",
+    label: "회의",
     items: [
       { href: "/weekly-report", label: "Backlog/업무진행", icon: "📋", match: (p) => p.startsWith("/weekly-report") },
     ],

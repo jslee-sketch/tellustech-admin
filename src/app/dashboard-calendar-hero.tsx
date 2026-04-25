@@ -77,12 +77,25 @@ export function DashboardCalendarHero() {
       .catch(() => undefined);
   }, []);
 
-  // 4초 간격 자동 회전
+  // 5초 간격 자동 회전 + 부드러운 fade
+  const [fading, setFading] = useState(false);
   useEffect(() => {
     if (events.length <= 1) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % events.length), 4000);
+    const t = setInterval(() => {
+      setFading(true);
+      window.setTimeout(() => {
+        setIdx((i) => (i + 1) % events.length);
+        setFading(false);
+      }, 350); // fade-out 350ms 후 인덱스 교체
+    }, 5000);
     return () => clearInterval(t);
   }, [events.length]);
+
+  function jumpTo(i: number) {
+    if (i === idx) return;
+    setFading(true);
+    window.setTimeout(() => { setIdx(i); setFading(false); }, 250);
+  }
 
   const cur = events[idx];
 
@@ -121,9 +134,12 @@ export function DashboardCalendarHero() {
             className="group block"
           >
             <div
-              className="relative flex h-[120px] items-center gap-4 px-6 transition"
+              className="relative flex h-[120px] items-center gap-4 px-6"
               style={{
                 background: `linear-gradient(135deg, color-mix(in srgb, ${cur.color ?? "var(--tts-primary)"} 22%, var(--tts-card)) 0%, var(--tts-card) 70%)`,
+                opacity: fading ? 0 : 1,
+                transform: fading ? "translateY(4px)" : "translateY(0)",
+                transition: "opacity 350ms ease, transform 350ms ease, background 600ms ease",
               }}
             >
               {/* 좌측 색 바 */}
@@ -170,7 +186,7 @@ export function DashboardCalendarHero() {
                     key={i}
                     type="button"
                     aria-label={`${i + 1}번 이벤트`}
-                    onClick={(e) => { e.preventDefault(); setIdx(i); }}
+                    onClick={(e) => { e.preventDefault(); jumpTo(i); }}
                     className="h-1.5 w-1.5 rounded-full transition"
                     style={{ background: i === idx ? "var(--tts-accent)" : "color-mix(in srgb, var(--tts-sub) 40%, transparent)" }}
                   />

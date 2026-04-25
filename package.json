@@ -33,6 +33,7 @@
     "eslint-config-next": "16.2.4",
     "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.3",
+    "net-snmp": "^3.26.3",
     "next": "16.2.4",
     "pdf-lib": "^1.17.1",
     "pg": "^8.20.0",

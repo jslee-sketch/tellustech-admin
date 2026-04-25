@@ -53,6 +53,11 @@ export default async function ItContractDetailPage({ params }: PageProps) {
 
   // 소모품 사용 이력 — 계약 장비 S/N 대상으로 CONSUMABLE_OUT 조회
   const equipmentSNs = contract.equipment.map((e) => e.serialNumber).filter((s): s is string => !!s);
+  // 장비별 누적 비용
+  const { getEquipmentTotalCost } = await import("@/lib/cost-tracker");
+  const equipmentCosts = await Promise.all(equipmentSNs.map((sn) => getEquipmentTotalCost(sn)));
+  const validCosts = equipmentCosts.filter((c): c is NonNullable<typeof c> => !!c);
+  const contractTotalCost = validCosts.reduce((s, e) => s + e.totalCost, 0);
   const consumables = equipmentSNs.length > 0
     ? await prisma.inventoryTransaction.findMany({
         where: {
@@ -169,6 +174,42 @@ export default async function ItContractDetailPage({ params }: PageProps) {
             <EquipmentImport contractId={contract.id} />
           </Card>
         </div>
+
+        {/* 장비별 누적 비용 */}
+        {validCosts.length > 0 && (
+          <div className="mt-4">
+            <Card title={`💰 장비별 누적 비용 (계약 합계 ${contractTotalCost.toLocaleString("vi-VN")} ₫)`}>
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
+                    <th className="py-2 text-left">S/N</th>
+                    <th className="py-2 text-left">품목</th>
+                    <th className="py-2 text-right">매입가</th>
+                    <th className="py-2 text-right">부품비</th>
+                    <th className="py-2 text-right">소모품비</th>
+                    <th className="py-2 text-right">교통비</th>
+                    <th className="py-2 text-right">합계</th>
+                    <th className="py-2 text-left">최종 서비스</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {validCosts.map((c) => (
+                    <tr key={c.serialNumber} className="border-b border-[color:var(--tts-border)]/50">
+                      <td className="py-2 font-mono text-[11px] text-[color:var(--tts-accent)]">{c.serialNumber}</td>
+                      <td className="py-2">{c.itemName} <span className="font-mono text-[10px] text-[color:var(--tts-muted)]">{c.itemCode}</span></td>
+                      <td className="py-2 text-right font-mono">{c.purchaseCost.toLocaleString("vi-VN")}</td>
+                      <td className="py-2 text-right font-mono">{c.partsCost.toLocaleString("vi-VN")}</td>
+                      <td className="py-2 text-right font-mono">{c.consumablesCost.toLocaleString("vi-VN")}</td>
+                      <td className="py-2 text-right font-mono">{c.transportCost.toLocaleString("vi-VN")}</td>
+                      <td className="py-2 text-right font-mono font-bold text-[color:var(--tts-primary)]">{c.totalCost.toLocaleString("vi-VN")}</td>
+                      <td className="py-2 text-[color:var(--tts-sub)]">{c.lastServiceDate ? c.lastServiceDate.toISOString().slice(0, 10) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+        )}
 
         {/* 소모품 사용 이력 */}
         <div className="mt-4">

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { Badge, Card } from "@/components/ui";
 import { DispatchDetail } from "./dispatch-detail";
+import { DispatchPartsSection } from "./dispatch-parts";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +22,30 @@ export default async function DispatchDetailPage({ params }: PageProps) {
           id: true,
           ticketNumber: true,
           status: true,
+          serialNumber: true,
           client: { select: { clientCode: true, companyNameVi: true, address: true } },
         },
       },
       dispatchEmployee: { select: { id: true, employeeCode: true, nameVi: true } },
       receipt: { select: { id: true, originalName: true } },
+      parts: {
+        orderBy: { createdAt: "asc" },
+        include: { item: { select: { itemCode: true, name: true, itemType: true } } },
+      },
     },
   });
   if (!dispatch) notFound();
+
+  const warehouses = await prisma.warehouse.findMany({
+    where: { warehouseType: { not: "EXTERNAL" } },
+    orderBy: { code: "asc" },
+    select: { id: true, code: true, name: true },
+  });
+  const items = await prisma.item.findMany({
+    orderBy: { itemCode: "desc" },
+    take: 1000,
+    select: { id: true, itemCode: true, name: true, itemType: true },
+  });
 
   const employees = await prisma.employee.findMany({
     where: { companyCode: session.companyCode, status: "ACTIVE" },
@@ -92,6 +109,26 @@ export default async function DispatchDetailPage({ params }: PageProps) {
             }))}
           />
         </Card>
+        <div className="mt-4">
+          <DispatchPartsSection
+            dispatchId={dispatch.id}
+            initialParts={dispatch.parts.map((p) => ({
+              id: p.id,
+              itemCode: p.item.itemCode,
+              itemName: p.item.name,
+              serialNumber: p.serialNumber,
+              quantity: p.quantity,
+              targetEquipmentSN: p.targetEquipmentSN,
+              unitCost: p.unitCost ? Number(p.unitCost) : null,
+              totalCost: p.totalCost ? Number(p.totalCost) : null,
+              note: p.note,
+            }))}
+            defaultEquipmentSN={dispatch.targetEquipmentSN ?? dispatch.asTicket.serialNumber ?? ""}
+            warehouses={warehouses}
+            items={items}
+            transportCost={dispatch.transportCost ? Number(dispatch.transportCost) : 0}
+          />
+        </div>
       </div>
     </main>
   );

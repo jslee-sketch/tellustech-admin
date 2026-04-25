@@ -70,7 +70,15 @@ export function ExpenseNewForm({
       <Row>
         <Field label="비용 구분" required width="180px">
           <Select required value={expenseType} onChange={(e) => setExpenseType(e.target.value)} options={[
-            { value: "GENERAL", label: "일반" }, { value: "PURCHASE", label: "매입관련" }, { value: "SALES", label: "매출관련" },
+            { value: "GENERAL", label: "일반" },
+            { value: "PURCHASE", label: "매입관련" },
+            { value: "SALES", label: "매출관련" },
+            { value: "TRANSPORT", label: "교통비" },
+            { value: "MEAL", label: "식대" },
+            { value: "ENTERTAINMENT", label: "접대비" },
+            { value: "RENT", label: "임대료" },
+            { value: "UTILITY", label: "공과금" },
+            { value: "OTHER", label: "기타" },
           ]} />
         </Field>
         <Field label={`금액 (${currency})`} required width="200px"><TextInput type="number" required value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>

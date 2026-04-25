@@ -7,7 +7,7 @@ import {
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
 import type { AllocationBasis, Currency, ExpenseType } from "@/generated/prisma/client";
 
-const EXP_TYPES: readonly ExpenseType[] = ["PURCHASE", "SALES", "GENERAL"] as const;
+const EXP_TYPES: readonly ExpenseType[] = ["PURCHASE", "SALES", "GENERAL", "TRANSPORT", "MEAL", "ENTERTAINMENT", "RENT", "UTILITY", "OTHER"] as const;
 const BASES: readonly AllocationBasis[] = ["QUANTITY", "AMOUNT"] as const;
 const CURRENCIES: readonly Currency[] = ["VND", "USD", "KRW", "JPY", "CNY"] as const;
 

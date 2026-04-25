@@ -412,7 +412,7 @@ async function phase3() {
   const invIn = await req("POST", "/api/inventory/transactions", {
     cookie,
     body: {
-      itemId: testItem.id, warehouseId: itmain.id, txnType: "IN", reason: "PURCHASE",
+      itemId: testItem.id, toWarehouseId: itmain.id, txnType: "IN", reason: "PURCHASE",
       serialNumber: snStrict, quantity: 1,
     },
   });
@@ -605,7 +605,7 @@ async function phase5() {
   const sn = `TRADE-E2E-${now}`;
   await req("POST", "/api/inventory/transactions", {
     cookie,
-    body: { itemId: item.id, warehouseId: itmain.id, txnType: "IN", reason: "PURCHASE", serialNumber: sn, quantity: 5 },
+    body: { itemId: item.id, toWarehouseId: itmain.id, txnType: "IN", reason: "PURCHASE", serialNumber: sn, quantity: 5 },
   });
   const stockBefore = await req("GET", `/api/inventory/stock?item=${item.id}&warehouse=${itmain.id}`, { cookie });
   // 응답: { stock: [{ itemId, warehouseId, inQty, outQty, onHand }] }
@@ -775,7 +775,7 @@ async function phase8() {
   const sn = `INV-E2E-${Date.now()}`;
   const inRes = await req("POST", "/api/inventory/transactions", {
     cookie,
-    body: { itemId: item.id, warehouseId: wh.id, txnType: "IN", reason: "PURCHASE", serialNumber: sn, quantity: 10 },
+    body: { itemId: item.id, toWarehouseId: wh.id, txnType: "IN", reason: "PURCHASE", serialNumber: sn, quantity: 10 },
   });
   rec("8-1", "수동 IN",
     inRes.status === 200 || inRes.status === 201 ? "PASS" : "FAIL",
@@ -783,7 +783,7 @@ async function phase8() {
 
   const outRes = await req("POST", "/api/inventory/transactions", {
     cookie,
-    body: { itemId: item.id, warehouseId: wh.id, txnType: "OUT", reason: "CONSUMABLE_OUT", serialNumber: sn, quantity: 3 },
+    body: { itemId: item.id, fromWarehouseId: wh.id, txnType: "OUT", reason: "CONSUMABLE_OUT", serialNumber: sn, quantity: 3, targetEquipmentSN: "DUMMY-EQ-SN" },
   });
   rec("8-2", "수동 OUT",
     outRes.status === 200 || outRes.status === 201 ? "PASS" : "FAIL",

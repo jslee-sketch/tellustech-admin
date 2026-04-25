@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { companyScope } from "@/lib/api-utils";
 import { StockClient } from "./stock-client";
+import { InventoryItemsSection } from "./inventory-items-section";
 
 export const dynamic = "force-dynamic";
 
@@ -99,7 +100,46 @@ export default async function InventoryStockPage() {
           </Link>
         </div>
         <StockClient initialData={stock} />
+
+        <div className="mt-6">
+          {await renderInventoryItems(session)}
+        </div>
       </div>
     </main>
+  );
+}
+
+async function renderInventoryItems(session: { companyCode: "TV" | "VR" }) {
+  const items = await prisma.inventoryItem.findMany({
+    where: { companyCode: session.companyCode },
+    include: {
+      item: { select: { itemCode: true, name: true, itemType: true } },
+      warehouse: { select: { code: true, name: true, warehouseType: true } },
+      remarks: { orderBy: { date: "desc" }, take: 1 },
+    },
+    take: 1000,
+  });
+  const companyName = session.companyCode === "TV" ? "Tellustech Vina" : "Vietrental";
+  return (
+    <InventoryItemsSection
+      companyName={companyName}
+      initialItems={items.map((it) => ({
+        id: it.id,
+        itemId: it.itemId,
+        itemCode: it.item.itemCode,
+        itemName: it.item.name,
+        itemType: it.item.itemType,
+        serialNumber: it.serialNumber,
+        warehouseId: it.warehouseId,
+        warehouseCode: it.warehouse.code,
+        warehouseName: it.warehouse.name,
+        warehouseType: it.warehouse.warehouseType,
+        status: it.status,
+        acquiredAt: it.acquiredAt ? it.acquiredAt.toISOString() : null,
+        lastRemark: it.remarks[0]
+          ? { date: it.remarks[0].date.toISOString(), content: it.remarks[0].contentKo ?? it.remarks[0].contentVi ?? it.remarks[0].contentEn ?? "" }
+          : null,
+      }))}
+    />
   );
 }

@@ -150,24 +150,62 @@ export async function POST(request: Request) {
         if (!cl) return badRequest("invalid_client");
       }
 
-      const created = await prisma.inventoryTransaction.create({
-        data: {
-          companyCode: session.companyCode,
-          itemId,
-          fromWarehouseId: fromWarehouseId ?? null,
-          toWarehouseId: toWarehouseId ?? null,
-          clientId: clientId ?? null,
-          serialNumber: trimNonEmpty(p.serialNumber),
-          txnType,
-          reason,
-          quantity,
-          scannedBarcode: trimNonEmpty(p.scannedBarcode),
-          note: trimNonEmpty(p.note),
-          targetEquipmentSN: targetEquipmentSN ?? null,
-          targetContractId: targetContractId ?? null,
-          performedAt: new Date(),
-        },
+      const sn = trimNonEmpty(p.serialNumber);
+      const created = await prisma.$transaction(async (tx) => {
+        const txn = await tx.inventoryTransaction.create({
+          data: {
+            companyCode: session.companyCode,
+            itemId,
+            fromWarehouseId: fromWarehouseId ?? null,
+            toWarehouseId: toWarehouseId ?? null,
+            clientId: clientId ?? null,
+            serialNumber: sn,
+            txnType,
+            reason,
+            quantity,
+            scannedBarcode: trimNonEmpty(p.scannedBarcode),
+            note: trimNonEmpty(p.note),
+            targetEquipmentSN: targetEquipmentSN ?? null,
+            targetContractId: targetContractId ?? null,
+            performedAt: new Date(),
+          },
+        });
+
+        // S/N 단위 InventoryItem 마스터 자동 관리
+        if (sn) {
+          if (txnType === "IN" && toWarehouseId) {
+            // S/N 입고 — 없으면 생성, 있으면 창고 변경
+            const exists = await tx.inventoryItem.findUnique({ where: { serialNumber: sn } });
+            if (!exists) {
+              await tx.inventoryItem.create({
+                data: {
+                  itemId,
+                  serialNumber: sn,
+                  warehouseId: toWarehouseId,
+                  companyCode: session.companyCode,
+                  status: "NORMAL",
+                  acquiredAt: new Date(),
+                  qrData: JSON.stringify({ itemCode: "", serialNumber: sn }),
+                },
+              }).catch(() => undefined);
+            } else {
+              await tx.inventoryItem.update({
+                where: { serialNumber: sn },
+                data: { warehouseId: toWarehouseId },
+              }).catch(() => undefined);
+            }
+          } else if (txnType === "TRANSFER" && toWarehouseId) {
+            await tx.inventoryItem.update({
+              where: { serialNumber: sn },
+              data: { warehouseId: toWarehouseId },
+            }).catch(() => undefined);
+          }
+          // OUT 시엔 InventoryItem 마스터를 유지하되 (외부로 나간 후 추적 가능)
+          // 단순화를 위해 상태 변경은 별도 API로
+        }
+        return txn;
       });
+
       return ok({ transaction: created }, { status: 201 });
     } catch (err) {
       const handled = handleFieldError(err);

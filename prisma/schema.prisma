@@ -183,6 +183,19 @@ enum ExpenseType {
   PURCHASE
   SALES
   GENERAL
+  TRANSPORT       // 교통비
+  MEAL            // 식대
+  ENTERTAINMENT   // 접대비
+  RENT            // 임대료
+  UTILITY         // 공과금
+  OTHER           // 기타
+}
+
+enum InventoryStatus {
+  NORMAL
+  NEEDS_REPAIR
+  PARTS_USED
+  IRREPARABLE
 }
 
 enum AllocationBasis {
@@ -416,8 +429,55 @@ model Item {
   purchaseItems         PurchaseItem[]
   tmRentalItems         TmRentalItem[]
   itContractEquipment   ItContractEquipment[]
+  dispatchParts         AsDispatchPart[]
+  inventoryItems        InventoryItem[]
 
   @@map("items")
+}
+
+/// S/N 단위 재고 마스터 — 상태/QR/이력 관리
+model InventoryItem {
+  id                String          @id @default(cuid())
+  itemId            String
+  item              Item            @relation(fields: [itemId], references: [id])
+  serialNumber      String          @unique
+  warehouseId       String
+  warehouse         Warehouse       @relation("InventoryItemWarehouse", fields: [warehouseId], references: [id])
+  companyCode       CompanyCode
+
+  status            InventoryStatus @default(NORMAL)
+  qrData            String?
+  acquiredAt        DateTime?
+  lastStatusChange  DateTime?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  remarks           InventoryRemark[]
+
+  @@index([warehouseId])
+  @@index([itemId])
+  @@index([status])
+  @@index([companyCode])
+  @@map("inventory_items")
+}
+
+model InventoryRemark {
+  id                String        @id @default(cuid())
+  inventoryItemId   String
+  inventoryItem     InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  date              DateTime      @default(now())
+  contentVi         String?
+  contentEn         String?
+  contentKo         String?
+  originalLang      String        @default("VI")
+
+  writtenById       String?
+  createdAt         DateTime      @default(now())
+
+  @@index([inventoryItemId])
+  @@map("inventory_remarks")
 }
 
 /// 공유 마스터 — company_code 없음
@@ -434,6 +494,7 @@ model Warehouse {
   inventoryStocks         InventoryStock[]
   inventoryTransactionsFrom InventoryTransaction[] @relation("FromWarehouse")
   inventoryTransactionsTo   InventoryTransaction[] @relation("ToWarehouse")
+  inventoryItems            InventoryItem[]        @relation("InventoryItemWarehouse")
 
   @@map("warehouses")
 }
@@ -678,6 +739,7 @@ model InventoryTransaction {
   fromWarehouse Warehouse? @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
   toWarehouse   Warehouse? @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
   client        Client?    @relation("InventoryTxnClient", fields: [clientId], references: [id])
+  dispatchPart  AsDispatchPart? @relation("DispatchPartTxn")
 
   @@index([companyCode, performedAt])
   @@index([serialNumber])
@@ -765,12 +827,49 @@ model AsDispatch {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  asTicket         AsTicket  @relation(fields: [asTicketId], references: [id], onDelete: Cascade)
-  dispatchEmployee Employee? @relation("DispatchEmployee", fields: [dispatchEmployeeId], references: [id])
-  receipt          File?     @relation("DispatchReceipt", fields: [receiptFileId], references: [id])
+  // 대상 장비 S/N (AS 티켓에서 자동 propagate, 사용자 변경 가능)
+  targetEquipmentSN  String?
+
+  asTicket         AsTicket          @relation(fields: [asTicketId], references: [id], onDelete: Cascade)
+  dispatchEmployee Employee?         @relation("DispatchEmployee", fields: [dispatchEmployeeId], references: [id])
+  receipt          File?             @relation("DispatchReceipt", fields: [receiptFileId], references: [id])
+  parts            AsDispatchPart[]
 
   @@index([asTicketId])
+  @@index([targetEquipmentSN])
   @@map("as_dispatches")
+}
+
+/// AS 출동 시 사용한 부품 — 출고 자동처리 + 매입원가 자동조회 + 장비 S/N 매핑
+model AsDispatchPart {
+  id                String     @id @default(cuid())
+  asDispatchId      String
+  asDispatch        AsDispatch @relation(fields: [asDispatchId], references: [id], onDelete: Cascade)
+
+  itemId            String
+  item              Item       @relation(fields: [itemId], references: [id])
+  serialNumber      String?    // 부품 자체 S/N (소모품은 없을 수 있음)
+  quantity          Int        @default(1)
+
+  // 대상 장비 S/N — 어떤 복합기/장비에 사용했는지 (필수)
+  targetEquipmentSN String
+  targetContractId  String?    // ItContract id (자동조회로 채움)
+
+  // 매입원가 (자동조회 + 수동수정 가능)
+  unitCost          Decimal?   @db.Decimal(15, 2)
+  totalCost         Decimal?   @db.Decimal(15, 2)
+
+  // 자동 생성된 출고 트랜잭션과 1:1
+  inventoryTxnId    String?              @unique
+  inventoryTxn      InventoryTransaction? @relation("DispatchPartTxn", fields: [inventoryTxnId], references: [id])
+
+  note              String?
+  createdAt         DateTime   @default(now())
+
+  @@index([asDispatchId])
+  @@index([targetEquipmentSN])
+  @@index([targetContractId])
+  @@map("as_dispatch_parts")
 }
 
 // ==================================================

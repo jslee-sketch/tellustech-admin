@@ -118,7 +118,7 @@ export async function POST(request: Request) {
       const asTicketId = requireString(p.asTicketId, "asTicketId");
       const ticket = await prisma.asTicket.findUnique({
         where: { id: asTicketId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, serialNumber: true },
       });
       if (!ticket) return badRequest("invalid_ticket");
       if (ticket.status === "COMPLETED" || ticket.status === "CANCELED") {
@@ -141,6 +141,9 @@ export async function POST(request: Request) {
       const meterOcrKm = resolveMeterKm(p);
       const distanceMatch = computeDistanceMatch(googleDistanceKm, meterOcrKm);
 
+      // 대상 장비 S/N — 명시값 우선, 없으면 AS 티켓의 serialNumber 자동 propagate
+      const targetEquipmentSN = trimNonEmpty(p.targetEquipmentSN) ?? ticket.serialNumber ?? null;
+
       const created = await prisma.$transaction(async (tx) => {
         const dispatch = await tx.asDispatch.create({
           data: {
@@ -153,6 +156,7 @@ export async function POST(request: Request) {
             meterPhotoUrl: trimNonEmpty(p.meterPhotoUrl),
             meterOcrKm,
             distanceMatch,
+            targetEquipmentSN,
             transportCost: parseDecimal(p.transportCost),
             receiptFileId: receiptFileId ?? null,
             departedAt: parseDate(p.departedAt),

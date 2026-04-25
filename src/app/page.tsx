@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import LogoutButton from "./logout-button";
 import { DashboardCalendarHero } from "./dashboard-calendar-hero";
 
@@ -59,6 +60,7 @@ const ACCENTS: Record<AccentKey, { border: string; bar: string; text: string; bg
 
 export default async function Home() {
   const session = await getSession();
+  const L = session.language;
 
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -111,7 +113,7 @@ export default async function Home() {
           <div>
             <div className="text-[12px] font-black tracking-[0.22em] text-[color:var(--tts-accent)]" style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>TELLUSTECH · ERP</div>
             <h1 className="mt-2 text-[30px] font-black leading-none tracking-tight text-[color:var(--tts-text)]">
-              대시보드
+              {t("dash.title", L)}
               <span className="ml-3 rounded-lg bg-[color:var(--tts-primary)] px-3 py-1 align-middle text-[14px] font-extrabold text-white">{session.companyCode}</span>
               <span className="ml-3 align-middle text-[16px] font-medium text-[color:var(--tts-sub)]">{session.username}</span>
             </h1>
@@ -124,61 +126,61 @@ export default async function Home() {
 
         {/* KPI */}
         <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <KpiCard label="이번달 매출" value={`${new Intl.NumberFormat("vi-VN").format(monthSalesVnd)} ₫`} sub={`${salesCount}건`} accent="primary" />
-          <KpiCard label="이번달 매입" value={`${new Intl.NumberFormat("vi-VN").format(monthPurchaseVnd)} ₫`} sub={`${purchaseCount}건`} accent="accent" />
-          <KpiCard label="미수금 잔액" value={`${new Intl.NumberFormat("vi-VN").format(Number(outstanding))} ₫`} sub={`${openReceivable._count}건`} accent="danger" />
-          <KpiCard label="미지급금 잔액" value={`${new Intl.NumberFormat("vi-VN").format(Number(payable))} ₫`} sub={`${openPayable._count}건`} accent="warn" />
-          <KpiCard label="AS 진행중" value={String(asPending)} sub="접수/처리중/출동" accent="warn" />
-          <KpiCard label="계약·성적서 만료" value={String(expiringContracts + certExpiring)} sub={`30일 이내 · 계약 ${expiringContracts} · 성적서 ${certExpiring}`} accent="danger" />
+          <KpiCard label={t("dash.kpi.salesMonth", L)}    value={`${new Intl.NumberFormat("vi-VN").format(monthSalesVnd)} ₫`}    sub={`${salesCount} ${t("dash.kpi.cases", L)}`} accent="primary" />
+          <KpiCard label={t("dash.kpi.purchaseMonth", L)} value={`${new Intl.NumberFormat("vi-VN").format(monthPurchaseVnd)} ₫`} sub={`${purchaseCount} ${t("dash.kpi.cases", L)}`} accent="accent" />
+          <KpiCard label={t("dash.kpi.outstanding", L)}   value={`${new Intl.NumberFormat("vi-VN").format(Number(outstanding))} ₫`} sub={`${openReceivable._count} ${t("dash.kpi.cases", L)}`} accent="danger" />
+          <KpiCard label={t("dash.kpi.payable", L)}       value={`${new Intl.NumberFormat("vi-VN").format(Number(payable))} ₫`}    sub={`${openPayable._count} ${t("dash.kpi.cases", L)}`} accent="warn" />
+          <KpiCard label={t("dash.kpi.asPending", L)}     value={String(asPending)} sub="" accent="warn" />
+          <KpiCard label={t("dash.kpi.expiring", L)}      value={String(expiringContracts + certExpiring)} sub={`${t("dash.kpi.expiringSub", L)} · ${expiringContracts}/${certExpiring}`} accent="danger" />
         </div>
 
         {/* 모듈 네비 */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <NavCard title="기초등록" subtitle="Master Data" accent="primary" items={[
-            { href: "/master/departments", label: "부서", icon: "🏢" },
-            { href: "/master/employees", label: "직원", icon: "👤" },
-            { href: "/master/clients", label: "거래처 (CRM)", icon: "🤝" },
-            { href: "/master/items", label: "품목", icon: "📦" },
-            { href: "/master/warehouses", label: "창고", icon: "🏬" },
-            { href: "/master/projects", label: "프로젝트", icon: "🗂️" },
-            { href: "/master/schedules", label: "일정·CFM", icon: "🗓️" },
-            { href: "/master/licenses", label: "라이선스", icon: "📜" },
+          <NavCard title={t("dash.card.master", L)} subtitle="Master Data" accent="primary" items={[
+            { href: "/master/departments", label: t("nav.departments", L), icon: "🏢" },
+            { href: "/master/employees",   label: t("nav.employees", L),   icon: "👤" },
+            { href: "/master/clients",     label: t("nav.clients", L),     icon: "🤝" },
+            { href: "/master/items",       label: t("nav.items", L),       icon: "📦" },
+            { href: "/master/warehouses",  label: t("nav.warehouses", L),  icon: "🏬" },
+            { href: "/master/projects",    label: t("nav.projects", L),    icon: "🗂️" },
+            { href: "/master/schedules",   label: t("nav.schedules", L),   icon: "🗓️" },
+            { href: "/master/licenses",    label: t("nav.licenses", L),    icon: "📜" },
           ]} />
-          <NavCard title="렌탈 · 계약" subtitle="Contracts" accent="accent" items={[
-            { href: "/rental/it-contracts", label: "IT 계약", icon: "🖨️" },
-            { href: "/rental/tm-rentals", label: "TM 렌탈", icon: "🔧" },
+          <NavCard title={t("dash.card.contracts", L)} subtitle="Contracts" accent="accent" items={[
+            { href: "/rental/it-contracts", label: t("nav.itContract", L), icon: "🖨️" },
+            { href: "/rental/tm-rentals",   label: t("nav.tmRental", L),   icon: "🔧" },
           ]} />
-          <NavCard title="영업" subtitle="Sales / Purchase" accent="purple" items={[
-            { href: "/sales", label: "매출", icon: "💵" },
-            { href: "/purchases", label: "매입", icon: "🛒" },
+          <NavCard title={t("dash.card.salesPurchase", L)} subtitle="Sales / Purchase" accent="purple" items={[
+            { href: "/sales",     label: t("nav.salesOrder", L), icon: "💵" },
+            { href: "/purchases", label: t("nav.purchase", L),   icon: "🛒" },
           ]} />
-          <NavCard title="AS · 서비스" subtitle="Service" accent="warn" items={[
-            { href: "/as/tickets", label: "AS 접수", icon: "🛠️" },
-            { href: "/as/dispatches", label: "AS 출동", icon: "🚚" },
+          <NavCard title={t("dash.card.service", L)} subtitle="Service" accent="warn" items={[
+            { href: "/as/tickets",     label: t("nav.asTickets", L), icon: "🛠️" },
+            { href: "/as/dispatches",  label: t("nav.dispatches", L), icon: "🚚" },
           ]} />
-          <NavCard title="재고" subtitle="Inventory" accent="success" items={[
-            { href: "/inventory/stock", label: "재고 현황", icon: "📊" },
-            { href: "/inventory/transactions", label: "입출고", icon: "🔄" },
-            { href: "/inventory/scan", label: "바코드 스캔", icon: "📷" },
-            { href: "/inventory/depreciation", label: "감가상각", icon: "📉" },
+          <NavCard title={t("dash.card.inventory", L)} subtitle="Inventory" accent="success" items={[
+            { href: "/inventory/stock",        label: t("nav.stock", L),  icon: "📊" },
+            { href: "/inventory/transactions", label: t("nav.invTxn", L), icon: "🔄" },
+            { href: "/inventory/scan",         label: t("nav.qrScan", L), icon: "📷" },
+            { href: "/inventory/depreciation", label: "감가상각",          icon: "📉" },
           ]} />
-          <NavCard title="HR" subtitle="Human Resources" accent="primary" items={[
-            { href: "/hr/onboarding", label: "입사카드", icon: "📝" },
-            { href: "/hr/offboarding", label: "퇴사카드", icon: "🏷️" },
-            { href: "/hr/incidents", label: "사건평가", icon: "⚡" },
-            { href: "/hr/evaluations", label: "정기평가", icon: "⭐" },
-            { href: "/hr/leave", label: "연차/휴가", icon: "🏖️" },
+          <NavCard title={t("dash.card.hr", L)} subtitle="Human Resources" accent="primary" items={[
+            { href: "/hr/onboarding",  label: t("nav.onboarding", L),  icon: "📝" },
+            { href: "/hr/offboarding", label: t("nav.offboarding", L), icon: "🏷️" },
+            { href: "/hr/incidents",   label: t("nav.incidents", L),   icon: "⚡" },
+            { href: "/hr/evaluations", label: t("nav.evaluations", L), icon: "⭐" },
+            { href: "/hr/leave",       label: t("nav.leave", L),       icon: "🏖️" },
           ]} />
-          <NavCard title="재경" subtitle="Finance" accent="danger" items={[
-            { href: "/finance/payables", label: "미수/미지급", icon: "💰" },
-            { href: "/finance/expenses", label: "경비/정산", icon: "🧾" },
+          <NavCard title={t("dash.card.finance", L)} subtitle="Finance" accent="danger" items={[
+            { href: "/finance/payables", label: t("nav.payables", L), icon: "💰" },
+            { href: "/finance/expenses", label: t("nav.expenses", L), icon: "🧾" },
           ]} />
-          <NavCard title="협업" subtitle="Collaboration" accent="accent" items={[
-            { href: "/chat", label: "채팅", icon: "💬" },
+          <NavCard title={t("dash.card.collab", L)} subtitle="Collaboration" accent="accent" items={[
+            { href: "/chat", label: t("nav.chat", L), icon: "💬" },
           ]} />
-          <NavCard title="회의" subtitle="Weekly Meeting" accent="purple" items={[
-            { href: "/weekly-report", label: "Backlog/업무진행", icon: "📋" },
-            { href: "/calendar", label: "캘린더", icon: "📅" },
+          <NavCard title={t("dash.card.meeting", L)} subtitle="Weekly Meeting" accent="purple" items={[
+            { href: "/weekly-report", label: t("nav.weeklyReport", L), icon: "📋" },
+            { href: "/calendar",      label: t("nav.calendar", L),     icon: "📅" },
           ]} />
         </div>
       </div>

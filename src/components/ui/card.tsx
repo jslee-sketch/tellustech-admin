@@ -6,12 +6,14 @@ type CardProps = {
   title?: ReactNode;
   subtitle?: ReactNode;
   count?: number;
+  /** Unit label after count (e.g. "items"). Defaults to "items" if omitted. */
+  countLabel?: ReactNode;
   action?: ReactNode;
   children?: ReactNode;
   className?: string;
 };
 
-export function Card({ title, subtitle, count, action, children, className }: CardProps) {
+export function Card({ title, subtitle, count, countLabel, action, children, className }: CardProps) {
   return (
     <div
       className={
@@ -32,7 +34,7 @@ export function Card({ title, subtitle, count, action, children, className }: Ca
             )}
             {count !== undefined && (
               <span className="rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[11px] font-semibold text-[color:var(--tts-primary)]">
-                {count}건
+                {count}{countLabel !== undefined ? countLabel : " items"}
               </span>
             )}
           </div>

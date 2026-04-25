@@ -24,7 +24,7 @@ export function DataTable<Row extends Record<string, unknown>>({
   columns,
   data,
   onRowClick,
-  emptyMessage = "데이터가 없습니다",
+  emptyMessage = "No data",
   rowKey,
   className,
 }: DataTableProps<Row>) {

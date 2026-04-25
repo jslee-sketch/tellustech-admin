@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { t, type Lang } from "@/lib/i18n";
 
 // 품목 자동완성 콤보박스 — 타이핑 시 서버에 검색 요청.
 // - 품목코드(itemCode) 또는 품목명(name)의 부분일치로 필터 (서버측)
@@ -25,6 +26,7 @@ type Props = {
   className?: string;
   limit?: number; // 서버 응답 상한 (기본 20)
   itemType?: "PRODUCT" | "CONSUMABLE" | "PART"; // 특정 유형만 검색하고 싶을 때
+  lang?: Lang;
 };
 
 export function ItemCombobox({
@@ -32,13 +34,15 @@ export function ItemCombobox({
   onChange,
   initialCode,
   initialName,
-  placeholder = "품목코드 또는 품목명 일부 입력",
+  placeholder,
   required,
   disabled,
   className,
   limit = 20,
   itemType,
+  lang = "EN",
 }: Props) {
+  const effectivePlaceholder = placeholder ?? t("item.searchPlaceholder", lang);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<ItemOption[]>([]);
@@ -121,12 +125,13 @@ export function ItemCombobox({
   }
 
   const showDropdown = open && !disabled;
+  const noMatchText = t("item.noMatch", lang);
   const emptyHint = useMemo(() => {
-    if (!query.trim()) return "검색어를 입력하세요 (품목코드 또는 영문명 일부).";
-    if (loading) return "검색 중...";
-    if (hasQueried && hits.length === 0) return "일치하는 품목이 없습니다.";
+    if (!query.trim()) return t("item.enterQuery", lang);
+    if (loading) return t("item.searching", lang);
+    if (hasQueried && hits.length === 0) return noMatchText;
     return null;
-  }, [query, loading, hasQueried, hits.length]);
+  }, [query, loading, hasQueried, hits.length, lang, noMatchText]);
 
   const inputBase =
     "w-full rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] placeholder:text-[color:var(--tts-muted)] outline-none focus:border-[color:var(--tts-border-focus)] disabled:cursor-not-allowed disabled:bg-[color:var(--tts-card)] disabled:text-[color:var(--tts-muted)]";
@@ -141,7 +146,7 @@ export function ItemCombobox({
           setOpen(true);
           if (query.trim() && !hasQueried) runSearch(query);
         }}
-        placeholder={placeholder}
+        placeholder={effectivePlaceholder}
         required={required && !value}
         disabled={disabled}
         className={inputBase}
@@ -153,11 +158,11 @@ export function ItemCombobox({
           {hits.length === 0 ? (
             <div className="px-3 py-2 text-[12px] text-[color:var(--tts-muted)]">
               {emptyHint}
-              {emptyHint === "일치하는 품목이 없습니다." && (
+              {emptyHint === noMatchText && (
                 <>
                   {" "}
                   <a href="/master/items/new" className="text-[color:var(--tts-accent)] hover:underline" target="_blank" rel="noopener noreferrer">
-                    + 품목 등록
+                    {t("item.registerItem", lang)}
                   </a>
                 </>
               )}

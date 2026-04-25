@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./button";
+import { t, type Lang } from "@/lib/i18n";
 
 // HTML5 Canvas 기반 전자서명. 모바일 터치 + 데스크톱 마우스 지원.
 // onChange(null) = 빈 캔버스. onChange(dataUrl) = PNG base64.
@@ -12,6 +13,7 @@ type Props = {
   width?: number;
   height?: number;
   disabled?: boolean;
+  lang?: Lang;
 };
 
 export function SignatureCanvas({
@@ -20,6 +22,7 @@ export function SignatureCanvas({
   width = 480,
   height = 180,
   disabled,
+  lang = "EN",
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
@@ -115,9 +118,9 @@ export function SignatureCanvas({
         onPointerCancel={end}
       />
       <div className="mt-1 flex items-center gap-2 text-[11px] text-[color:var(--tts-muted)]">
-        <span>{hasContent ? "✍️ 서명됨" : "서명 영역을 클릭/드래그하여 서명"}</span>
+        <span>{hasContent ? t("sig.signed", lang) : t("sig.signHint", lang)}</span>
         <Button type="button" size="sm" variant="ghost" onClick={clear} disabled={disabled || !hasContent}>
-          지우기
+          {t("sig.clear", lang)}
         </Button>
       </div>
     </div>

@@ -70,7 +70,7 @@ export default async function SalesDetailPage({ params }: PageProps) {
             {sales.client.companyNameVi}{" "}
             <span className="font-mono text-[11px] text-[color:var(--tts-muted)]">{sales.client.clientCode}</span>
             {sales.client.receivableStatus === "BLOCKED" && (
-              <span className="ml-2"><Badge tone="danger">{L === "VI" ? "Khoá khách hàng" : L === "EN" ? "Client Blocked" : "거래처 차단"}</Badge></span>
+              <span className="ml-2"><Badge tone="danger">{t("label.clientBlocked", L)}</Badge></span>
             )}
           </div>
         </div>
@@ -124,6 +124,7 @@ export default async function SalesDetailPage({ params }: PageProps) {
             <SalesItemsImport
               salesId={sales.id}
               isCalibration={sales.project?.salesType === "CALIBRATION"}
+              lang={L}
             />
           </Card>
         </div>

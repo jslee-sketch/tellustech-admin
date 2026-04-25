@@ -53,10 +53,10 @@ export default async function InventoryTransactionsPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/inventory/stock" className="text-[13px] text-[color:var(--tts-primary)] hover:underline">
-              {L === "VI" ? "Tồn kho →" : L === "EN" ? "Stock →" : "재고 현황 →"}
+              {t("link.stockArrow", L)}
             </Link>
             <Link href="/inventory/scan" className="text-[13px] text-[color:var(--tts-accent)] hover:underline">
-              {L === "VI" ? "Quét QR →" : L === "EN" ? "QR Scan →" : "QR 스캔 →"}
+              {t("link.qrScanArrow", L)}
             </Link>
           </div>
         </div>

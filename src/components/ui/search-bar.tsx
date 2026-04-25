@@ -11,7 +11,7 @@ type SearchBarProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "valu
 export function SearchBar({
   value,
   onChange,
-  placeholder = "검색...",
+  placeholder = "Search...",
   width = "260px",
   className,
   ...rest

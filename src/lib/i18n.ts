@@ -1875,6 +1875,105 @@ const DICT: Dict = {
   "placeholder.searchClient":{ vi: "Tìm mã/tên/MST/điện thoại...", en: "Search code/name/tax/phone...", ko: "코드/이름/MST/전화 검색..." },
   "empty.clients":         { vi: "Không có khách hàng đã đăng ký", en: "No clients registered", ko: "등록된 거래처가 없습니다" },
   "btn.clientRegister":    { vi: "+ Đăng ký KH",       en: "+ Register Client", ko: "+ 거래처 등록" },
+
+  // ── Cycle 4 — 공통 UI / 잔여 ──
+  // Card / common
+  "common.itemsCountUnit":   { vi: "{count} mục",         en: "{count} items",      ko: "{count}건" },
+  "common.itemsShort":       { vi: "mục",                 en: "items",              ko: "건" },
+  "common.days":             { vi: "ngày",                en: "days",               ko: "일" },
+  "common.dataLoading":      { vi: "Đang tải...",         en: "Loading...",         ko: "불러오는 중..." },
+  "common.itemRefLoading":   { vi: "Đang tải tham chiếu mặt hàng...", en: "Loading item reference...", ko: "품목 참조 로드 중..." },
+  "common.noData":           { vi: "Không có dữ liệu",    en: "No data",            ko: "데이터가 없습니다" },
+  "common.noContent":        { vi: "Không có nội dung",   en: "No content",         ko: "내용 없음" },
+  "common.original":         { vi: "Gốc",                 en: "Original",           ko: "원문" },
+  "common.viewOtherLangs":   { vi: "Xem ngôn ngữ khác ({langs})", en: "View other languages ({langs})", ko: "다른 언어 보기 ({langs})" },
+
+  // Sidebar
+  "sidebar.collapse":        { vi: "Thu gọn",             en: "Collapse",           ko: "접기" },
+  "sidebar.expand":          { vi: "Mở rộng",             en: "Expand",             ko: "펼치기" },
+  "sidebar.toLightMode":     { vi: "Sang chế độ sáng",    en: "Switch to light mode", ko: "라이트 모드로" },
+  "sidebar.toDarkMode":      { vi: "Sang chế độ tối",     en: "Switch to dark mode",  ko: "다크 모드로" },
+  "sidebar.lightShort":      { vi: "Sáng",                en: "Light",              ko: "라이트" },
+  "sidebar.darkShort":       { vi: "Tối",                 en: "Dark",               ko: "다크" },
+
+  // Excel upload / download
+  "excel.parsing":           { vi: "Đang phân tích...",   en: "Parsing...",         ko: "파싱 중..." },
+  "excel.pickFile":          { vi: "Chọn file Excel (.xlsx / .xls / .csv)", en: "Pick Excel file (.xlsx / .xls / .csv)", ko: "엑셀 파일 선택 (.xlsx / .xls / .csv)" },
+  "excel.savingDot":         { vi: "Đang lưu...",         en: "Saving...",          ko: "저장 중..." },
+  "excel.saveRows":          { vi: "✅ Lưu {count} dòng", en: "✅ Save {count} rows", ko: "✅ {count}행 저장" },
+  "excel.parseFailed":       { vi: "Phân tích Excel thất bại", en: "Excel parse failed", ko: "엑셀 파싱 실패" },
+  "excel.saveFailed":        { vi: "Lưu thất bại",        en: "Save failed",        ko: "저장 실패" },
+  "excel.requiredHeaderRow": { vi: "Phải có hàng tiêu đề. Tên cột: {cols}.", en: "Header row required. Column names: {cols}.", ko: "헤더 행이 반드시 있어야 합니다. 컬럼 이름: {cols}." },
+  "excel.headerRequired":    { vi: "Phải có hàng tiêu đề. Tên tiêu đề: {cols}.", en: "Header row required. Header names: {cols}.", ko: "헤더가 반드시 있어야 합니다. 헤더 이름: {cols}." },
+  "excel.refValuesMustMatch":{ vi: "Giá trị tham chiếu (KH/Mặt hàng/NV...) phải khớp chính xác với DB.", en: "Reference values (Client/Item/Employee, etc.) must match the DB exactly.", ko: "참조값(거래처/품목/직원 등)은 DB 에 정확히 일치해야 합니다." },
+  "excel.savedOkFailed":     { vi: "✅ Đã lưu {ok}, lỗi {failed}", en: "✅ Saved {ok}, failed {failed}", ko: "✅ {ok}건 저장, {failed}건 실패" },
+  "excel.previewTop":        { vi: "Xem trước (đầu {count} dòng)", en: "Preview (first {count} rows)", ko: "미리보기 (상위 {count}행)" },
+  "excel.missingRequired":   { vi: "Hàng {row} thiếu cột bắt buộc.", en: "Row {row} missing a required column.", ko: "{row}행에 필수 컬럼이 비어 있습니다." },
+  "excel.exporting":         { vi: "Đang xuất...",        en: "Exporting...",       ko: "내보내는 중..." },
+  "excel.emptyTemplate":     { vi: "Tải mẫu trống",       en: "Download empty template", ko: "빈 템플릿 다운로드" },
+  "excel.download":          { vi: "Tải Excel",           en: "Download Excel",     ko: "엑셀 다운로드" },
+  "excel.emptyTemplateBtn":  { vi: "📋 Mẫu trống",        en: "📋 Empty template",  ko: "📋 빈 템플릿" },
+  "excel.uploadBtn":         { vi: "📤 Tải lên Excel",    en: "📤 Excel upload",    ko: "📤 엑셀 업로드" },
+  "excel.allRowsOk":         { vi: "🟢 Toàn bộ {count} dòng hợp lệ", en: "🟢 All {count} rows valid", ko: "🟢 전체 {count}행 정상" },
+  "excel.errorRows":         { vi: "🔴 {count} lỗi — sửa rồi mới lưu được", en: "🔴 {count} errors — fix to save", ko: "🔴 {count}건 오류 — 수정 후 저장 가능" },
+  "excel.required":          { vi: "Bắt buộc",            en: "Required",           ko: "필수" },
+
+  // Item combobox
+  "item.searchPlaceholder":  { vi: "Nhập mã hoặc tên mặt hàng", en: "Enter item code or item name (partial)", ko: "품목코드 또는 품목명 일부 입력" },
+  "item.enterQuery":         { vi: "Nhập từ khoá (mã hoặc tên).", en: "Type a query (code or name).", ko: "검색어를 입력하세요 (품목코드 또는 영문명 일부)." },
+  "item.searching":          { vi: "Đang tìm...",         en: "Searching...",       ko: "검색 중..." },
+  "item.noMatch":            { vi: "Không có mặt hàng phù hợp.", en: "No matching items.", ko: "일치하는 품목이 없습니다." },
+  "item.registerItem":       { vi: "+ Đăng ký mặt hàng",  en: "+ Register Item",    ko: "+ 품목 등록" },
+
+  // Field
+  "field.fileSelect":        { vi: "Chọn tệp",            en: "Choose file",        ko: "파일 선택" },
+
+  // Search bar
+  "common.searchDots":       { vi: "Tìm kiếm...",         en: "Search...",          ko: "검색..." },
+
+  // Signature
+  "sig.signed":              { vi: "✍️ Đã ký",            en: "✍️ Signed",          ko: "✍️ 서명됨" },
+  "sig.signHint":            { vi: "Bấm/kéo trong vùng để ký", en: "Click/drag in the area to sign", ko: "서명 영역을 클릭/드래그하여 서명" },
+  "sig.clear":               { vi: "Xoá",                 en: "Clear",              ko: "지우기" },
+
+  // Inventory transactions client
+  "label.equipShort":        { vi: "Thiết bị",            en: "Equip",              ko: "장비" },
+  "label.transactionsTitle": { vi: "Tình trạng xuất nhập", en: "Transactions",      ko: "입출고 현황" },
+  "col.performedAt":         { vi: "Thời điểm",           en: "Performed At",       ko: "일시" },
+  "col.targetEquipSn":       { vi: "S/N thiết bị đích",   en: "Target Equip S/N",   ko: "대상장비 S/N" },
+  "filter.allTypeShort":     { vi: "Tất cả loại",         en: "All types",          ko: "전체 유형" },
+  "filter.allReasons":       { vi: "Tất cả lý do",        en: "All reasons",        ko: "전체 사유" },
+
+  // Inventory transactions page
+  "link.stockArrow":         { vi: "Tồn kho →",           en: "Stock →",            ko: "재고 현황 →" },
+  "link.qrScanArrow":        { vi: "Quét QR →",           en: "QR Scan →",          ko: "QR 스캔 →" },
+
+  // Sales detail — receivable tab labels
+  "field.billedAmount":      { vi: "Số tiền thanh toán",  en: "Billed Amount",      ko: "청구 금액" },
+  "field.paidAmount":        { vi: "Đã thanh toán",       en: "Paid Amount",        ko: "입금 금액" },
+  "field.clientPaymentTerms":{ vi: "Điều khoản TT của KH",en: "Client Payment Terms", ko: "거래처 결제조건" },
+  "field.salesCreatedAt":    { vi: "Ngày tạo DT",         en: "Sales Created At",   ko: "매출 등록일" },
+  "note.salesArPhase4":      { vi: "Xác nhận thanh toán · Gia hạn · Ghi lý do trễ sẽ được cung cấp ở module Tài chính (màn hình AR/AP) Phase 4. Tại đây chỉ có thể xem.", en: "Payment confirmation · due extension · delay reason recording will be in the Phase 4 Finance module (AR/AP screen). View-only here.", ko: "입금 확인 · 납기 연장 · 지연사유 기록 UI 는 Phase 4 재경 모듈 (미수미지급 전용 화면) 에서 제공됩니다. 여기서는 조회만 가능합니다." },
+  "field.certificateNo":     { vi: "Số chứng chỉ",        en: "Cert No.",           ko: "성적서 번호" },
+  "field.issuedAt":          { vi: "Ngày phát hành",      en: "Issued At",          ko: "발행일" },
+  "field.certPdf":           { vi: "PDF chứng chỉ",       en: "Cert PDF",           ko: "성적서 PDF" },
+  "btn.selectPdf":           { vi: "Chọn PDF",            en: "Select PDF",         ko: "PDF 선택" },
+  "label.calibCertOnePerLine":{ vi: "Chứng chỉ hiệu chuẩn (1 mỗi dòng)", en: "Calibration Certificate (1 per line)", ko: "교정 성적서 (라인당 1개)" },
+  "ph.salesItemsImportFailed":{ vi: "{ok} thành công · {failed} thất bại", en: "{ok} succeeded · {failed} failed", ko: "{ok}건 성공 · {failed}건 실패" },
+  "msg.itemCodeNotInDb":     { vi: "Mã/tên mặt hàng không khớp với DB", en: "Item code/name does not match DB", ko: "품목코드/품목명 DB 불일치" },
+  "msg.mustBePositive":      { vi: "Số dương",            en: "Positive",           ko: "양수" },
+  "msg.mustBeNonNegative":   { vi: "Số ≥ 0",              en: "Number ≥ 0",         ko: "숫자 ≥0" },
+  "title.salesLinesImport":  { vi: "Tải lên hàng loạt dòng doanh thu", en: "Bulk upload sales lines", ko: "매출 라인 일괄 업로드" },
+  "title.salesLinesAndCertImport": { vi: "Tải lên dòng doanh thu + chứng chỉ hiệu chuẩn", en: "Bulk upload sales lines + calibration certificates", ko: "매출 라인 + 교정 성적서 일괄 업로드" },
+
+  // TM Rental detail
+  "note.tmRentalReflectIntro":{ vi: "Tất cả mặt hàng của TM Rental này sẽ được chuyển thành 1 phiếu doanh thu. Áp dụng điều khoản TT của KH ({days} ngày), AR (PayableReceivable) sẽ tự động phát sinh. Sau khi phản ánh có thể chỉnh sửa thêm trong phiếu doanh thu.", en: "All items in this TM Rental will be converted into one sales voucher. Client payment terms ({days} days) will apply, and AR (PayableReceivable) will be created automatically. The sales voucher remains editable after reflection.", ko: "이 TM 렌탈의 모든 품목을 하나의 매출전표로 변환합니다. 거래처 결제조건({days}일)을 적용해 미수금(PayableReceivable)이 자동 발생합니다. 반영 후 매출전표에서 추가 편집 가능." },
+  "note.tmProfitFormula":    { vi: "Lợi nhuận = Giá bán − (Giá mua + Hoa hồng). Kiểm S/N = lỏng (có thể đăng ký kể cả khi không có trong kho công ty).", en: "Profit = Sales − (Purchase + Commission). S/N stock check = loose (can register even if not in company stock).", ko: "이익 = 매출가 − (매입가 + 커미션). S/N 재고확인 = 느슨 (외부 렌탈 등 자사 재고 아니어도 등록 가능)." },
+
+  // Page-level shared labels
+  "label.clientBlocked":     { vi: "Khoá khách hàng",     en: "Client Blocked",     ko: "거래처 차단" },
+  "label.arBlocked":         { vi: "Khoá phải thu",       en: "AR Blocked",         ko: "미수금 차단" },
+  "label.cannotAccessFromPortal": { vi: "Không thể truy cập từ cổng khách hàng.", en: "Cannot access from client portal.", ko: "고객 포탈에서 접근할 수 없습니다." },
 };
 
 export function t(key: string, lang: Lang): string {

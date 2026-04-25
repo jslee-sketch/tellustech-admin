@@ -279,12 +279,11 @@ export function TmRentalDetail({
         <div>
           <SectionTitle icon="💰" title={t("section.salesAuto", lang)} />
           <Note tone="info">
-            이 TM 렌탈의 모든 품목을 하나의 매출전표로 변환합니다. 거래처 결제조건({paymentTerms}일)을 적용해
-            미수금(PayableReceivable)이 자동 발생합니다. 반영 후 매출전표에서 추가 편집 가능.
+            {t("note.tmRentalReflectIntro", lang).replace("{days}", String(paymentTerms))}
           </Note>
           <div className="mt-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-4 text-[13px]">
             <div className="mb-2">
-              {t("field.item", lang)} <span className="font-mono font-bold">{items.length}{lang === "VI" ? " mục" : lang === "EN" ? " items" : "건"}</span>, {t("field.totalSales", lang)}{" "}
+              {t("field.item", lang)} <span className="font-mono font-bold">{t("common.itemsCountUnit", lang).replace("{count}", String(items.length))}</span>, {t("field.totalSales", lang)}{" "}
               <span className="font-mono font-bold text-[color:var(--tts-primary)]">
                 {formatVnd(totalSales)} VND
               </span>
@@ -565,7 +564,7 @@ function ItemsTab({
         )}
       </div>
       <Note tone="info">
-        이익 = 매출가 − (매입가 + 커미션). S/N 재고확인 = 느슨 (외부 렌탈 등 자사 재고 아니어도 등록 가능).
+        {t("note.tmProfitFormula", lang)}
       </Note>
 
       {showAdd && (

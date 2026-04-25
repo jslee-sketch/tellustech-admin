@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "./button";
 import { Note } from "./card";
+import { t, type Lang } from "@/lib/i18n";
 
 // 2단계 엑셀 업로더 — 업로드 → 미리보기 검증 → 저장.
 // 전체 행이 🟢 일 때만 저장 가능. 미리보기에서 직접 수정 시 실시간 재검증.
@@ -32,9 +33,10 @@ type Props = {
   onSave: (rows: Record<string, string>[]) => Promise<{ ok: boolean; message?: string }>;
   // 템플릿 파일명
   templateName?: string;
+  lang?: Lang;
 };
 
-export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
+export function ExcelUploader({ title, columns, onSave, templateName, lang = "EN" }: Props) {
   const [rawRows, setRawRows] = useState<Record<string, string>[] | null>(null);
   const [validated, setValidated] = useState<ValidatedRow[]>([]);
   const [saving, setSaving] = useState(false);
@@ -49,7 +51,7 @@ export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
         for (const col of columns) {
           const raw = String(r[col.header] ?? "").trim();
           if (col.required && !raw) {
-            values[col.key] = { raw, error: "필수" };
+            values[col.key] = { raw, error: t("excel.required", lang) };
             continue;
           }
           if (!raw) {
@@ -62,7 +64,7 @@ export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
         return { values };
       });
     },
-    [columns],
+    [columns, lang],
   );
 
   async function handleFile(file: File) {
@@ -82,7 +84,7 @@ export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
       setRawRows(rows);
       setValidated(validate(rows));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "엑셀 파싱 실패");
+      setError(e instanceof Error ? e.message : t("excel.parseFailed", lang));
     }
   }
 
@@ -117,7 +119,7 @@ export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
       });
       const result = await onSave(normalized);
       if (!result.ok) {
-        setError(result.message ?? "저장 실패");
+        setError(result.message ?? t("excel.saveFailed", lang));
         return;
       }
       setRawRows(null);
@@ -148,10 +150,10 @@ export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
         <div className="text-[13px] font-bold">{title}</div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={downloadTemplate}>
-            📋 빈 템플릿
+            {t("excel.emptyTemplateBtn", lang)}
           </Button>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-1.5 text-[12px] text-[color:var(--tts-sub)] hover:border-[color:var(--tts-primary)]">
-            📤 엑셀 업로드
+            {t("excel.uploadBtn", lang)}
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
@@ -166,8 +168,8 @@ export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
         </div>
       </div>
       <Note tone="info">
-        헤더가 반드시 있어야 합니다. 헤더 이름: {headers.map((h, i) => `${h}${columns[i].required ? "*" : ""}`).join(", ")}.
-        참조값(거래처/품목/직원 등)은 DB 에 정확히 일치해야 합니다.
+        {t("excel.headerRequired", lang).replace("{cols}", headers.map((h, i) => `${h}${columns[i].required ? "*" : ""}`).join(", "))}
+        {" "}{t("excel.refValuesMustMatch", lang)}
       </Note>
       {error && (
         <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>
@@ -176,10 +178,12 @@ export function ExcelUploader({ title, columns, onSave, templateName }: Props) {
         <div className="mt-3">
           <div className="mb-2 flex items-center justify-between">
             <div className={`text-[12px] font-bold ${errorCount === 0 ? "text-[color:var(--tts-success)]" : "text-[color:var(--tts-danger)]"}`}>
-              {errorCount === 0 ? `🟢 전체 ${rawRows.length}행 정상` : `🔴 ${errorCount}건 오류 — 수정 후 저장 가능`}
+              {errorCount === 0
+                ? t("excel.allRowsOk", lang).replace("{count}", String(rawRows.length))
+                : t("excel.errorRows", lang).replace("{count}", String(errorCount))}
             </div>
             <Button size="sm" disabled={!canSave || saving} onClick={handleSave} variant="accent">
-              {saving ? "저장 중..." : `✅ ${rawRows.length}행 저장`}
+              {saving ? t("excel.savingDot", lang) : t("excel.saveRows", lang).replace("{count}", String(rawRows.length))}
             </Button>
           </div>
           <div className="max-h-[420px] overflow-auto rounded border border-[color:var(--tts-border)]">

@@ -99,7 +99,7 @@ export function Checkbox({ label, className, ...rest }: CheckboxProps) {
 
 /** 파일 업로드 드롭존 — 실제 업로드는 consumer가 처리. 여기선 UI만. */
 export function FileUpload({
-  label = "파일 선택",
+  label = "Choose file",
   accept = "PDF, JPG, PNG",
   onFile,
   name,

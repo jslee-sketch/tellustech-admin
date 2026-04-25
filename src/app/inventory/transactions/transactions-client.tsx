@@ -133,7 +133,7 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
       render: (v, row) => (
         <div>
           {v ? <span className="font-mono text-[11px]">{v as string}</span> : <span className="text-[color:var(--tts-muted)]">—</span>}
-          {row.targetEquipmentSN && <div className="font-mono text-[10px] text-[color:var(--tts-accent)]">→ {lang === "VI" ? "Thiết bị" : lang === "EN" ? "Equip" : "장비"} {row.targetEquipmentSN}</div>}
+          {row.targetEquipmentSN && <div className="font-mono text-[10px] text-[color:var(--tts-accent)]">→ {t("label.equipShort", lang)} {row.targetEquipmentSN}</div>}
         </div>
       ),
     },
@@ -161,14 +161,16 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
 
   return (
     <Card
-      title={lang === "VI" ? "Tình trạng xuất nhập" : lang === "EN" ? "Transactions" : "입출고 현황"}
+      title={t("label.transactionsTitle", lang)}
       count={filtered.length}
+      countLabel={t("common.itemsShort", lang)}
       action={
         <div className="flex gap-2">
           <ExcelDownload
+            lang={lang}
             rows={filtered}
             columns={[
-              { key: "performedAt", header: lang === "VI" ? "Thời điểm" : lang === "EN" ? "Performed At" : "일시" },
+              { key: "performedAt", header: t("col.performedAt", lang) },
               { key: "txnType", header: t("col.txnType", lang) },
               { key: "reason", header: t("col.reason", lang) },
               { key: "itemCode", header: t("col.itemCode", lang) },
@@ -177,7 +179,7 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
               { key: "fromWarehouseCode", header: t("col.warehouseOut", lang) },
               { key: "toWarehouseCode", header: t("col.warehouseIn", lang) },
               { key: "owner", header: t("col.belongsTo", lang) },
-              { key: "targetEquipmentSN", header: lang === "VI" ? "S/N thiết bị đích" : lang === "EN" ? "Target Equip S/N" : "대상장비 S/N" },
+              { key: "targetEquipmentSN", header: t("col.targetEquipSn", lang) },
               { key: "note", header: t("col.note", lang) },
             ]}
             filename="inventory-transactions.xlsx"
@@ -191,13 +193,13 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchTxn", lang)} />
         <select value={type} onChange={(e) => setType(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] outline-none">
-          <option value="all">{lang === "VI" ? "Tất cả loại" : lang === "EN" ? "All types" : "전체 유형"}</option>
+          <option value="all">{t("filter.allTypeShort", lang)}</option>
           <option value="IN">{t("status.in", lang)}</option>
           <option value="OUT">{t("status.out", lang)}</option>
           <option value="TRANSFER">{t("status.transfer", lang)}</option>
         </select>
         <select value={reason} onChange={(e) => setReason(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] outline-none">
-          <option value="all">{lang === "VI" ? "Tất cả lý do" : lang === "EN" ? "All reasons" : "전체 사유"}</option>
+          <option value="all">{t("filter.allReasons", lang)}</option>
           {ALL_REASONS.map((r) => <option key={r} value={r}>{reasonLabel(r, lang)}</option>)}
         </select>
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-2 text-[12px] outline-none" />

@@ -171,7 +171,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           className="rounded p-1 text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-          aria-label={collapsed ? "펼치기" : "접기"}
+          aria-label={collapsed ? t("sidebar.expand", currentLang ?? "KO") : t("sidebar.collapse", currentLang ?? "KO")}
         >
           {collapsed ? "›" : "‹"}
         </button>
@@ -240,9 +240,9 @@ export function Sidebar() {
           type="button"
           onClick={toggleTheme}
           className="mt-1 w-full rounded px-2 py-1 text-[11px] font-bold text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-          title={theme === "dark" ? "라이트 모드로" : "다크 모드로"}
+          title={theme === "dark" ? t("sidebar.toLightMode", currentLang ?? "KO") : t("sidebar.toDarkMode", currentLang ?? "KO")}
         >
-          {theme === "dark" ? (collapsed ? "☀" : "☀ 라이트") : (collapsed ? "🌙" : "🌙 다크")}
+          {theme === "dark" ? (collapsed ? "☀" : `☀ ${t("sidebar.lightShort", currentLang ?? "KO")}`) : (collapsed ? "🌙" : `🌙 ${t("sidebar.darkShort", currentLang ?? "KO")}`)}
         </button>
         {!collapsed && <div className="mt-1 text-center text-[9px] text-[color:var(--tts-muted)]">TELLUSTECH ERP</div>}
       </div>

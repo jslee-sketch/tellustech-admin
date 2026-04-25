@@ -501,18 +501,18 @@ function ItemsTab({
           {isCalibration && (
             <div className="mb-3 rounded-md bg-[color:var(--tts-primary-dim)] p-3">
               <div className="mb-1 text-[11px] font-bold text-[color:var(--tts-primary)]">
-                {lang === "VI" ? "Chứng chỉ hiệu chuẩn (1 mỗi dòng)" : lang === "EN" ? "Calibration Certificate (1 per line)" : "교정 성적서 (라인당 1개)"}
+                {t("label.calibCertOnePerLine", lang)}
               </div>
               <Row>
-                <Field label={lang === "VI" ? "Số chứng chỉ" : lang === "EN" ? "Cert No." : "성적서 번호"} width="240px">
-                  <TextInput value={certNumber} onChange={(e) => setCertNumber(e.target.value)} placeholder="예: CERT-2026-0001" />
+                <Field label={t("field.certificateNo", lang)} width="240px">
+                  <TextInput value={certNumber} onChange={(e) => setCertNumber(e.target.value)} placeholder="CERT-2026-0001" />
                 </Field>
-                <Field label={lang === "VI" ? "Ngày phát hành" : lang === "EN" ? "Issued At" : "발행일"} width="180px">
+                <Field label={t("field.issuedAt", lang)} width="180px">
                   <TextInput type="date" value={issuedAt} onChange={(e) => setIssuedAt(e.target.value)} />
                 </Field>
-                <Field label={lang === "VI" ? "PDF chứng chỉ" : lang === "EN" ? "Cert PDF" : "성적서 PDF"}>
+                <Field label={t("field.certPdf", lang)}>
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-sub)] hover:border-[color:var(--tts-primary)]">
-                    📎 {certFile ? certFile.name : (lang === "VI" ? "Chọn PDF" : lang === "EN" ? "Select PDF" : "PDF 선택")}
+                    📎 {certFile ? certFile.name : t("btn.selectPdf", lang)}
                     <input type="file" accept=".pdf,application/pdf" className="hidden" onChange={(e) => setCertFile(e.target.files?.[0] ?? null)} />
                   </label>
                 </Field>
@@ -597,25 +597,24 @@ function ReceivableTab({
           </div>
           <div className="text-[color:var(--tts-sub)]">{t("field.totalSales", lang)}</div>
           <div className="font-mono font-bold">{formatVnd(totalAmount)} VND</div>
-          <div className="text-[color:var(--tts-sub)]">{lang === "VI" ? "Số tiền thanh toán" : lang === "EN" ? "Billed Amount" : "청구 금액"}</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.billedAmount", lang)}</div>
           <div className="font-mono">{formatVnd(receivable.amount)} VND</div>
-          <div className="text-[color:var(--tts-sub)]">{lang === "VI" ? "Đã thanh toán" : lang === "EN" ? "Paid Amount" : "입금 금액"}</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.paidAmount", lang)}</div>
           <div className="font-mono">{formatVnd(receivable.paidAmount)} VND</div>
-          <div className="text-[color:var(--tts-sub)]">{lang === "VI" ? "Còn lại" : lang === "EN" ? "Outstanding" : "잔액"}</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.outstanding", lang)}</div>
           <div className="font-mono font-bold text-[color:var(--tts-danger)]">
             {formatVnd(outstanding)} VND
           </div>
-          <div className="text-[color:var(--tts-sub)]">{lang === "VI" ? "Điều khoản TT của KH" : lang === "EN" ? "Client Payment Terms" : "거래처 결제조건"}</div>
-          <div>{paymentTerms}{lang === "VI" ? " ngày" : lang === "EN" ? " days" : "일"}</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.clientPaymentTerms", lang)}</div>
+          <div>{paymentTerms} {t("common.days", lang)}</div>
           <div className="text-[color:var(--tts-sub)]">{t("field.dueDate", lang)}</div>
           <div className="font-mono">{receivable.dueDate}</div>
-          <div className="text-[color:var(--tts-sub)]">{lang === "VI" ? "Ngày tạo DT" : lang === "EN" ? "Sales Created At" : "매출 등록일"}</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.salesCreatedAt", lang)}</div>
           <div className="font-mono">{createdAt}</div>
         </div>
       </div>
       <Note tone="info" className="mt-3">
-        입금 확인 · 납기 연장 · 지연사유 기록 UI 는 Phase 4 재경 모듈 (미수미지급 전용 화면) 에서 제공됩니다.
-        여기서는 조회만 가능합니다.
+        {t("note.salesArPhase4", lang)}
       </Note>
     </div>
   );

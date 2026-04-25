@@ -57,7 +57,7 @@ export default async function TmRentalDetailPage({ params }: PageProps) {
           </Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{rental.rentalCode}</span>
-            {rental.client.receivableStatus === "BLOCKED" && <Badge tone="danger">{L === "VI" ? "Khoá phải thu" : L === "EN" ? "AR Blocked" : "미수금 차단"}</Badge>}
+            {rental.client.receivableStatus === "BLOCKED" && <Badge tone="danger">{t("label.arBlocked", L)}</Badge>}
           </h1>
           <div className="mt-1 text-[13px] text-[color:var(--tts-sub)]">
             {rental.client.companyNameVi}{" "}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "./button";
+import { t, type Lang } from "@/lib/i18n";
 
 // 리스트 데이터를 Excel(xlsx) 로 다운로드하는 범용 버튼.
 // 컬럼 순서 + 헤더 이름을 props 로 받음. 데이터는 plain object 배열.
@@ -20,6 +21,7 @@ type Props<T extends Record<string, unknown>> = {
   disabled?: boolean;
   templateOnly?: boolean; // true면 헤더만 있는 빈 템플릿
   label?: string;
+  lang?: Lang;
 };
 
 export function ExcelDownload<T extends Record<string, unknown>>({
@@ -30,6 +32,7 @@ export function ExcelDownload<T extends Record<string, unknown>>({
   disabled,
   templateOnly,
   label,
+  lang = "EN",
 }: Props<T>) {
   const [busy, setBusy] = useState(false);
 
@@ -65,7 +68,7 @@ export function ExcelDownload<T extends Record<string, unknown>>({
 
   return (
     <Button size="sm" variant="outline" onClick={download} disabled={busy || disabled}>
-      📥 {busy ? "내보내는 중..." : label ?? (templateOnly ? "빈 템플릿 다운로드" : "엑셀 다운로드")}
+      📥 {busy ? t("excel.exporting", lang) : label ?? (templateOnly ? t("excel.emptyTemplate", lang) : t("excel.download", lang))}
     </Button>
   );
 }

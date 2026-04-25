@@ -96,6 +96,17 @@ export function BacklogPanel({
     else setError("CFM 실패");
   }
 
+  async function changeStatus(id: string, status: "OPEN" | "CLOSE" | "NG") {
+    const res = await fetch(`/api/weekly-report/backlogs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/" + "json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) startTransition(() => router.refresh());
+    else setError("상태 변경 실패");
+  }
+
   return (
     <div>
       <div className="mb-3 flex justify-between gap-2">
@@ -195,22 +206,52 @@ export function BacklogPanel({
               {openHistory === r.id && (
                 <tr key={r.id + "-h"} className="bg-[color:var(--tts-row-hover,rgba(255,255,255,0.02))]">
                   <td colSpan={10} className="px-3 py-2">
-                    <div className="space-y-1.5">
-                      {r.histories.length === 0 && <div className="text-[12px] text-[color:var(--tts-muted)]">히스토리 없음</div>}
-                      {r.histories.map((h) => (
-                        <div key={h.id} className="text-[12px]">
-                          <span className="font-mono text-[11px] text-[color:var(--tts-muted)]">{h.date.slice(0, 10)}:</span>{" "}
-                          {h.ko ?? h.vi ?? h.en}
+                    <div className="space-y-2">
+                      {/* 상태 변경 버튼 */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-[color:var(--tts-muted)]">상태 변경:</span>
+                        {(["OPEN", "CLOSE", "NG"] as const).map((s) => {
+                          const active = r.status === s;
+                          const tone =
+                            s === "OPEN"  ? "bg-emerald-600 hover:bg-emerald-500" :
+                            s === "CLOSE" ? "bg-slate-500 hover:bg-slate-400" :
+                                            "bg-rose-600 hover:bg-rose-500";
+                          const label = s === "OPEN" ? "🟢 Open" : s === "CLOSE" ? "Close" : "🔴 NG";
+                          return (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => changeStatus(r.id, s)}
+                              disabled={pending || active}
+                              className={
+                                "rounded-md px-2 py-0.5 text-[11px] font-bold text-white transition disabled:cursor-not-allowed " +
+                                (active ? "opacity-100 ring-2 ring-white/30 " + tone : "opacity-60 " + tone)
+                              }
+                            >
+                              {label}{active ? " ✓" : ""}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="border-t border-[color:var(--tts-border)] pt-2">
+                        <div className="mb-1 text-[11px] font-bold text-[color:var(--tts-muted)]">히스토리</div>
+                        {r.histories.length === 0 && <div className="text-[12px] text-[color:var(--tts-muted)]">히스토리 없음</div>}
+                        {r.histories.map((h) => (
+                          <div key={h.id} className="text-[12px]">
+                            <span className="font-mono text-[11px] text-[color:var(--tts-muted)]">{h.date.slice(0, 10)}:</span>{" "}
+                            {h.ko ?? h.vi ?? h.en}
+                          </div>
+                        ))}
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            className="flex-1 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-bg)] px-2 py-1 text-[12px]"
+                            placeholder="새 히스토리 (한국어, 자동 3언어 번역)"
+                            value={historyDraft[r.id] ?? ""}
+                            onChange={(e) => setHistoryDraft((d) => ({ ...d, [r.id]: e.target.value }))}
+                          />
+                          <Button onClick={() => addHistory(r.id)} disabled={pending}>+ 추가</Button>
                         </div>
-                      ))}
-                      <div className="mt-2 flex gap-2">
-                        <input
-                          className="flex-1 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-bg)] px-2 py-1 text-[12px]"
-                          placeholder="새 히스토리 (한국어, 자동 3언어 번역)"
-                          value={historyDraft[r.id] ?? ""}
-                          onChange={(e) => setHistoryDraft((d) => ({ ...d, [r.id]: e.target.value }))}
-                        />
-                        <Button onClick={() => addHistory(r.id)} disabled={pending}>+ 추가</Button>
                       </div>
                     </div>
                   </td>

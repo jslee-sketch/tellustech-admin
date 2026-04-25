@@ -32,6 +32,7 @@ export default async function AsTicketsPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.asTickets.title", L)}</h1>
         </div>
         <TicketsClient
+          lang={L}
           initialData={tickets.map((t) => ({
             id: t.id,
             ticketNumber: t.ticketNumber,

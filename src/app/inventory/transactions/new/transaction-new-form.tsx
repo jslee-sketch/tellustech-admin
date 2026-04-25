@@ -3,32 +3,16 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { Button, Field, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type Props = {
   items: { value: string; label: string }[];
   warehouses: { value: string; label: string; warehouseType: string }[];
   clients: { value: string; label: string }[];
+  lang: Lang;
 };
 
-const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
-  IN: [
-    { value: "PURCHASE", label: "매입" },
-    { value: "RETURN_IN", label: "반품입고" },
-    { value: "OTHER_IN", label: "기타입고" },
-  ],
-  OUT: [
-    { value: "SALE", label: "매출" },
-    { value: "CONSUMABLE_OUT", label: "소모품출고" },
-  ],
-  TRANSFER: [
-    { value: "CALIBRATION", label: "교정" },
-    { value: "REPAIR", label: "수리" },
-    { value: "RENTAL", label: "렌탈" },
-    { value: "DEMO", label: "데모" },
-  ],
-};
-
-export function TransactionNewForm({ items, warehouses, clients }: Props) {
+export function TransactionNewForm({ items, warehouses, clients, lang }: Props) {
   const router = useRouter();
   const [itemId, setItemId] = useState("");
   const [txnType, setTxnType] = useState<"IN" | "OUT" | "TRANSFER">("IN");
@@ -43,13 +27,31 @@ export function TransactionNewForm({ items, warehouses, clients }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
+    IN: [
+      { value: "PURCHASE", label: t("reason.purchaseShort", lang) },
+      { value: "RETURN_IN", label: t("reason.returnInShort", lang) },
+      { value: "OTHER_IN", label: t("reason.otherInShort", lang) },
+    ],
+    OUT: [
+      { value: "SALE", label: t("reason.saleShort", lang) },
+      { value: "CONSUMABLE_OUT", label: t("reason.consumableOutShort", lang) },
+    ],
+    TRANSFER: [
+      { value: "CALIBRATION", label: t("reason.calibrationShort", lang) },
+      { value: "REPAIR", label: t("reason.repairShort", lang) },
+      { value: "RENTAL", label: t("reason.rentalShort", lang) },
+      { value: "DEMO", label: t("reason.demoShort", lang) },
+    ],
+  };
+
   const internalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType !== "EXTERNAL"), [warehouses]);
   const externalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType === "EXTERNAL"), [warehouses]);
 
   // 유형 전환 시 사유 자동 리셋 + 창고 필드 초기화
-  function selectType(t: "IN" | "OUT" | "TRANSFER") {
-    setTxnType(t);
-    setReason(REASONS_BY_TYPE[t][0].value);
+  function selectType(type: "IN" | "OUT" | "TRANSFER") {
+    setTxnType(type);
+    setReason(REASONS_BY_TYPE[type][0].value);
     setFromWarehouseId("");
     setToWarehouseId("");
     setClientId("");
@@ -85,7 +87,7 @@ export function TransactionNewForm({ items, warehouses, clients }: Props) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ? `${data.error} ${JSON.stringify(data.details ?? "")}` : "저장 실패");
+        setError(data.error ? `${data.error} ${JSON.stringify(data.details ?? "")}` : t("msg.saveFailedShort", lang));
         return;
       }
       router.push("/inventory/transactions");
@@ -98,56 +100,56 @@ export function TransactionNewForm({ items, warehouses, clients }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       <Note tone="info">
-        유형 선택 후 사유를 고르고, 유형에 맞는 창고(출고/입고)를 지정합니다.<br/>
-        • 입고: 외부→자사 (입고창고만) · 출고: 자사→고객 (출고창고+고객) · 이동: 창고→창고 (둘 다 + External 시 고객)<br/>
-        • 소모품출고 시 "대상 장비 S/N" 필수 — IT 계약 장비에 연결됩니다.
+        {t("note.txnTypePicker", lang)}<br/>
+        {t("note.txnTypeRules", lang)}<br/>
+        {t("note.txnConsumableRule", lang)}
       </Note>
 
       <Row>
-        <Field label="유형" required width="360px">
+        <Field label={t("field.txnType", lang)} required width="360px">
           <div className="flex gap-1 rounded-md bg-[color:var(--tts-input)] p-1">
-            {(["IN", "OUT", "TRANSFER"] as const).map((t) => (
+            {(["IN", "OUT", "TRANSFER"] as const).map((type) => (
               <button
                 type="button"
-                key={t}
-                onClick={() => selectType(t)}
-                className={`flex-1 rounded px-3 py-2 text-[13px] font-semibold transition ${txnType === t ? "bg-[color:var(--tts-primary)] text-white" : "text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"}`}
+                key={type}
+                onClick={() => selectType(type)}
+                className={`flex-1 rounded px-3 py-2 text-[13px] font-semibold transition ${txnType === type ? "bg-[color:var(--tts-primary)] text-white" : "text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"}`}
               >
-                {t === "IN" ? "입고" : t === "OUT" ? "출고" : "이동"}
+                {type === "IN" ? t("txnType.in", lang) : type === "OUT" ? t("txnType.out", lang) : t("txnType.transfer", lang)}
               </button>
             ))}
           </div>
         </Field>
-        <Field label="사유" required width="180px">
+        <Field label={t("field.reason", lang)} required width="180px">
           <Select required value={reason} onChange={(e) => setReason(e.target.value)} options={REASONS_BY_TYPE[txnType]} />
         </Field>
-        <Field label="수량" required width="100px">
+        <Field label={t("field.qty", lang)} required width="100px">
           <TextInput type="number" required value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         </Field>
       </Row>
 
       <Row>
-        <Field label="품목" required>
-          <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder="선택" options={items} />
+        <Field label={t("field.item", lang)} required>
+          <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder={t("placeholder.select", lang)} options={items} />
         </Field>
-        <Field label="S/N">
+        <Field label={t("field.serial", lang)}>
           <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="SN-XXX" />
         </Field>
       </Row>
 
       <Row>
         {(txnType === "OUT" || txnType === "TRANSFER") && (
-          <Field label="출고창고" required>
-            <Select required value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} placeholder="선택" options={internalWarehouses.map((w) => ({ value: w.value, label: w.label }))} />
+          <Field label={t("field.warehouseOut", lang)} required>
+            <Select required value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} placeholder={t("placeholder.select", lang)} options={internalWarehouses.map((w) => ({ value: w.value, label: w.label }))} />
           </Field>
         )}
         {(txnType === "IN" || txnType === "TRANSFER") && (
-          <Field label="입고창고" required>
+          <Field label={t("field.warehouseIn", lang)} required>
             <Select
               required
               value={toWarehouseId}
               onChange={(e) => setToWarehouseId(e.target.value)}
-              placeholder="선택"
+              placeholder={t("placeholder.select", lang)}
               options={(txnType === "TRANSFER" ? warehouses : internalWarehouses).map((w) => ({ value: w.value, label: w.label }))}
             />
           </Field>
@@ -156,22 +158,22 @@ export function TransactionNewForm({ items, warehouses, clients }: Props) {
 
       {showClient && (
         <Row>
-          <Field label={txnType === "OUT" ? "고객 (납품처)" : "고객 (External 창고)"} required={txnType === "OUT"}>
-            <Select value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="선택" options={clients} />
+          <Field label={txnType === "OUT" ? t("field.clientCustomer", lang) : t("field.clientExternal", lang)} required={txnType === "OUT"}>
+            <Select value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={t("placeholder.select", lang)} options={clients} />
           </Field>
         </Row>
       )}
 
       {showTargetEquipment && (
         <Row>
-          <Field label="대상 장비 S/N" required>
-            <TextInput required value={targetEquipmentSN} onChange={(e) => setTargetEquipmentSN(e.target.value)} placeholder="이 소모품을 사용할 IT계약 장비의 S/N" />
+          <Field label={t("field.targetEquipSN", lang)} required>
+            <TextInput required value={targetEquipmentSN} onChange={(e) => setTargetEquipmentSN(e.target.value)} placeholder={t("placeholder.targetEquipSN", lang)} />
           </Field>
         </Row>
       )}
 
       <Row>
-        <Field label="비고">
+        <Field label={t("field.note", lang)}>
           <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </Row>
@@ -179,8 +181,8 @@ export function TransactionNewForm({ items, warehouses, clients }: Props) {
       {error && <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
 
       <div className="mt-4 flex gap-2 border-t border-[color:var(--tts-border)] pt-3">
-        <Button type="submit" disabled={submitting}>{submitting ? "저장 중..." : "등록"}</Button>
-        <Button type="button" variant="ghost" onClick={() => router.push("/inventory/transactions")}>취소</Button>
+        <Button type="submit" disabled={submitting}>{submitting ? t("action.saving", lang) : t("btn.txnRegister", lang)}</Button>
+        <Button type="button" variant="ghost" onClick={() => router.push("/inventory/transactions")}>{t("action.cancel", lang)}</Button>
       </div>
     </form>
   );

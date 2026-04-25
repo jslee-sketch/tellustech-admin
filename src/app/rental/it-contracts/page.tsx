@@ -31,6 +31,7 @@ export default async function ItContractsPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.itContract.title", L)}</h1>
         </div>
         <ItContractsClient
+          lang={L}
           initialData={contracts.map((c) => ({
             id: c.id,
             contractNumber: c.contractNumber,

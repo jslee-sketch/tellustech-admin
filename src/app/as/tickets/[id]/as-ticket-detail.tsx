@@ -13,6 +13,7 @@ import {
   TextInput,
   Textarea,
 } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type TicketCore = {
   ticketNumber: string;
@@ -40,9 +41,10 @@ type Props = {
   photos: Photo[];
   dispatches: Dispatch[];
   employeeOptions: { value: string; label: string }[];
+  lang: Lang;
 };
 
-export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispatches, employeeOptions }: Props) {
+export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispatches, employeeOptions, lang }: Props) {
   const router = useRouter();
   const [core, setCore] = useState<TicketCore>(initial);
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
@@ -73,7 +75,7 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
         }),
       });
       if (!res.ok) {
-        setError("저장에 실패했습니다.");
+        setError(t("msg.saveFailed", lang));
         return;
       }
       router.refresh();
@@ -83,14 +85,14 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
   }
 
   async function handleDelete() {
-    if (!window.confirm("이 AS 전표를 삭제하시겠습니까? 출동 이력이 있으면 실패합니다.")) return;
+    if (!window.confirm(t("msg.deleteAsTicketConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/as-tickets/${ticketId}`, { method: "DELETE" });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { details?: { message?: string } };
-        setError(body.details?.message ?? "삭제에 실패했습니다.");
+        setError(body.details?.message ?? t("msg.deleteFailed", lang));
         return;
       }
       router.push("/as/tickets");
@@ -109,7 +111,7 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
       fd.append("category", "PHOTO");
       const upRes = await fetch("/api/files", { method: "POST", body: fd });
       if (!upRes.ok) {
-        setError("사진 업로드에 실패했습니다.");
+        setError(t("msg.photoUploadFailed", lang));
         return;
       }
       const data = (await upRes.json()) as { id: string; sizeBytes: number };
@@ -119,7 +121,7 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
         body: JSON.stringify({ fileId: data.id }),
       });
       if (!attach.ok) {
-        setError("사진 연결에 실패했습니다.");
+        setError(t("msg.photoLinkFailed", lang));
         return;
       }
       setPhotos((prev) => [...prev, { id: data.id, name: file.name, sizeBytes: data.sizeBytes ?? 0 }]);
@@ -147,63 +149,63 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
         </div>
       )}
 
-      <SectionTitle icon="📋" title="기본 정보" />
+      <SectionTitle icon="📋" title={t("section.basic", lang)} />
       <Row>
-        <Field label="AS 전표번호" width="180px">
+        <Field label={t("field.asTicketNumber", lang)} width="180px">
           <TextInput value={core.ticketNumber} disabled />
         </Field>
-        <Field label="거래처">
+        <Field label={t("field.client", lang)}>
           <TextInput value={core.clientLabel} disabled />
         </Field>
-        <Field label="상태" required width="160px">
+        <Field label={t("field.status", lang)} required width="160px">
           <Select
             required
             value={core.status}
             onChange={(e) => set("status", e.target.value)}
             options={[
-              { value: "RECEIVED", label: "접수" },
-              { value: "IN_PROGRESS", label: "처리중" },
-              { value: "DISPATCHED", label: "출동중" },
-              { value: "COMPLETED", label: "완료" },
-              { value: "CANCELED", label: "취소" },
+              { value: "RECEIVED", label: t("asStatus.received", lang) },
+              { value: "IN_PROGRESS", label: t("asStatus.inProgress", lang) },
+              { value: "DISPATCHED", label: t("asStatus.dispatched", lang) },
+              { value: "COMPLETED", label: t("asStatus.completed", lang) },
+              { value: "CANCELED", label: t("asStatus.canceled", lang) },
             ]}
           />
         </Field>
       </Row>
       {core.clientAddress && (
         <Row>
-          <Field label="거래처 주소">
+          <Field label={t("field.clientAddress", lang)}>
             <TextInput value={core.clientAddress} disabled />
           </Field>
         </Row>
       )}
       <Row>
-        <Field label="접수 일시" width="220px">
+        <Field label={t("field.receivedAtDt", lang)} width="220px">
           <TextInput type="datetime-local" value={core.receivedAt} disabled />
         </Field>
         {core.completedAt && (
-          <Field label="완료 일시" width="220px">
+          <Field label={t("field.completedAtDt", lang)} width="220px">
             <TextInput type="datetime-local" value={core.completedAt} disabled />
           </Field>
         )}
-        <Field label="AS 담당자">
+        <Field label={t("field.asAssignee", lang)}>
           <Select
             value={core.assignedToId}
             onChange={(e) => set("assignedToId", e.target.value)}
-            placeholder="미지정"
+            placeholder={t("label.unassigned", lang)}
             options={employeeOptions}
           />
         </Field>
       </Row>
       <Row>
-        <Field label="S/N">
+        <Field label={t("field.serial", lang)}>
           <TextInput value={core.serialNumber} onChange={(e) => set("serialNumber", e.target.value)} />
         </Field>
       </Row>
 
-      <SectionTitle icon="🗣️" title="증상" />
+      <SectionTitle icon="🗣️" title={t("section.symptom", lang)} />
       <Row>
-        <Field label="기본 언어" width="180px">
+        <Field label={t("field.originalLang", lang)} width="180px">
           <Select
             value={core.originalLang}
             onChange={(e) => set("originalLang", e.target.value)}
@@ -216,20 +218,20 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
         </Field>
       </Row>
       <Row>
-        <Field label="증상 (VI)">
+        <Field label={t("field.symptomVi", lang)}>
           <Textarea rows={3} value={core.symptomVi} onChange={(e) => set("symptomVi", e.target.value)} />
         </Field>
       </Row>
       <Row>
-        <Field label="증상 (KO)">
+        <Field label={t("field.symptomKo", lang)}>
           <Textarea rows={3} value={core.symptomKo} onChange={(e) => set("symptomKo", e.target.value)} />
         </Field>
-        <Field label="증상 (EN)">
+        <Field label={t("field.symptomEn", lang)}>
           <Textarea rows={3} value={core.symptomEn} onChange={(e) => set("symptomEn", e.target.value)} />
         </Field>
       </Row>
 
-      <SectionTitle icon="📸" title={`증상 사진 (${photos.length}장)`} />
+      <SectionTitle icon="📸" title={t("section.symptomPhotos", lang).replace("{count}", String(photos.length))} />
       <div className="flex flex-wrap gap-2">
         {photos.map((p) => (
           <div
@@ -252,7 +254,7 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
           </div>
         ))}
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-1 text-[12px] text-[color:var(--tts-sub)] hover:border-[color:var(--tts-primary)]">
-          {uploading ? "업로드 중..." : "📎 사진 추가"}
+          {uploading ? t("btn.uploading", lang) : t("btn.addPhoto", lang)}
           <input
             type="file"
             accept="image/*,application/pdf"
@@ -266,9 +268,9 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
         </label>
       </div>
 
-      <SectionTitle icon="🚗" title={`출동 이력 (${dispatches.length}회)`} />
+      <SectionTitle icon="🚗" title={t("section.dispatchHistory", lang).replace("{count}", String(dispatches.length))} />
       {dispatches.length === 0 ? (
-        <Note tone="info">출동 기록이 없습니다.</Note>
+        <Note tone="info">{t("msg.noDispatch", lang)}</Note>
       ) : (
         <div className="space-y-2">
           {dispatches.map((d) => (
@@ -278,13 +280,13 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-semibold">{d.transportMethod || "수단 미입력"}</span>
+                  <span className="font-semibold">{d.transportMethod || t("label.transportNotEntered", lang)}</span>
                   <span className="ml-3 text-[11px] text-[color:var(--tts-muted)]">
-                    {d.departedAt || "—"} → {d.completedAt || "진행중"}
+                    {d.departedAt || "—"} → {d.completedAt || t("label.inProgress", lang)}
                   </span>
                 </div>
                 <Link href={`/as/dispatches/${d.id}`} className="text-[12px] text-[color:var(--tts-primary)] hover:underline">
-                  상세 →
+                  {t("label.detailArrow", lang)}
                 </Link>
               </div>
             </div>
@@ -295,7 +297,7 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
         <div className="mt-3">
           <Link href={`/as/dispatches/new?ticket=${ticketId}`}>
             <Button type="button" variant="accent">
-              🚗 새 출동 등록 (Phase 2 #3b)
+              {t("btn.newDispatch", lang)}
             </Button>
           </Link>
         </div>
@@ -303,10 +305,10 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={saving}>
-          {saving ? "저장 중..." : "기본정보 저장"}
+          {saving ? t("action.saving", lang) : t("btn.saveBasicInfo", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/as/tickets")}>
-          목록으로
+          {t("btn.toList", lang)}
         </Button>
         <Button
           type="button"
@@ -315,7 +317,7 @@ export function AsTicketDetail({ ticketId, initial, photos: initialPhotos, dispa
           disabled={deleting}
           className="ml-auto"
         >
-          {deleting ? "삭제 중..." : "AS 삭제"}
+          {deleting ? t("action.deleting", lang) : t("btn.deleteAs", lang)}
         </Button>
       </div>
     </form>

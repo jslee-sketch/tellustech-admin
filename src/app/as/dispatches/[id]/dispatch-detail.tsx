@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Note, Row, SectionTitle, Select, TextInput, Textarea } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type DispatchCore = {
   ticketId: string;
@@ -29,21 +30,22 @@ type Props = {
   dispatchId: string;
   initial: DispatchCore;
   employeeOptions: { value: string; label: string }[];
+  lang: Lang;
 };
 
-const TRANSPORT_OPTIONS = [
-  { value: "company_car", label: "🚗 회사차량" },
-  { value: "motorbike", label: "🏍️ 오토바이" },
-  { value: "grab", label: "🚕 Grab" },
-  { value: "taxi", label: "🚖 택시" },
-];
-
-export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) {
+export function DispatchDetail({ dispatchId, initial, employeeOptions, lang }: Props) {
   const router = useRouter();
   const [core, setCore] = useState<DispatchCore>(initial);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const TRANSPORT_OPTIONS = [
+    { value: "company_car", label: t("transport.companyCar", lang) },
+    { value: "motorbike", label: t("transport.motorbike", lang) },
+    { value: "grab", label: t("transport.grab", lang) },
+    { value: "taxi", label: t("transport.taxi", lang) },
+  ];
 
   const set = <K extends keyof DispatchCore>(k: K, v: DispatchCore[K]) =>
     setCore((p) => ({ ...p, [k]: v }));
@@ -56,7 +58,7 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
     fd.append("file", file);
     const up = await fetch("/api/files", { method: "POST", body: fd });
     if (!up.ok) {
-      setError("파일 업로드 실패");
+      setError(t("msg.fileUploadFail", lang));
       return;
     }
     const data = (await up.json()) as { id: string };
@@ -93,7 +95,7 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
         }),
       });
       if (!res.ok) {
-        setError("저장 실패");
+        setError(t("msg.saveFailed", lang));
         return;
       }
       router.refresh();
@@ -103,13 +105,13 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
   }
 
   async function handleDelete() {
-    if (!window.confirm("이 출동 기록을 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.deleteDispatchConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/as-dispatches/${dispatchId}`, { method: "DELETE" });
       if (!res.ok) {
-        setError("삭제 실패");
+        setError(t("msg.deleteFailed", lang));
         return;
       }
       router.push("/as/dispatches");
@@ -124,12 +126,12 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
   const livePreview =
     Number.isFinite(gNum) && gNum > 0 && Number.isFinite(mNum) && mNum > 0
       ? Math.abs(mNum - gNum) <= gNum * 0.1
-        ? "✅ 일치"
-        : `⚠️ 불일치 (차이 ${Math.abs(mNum - gNum).toFixed(2)}km)`
+        ? t("msg.distanceMatchLive", lang)
+        : t("msg.distanceMismatchLive", lang).replace("{diff}", Math.abs(mNum - gNum).toFixed(2))
       : core.distanceMatch === true
-      ? "✅ 저장된 값: 일치"
+      ? t("msg.distanceMatchSaved", lang)
       : core.distanceMatch === false
-      ? "⚠️ 저장된 값: 불일치"
+      ? t("msg.distanceMismatchSaved", lang)
       : "—";
 
   return (
@@ -141,41 +143,41 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
       )}
 
       <Note tone="info">
-        AS 전표:{" "}
+        {t("label.asTicket", lang)}:{" "}
         <Link href={`/as/tickets/${core.ticketId}`} className="font-mono font-bold text-[color:var(--tts-primary)] hover:underline">
           {core.ticketNumber}
         </Link>
       </Note>
 
-      <SectionTitle icon="🚗" title="출동 정보" />
+      <SectionTitle icon="🚗" title={t("section.dispatchInfo", lang)} />
       <Row>
-        <Field label="출동자">
+        <Field label={t("field.dispatchEmployee", lang)}>
           <Select
             value={core.dispatchEmployeeId}
             onChange={(e) => set("dispatchEmployeeId", e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={employeeOptions}
           />
         </Field>
-        <Field label="출동수단" width="220px">
+        <Field label={t("field.transportMethod", lang)} width="220px">
           <Select
             value={core.transportMethod}
             onChange={(e) => set("transportMethod", e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={TRANSPORT_OPTIONS}
           />
         </Field>
       </Row>
       <Row>
-        <Field label="출발 주소">
+        <Field label={t("field.originAddress", lang)}>
           <TextInput value={core.originAddress} onChange={(e) => set("originAddress", e.target.value)} />
         </Field>
-        <Field label="도착 주소">
+        <Field label={t("field.destinationAddress", lang)}>
           <TextInput value={core.destinationAddress} onChange={(e) => set("destinationAddress", e.target.value)} />
         </Field>
       </Row>
       <Row>
-        <Field label="Google 거리 (km)" width="180px">
+        <Field label={t("field.googleDistance", lang)} width="180px">
           <TextInput
             type="number"
             step="0.01"
@@ -183,7 +185,7 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
             onChange={(e) => set("googleDistanceKm", e.target.value)}
           />
         </Field>
-        <Field label="미터기 OCR (km)" width="180px">
+        <Field label={t("field.meterOcrKm", lang)} width="180px">
           <TextInput
             type="number"
             step="0.01"
@@ -191,20 +193,20 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
             onChange={(e) => set("meterOcrKm", e.target.value)}
           />
         </Field>
-        <Field label="비교 결과">
+        <Field label={t("field.distanceCompare", lang)}>
           <div className="flex items-center pt-2 text-[12px]">{livePreview}</div>
         </Field>
       </Row>
       <Row>
-        <Field label="미터기 사진">
+        <Field label={t("field.meterPhoto", lang)}>
           <div className="flex items-center gap-2">
             {core.meterPhotoUrl && (
               <Link href={core.meterPhotoUrl} target="_blank" className="text-[12px] text-[color:var(--tts-primary)] hover:underline">
-                현재 사진 열기
+                {t("btn.openCurrentPhoto", lang)}
               </Link>
             )}
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-1 text-[12px] text-[color:var(--tts-sub)] hover:border-[color:var(--tts-primary)]">
-              📎 {core.meterPhotoUrl ? "교체" : "업로드"}
+              {core.meterPhotoUrl ? t("btn.replace", lang) : t("btn.upload", lang)}
               <input
                 type="file"
                 accept="image/*"
@@ -220,16 +222,16 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
         </Field>
       </Row>
 
-      <SectionTitle icon="💰" title="교통비 · 영수증" />
+      <SectionTitle icon="💰" title={t("section.transportCost", lang)} />
       <Row>
-        <Field label="교통비 (VND)" width="200px">
+        <Field label={t("field.transportCost", lang)} width="200px">
           <TextInput
             type="number"
             value={core.transportCost}
             onChange={(e) => set("transportCost", e.target.value)}
           />
         </Field>
-        <Field label="영수증">
+        <Field label={t("field.receipt", lang)}>
           <div className="flex items-center gap-2">
             {core.receiptFileId && (
               <Link
@@ -237,11 +239,11 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
                 target="_blank"
                 className="text-[12px] text-[color:var(--tts-primary)] hover:underline"
               >
-                📄 {core.receiptName || "현재 영수증"}
+                📄 {core.receiptName || t("field.receipt", lang)}
               </Link>
             )}
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-1 text-[12px] text-[color:var(--tts-sub)] hover:border-[color:var(--tts-primary)]">
-              📎 {core.receiptFileId ? "교체" : "업로드"}
+              {core.receiptFileId ? t("btn.replace", lang) : t("btn.upload", lang)}
               <input
                 type="file"
                 accept="image/*,application/pdf"
@@ -257,32 +259,32 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
         </Field>
       </Row>
 
-      <SectionTitle icon="🕐" title="시각" />
+      <SectionTitle icon="🕐" title={t("section.times", lang)} />
       <Row>
-        <Field label="출발" width="220px">
+        <Field label={t("field.departed", lang)} width="220px">
           <TextInput type="datetime-local" value={core.departedAt} onChange={(e) => set("departedAt", e.target.value)} />
         </Field>
-        <Field label="도착" width="220px">
+        <Field label={t("field.arrived", lang)} width="220px">
           <TextInput type="datetime-local" value={core.arrivedAt} onChange={(e) => set("arrivedAt", e.target.value)} />
         </Field>
-        <Field label="완료" width="220px">
+        <Field label={t("field.completed", lang)} width="220px">
           <TextInput type="datetime-local" value={core.completedAt} onChange={(e) => set("completedAt", e.target.value)} />
         </Field>
       </Row>
 
-      <SectionTitle icon="📝" title="비고" />
+      <SectionTitle icon="📝" title={t("section.notes", lang)} />
       <Row>
-        <Field label="메모">
+        <Field label={t("field.memo", lang)}>
           <Textarea value={core.note} onChange={(e) => set("note", e.target.value)} rows={2} />
         </Field>
       </Row>
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={saving}>
-          {saving ? "저장 중..." : "저장"}
+          {saving ? t("action.saving", lang) : t("action.save", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/as/dispatches")}>
-          목록으로
+          {t("btn.toList", lang)}
         </Button>
         <Button
           type="button"
@@ -291,7 +293,7 @@ export function DispatchDetail({ dispatchId, initial, employeeOptions }: Props) 
           disabled={deleting}
           className="ml-auto"
         >
-          {deleting ? "삭제 중..." : "출동 삭제"}
+          {deleting ? t("action.deleting", lang) : t("btn.deleteDispatch", lang)}
         </Button>
       </div>
     </form>

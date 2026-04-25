@@ -10,12 +10,12 @@ export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-const statusLabel: Record<string, string> = {
-  RECEIVED: "접수",
-  IN_PROGRESS: "처리중",
-  DISPATCHED: "출동중",
-  COMPLETED: "완료",
-  CANCELED: "취소",
+const statusLabelKey: Record<string, string> = {
+  RECEIVED: "asStatus.received",
+  IN_PROGRESS: "asStatus.inProgress",
+  DISPATCHED: "asStatus.dispatched",
+  COMPLETED: "asStatus.completed",
+  CANCELED: "asStatus.canceled",
 };
 const statusTone: Record<string, "neutral" | "primary" | "accent" | "success" | "danger"> = {
   RECEIVED: "neutral",
@@ -68,8 +68,8 @@ export default async function AsTicketDetailPage({ params }: PageProps) {
           </Link>
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{ticket.ticketNumber}</span>
-            <Badge tone={statusTone[ticket.status] ?? "neutral"}>{statusLabel[ticket.status] ?? ticket.status}</Badge>
-            {ticket.receivableBlocked && <Badge tone="danger">미수금 차단</Badge>}
+            <Badge tone={statusTone[ticket.status] ?? "neutral"}>{statusLabelKey[ticket.status] ? t(statusLabelKey[ticket.status], L) : ticket.status}</Badge>
+            {ticket.receivableBlocked && <Badge tone="danger">{t("col.recvBlocked", L)}</Badge>}
           </h1>
           <div className="mt-1 text-[13px] text-[color:var(--tts-sub)]">
             {ticket.client.companyNameVi}{" "}
@@ -79,6 +79,7 @@ export default async function AsTicketDetailPage({ params }: PageProps) {
         </div>
         <Card>
           <AsTicketDetail
+            lang={L}
             ticketId={ticket.id}
             initial={{
               ticketNumber: ticket.ticketNumber,

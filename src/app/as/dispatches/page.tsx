@@ -33,6 +33,7 @@ export default async function DispatchesPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.dispatches.title", L)}</h1>
         </div>
         <DispatchesClient
+          lang={L}
           initialData={dispatches.map((d) => ({
             id: d.id,
             ticketId: d.asTicket.id,

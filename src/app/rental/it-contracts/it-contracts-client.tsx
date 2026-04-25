@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { BadgeTone, DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type ItContractRow = {
   id: string;
@@ -24,14 +25,14 @@ const statusTone: Record<string, BadgeTone> = {
   CANCELED: "danger",
 };
 
-const statusLabel: Record<string, string> = {
-  DRAFT: "작성중",
-  ACTIVE: "활성",
-  EXPIRED: "만료",
-  CANCELED: "취소",
+const statusLabelKey: Record<string, string> = {
+  DRAFT: "filter.contractDraft",
+  ACTIVE: "filter.contractActive",
+  EXPIRED: "filter.contractExpired",
+  CANCELED: "filter.contractCanceled",
 };
 
-export function ItContractsClient({ initialData }: { initialData: ItContractRow[] }) {
+export function ItContractsClient({ initialData, lang }: { initialData: ItContractRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
 
@@ -52,7 +53,7 @@ export function ItContractsClient({ initialData }: { initialData: ItContractRow[
   const columns: DataTableColumn<ItContractRow>[] = [
     {
       key: "contractNumber",
-      label: "계약번호",
+      label: t("col.contractNumber", lang),
       width: "180px",
       render: (v, row) => (
         <Link
@@ -65,7 +66,7 @@ export function ItContractsClient({ initialData }: { initialData: ItContractRow[
     },
     {
       key: "clientName",
-      label: "거래처",
+      label: t("col.client", lang),
       render: (_v, row) => (
         <div>
           <span className="font-semibold">{row.clientName}</span>{" "}
@@ -77,82 +78,82 @@ export function ItContractsClient({ initialData }: { initialData: ItContractRow[
     },
     {
       key: "installationAddress",
-      label: "설치 주소",
+      label: t("col.installAddress", lang),
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "startDate",
-      label: "시작",
+      label: t("col.startCol", lang),
       width: "110px",
     },
     {
       key: "endDate",
-      label: "종료",
+      label: t("col.endCol", lang),
       width: "110px",
     },
     {
       key: "equipmentCount",
-      label: "장비",
+      label: t("col.equipmentCount", lang),
       width: "70px",
       align: "right",
-      render: (v) => <span className="font-mono text-[12px]">{v as number}대</span>,
+      render: (v) => <span className="font-mono text-[12px]">{t("col.equipmentUnit", lang).replace("{count}", String(v as number))}</span>,
     },
     {
       key: "status",
-      label: "상태",
+      label: t("col.status", lang),
       width: "80px",
       render: (v) => {
         const s = v as string;
-        return <Badge tone={statusTone[s] ?? "neutral"}>{statusLabel[s] ?? s}</Badge>;
+        return <Badge tone={statusTone[s] ?? "neutral"}>{statusLabelKey[s] ? t(statusLabelKey[s], lang) : s}</Badge>;
       },
     },
   ];
 
   return (
     <Card
-      title="IT 렌탈 계약"
+      title={t("title.itContractsList", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "contractNumber", header: "계약번호" },
-              { key: "clientCode", header: "거래처코드" },
-              { key: "clientName", header: "거래처명" },
-              { key: "status", header: "상태" },
-              { key: "startDate", header: "시작일" },
-              { key: "endDate", header: "종료일" },
-              { key: "equipmentCount", header: "장비수" },
-              { key: "installationAddress", header: "설치주소" },
+              { key: "contractNumber", header: t("col.contractNumber", lang) },
+              { key: "clientCode", header: t("col.clientCode", lang) },
+              { key: "clientName", header: t("col.clientName", lang) },
+              { key: "status", header: t("col.status", lang) },
+              { key: "startDate", header: t("field.startDate", lang) },
+              { key: "endDate", header: t("field.endDate", lang) },
+              { key: "equipmentCount", header: t("col.equipmentCount", lang) },
+              { key: "installationAddress", header: t("col.installAddress", lang) },
             ]}
             filename="it-contracts.xlsx"
           />
           <Link href="/rental/it-contracts/new">
-            <Button>+ 계약 등록</Button>
+            <Button>{t("btn.contractRegister", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="계약번호/거래처/주소 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchContract", lang)} />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 상태</option>
-          <option value="DRAFT">작성중</option>
-          <option value="ACTIVE">활성</option>
-          <option value="EXPIRED">만료</option>
-          <option value="CANCELED">취소</option>
+          <option value="all">{t("filter.contractAll", lang)}</option>
+          <option value="DRAFT">{t("filter.contractDraft", lang)}</option>
+          <option value="ACTIVE">{t("filter.contractActive", lang)}</option>
+          <option value="EXPIRED">{t("filter.contractExpired", lang)}</option>
+          <option value="CANCELED">{t("filter.contractCanceled", lang)}</option>
         </select>
       </div>
       <DataTable
         columns={columns}
         data={filtered}
         rowKey={(c) => c.id}
-        emptyMessage="등록된 IT 계약이 없습니다"
+        emptyMessage={t("empty.itContracts", lang)}
       />
     </Card>
   );

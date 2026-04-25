@@ -43,6 +43,7 @@ export default async function NewAsTicketPage() {
         </div>
         <Card>
           <AsTicketNewForm
+            lang={L}
             defaultLanguage={session.language}
             clients={clients.map((c) => ({
               id: c.id,

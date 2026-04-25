@@ -13,6 +13,7 @@ import {
   TextInput,
   Textarea,
 } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type ClientOption = { id: string; label: string; receivableStatus: string };
 
@@ -21,11 +22,12 @@ type Props = {
   clients: ClientOption[];
   itemOptions: { value: string; label: string }[];
   employeeOptions: { value: string; label: string }[];
+  lang: Lang;
 };
 
 type UploadedPhoto = { fileId: string; name: string; sizeBytes: number };
 
-export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employeeOptions }: Props) {
+export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employeeOptions, lang }: Props) {
   const router = useRouter();
   const [clientId, setClientId] = useState("");
   const [itemId, setItemId] = useState("");
@@ -52,7 +54,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
       fd.append("category", "PHOTO");
       const res = await fetch("/api/files", { method: "POST", body: fd });
       if (!res.ok) {
-        setError("사진 업로드에 실패했습니다.");
+        setError(t("msg.photoUploadFailed", lang));
         return;
       }
       const data = (await res.json()) as { id: string; sizeBytes: number };
@@ -88,14 +90,14 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string; details?: { field?: string; reason?: string } };
-        setError(mapError(body.error, body.details));
+        setError(mapError(body.error, body.details, lang));
         return;
       }
       const data = (await res.json()) as { ticket: { id: string }; warning: string | null };
       router.push(`/as/tickets/${data.ticket.id}`);
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkErrorAs", lang));
     } finally {
       setSubmitting(false);
     }
@@ -104,26 +106,25 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
   return (
     <form onSubmit={handleSubmit}>
       <Note tone="info">
-        AS 전표번호는 저장 시 <span className="font-mono">YY/MM/DD-##</span> 로 자동 발급됩니다. S/N 은 느슨 확인
-        (자사 재고에 없어도 접수 가능).
+        {t("note.asTicketAutoCode", lang)}
       </Note>
 
-      <SectionTitle icon="🏢" title="거래처 / 장비" />
+      <SectionTitle icon="🏢" title={t("section.clientEquipment", lang)} />
       <Row>
-        <Field label="거래처" required>
+        <Field label={t("field.client", lang)} required>
           <Select
             required
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={clients.map((c) => ({ value: c.id, label: c.label }))}
           />
         </Field>
-        <Field label="AS 담당자">
+        <Field label={t("field.asAssignee", lang)}>
           <Select
             value={assignedToId}
             onChange={(e) => setAssignedToId(e.target.value)}
-            placeholder="미지정"
+            placeholder={t("label.unassigned", lang)}
             options={employeeOptions}
           />
         </Field>
@@ -131,26 +132,25 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
 
       {isBlocked && (
         <div className="my-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[13px] font-semibold text-[color:var(--tts-danger)]">
-          ⚠️ 이 거래처는 <Badge tone="danger">미수금 차단</Badge> 상태입니다. 접수는 가능하지만 <strong>실제 서비스 제공 전</strong>에
-          재경 팀과 확인이 필요합니다. 티켓에 자동으로 차단 플래그가 기록됩니다.
+          {t("msg.recvBlockedFull", lang)} <Badge tone="danger">{t("col.recvBlocked", lang)}</Badge>
         </div>
       )}
       {isWarning && (
         <div className="my-3 rounded-md bg-[color:var(--tts-warn-dim)] px-3 py-2 text-[13px] text-[color:var(--tts-warn)]">
-          ⚠️ 이 거래처는 미수금 <strong>경고</strong> 상태입니다. 접수는 가능하지만 추가 청구 시 주의.
+          {t("msg.recvWarning", lang)}
         </div>
       )}
 
       <Row>
-        <Field label="장비 품목 (옵션)">
+        <Field label={t("field.equipmentItem", lang)}>
           <Select
             value={itemId}
             onChange={(e) => setItemId(e.target.value)}
-            placeholder="선택 안 함"
+            placeholder={t("placeholder.notSelected", lang)}
             options={itemOptions}
           />
         </Field>
-        <Field label="S/N" hint="S/N 재고확인 = 느슨 (자사 재고 아니어도 OK)">
+        <Field label={t("field.serial", lang)} hint={t("hint.snLoose", lang)}>
           <TextInput
             value={serialNumber}
             onChange={(e) => setSerialNumber(e.target.value)}
@@ -159,13 +159,12 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
         </Field>
       </Row>
 
-      <SectionTitle icon="🗣️" title="증상 (다국어)" />
+      <SectionTitle icon="🗣️" title={t("section.symptomMulti", lang)} />
       <Note tone="info">
-        아무 언어로나 입력하세요. 최소 1개 필수. Claude API 연동 후 저장 시 나머지 언어 자동 번역됩니다
-        (Phase 1-5 연기).
+        {t("note.asMultiLang", lang)}
       </Note>
       <Row>
-        <Field label="기본 언어" required width="180px">
+        <Field label={t("field.originalLang", lang)} required width="180px">
           <Select
             required
             value={originalLang}
@@ -179,7 +178,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
         </Field>
       </Row>
       <Row>
-        <Field label="증상 (베트남어)">
+        <Field label={t("field.symptomViLong", lang)}>
           <Textarea
             rows={3}
             value={symptomVi}
@@ -189,7 +188,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
         </Field>
       </Row>
       <Row>
-        <Field label="증상 (한국어)">
+        <Field label={t("field.symptomKoLong", lang)}>
           <Textarea
             rows={3}
             value={symptomKo}
@@ -197,7 +196,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
             placeholder="용지가 걸림 ..."
           />
         </Field>
-        <Field label="증상 (영어)">
+        <Field label={t("field.symptomEnLong", lang)}>
           <Textarea
             rows={3}
             value={symptomEn}
@@ -207,11 +206,11 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
         </Field>
       </Row>
 
-      <SectionTitle icon="📸" title="증상 사진" />
+      <SectionTitle icon="📸" title={t("section.symptomPhotosNew", lang)} />
       <Row>
-        <Field label={uploading ? "업로드 중..." : "사진 추가"}>
+        <Field label={uploading ? t("btn.uploading", lang) : t("btn.addPhoto", lang)}>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-sub)] hover:border-[color:var(--tts-primary)]">
-            📎 파일 선택
+            {t("btn.fileSelect", lang)}
             <input
               type="file"
               accept="image/*,application/pdf"
@@ -253,30 +252,30 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : "AS 접수하고 상세 열기"}
+          {submitting ? t("action.saving", lang) : t("btn.acceptAndOpen", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/as/tickets")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
       </div>
     </form>
   );
 }
 
-function mapError(code: string | undefined, details?: { field?: string; reason?: string }): string {
+function mapError(code: string | undefined, details: { field?: string; reason?: string } | undefined, lang: Lang): string {
   if (code === "invalid_input" && details?.field === "symptom" && details?.reason === "required_at_least_one") {
-    return "증상을 최소 한 언어로 입력해 주세요.";
+    return t("msg.symptomRequired", lang);
   }
   switch (code) {
     case "invalid_client":
-      return "선택한 거래처가 존재하지 않습니다.";
+      return t("msg.invalidClientAs", lang);
     case "invalid_assignee":
-      return "선택한 AS 담당자가 존재하지 않습니다.";
+      return t("msg.invalidAssignee", lang);
     case "invalid_item":
-      return "선택한 장비가 존재하지 않습니다.";
+      return t("msg.invalidItemAs", lang);
     case "invalid_photo_ids":
-      return "업로드된 사진 중 일부가 서버에 없습니다.";
+      return t("msg.invalidPhotoIds", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

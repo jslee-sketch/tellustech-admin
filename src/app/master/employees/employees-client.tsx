@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Badge, Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { BadgeTone, DataTableColumn } from "@/components/ui";
 import { EmployeesImport } from "./employees-import";
+import { t, type Lang } from "@/lib/i18n";
 
 export type EmployeeRow = {
   id: string;
@@ -26,13 +27,13 @@ const statusTone: Record<string, BadgeTone> = {
   TERMINATED: "neutral",
 };
 
-const statusLabel: Record<string, string> = {
-  ACTIVE: "재직",
-  ON_LEAVE: "휴직",
-  TERMINATED: "퇴사",
+const statusLabelKey: Record<string, string> = {
+  ACTIVE: "filter.empActive",
+  ON_LEAVE: "filter.empOnLeave",
+  TERMINATED: "filter.empTerminated",
 };
 
-export function EmployeesClient({ initialData }: { initialData: EmployeeRow[] }) {
+export function EmployeesClient({ initialData, lang }: { initialData: EmployeeRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
 
@@ -55,7 +56,7 @@ export function EmployeesClient({ initialData }: { initialData: EmployeeRow[] })
   const columns: DataTableColumn<EmployeeRow>[] = [
     {
       key: "employeeCode",
-      label: "사원코드",
+      label: t("col.empCode", lang),
       width: "110px",
       render: (v, row) => (
         <Link href={`/master/employees/${row.id}`} className="font-mono text-[12px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
@@ -63,7 +64,7 @@ export function EmployeesClient({ initialData }: { initialData: EmployeeRow[] })
     },
     {
       key: "nameVi",
-      label: "성명",
+      label: t("col.empName", lang),
       render: (v, row) => (
         <Link href={`/master/employees/${row.id}`} className="font-semibold hover:underline">
           {v as string}
@@ -72,85 +73,85 @@ export function EmployeesClient({ initialData }: { initialData: EmployeeRow[] })
     },
     {
       key: "departmentCode",
-      label: "부서",
+      label: t("col.empDepartment", lang),
       width: "90px",
       render: (v) =>
         v ? <Badge tone="accent">{v as string}</Badge> : <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "position",
-      label: "직책",
+      label: t("col.empPosition", lang),
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "phone",
-      label: "전화",
+      label: t("col.empPhone", lang),
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "hireDate",
-      label: "입사일",
+      label: t("col.empHireDate", lang),
       width: "110px",
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "status",
-      label: "상태",
+      label: t("col.empStatus", lang),
       width: "80px",
       render: (v) => {
         const s = v as string;
-        return <Badge tone={statusTone[s] ?? "neutral"}>{statusLabel[s] ?? s}</Badge>;
+        return <Badge tone={statusTone[s] ?? "neutral"}>{statusLabelKey[s] ? t(statusLabelKey[s], lang) : s}</Badge>;
       },
     },
   ];
 
   return (
     <Card
-      title="직원 관리"
+      title={t("title.employeesMgmt", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "employeeCode", header: "사원코드" },
-              { key: "nameVi", header: "성명(VI)" },
-              { key: "nameEn", header: "성명(EN)" },
-              { key: "nameKo", header: "성명(KO)" },
-              { key: "position", header: "직책" },
-              { key: "departmentCode", header: "부서코드" },
-              { key: "email", header: "이메일" },
-              { key: "phone", header: "전화" },
-              { key: "hireDate", header: "입사일" },
-              { key: "status", header: "상태" },
+              { key: "employeeCode", header: t("col.empCode", lang) },
+              { key: "nameVi", header: t("field.nameVi", lang) },
+              { key: "nameEn", header: t("field.nameEn", lang) },
+              { key: "nameKo", header: t("field.nameKo", lang) },
+              { key: "position", header: t("col.empPosition", lang) },
+              { key: "departmentCode", header: t("col.empDepartment", lang) },
+              { key: "email", header: t("col.email", lang) },
+              { key: "phone", header: t("col.empPhone", lang) },
+              { key: "hireDate", header: t("col.empHireDate", lang) },
+              { key: "status", header: t("col.empStatus", lang) },
             ]}
             filename={`employees-${new Date().toISOString().slice(0, 10)}.xlsx`}
             sheetName="Employees"
           />
           <Link href="/master/employees/new">
-            <Button>+ 직원 등록</Button>
+            <Button>{t("btn.registerEmployee", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="사원코드/이름/직책/이메일 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchEmp", lang)} />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 상태</option>
-          <option value="ACTIVE">재직</option>
-          <option value="ON_LEAVE">휴직</option>
-          <option value="TERMINATED">퇴사</option>
+          <option value="all">{t("filter.empAll", lang)}</option>
+          <option value="ACTIVE">{t("filter.empActive", lang)}</option>
+          <option value="ON_LEAVE">{t("filter.empOnLeave", lang)}</option>
+          <option value="TERMINATED">{t("filter.empTerminated", lang)}</option>
         </select>
       </div>
       <DataTable
         columns={columns}
         data={filtered}
         rowKey={(e) => e.id}
-        emptyMessage="등록된 직원이 없습니다"
+        emptyMessage={t("empty.employees", lang)}
       />
       <div className="mt-4">
         <EmployeesImport />

@@ -23,7 +23,7 @@ function nextFridayDeadline(): Date {
 export default async function WeeklyReportPage() {
   const session = await getSession();
   const L = session.language;
-  if (session.role === "CLIENT") return <div className="p-8">고객 포탈에서 접근할 수 없습니다.</div>;
+  if (session.role === "CLIENT") return <div className="p-8">{t("msg.weeklyClientPortalForbidden", L)}</div>;
 
   const deadline = nextFridayDeadline();
 
@@ -71,19 +71,20 @@ export default async function WeeklyReportPage() {
             <h1 className="mt-1 text-2xl font-extrabold">{t("page.weekly.title", L)}</h1>
           </div>
           <div className="text-right">
-            <div className="text-[11px] text-[color:var(--tts-muted)]">금주 마감</div>
+            <div className="text-[11px] text-[color:var(--tts-muted)]">{t("label.weeklyDeadline", L)}</div>
             <div className="font-mono text-[14px] text-[color:var(--tts-accent)]">
               {deadline.toISOString().slice(0, 16).replace("T", " ")} UTC
             </div>
             {allConfirmed && (
               <div className="mt-1 inline-block rounded-md bg-[color:var(--tts-success-dim,rgba(74,222,128,0.15))] px-2 py-1 text-[11px] font-bold text-[color:var(--tts-success,#4ade80)]">
-                ✅ 이번주 보고 확정
+                {t("label.weeklyConfirmed", L)}
               </div>
             )}
           </div>
         </div>
         <Card>
           <WeeklyReportShell
+            lang={L}
             backlogs={backlogs.map((b) => ({
               id: b.id,
               backlogCode: b.backlogCode,

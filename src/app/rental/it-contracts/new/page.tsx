@@ -32,6 +32,7 @@ export default async function NewItContractPage() {
         </div>
         <Card>
           <ItContractNewForm
+            lang={L}
             sessionCompany={session.companyCode}
             clientOptions={clients.map((c) => ({
               value: c.id,

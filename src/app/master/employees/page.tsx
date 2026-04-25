@@ -34,6 +34,7 @@ export default async function EmployeesPage() {
           </h1>
         </div>
         <EmployeesClient
+          lang={L}
           initialData={employees.map((e) => ({
             id: e.id,
             employeeCode: e.employeeCode,

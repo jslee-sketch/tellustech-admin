@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, ExcelDownload, Field, Note, Select, TextInput, Textarea } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type TaskRow = {
   id: string;
@@ -25,10 +26,12 @@ export function TasksPanel({
   rows,
   employees,
   canConfirm,
+  lang,
 }: {
   rows: TaskRow[];
   employees: Option[];
   canConfirm: boolean;
+  lang: Lang;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -46,7 +49,7 @@ export function TasksPanel({
   async function createTask(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    if (!writerId || !assigneeId || !title) { setError("작성자/이행자/제목 필수"); return; }
+    if (!writerId || !assigneeId || !title) { setError(t("msg.writerAssigneeTitleRequired", lang)); return; }
     const res = await fetch("/api/weekly-report/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/" + "json" },
@@ -59,7 +62,7 @@ export function TasksPanel({
     });
     if (!res.ok) {
       const j = await res.json().catch(()=>({}));
-      setError(j.error ?? "등록 실패");
+      setError(j.error ?? t("msg.registerFailed", lang));
       return;
     }
     setShowForm(false);
@@ -80,7 +83,7 @@ export function TasksPanel({
       setContentDraft((d) => ({ ...d, [taskId]: "" }));
       startTransition(() => router.refresh());
     } else {
-      setError("업무내용 추가 실패");
+      setError(t("msg.contentAddFailed", lang));
     }
   }
 
@@ -92,26 +95,26 @@ export function TasksPanel({
       body: JSON.stringify({ status: "COMPLETED", actualEndDate: new Date().toISOString() }),
     });
     if (res.ok) startTransition(() => router.refresh());
-    else setError("완료 처리 실패");
+    else setError(t("msg.completeFailed", lang));
   }
 
   async function confirmRow(id: string) {
     const res = await fetch(`/api/weekly-report/tasks/${id}/confirm`, { method: "POST", credentials: "same-origin" });
     if (res.ok) startTransition(() => router.refresh());
-    else setError("CFM 실패");
+    else setError(t("msg.cfmFailed", lang));
   }
 
   function statusBadge(s: TaskRow["status"]) {
-    if (s === "COMPLETED") return <Badge tone="success">🟢 완료</Badge>;
-    if (s === "OVERDUE") return <Badge tone="danger">🔴 기한초과</Badge>;
-    if (s === "CANCELLED") return <Badge tone="neutral">취소</Badge>;
-    return <Badge tone="warn">🟡 진행중</Badge>;
+    if (s === "COMPLETED") return <Badge tone="success">{t("badge.taskCompleted", lang)}</Badge>;
+    if (s === "OVERDUE") return <Badge tone="danger">{t("badge.taskOverdue", lang)}</Badge>;
+    if (s === "CANCELLED") return <Badge tone="neutral">{t("badge.taskCanceled", lang)}</Badge>;
+    return <Badge tone="warn">{t("badge.taskInProgress", lang)}</Badge>;
   }
 
   return (
     <div>
       <div className="mb-3 flex justify-between gap-2">
-        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "취소" : "+ 등록"}</Button>
+        <Button onClick={() => setShowForm((v) => !v)}>{showForm ? t("btn.cancelShort", lang) : t("btn.newRegister", lang)}</Button>
         <ExcelDownload
           rows={rows.map((r) => ({
             registeredAt: r.registeredAt.slice(0, 10),
@@ -125,15 +128,15 @@ export function TasksPanel({
             status: r.status,
           }))}
           columns={[
-            { key: "registeredAt", header: "등록일" },
-            { key: "writer", header: "작성자" },
-            { key: "assignee", header: "이행자" },
-            { key: "title", header: "제목" },
-            { key: "instruction", header: "지시사항" },
-            { key: "content", header: "업무내용" },
-            { key: "expectedEndDate", header: "예상종료" },
-            { key: "actualEndDate", header: "실제종료" },
-            { key: "status", header: "상태" },
+            { key: "registeredAt", header: t("th.registeredAt", lang) },
+            { key: "writer", header: t("th.writer", lang) },
+            { key: "assignee", header: t("th.assigneeTask", lang) },
+            { key: "title", header: t("th.title", lang) },
+            { key: "instruction", header: t("label.instructionLabel", lang) },
+            { key: "content", header: t("label.contentLabel", lang) },
+            { key: "expectedEndDate", header: t("th.expectedClose", lang) },
+            { key: "actualEndDate", header: t("th.actualEnd", lang) },
+            { key: "status", header: t("th.status", lang) },
           ]}
           filename={`weekly-tasks-${new Date().toISOString().slice(0, 10)}.xlsx`}
         />
@@ -143,23 +146,23 @@ export function TasksPanel({
 
       {showForm && (
         <form onSubmit={createTask} className="mb-4 grid grid-cols-2 gap-3 rounded-md border border-[color:var(--tts-border)] p-3">
-          <Field label="작성자"><Select
+          <Field label={t("field.writer", lang)}><Select
             value={writerId}
             onChange={(e) => setWriterId(e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={employees.map((e) => ({ value: e.id, label: e.label }))}
           /></Field>
-          <Field label="이행자"><Select
+          <Field label={t("field.assigneeTask", lang)}><Select
             value={assigneeId}
             onChange={(e) => setAssigneeId(e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={employees.map((e) => ({ value: e.id, label: e.label }))}
           /></Field>
-          <Field label="제목" className="col-span-2"><TextInput value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-          <Field label="지시사항 (한국어, 자동 3언어 번역)" className="col-span-2"><Textarea rows={3} value={instruction} onChange={(e) => setInstruction(e.target.value)} /></Field>
-          <Field label="예상종료일"><TextInput type="date" value={expectedEndDate} onChange={(e) => setExpectedEndDate(e.target.value)} /></Field>
+          <Field label={t("field.titleField", lang)} className="col-span-2"><TextInput value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+          <Field label={t("field.instruction", lang)} className="col-span-2"><Textarea rows={3} value={instruction} onChange={(e) => setInstruction(e.target.value)} /></Field>
+          <Field label={t("field.expectedEnd", lang)}><TextInput type="date" value={expectedEndDate} onChange={(e) => setExpectedEndDate(e.target.value)} /></Field>
           <div className="col-span-2 flex justify-end gap-2">
-            <Button type="submit" disabled={pending}>{pending ? "..." : "저장"}</Button>
+            <Button type="submit" disabled={pending}>{pending ? "..." : t("action.save", lang)}</Button>
           </div>
         </form>
       )}
@@ -167,13 +170,13 @@ export function TasksPanel({
       <table className="w-full text-[13px]">
         <thead>
           <tr className="text-left text-[color:var(--tts-muted)]">
-            <th className="py-1">등록일</th><th>작성자</th><th>이행자</th><th>제목</th>
-            <th>예상종료</th><th>실제종료</th><th>상태</th><th>CFM</th><th></th>
+            <th className="py-1">{t("th.registeredAt", lang)}</th><th>{t("th.writer", lang)}</th><th>{t("th.assigneeTask", lang)}</th><th>{t("th.title", lang)}</th>
+            <th>{t("th.expectedClose", lang)}</th><th>{t("th.actualEnd", lang)}</th><th>{t("th.status", lang)}</th><th>{t("th.cfm", lang)}</th><th></th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
-            <tr><td colSpan={9} className="py-3 text-center text-[color:var(--tts-muted)]">등록된 업무 없음</td></tr>
+            <tr><td colSpan={9} className="py-3 text-center text-[color:var(--tts-muted)]">{t("empty.tasks", lang)}</td></tr>
           )}
           {rows.map((r) => (
             <>
@@ -194,7 +197,7 @@ export function TasksPanel({
                 </td>
                 <td>
                   <button type="button" onClick={() => setOpenDetail(openDetail === r.id ? null : r.id)} className="text-[11px] text-[color:var(--tts-primary)] hover:underline">
-                    {openDetail === r.id ? "접기" : "▶ 상세"}
+                    {openDetail === r.id ? t("btn.collapse", lang) : t("btn.taskDetail", lang)}
                   </button>
                 </td>
               </tr>
@@ -202,23 +205,23 @@ export function TasksPanel({
                 <tr key={r.id + "-d"} className="bg-[color:var(--tts-row-hover,rgba(255,255,255,0.02))]">
                   <td colSpan={9} className="px-3 py-2">
                     <div className="space-y-1.5 text-[12px]">
-                      {r.instructionKo && <div><span className="font-bold">지시사항:</span> {r.instructionKo}</div>}
+                      {r.instructionKo && <div><span className="font-bold">{t("label.instructionLabel", lang)}</span> {r.instructionKo}</div>}
                       {r.contentKo && (
                         <div>
-                          <span className="font-bold">업무내용:</span>
+                          <span className="font-bold">{t("label.contentLabel", lang)}</span>
                           <pre className="mt-1 whitespace-pre-wrap text-[11px]">{r.contentKo}</pre>
                         </div>
                       )}
                       <div className="mt-2 flex gap-2">
                         <input
                           className="flex-1 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-bg)] px-2 py-1 text-[12px]"
-                          placeholder="업무내용 추가 (한국어, 자동 3언어 번역, 누적)"
+                          placeholder={t("placeholder.contentAdd", lang)}
                           value={contentDraft[r.id] ?? ""}
                           onChange={(e) => setContentDraft((d) => ({ ...d, [r.id]: e.target.value }))}
                         />
-                        <Button onClick={() => updateContent(r.id)} disabled={pending}>+ 추가</Button>
+                        <Button onClick={() => updateContent(r.id)} disabled={pending}>{t("btn.addShort", lang)}</Button>
                         {r.status === "IN_PROGRESS" && (
-                          <Button onClick={() => markCompleted(r.id)} disabled={pending}>✓ 완료</Button>
+                          <Button onClick={() => markCompleted(r.id)} disabled={pending}>{t("btn.completeTask", lang)}</Button>
                         )}
                       </div>
                     </div>

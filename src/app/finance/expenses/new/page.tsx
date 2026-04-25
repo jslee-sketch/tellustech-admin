@@ -32,6 +32,7 @@ export default async function NewExpensePage() {
         <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.expenses.new", L)}</h1>
         <Card>
           <ExpenseNewForm
+            lang={L}
             projects={projects.map((p) => ({ value: p.id, label: `${p.projectCode} · ${p.name}` }))}
             departments={depts.map((d) => ({ value: d.id, label: `${d.code} · ${d.name}` }))}
             salesOptions={sales.map((s) => ({

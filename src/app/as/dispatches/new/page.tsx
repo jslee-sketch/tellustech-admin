@@ -50,6 +50,7 @@ export default async function NewDispatchPage({ searchParams }: PageProps) {
         </div>
         <Card>
           <DispatchNewForm
+            lang={L}
             ticket={{
               id: ticket.id,
               ticketNumber: ticket.ticketNumber,

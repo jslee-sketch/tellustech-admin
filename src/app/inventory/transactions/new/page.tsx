@@ -26,6 +26,7 @@ export default async function NewTransactionPage() {
         </div>
         <Card>
           <TransactionNewForm
+            lang={L}
             items={items.map((i) => ({ value: i.id, label: `${i.itemCode} · ${i.name}` }))}
             warehouses={warehouses.map((w) => ({ value: w.id, label: `${w.code} · ${w.name}`, warehouseType: w.warehouseType }))}
             clients={clients.map((c) => ({ value: c.id, label: `${c.clientCode} · ${c.companyNameVi}` }))}

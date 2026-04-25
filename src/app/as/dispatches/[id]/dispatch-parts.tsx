@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button, Card, Field, Note, Row, Select, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type Part = {
   id: string;
@@ -22,11 +23,12 @@ type Props = {
   warehouses: { id: string; code: string; name: string }[];
   items: { id: string; itemCode: string; name: string; itemType: string }[];
   transportCost: number;
+  lang: Lang;
 };
 
 const fmt = (n: number | null) => (n === null ? "-" : Number(n).toLocaleString("vi-VN"));
 
-export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmentSN, warehouses, items, transportCost }: Props) {
+export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmentSN, warehouses, items, transportCost, lang }: Props) {
   const router = useRouter();
   const [parts, setParts] = useState<Part[]>(initialParts);
   const [equipmentSN, setEquipmentSN] = useState(defaultEquipmentSN);
@@ -51,9 +53,9 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
     .map((i) => ({ value: i.id, label: `${i.itemCode} · ${i.name} [${i.itemType}]` }));
 
   async function addPart() {
-    if (!equipmentSN) { setError("대상 장비 S/N 필수"); return; }
-    if (!warehouseId) { setError("출고 창고 필수"); return; }
-    if (!itemId) { setError("품목 필수"); return; }
+    if (!equipmentSN) { setError(t("msg.targetSnRequired", lang)); return; }
+    if (!warehouseId) { setError(t("msg.fromWhRequired", lang)); return; }
+    if (!itemId) { setError(t("msg.itemRequiredShort", lang)); return; }
     setSubmitting(true);
     setError(null);
     try {
@@ -72,9 +74,9 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         if (data.error === "insufficient_stock") {
-          setError(`재고 부족: ${JSON.stringify(data.details ?? {})}`);
+          setError(t("msg.outOfStock", lang).replace("{details}", JSON.stringify(data.details ?? {})));
         } else {
-          setError(`저장 실패: ${data.error ?? res.status}`);
+          setError(t("msg.saveFailedReason", lang).replace("{reason}", String(data.error ?? res.status)));
         }
         return;
       }
@@ -104,7 +106,7 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
   }
 
   async function removePart(id: string) {
-    if (!confirm("부품 사용을 취소합니다 (재고 복원). 진행할까요?")) return;
+    if (!confirm(t("msg.partRemoveConfirm", lang))) return;
     const res = await fetch(`/api/as-dispatches/${dispatchId}/parts/${id}`, { method: "DELETE" });
     if (res.ok) {
       setParts((cur) => cur.filter((p) => p.id !== id));
@@ -113,38 +115,38 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
   }
 
   return (
-    <Card title={`🔧 사용 부품 (${parts.length}건)`}>
+    <Card title={t("title.partsUsed", lang).replace("{count}", String(parts.length))}>
       <Note tone="info">
-        부품 입력 시 자동: 재고 OUT(소모품출고) + 매입원가 자동조회 + 대상 장비 S/N에 비용 누적.<br />
-        대상 장비 S/N 은 AS 티켓에서 자동 채움 — 변경 가능합니다.
+        {t("note.partsAuto", lang)}<br />
+        {t("note.partsTargetSN", lang)}
       </Note>
 
       <div className="mt-3">
         <Row>
-          <Field label="대상 장비 S/N" required width="240px">
+          <Field label={t("field.targetEquipSN", lang)} required width="240px">
             <TextInput value={equipmentSN} onChange={(e) => setEquipmentSN(e.target.value)} placeholder="SN-..." />
           </Field>
-          <Field label="출고 창고" required width="240px">
+          <Field label={t("field.warehouseShip", lang)} required width="240px">
             <Select required value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} options={warehouses.map((w) => ({ value: w.id, label: `${w.code} · ${w.name}` }))} />
           </Field>
         </Row>
         <Row>
-          <Field label="품목" required>
-            <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder="선택" options={itemOptions} />
+          <Field label={t("field.item", lang)} required>
+            <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder={t("placeholder.select", lang)} options={itemOptions} />
           </Field>
-          <Field label="부품 S/N" width="180px">
-            <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="(선택)" />
+          <Field label={t("field.partSerial", lang)} width="180px">
+            <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder={t("placeholder.partOptional", lang)} />
           </Field>
-          <Field label="수량" width="80px">
+          <Field label={t("field.qty", lang)} width="80px">
             <TextInput type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </Field>
         </Row>
         <Row>
-          <Field label="비고">
-            <TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: D330 토너 교체" />
+          <Field label={t("field.note", lang)}>
+            <TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("placeholder.partNoteExample", lang)} />
           </Field>
           <Field label=" " width="120px">
-            <Button onClick={addPart} disabled={submitting}>+ 부품 추가</Button>
+            <Button onClick={addPart} disabled={submitting}>{t("btn.addPart", lang)}</Button>
           </Field>
         </Row>
         {error && <div className="mb-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
@@ -154,14 +156,14 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
         <table className="mt-4 w-full text-[12px]">
           <thead>
             <tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
-              <th className="py-2 text-left">품목</th>
-              <th className="py-2 text-left">부품 S/N</th>
-              <th className="py-2 text-right">수량</th>
-              <th className="py-2 text-right">매입단가</th>
-              <th className="py-2 text-right">소계</th>
-              <th className="py-2 text-left">대상 장비 S/N</th>
-              <th className="py-2 text-left">비고</th>
-              <th className="py-2 text-right">취소</th>
+              <th className="py-2 text-left">{t("col.partItem", lang)}</th>
+              <th className="py-2 text-left">{t("col.partSerial", lang)}</th>
+              <th className="py-2 text-right">{t("col.partQty", lang)}</th>
+              <th className="py-2 text-right">{t("col.partUnitCost", lang)}</th>
+              <th className="py-2 text-right">{t("col.partSubTotal", lang)}</th>
+              <th className="py-2 text-left">{t("col.partTargetSN", lang)}</th>
+              <th className="py-2 text-left">{t("col.partNote", lang)}</th>
+              <th className="py-2 text-right">{t("col.partCancel", lang)}</th>
             </tr>
           </thead>
           <tbody>
@@ -174,7 +176,7 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
                 <td className="py-2 text-right font-mono font-bold">{fmt(p.totalCost)}</td>
                 <td className="py-2 font-mono text-[11px] text-[color:var(--tts-accent)]">{p.targetEquipmentSN}</td>
                 <td className="py-2 text-[color:var(--tts-sub)]">{p.note ?? ""}</td>
-                <td className="py-2 text-right"><button onClick={() => removePart(p.id)} className="text-[color:var(--tts-danger)] hover:underline">취소</button></td>
+                <td className="py-2 text-right"><button onClick={() => removePart(p.id)} className="text-[color:var(--tts-danger)] hover:underline">{t("btn.cancelPart", lang)}</button></td>
               </tr>
             ))}
           </tbody>
@@ -182,9 +184,9 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
       )}
 
       <div className="mt-4 flex flex-col items-end gap-1 border-t border-[color:var(--tts-border)] pt-3 text-[13px]">
-        <div>부품 비용 합계: <span className="font-mono font-bold">{fmt(partsCost)} ₫</span></div>
-        <div>교통비: <span className="font-mono">{fmt(transportCost)} ₫</span></div>
-        <div className="text-[15px]">이번 출동 총 비용: <span className="font-mono font-extrabold text-[color:var(--tts-primary)]">{fmt(totalCost)} ₫</span></div>
+        <div>{t("label.partsTotal", lang)}: <span className="font-mono font-bold">{fmt(partsCost)} ₫</span></div>
+        <div>{t("label.transportCostSum", lang)}: <span className="font-mono">{fmt(transportCost)} ₫</span></div>
+        <div className="text-[15px]">{t("label.dispatchTotalCost", lang)}: <span className="font-mono font-extrabold text-[color:var(--tts-primary)]">{fmt(totalCost)} ₫</span></div>
       </div>
     </Card>
   );

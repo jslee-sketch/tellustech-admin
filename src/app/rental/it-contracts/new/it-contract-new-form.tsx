@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Button, Field, Note, Row, SectionTitle, Select, TextInput } from "@/components/ui";
 import { CURRENCY_OPTIONS } from "@/lib/currency";
+import { t, type Lang } from "@/lib/i18n";
 
 type Props = {
   sessionCompany: string; // TV 또는 VR — 계약번호 prefix 안내용
   clientOptions: { value: string; label: string }[];
+  lang: Lang;
 };
 
 type FormState = {
@@ -60,7 +62,7 @@ const initial: FormState = {
   financeMgrEmail: "",
 };
 
-export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
+export function ItContractNewForm({ sessionCompany, clientOptions, lang }: Props) {
   const router = useRouter();
   const [value, setValue] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -108,14 +110,14 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string; reason?: string } };
-        setError(data.details?.message ?? mapError(data.error, data.details?.reason));
+        setError(data.details?.message ?? mapError(data.error, data.details?.reason, lang));
         return;
       }
       const data = (await res.json()) as { contract: { id: string } };
       router.push(`/rental/it-contracts/${data.contract.id}`);
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkErrorAs", lang));
     } finally {
       setSubmitting(false);
     }
@@ -124,34 +126,34 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       <Note tone="info">
-        계약번호는 저장 시 자동 생성됩니다 — 현재 세션 회사 기준{" "}
-        <span className="font-mono">{prefixPreview}YYMMDD-###</span>.
-        장비(S/N) 목록은 등록 후 상세 화면에서 추가합니다.
+        {t("note.itContractAuto", lang)}
+        <span className="font-mono">{prefixPreview}YYMMDD-###</span>
+        {t("note.itContractEquipLater", lang)}
       </Note>
 
-      <SectionTitle icon="📝" title="계약 기본" />
+      <SectionTitle icon="📝" title={t("section.contractBasic", lang)} />
       <Row>
-        <Field label="거래처" required>
+        <Field label={t("field.client", lang)} required>
           <Select
             required
             value={value.clientId}
             onChange={(e) => set("clientId", e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={clientOptions}
           />
         </Field>
       </Row>
       <Row>
-        <Field label="설치 주소">
+        <Field label={t("field.installAddress", lang)}>
           <TextInput
             value={value.installationAddress}
             onChange={(e) => set("installationAddress", e.target.value)}
-            placeholder="장비 설치 주소"
+            placeholder={t("field.installAddrEquip", lang)}
           />
         </Field>
       </Row>
       <Row>
-        <Field label="렌탈 시작일" required width="200px">
+        <Field label={t("field.rentalStart", lang)} required width="200px">
           <TextInput
             type="date"
             required
@@ -159,7 +161,7 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
             onChange={(e) => set("startDate", e.target.value)}
           />
         </Field>
-        <Field label="렌탈 종료일" required width="200px">
+        <Field label={t("field.rentalEnd", lang)} required width="200px">
           <TextInput
             type="date"
             required
@@ -169,9 +171,9 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
         </Field>
       </Row>
 
-      <SectionTitle icon="💱" title="통화" />
+      <SectionTitle icon="💱" title={t("section.contractCurrency", lang)} />
       <Row>
-        <Field label="통화" required width="200px">
+        <Field label={t("field.currency", lang)} required width="200px">
           <Select
             required
             value={value.currency}
@@ -179,7 +181,7 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
             options={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
           />
         </Field>
-        <Field label="환율 (1 단위 → VND)" width="220px" hint={value.currency === "VND" ? "VND 는 기본 1" : `1 ${value.currency} = ? VND`}>
+        <Field label={t("field.fxRate", lang)} width="220px" hint={value.currency === "VND" ? t("hint.fxRateVndDefault", lang) : t("hint.fxRateConversion", lang).replace("{currency}", value.currency)}>
           <TextInput
             type="number"
             step="0.000001"
@@ -191,9 +193,9 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
         </Field>
       </Row>
 
-      <SectionTitle icon="💰" title={`금액 (${value.currency})`} />
+      <SectionTitle icon="💰" title={t("section.amountCur", lang).replace("{currency}", value.currency)} />
       <Row>
-        <Field label="보증금" width="200px">
+        <Field label={t("field.depositOnly", lang)} width="200px">
           <TextInput
             type="number"
             value={value.deposit}
@@ -201,7 +203,7 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
             placeholder="0"
           />
         </Field>
-        <Field label="설치비" width="200px">
+        <Field label={t("field.installFeeOnly", lang)} width="200px">
           <TextInput
             type="number"
             value={value.installationFee}
@@ -209,7 +211,7 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
             placeholder="0"
           />
         </Field>
-        <Field label="배송비" width="200px">
+        <Field label={t("field.deliveryFeeOnly", lang)} width="200px">
           <TextInput
             type="number"
             value={value.deliveryFee}
@@ -217,7 +219,7 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
             placeholder="0"
           />
         </Field>
-        <Field label="부가서비스비" width="200px">
+        <Field label={t("field.addtlServiceFeeOnly", lang)} width="200px">
           <TextInput
             type="number"
             value={value.additionalServiceFee}
@@ -227,25 +229,28 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
         </Field>
       </Row>
 
-      <SectionTitle icon="📋" title="계약 담당자" />
+      <SectionTitle icon="📋" title={t("section.contractMgr", lang)} />
       <ManagerBlock
         prefix="contractMgr"
         value={value}
         onChange={set}
+        lang={lang}
       />
 
-      <SectionTitle icon="🔧" title="기술 담당자" />
+      <SectionTitle icon="🔧" title={t("section.technicalMgr", lang)} />
       <ManagerBlock
         prefix="technicalMgr"
         value={value}
         onChange={set}
+        lang={lang}
       />
 
-      <SectionTitle icon="💼" title="재경 담당자" />
+      <SectionTitle icon="💼" title={t("section.financeMgr", lang)} />
       <ManagerBlock
         prefix="financeMgr"
         value={value}
         onChange={set}
+        lang={lang}
       />
 
       {error && (
@@ -256,10 +261,10 @@ export function ItContractNewForm({ sessionCompany, clientOptions }: Props) {
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : "계약 등록하고 상세 열기"}
+          {submitting ? t("action.saving", lang) : t("btn.contractRegisterAndOpen", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/rental/it-contracts")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
       </div>
     </form>
@@ -272,10 +277,12 @@ function ManagerBlock({
   prefix,
   value,
   onChange,
+  lang,
 }: {
   prefix: ManagerPrefix;
   value: FormState;
   onChange: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+  lang: Lang;
 }) {
   const nameKey = `${prefix}Name` as keyof FormState;
   const phoneKey = `${prefix}Phone` as keyof FormState;
@@ -283,24 +290,24 @@ function ManagerBlock({
   const emailKey = `${prefix}Email` as keyof FormState;
   return (
     <Row>
-      <Field label="이름">
+      <Field label={t("field.mgrName", lang)}>
         <TextInput value={value[nameKey]} onChange={(e) => onChange(nameKey, e.target.value)} />
       </Field>
-      <Field label="휴대폰">
+      <Field label={t("field.mgrPhone", lang)}>
         <TextInput
           value={value[phoneKey]}
           onChange={(e) => onChange(phoneKey, e.target.value)}
           placeholder="0912-xxx-xxxx"
         />
       </Field>
-      <Field label="사무실">
+      <Field label={t("field.mgrOffice", lang)}>
         <TextInput
           value={value[officeKey]}
           onChange={(e) => onChange(officeKey, e.target.value)}
           placeholder="024-xxxx-xxxx"
         />
       </Field>
-      <Field label="이메일">
+      <Field label={t("field.mgrEmail", lang)}>
         <TextInput
           type="email"
           value={value[emailKey]}
@@ -311,16 +318,16 @@ function ManagerBlock({
   );
 }
 
-function mapError(code: string | undefined, reason?: string): string {
+function mapError(code: string | undefined, reason: string | undefined, lang: Lang): string {
   if (code === "invalid_input" && reason === "before_start") {
-    return "종료일이 시작일보다 빠를 수 없습니다.";
+    return t("msg.endBeforeStart", lang);
   }
   switch (code) {
     case "invalid_client":
-      return "선택한 거래처를 찾을 수 없습니다.";
+      return t("msg.invalidClientItc", lang);
     case "invalid_input":
-      return "입력값이 올바르지 않습니다.";
+      return t("msg.invalidInputItc", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

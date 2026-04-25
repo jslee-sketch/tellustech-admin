@@ -73,8 +73,8 @@ export default async function DispatchDetailPage({ params }: PageProps) {
             >
               {dispatch.asTicket.ticketNumber}
             </Link>
-            {dispatch.distanceMatch === true && <Badge tone="success">거리 일치</Badge>}
-            {dispatch.distanceMatch === false && <Badge tone="danger">거리 불일치</Badge>}
+            {dispatch.distanceMatch === true && <Badge tone="success">{t("label.distanceMatch", L)}</Badge>}
+            {dispatch.distanceMatch === false && <Badge tone="danger">{t("label.distanceMismatch", L)}</Badge>}
           </h1>
           <div className="mt-1 text-[13px] text-[color:var(--tts-sub)]">
             {dispatch.asTicket.client.companyNameVi}{" "}
@@ -85,6 +85,7 @@ export default async function DispatchDetailPage({ params }: PageProps) {
         </div>
         <Card>
           <DispatchDetail
+            lang={L}
             dispatchId={dispatch.id}
             initial={{
               ticketId: dispatch.asTicket.id,
@@ -113,6 +114,7 @@ export default async function DispatchDetailPage({ params }: PageProps) {
         </Card>
         <div className="mt-4">
           <DispatchPartsSection
+            lang={L}
             dispatchId={dispatch.id}
             initialParts={dispatch.parts.map((p) => ({
               id: p.id,

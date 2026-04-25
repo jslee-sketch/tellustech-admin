@@ -28,11 +28,12 @@ export default async function ClientsPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
             {t("page.clients.title", L)}
             <span className="ml-3 rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-accent)]">
-              공유 마스터
+              {t("label.sharedMaster", L)}
             </span>
           </h1>
         </div>
         <ClientsClient
+          lang={L}
           initialData={clients.map((c) => ({
             id: c.id,
             clientCode: c.clientCode,

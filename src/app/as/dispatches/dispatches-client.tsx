@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type DispatchRow = {
   id: string;
@@ -21,11 +22,11 @@ export type DispatchRow = {
   transportCost: string | null;
 };
 
-const transportLabel: Record<string, string> = {
-  company_car: "🚗 회사차량",
-  motorbike: "🏍️ 오토바이",
-  grab: "🚕 Grab",
-  taxi: "🚖 택시",
+const transportLabelKey: Record<string, string> = {
+  company_car: "transport.companyCar",
+  motorbike: "transport.motorbike",
+  grab: "transport.grab",
+  taxi: "transport.taxi",
 };
 
 function formatVnd(raw: string | null): string {
@@ -35,7 +36,7 @@ function formatVnd(raw: string | null): string {
   return new Intl.NumberFormat("vi-VN").format(n);
 }
 
-export function DispatchesClient({ initialData }: { initialData: DispatchRow[] }) {
+export function DispatchesClient({ initialData, lang }: { initialData: DispatchRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -52,7 +53,7 @@ export function DispatchesClient({ initialData }: { initialData: DispatchRow[] }
   const columns: DataTableColumn<DispatchRow>[] = [
     {
       key: "ticketNumber",
-      label: "AS 전표",
+      label: t("label.asTicket", lang),
       width: "140px",
       render: (v, row) => (
         <Link
@@ -65,7 +66,7 @@ export function DispatchesClient({ initialData }: { initialData: DispatchRow[] }
     },
     {
       key: "clientName",
-      label: "거래처",
+      label: t("col.client", lang),
       render: (_v, row) => (
         <div>
           <span className="font-semibold">{row.clientName}</span>{" "}
@@ -75,21 +76,21 @@ export function DispatchesClient({ initialData }: { initialData: DispatchRow[] }
     },
     {
       key: "dispatchEmployeeLabel",
-      label: "출동자",
+      label: t("col.dispatcher", lang),
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "transportMethod",
-      label: "수단",
+      label: t("col.transportShort", lang),
       width: "120px",
       render: (v) => {
         const s = v as string | null;
-        return s ? transportLabel[s] ?? s : "—";
+        return s ? (transportLabelKey[s] ? t(transportLabelKey[s], lang) : s) : "—";
       },
     },
     {
       key: "googleDistanceKm",
-      label: "거리 (G/미터기)",
+      label: t("col.distanceGM", lang),
       width: "130px",
       align: "right",
       render: (_v, row) => {
@@ -102,9 +103,9 @@ export function DispatchesClient({ initialData }: { initialData: DispatchRow[] }
             {row.distanceMatch !== null && (
               <span className="ml-1">
                 {row.distanceMatch ? (
-                  <Badge tone="success">일치</Badge>
+                  <Badge tone="success">{t("label.distanceMatch", lang)}</Badge>
                 ) : (
-                  <Badge tone="danger">불일치</Badge>
+                  <Badge tone="danger">{t("label.distanceMismatch", lang)}</Badge>
                 )}
               </span>
             )}
@@ -114,20 +115,20 @@ export function DispatchesClient({ initialData }: { initialData: DispatchRow[] }
     },
     {
       key: "transportCost",
-      label: "교통비",
+      label: t("col.transportCostShort", lang),
       width: "120px",
       align: "right",
       render: (v) => <span className="font-mono text-[12px]">{formatVnd(v as string | null)}</span>,
     },
     {
       key: "departedAt",
-      label: "출발",
+      label: t("col.departedAt", lang),
       width: "110px",
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "completedAt",
-      label: "완료",
+      label: t("col.completedAt", lang),
       width: "110px",
       render: (v, row) =>
         v ? (
@@ -136,35 +137,35 @@ export function DispatchesClient({ initialData }: { initialData: DispatchRow[] }
           </Link>
         ) : (
           <Link href={`/as/dispatches/${row.id}`} className="text-[color:var(--tts-accent)] hover:underline">
-            진행중
+            {t("label.inProgress", lang)}
           </Link>
         ),
     },
   ];
 
   return (
-    <Card title="출동 기록" count={filtered.length} action={
+    <Card title={t("title.dispatchesList", lang)} count={filtered.length} action={
       <ExcelDownload
         rows={filtered}
         columns={[
-          { key: "ticketNumber", header: "전표번호" },
-          { key: "clientCode", header: "거래처코드" },
-          { key: "clientName", header: "거래처명" },
-          { key: "dispatchEmployeeLabel", header: "담당자" },
-          { key: "transportMethod", header: "수단" },
-          { key: "departedAt", header: "출발일" },
-          { key: "completedAt", header: "완료일" },
+          { key: "ticketNumber", header: t("col.asTicketNumber", lang) },
+          { key: "clientCode", header: t("col.clientCode", lang) },
+          { key: "clientName", header: t("col.clientName", lang) },
+          { key: "dispatchEmployeeLabel", header: t("col.assignee", lang) },
+          { key: "transportMethod", header: t("col.transportShort", lang) },
+          { key: "departedAt", header: t("col.departedAt", lang) },
+          { key: "completedAt", header: t("col.completedAt", lang) },
           { key: "googleDistanceKm", header: "Google km" },
-          { key: "meterOcrKm", header: "실제 km" },
-          { key: "transportCost", header: "교통비" },
+          { key: "meterOcrKm", header: "Meter km" },
+          { key: "transportCost", header: t("col.transportCostShort", lang) },
         ]}
         filename="as-dispatches.xlsx"
       />
     }>
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="전표번호/거래처/수단 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchDispatch", lang)} />
       </div>
-      <DataTable columns={columns} data={filtered} rowKey={(d) => d.id} emptyMessage="출동 기록이 없습니다" />
+      <DataTable columns={columns} data={filtered} rowKey={(d) => d.id} emptyMessage={t("empty.dispatches", lang)} />
     </Card>
   );
 }

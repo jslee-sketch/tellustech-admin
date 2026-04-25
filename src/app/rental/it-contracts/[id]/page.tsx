@@ -104,6 +104,7 @@ export default async function ItContractDetailPage({ params }: PageProps) {
         </div>
         <Card>
           <ItContractDetail
+            lang={L}
             contractId={contract.id}
             initial={{
               contractNumber: contract.contractNumber,

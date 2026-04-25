@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Badge, Card, ExcelDownload, SearchBar } from "@/components/ui";
 import type { BadgeTone } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type InvItem = {
   id: string;
@@ -23,6 +24,7 @@ type InvItem = {
 type Props = {
   initialItems: InvItem[];
   companyName: string;
+  lang: Lang;
 };
 
 const STATUS_TONE: Record<string, BadgeTone> = {
@@ -31,14 +33,18 @@ const STATUS_TONE: Record<string, BadgeTone> = {
   PARTS_USED: "accent",
   IRREPARABLE: "danger",
 };
-const STATUS_KO: Record<string, string> = {
-  NORMAL: "🟢 정상",
-  NEEDS_REPAIR: "🟡 수리필요",
-  PARTS_USED: "🟣 부품사용",
-  IRREPARABLE: "🔴 수리불가",
-};
 
-export function InventoryItemsSection({ initialItems, companyName }: Props) {
+function statusLabel(s: string, lang: Lang): string {
+  switch (s) {
+    case "NORMAL": return t("status.invNormal", lang);
+    case "NEEDS_REPAIR": return t("status.invNeedsRepair", lang);
+    case "PARTS_USED": return t("status.invPartsUsed", lang);
+    case "IRREPARABLE": return t("status.invIrreparable", lang);
+    default: return s;
+  }
+}
+
+export function InventoryItemsSection({ initialItems, companyName, lang }: Props) {
   const [items, setItems] = useState<InvItem[]>(initialItems);
   const [q, setQ] = useState("");
   const [whFilter, setWhFilter] = useState<"all" | "INTERNAL" | "EXTERNAL">("all");
@@ -87,7 +93,7 @@ export function InventoryItemsSection({ initialItems, companyName }: Props) {
     });
     if (res.ok) {
       const { item } = await res.json();
-      setItems((cur) => cur.map((it) => it.id === id ? { ...it, status: item.status, lastRemark: { date: item.remarks?.[0]?.date ?? new Date().toISOString(), content: newRemark || `상태 변경 → ${newStatus}` } } : it));
+      setItems((cur) => cur.map((it) => it.id === id ? { ...it, status: item.status, lastRemark: { date: item.remarks?.[0]?.date ?? new Date().toISOString(), content: newRemark || `${lang === "VI" ? "Đổi trạng thái → " : lang === "EN" ? "Status → " : "상태 변경 → "}${newStatus}` } } : it));
       setEditing(null);
       setNewRemark("");
     }
@@ -99,54 +105,54 @@ export function InventoryItemsSection({ initialItems, companyName }: Props) {
   }
 
   return (
-    <Card title={`S/N별 재고 (${filtered.length}개)`} action={
+    <Card title={`${lang === "VI" ? "Tồn kho theo S/N" : lang === "EN" ? "Stock by S/N" : "S/N별 재고"} (${filtered.length}${lang === "VI" ? " mục" : lang === "EN" ? " items" : "개"})`} action={
       <ExcelDownload
         rows={filtered}
         columns={[
-          { key: "warehouseCode", header: "창고" },
-          { key: "itemCode", header: "품목코드" },
-          { key: "itemName", header: "품목명" },
-          { key: "serialNumber", header: "S/N" },
-          { key: "status", header: "상태" },
-          { key: "acquiredAt", header: "입고일" },
+          { key: "warehouseCode", header: t("col.warehouse", lang) },
+          { key: "itemCode", header: t("col.itemCode", lang) },
+          { key: "itemName", header: t("col.itemName", lang) },
+          { key: "serialNumber", header: t("col.serial", lang) },
+          { key: "status", header: t("col.status", lang) },
+          { key: "acquiredAt", header: t("field.acquiredAt", lang) },
         ]}
         filename="inventory-items.xlsx"
       />
     }>
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="창고/품목/S/N 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchInv", lang)} />
         <select value={whFilter} onChange={(e) => setWhFilter(e.target.value as "all" | "INTERNAL" | "EXTERNAL")} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px]">
-          <option value="all">전체 창고</option>
+          <option value="all">{lang === "VI" ? "Tất cả kho" : lang === "EN" ? "All warehouses" : "전체 창고"}</option>
           <option value="INTERNAL">Internal</option>
           <option value="EXTERNAL">External</option>
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px]">
-          <option value="all">전체 상태</option>
-          <option value="NORMAL">정상</option>
-          <option value="NEEDS_REPAIR">수리필요</option>
-          <option value="PARTS_USED">부품사용</option>
-          <option value="IRREPARABLE">수리불가</option>
+          <option value="all">{lang === "VI" ? "Tất cả trạng thái" : lang === "EN" ? "All statuses" : "전체 상태"}</option>
+          <option value="NORMAL">{t("status.normalPlain", lang)}</option>
+          <option value="NEEDS_REPAIR">{t("status.needsRepair", lang)}</option>
+          <option value="PARTS_USED">{t("status.partsUsed", lang)}</option>
+          <option value="IRREPARABLE">{t("status.irreparable", lang)}</option>
         </select>
       </div>
 
       {grouped.length === 0 ? (
-        <div className="py-6 text-center text-[12px] text-[color:var(--tts-muted)]">등록된 S/N 재고가 없습니다.</div>
+        <div className="py-6 text-center text-[12px] text-[color:var(--tts-muted)]">{t("empty.invItems", lang)}</div>
       ) : (
         <table className="w-full text-[12px]">
           <thead>
             <tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
-              <th className="py-2 text-left">창고</th>
-              <th className="py-2 text-left">품목</th>
-              <th className="py-2 text-left">코드</th>
-              <th className="py-2 text-left">구분</th>
-              <th className="py-2 text-left">소속</th>
-              <th className="py-2 text-right">수량</th>
+              <th className="py-2 text-left">{t("col.warehouse", lang)}</th>
+              <th className="py-2 text-left">{t("col.item", lang)}</th>
+              <th className="py-2 text-left">{t("field.code", lang)}</th>
+              <th className="py-2 text-left">{t("field.kind", lang)}</th>
+              <th className="py-2 text-left">{t("field.belongsTo", lang)}</th>
+              <th className="py-2 text-right">{t("col.qty", lang)}</th>
             </tr>
           </thead>
           <tbody>
             {grouped.map(([key, g]) => {
               const isOpen = expanded === key;
-              const owner = g.warehouse.type === "EXTERNAL" ? "(고객)" : companyName;
+              const owner = g.warehouse.type === "EXTERNAL" ? (lang === "VI" ? "(KH)" : lang === "EN" ? "(Customer)" : "(고객)") : companyName;
               return (
                 <>
                   <tr key={key} className="border-b border-[color:var(--tts-border)]/50 cursor-pointer hover:bg-[color:var(--tts-card-hover)]" onClick={() => setExpanded(isOpen ? null : key)}>
@@ -163,24 +169,24 @@ export function InventoryItemsSection({ initialItems, companyName }: Props) {
                         <table className="w-full text-[11px]">
                           <thead>
                             <tr className="text-[color:var(--tts-sub)]">
-                              <th className="py-1 text-left">S/N</th>
-                              <th className="py-1 text-left">상태</th>
-                              <th className="py-1 text-left">QR</th>
-                              <th className="py-1 text-left">최근 비고</th>
-                              <th className="py-1 text-left">입고일</th>
-                              <th className="py-1 text-right">변경</th>
+                              <th className="py-1 text-left">{t("col.serial", lang)}</th>
+                              <th className="py-1 text-left">{t("col.status", lang)}</th>
+                              <th className="py-1 text-left">{t("col.qrLabel", lang)}</th>
+                              <th className="py-1 text-left">{t("field.recentNote", lang)}</th>
+                              <th className="py-1 text-left">{t("field.acquiredAt", lang)}</th>
+                              <th className="py-1 text-right">{t("field.change", lang)}</th>
                             </tr>
                           </thead>
                           <tbody>
                             {g.entries.map((e) => (
                               <tr key={e.id} className="border-t border-[color:var(--tts-border)]/30">
                                 <td className="py-1 font-mono">{e.serialNumber}</td>
-                                <td className="py-1"><Badge tone={STATUS_TONE[e.status]}>{STATUS_KO[e.status]}</Badge></td>
+                                <td className="py-1"><Badge tone={STATUS_TONE[e.status]}>{statusLabel(e.status, lang)}</Badge></td>
                                 <td className="py-1"><button onClick={(ev) => { ev.stopPropagation(); printQR(e); }} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-white">🏷</button></td>
                                 <td className="py-1 text-[color:var(--tts-sub)]">{e.lastRemark ? `${e.lastRemark.date.slice(0, 10)}: ${e.lastRemark.content.slice(0, 50)}` : "—"}</td>
                                 <td className="py-1 font-mono text-[10px]">{e.acquiredAt ? e.acquiredAt.slice(0, 10) : "—"}</td>
                                 <td className="py-1 text-right">
-                                  <button onClick={() => { setEditing(editing === e.id ? null : e.id); setNewStatus(e.status); }} className="text-[color:var(--tts-primary)] hover:underline">상태/비고</button>
+                                  <button onClick={() => { setEditing(editing === e.id ? null : e.id); setNewStatus(e.status); }} className="text-[color:var(--tts-primary)] hover:underline">{t("btn.statusNote", lang)}</button>
                                 </td>
                               </tr>
                             ))}
@@ -188,17 +194,17 @@ export function InventoryItemsSection({ initialItems, companyName }: Props) {
                         </table>
                         {editing && g.entries.find((e) => e.id === editing) && (
                           <div className="mt-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-3">
-                            <div className="mb-2 text-[11px] font-bold">상태 변경 + 비고 추가</div>
+                            <div className="mb-2 text-[11px] font-bold">{lang === "VI" ? "Đổi trạng thái + Thêm ghi chú" : lang === "EN" ? "Change Status + Add Note" : "상태 변경 + 비고 추가"}</div>
                             <div className="flex gap-2">
                               <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[11px]">
-                                <option value="NORMAL">정상</option>
-                                <option value="NEEDS_REPAIR">수리필요</option>
-                                <option value="PARTS_USED">부품사용</option>
-                                <option value="IRREPARABLE">수리불가</option>
+                                <option value="NORMAL">{t("status.normalPlain", lang)}</option>
+                                <option value="NEEDS_REPAIR">{t("status.needsRepair", lang)}</option>
+                                <option value="PARTS_USED">{t("status.partsUsed", lang)}</option>
+                                <option value="IRREPARABLE">{t("status.irreparable", lang)}</option>
                               </select>
-                              <input type="text" value={newRemark} onChange={(e) => setNewRemark(e.target.value)} placeholder="비고 (한국어 입력 → 자동번역)" className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[11px]" />
-                              <button onClick={() => changeStatus(editing)} className="rounded bg-[color:var(--tts-primary)] px-3 py-1 text-[11px] font-bold text-white">저장</button>
-                              <button onClick={() => setEditing(null)} className="text-[11px] text-[color:var(--tts-sub)]">취소</button>
+                              <input type="text" value={newRemark} onChange={(e) => setNewRemark(e.target.value)} placeholder={t("placeholder.remarkAuto", lang)} className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[11px]" />
+                              <button onClick={() => changeStatus(editing)} className="rounded bg-[color:var(--tts-primary)] px-3 py-1 text-[11px] font-bold text-white">{t("action.save", lang)}</button>
+                              <button onClick={() => setEditing(null)} className="text-[11px] text-[color:var(--tts-sub)]">{t("action.cancel", lang)}</button>
                             </div>
                           </div>
                         )}

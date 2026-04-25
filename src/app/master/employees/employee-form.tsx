@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { Button, Field, Note, Row, SectionTitle, Select, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type EmployeeFormValue = {
   id?: string;
@@ -39,9 +40,10 @@ type Props = {
   initial: EmployeeFormValue;
   departments: DepartmentOption[];
   allowedCompanies: string[];
+  lang: Lang;
 };
 
-export function EmployeeForm({ mode, initial, departments, allowedCompanies }: Props) {
+export function EmployeeForm({ mode, initial, departments, allowedCompanies, lang }: Props) {
   const router = useRouter();
   const [value, setValue] = useState<EmployeeFormValue>(initial);
   const [submitting, setSubmitting] = useState(false);
@@ -107,13 +109,13 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/employees");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +123,7 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
 
   async function handleDelete() {
     if (!value.id) return;
-    if (!window.confirm("이 직원을 삭제하시겠습니까? 연결된 이력이 있으면 실패하고 대신 상태를 '퇴사'로 바꿔야 합니다.")) {
+    if (!window.confirm(t("msg.deleteEmployeeConfirm", lang))) {
       return;
     }
     setDeleting(true);
@@ -130,13 +132,13 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
       const res = await fetch(`/api/master/employees/${value.id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(data.details?.message ?? mapError(data.error));
+        setError(data.details?.message ?? mapError(data.error, lang));
         return;
       }
       router.push("/master/employees");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setDeleting(false);
     }
@@ -149,19 +151,19 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
     <form onSubmit={handleSubmit}>
       {mode === "create" && (
         <Note tone="info">
-          사원코드는 저장 시 자동 생성됩니다 — 선택한 회사에 따라{" "}
-          <span className="font-mono">{prefixPreview}###</span> 형식.
+          {t("hint.empCodeAuto", lang)} —{" "}
+          <span className="font-mono">{prefixPreview}###</span>
         </Note>
       )}
       {mode === "edit" && value.employeeCode && (
         <div className="mb-3 text-[12px] text-[color:var(--tts-muted)]">
-          사원코드: <span className="font-mono text-[color:var(--tts-primary)]">{value.employeeCode}</span>
+          {lang === "VI" ? "Mã NV" : lang === "EN" ? "Employee Code" : "사원코드"}: <span className="font-mono text-[color:var(--tts-primary)]">{value.employeeCode}</span>
         </div>
       )}
 
-      <SectionTitle icon="👤" title="기본 정보" />
+      <SectionTitle icon="👤" title={t("section.basicInfo", lang)} />
       <Row>
-        <Field label="회사코드" required width="160px">
+        <Field label={t("field.companyCode", lang)} required width="160px">
           {companyEditable ? (
             <Select
               required
@@ -173,30 +175,30 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
             <TextInput value={value.companyCode} disabled />
           )}
         </Field>
-        <Field label="부서(지점)" required>
+        <Field label={t("field.departmentBranch", lang)} required>
           <Select
             required
             value={value.departmentId}
             onChange={(e) => set("departmentId", e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={deptOptions}
           />
         </Field>
-        <Field label="상태" required width="140px">
+        <Field label={t("field.status", lang)} required width="140px">
           <Select
             required
             value={value.status}
             onChange={(e) => set("status", e.target.value)}
             options={[
-              { value: "ACTIVE", label: "재직" },
-              { value: "ON_LEAVE", label: "휴직" },
-              { value: "TERMINATED", label: "퇴사" },
+              { value: "ACTIVE", label: t("status.employed", lang) },
+              { value: "ON_LEAVE", label: t("status.onLeave", lang) },
+              { value: "TERMINATED", label: t("status.terminated", lang) },
             ]}
           />
         </Field>
       </Row>
       <Row>
-        <Field label="성명 (베트남어)" required>
+        <Field label={t("field.nameVi", lang)} required>
           <TextInput
             required
             value={value.nameVi}
@@ -204,24 +206,24 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
             placeholder="Nguyễn Văn ..."
           />
         </Field>
-        <Field label="직책" hint="예: Kỹ Thuật, Sales, Manager">
+        <Field label={t("field.position", lang)} hint={t("hint.position", lang)}>
           <TextInput
             value={value.position}
             onChange={(e) => set("position", e.target.value)}
-            placeholder="직책"
+            placeholder={t("field.position", lang)}
           />
         </Field>
       </Row>
       <Row>
-        <Field label="성명 (영어)">
+        <Field label={t("field.nameEn", lang)}>
           <TextInput value={value.nameEn} onChange={(e) => set("nameEn", e.target.value)} />
         </Field>
-        <Field label="성명 (한국어)">
+        <Field label={t("field.nameKo", lang)}>
           <TextInput value={value.nameKo} onChange={(e) => set("nameKo", e.target.value)} />
         </Field>
       </Row>
       <Row>
-        <Field label="이메일">
+        <Field label={t("field.email", lang)}>
           <TextInput
             type="email"
             value={value.email}
@@ -229,28 +231,28 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
             placeholder="name@tellustech.co.kr"
           />
         </Field>
-        <Field label="전화번호">
+        <Field label={t("field.phone", lang)}>
           <TextInput
             value={value.phone}
             onChange={(e) => set("phone", e.target.value)}
             placeholder="0912-345-6789"
           />
         </Field>
-        <Field label="입사일" width="180px">
+        <Field label={t("field.hireDate", lang)} width="180px">
           <TextInput type="date" value={value.hireDate} onChange={(e) => set("hireDate", e.target.value)} />
         </Field>
       </Row>
 
-      <SectionTitle icon="🪪" title="신분증" />
+      <SectionTitle icon="🪪" title={t("section.idCard", lang)} />
       <Row>
-        <Field label="CCCD (주민등록번호)" hint="12자리 숫자">
+        <Field label={t("field.idCardNumber", lang)} hint={t("hint.idCardDigits", lang)}>
           <TextInput
             value={value.idCardNumber}
             onChange={(e) => set("idCardNumber", e.target.value)}
             placeholder="012345678901"
           />
         </Field>
-        <Field label="신분증 사진 URL" hint="Phase 4 에서 파일 업로드로 대체 예정">
+        <Field label={t("field.idCardPhotoUrl", lang)} hint={t("hint.fileUploadLater", lang)}>
           <TextInput
             value={value.idCardPhotoUrl}
             onChange={(e) => set("idCardPhotoUrl", e.target.value)}
@@ -259,9 +261,9 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
         </Field>
       </Row>
 
-      <SectionTitle icon="💰" title="급여" />
+      <SectionTitle icon="💰" title={t("section.salary", lang)} />
       <Row>
-        <Field label="기본급 (VND)" width="200px">
+        <Field label={t("field.salary", lang)} width="200px">
           <TextInput
             type="number"
             value={value.salary}
@@ -269,7 +271,7 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
             placeholder="0"
           />
         </Field>
-        <Field label="보험번호">
+        <Field label={t("field.insuranceNumber", lang)}>
           <TextInput
             value={value.insuranceNumber}
             onChange={(e) => set("insuranceNumber", e.target.value)}
@@ -277,22 +279,22 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
         </Field>
       </Row>
 
-      <SectionTitle icon="📋" title="계약" />
+      <SectionTitle icon="📋" title={t("section.contract", lang)} />
       <Row>
-        <Field label="계약 유형" hint="예: 정규직, 수습, 계약직">
+        <Field label={t("field.contractType", lang)} hint={t("hint.contractType", lang)}>
           <TextInput
             value={value.contractType}
             onChange={(e) => set("contractType", e.target.value)}
           />
         </Field>
-        <Field label="계약시작" width="180px">
+        <Field label={t("field.contractStart", lang)} width="180px">
           <TextInput
             type="date"
             value={value.contractStart}
             onChange={(e) => set("contractStart", e.target.value)}
           />
         </Field>
-        <Field label="계약종료" width="180px">
+        <Field label={t("field.contractEnd", lang)} width="180px">
           <TextInput
             type="date"
             value={value.contractEnd}
@@ -301,9 +303,9 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
         </Field>
       </Row>
 
-      <SectionTitle icon="🖼️" title="증명사진" />
+      <SectionTitle icon="🖼️" title={t("section.idPhoto", lang)} />
       <Row>
-        <Field label="증명사진 URL" hint="Phase 4 에서 파일 업로드로 대체 예정">
+        <Field label={t("field.photoUrl", lang)} hint={t("hint.fileUploadLater", lang)}>
           <TextInput
             value={value.photoUrl}
             onChange={(e) => set("photoUrl", e.target.value)}
@@ -320,10 +322,10 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : mode === "create" ? "직원 등록" : "수정 저장"}
+          {submitting ? t("action.saving", lang) : mode === "create" ? t("btn.registerEmployee", lang) : t("btn.editSaveEmployee", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/master/employees")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
         {mode === "edit" && (
           <Button
@@ -333,7 +335,7 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
             disabled={deleting}
             className="ml-auto"
           >
-            {deleting ? "삭제 중..." : "삭제"}
+            {deleting ? t("action.deleting", lang) : t("action.delete", lang)}
           </Button>
         )}
       </div>
@@ -341,21 +343,21 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies }: P
   );
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "duplicate_code":
-      return "사원코드 자동 생성 중 충돌이 발생했습니다. 다시 시도해 주세요.";
+      return t("msg.employeeDuplicate", lang);
     case "invalid_input":
-      return "입력값이 올바르지 않습니다.";
+      return t("msg.invalidInput", lang);
     case "invalid_department":
-      return "선택한 부서가 회사와 일치하지 않습니다.";
+      return t("msg.employeeInvalidDept", lang);
     case "has_dependent_rows":
-      return "이 직원에 연결된 이력이 있어 삭제할 수 없습니다. 상태를 '퇴사'로 변경해 주세요.";
+      return t("msg.employeeHasDeps", lang);
     case "forbidden":
-      return "권한이 없습니다.";
+      return t("msg.forbidden", lang);
     case "not_found":
-      return "직원을 찾을 수 없습니다.";
+      return t("msg.employeeNotFound", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

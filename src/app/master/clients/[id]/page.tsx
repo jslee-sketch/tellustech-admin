@@ -60,6 +60,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
         </div>
         <Card>
           <ClientDetail
+            lang={L}
             clientId={client.id}
             initial={{
               clientCode: client.clientCode,

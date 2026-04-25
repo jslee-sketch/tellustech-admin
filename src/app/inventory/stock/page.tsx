@@ -98,20 +98,20 @@ export default async function InventoryStockPage() {
             </h1>
           </div>
           <Link href="/inventory/transactions" className="text-[13px] text-[color:var(--tts-primary)] hover:underline">
-            입출고 이력 →
+            {L === "VI" ? "Lịch sử xuất nhập →" : L === "EN" ? "Transaction history →" : "입출고 이력 →"}
           </Link>
         </div>
         <StockClient initialData={stock} />
 
         <div className="mt-6">
-          {await renderInventoryItems(session)}
+          {await renderInventoryItems(session, L)}
         </div>
       </div>
     </main>
   );
 }
 
-async function renderInventoryItems(session: { companyCode: "TV" | "VR" }) {
+async function renderInventoryItems(session: { companyCode: "TV" | "VR" }, lang: import("@/lib/i18n").Lang) {
   const items = await prisma.inventoryItem.findMany({
     where: { companyCode: session.companyCode },
     include: {
@@ -124,6 +124,7 @@ async function renderInventoryItems(session: { companyCode: "TV" | "VR" }) {
   const companyName = session.companyCode === "TV" ? "Tellustech Vina" : "Vietrental";
   return (
     <InventoryItemsSection
+      lang={lang}
       companyName={companyName}
       initialItems={items.map((it) => ({
         id: it.id,

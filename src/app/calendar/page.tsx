@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function CalendarPage() {
   const session = await getSession();
   const L = session.language;
-  if (session.role === "CLIENT") return <div className="p-8">고객 포탈에서 접근할 수 없습니다.</div>;
+  if (session.role === "CLIENT") return <div className="p-8">{L === "VI" ? "Không thể truy cập từ cổng khách hàng." : L === "EN" ? "Cannot access from client portal." : "고객 포탈에서 접근할 수 없습니다."}</div>;
   const canManage = ["ADMIN", "MANAGER"].includes(session.role);
 
   return (
@@ -22,7 +22,7 @@ export default async function CalendarPage() {
           </div>
         </div>
         <Card>
-          <CalendarClient canManage={canManage} />
+          <CalendarClient lang={L} canManage={canManage} />
         </Card>
       </div>
     </main>

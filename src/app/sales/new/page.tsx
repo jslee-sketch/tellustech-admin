@@ -48,6 +48,7 @@ export default async function NewSalesPage() {
         </div>
         <Card>
           <SalesNewForm
+            lang={L}
             clients={clients.map((c) => ({
               id: c.id,
               label: `${c.clientCode} · ${c.companyNameVi}`,

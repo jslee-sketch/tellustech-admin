@@ -53,6 +53,7 @@ export default async function EditEmployeePage({ params }: PageProps) {
         </div>
         <Card>
           <EmployeeForm
+            lang={L}
             mode="edit"
             allowedCompanies={[emp.companyCode]}
             departments={departments}

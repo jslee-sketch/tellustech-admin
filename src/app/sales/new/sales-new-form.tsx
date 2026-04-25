@@ -14,6 +14,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { CURRENCY_OPTIONS, formatCurrency } from "@/lib/currency";
+import { t, type Lang } from "@/lib/i18n";
 
 type ClientOption = { id: string; label: string; paymentTerms: number };
 type ProjectInfo = { id: string; code: string; name: string; salesType: string };
@@ -23,6 +24,7 @@ type Props = {
   projects: ProjectInfo[];
   employeeOptions: { value: string; label: string }[];
   warehouseOptions: { value: string; label: string }[];
+  lang: Lang;
 };
 
 type ItemDraft = {
@@ -52,7 +54,7 @@ const emptyItem: ItemDraft = {
 };
 
 
-export function SalesNewForm({ clients, projects, employeeOptions, warehouseOptions }: Props) {
+export function SalesNewForm({ clients, projects, employeeOptions, warehouseOptions, lang }: Props) {
   const router = useRouter();
   const projectOptions = projects.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }));
   const [clientId, setClientId] = useState("");
@@ -145,14 +147,14 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string; details?: { field?: string; message?: string } };
-        setError(body.details?.message ?? mapError(body.error, body.details?.field));
+        setError(body.details?.message ?? mapError(body.error, body.details?.field, lang));
         return;
       }
       const data = (await res.json()) as { sales: { id: string } };
       router.push(`/sales/${data.sales.id}`);
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setSubmitting(false);
     }
@@ -162,41 +164,41 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
     <form onSubmit={handleSubmit}>
       <Note tone="info">
         매출번호는 저장 시 <span className="font-mono">SLS-YYMMDD-###</span> 로 자동 발급되며, 거래처의 결제조건(
-        {selectedClient ? `${selectedClient.paymentTerms}일` : "선택 필요"})에 따라 미수금이 자동 생성됩니다.
+        {selectedClient ? `${selectedClient.paymentTerms}${lang === "VI" ? " ngày" : lang === "EN" ? " days" : "일"}` : (lang === "VI" ? "Cần chọn" : lang === "EN" ? "Selection required" : "선택 필요")})에 따라 미수금이 자동 생성됩니다.
       </Note>
 
-      <SectionTitle icon="📋" title="기본 정보" />
+      <SectionTitle icon="📋" title={t("section.basicInfo", lang)} />
       <Row>
-        <Field label="거래처" required>
+        <Field label={t("field.client", lang)} required>
           <Select
             required
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={clients.map((c) => ({ value: c.id, label: c.label }))}
           />
         </Field>
-        <Field label="프로젝트" required>
+        <Field label={t("field.project", lang)} required>
           <Select
             required
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
-            placeholder="선택"
+            placeholder={t("placeholder.select", lang)}
             options={projectOptions}
           />
         </Field>
-        <Field label="영업담당 (옵션)">
+        <Field label={t("field.salesPicOpt", lang)}>
           <Select
             value={salesEmployeeId}
             onChange={(e) => setSalesEmployeeId(e.target.value)}
-            placeholder="선택 안 함"
+            placeholder={t("placeholder.notSelected", lang)}
             options={employeeOptions}
           />
         </Field>
       </Row>
       {showPeriod && (
         <Row>
-          <Field label="기간 시작" required={showPeriod} width="200px" hint={salesType === "MAINTENANCE" ? "유지보수 기간" : "렌탈 기간"}>
+          <Field label={t("field.periodStart", lang)} required={showPeriod} width="200px" hint={salesType === "MAINTENANCE" ? t("hint.maintenancePeriod", lang) : t("hint.rentalPeriod", lang)}>
             <TextInput
               type="date"
               required={showPeriod}
@@ -204,7 +206,7 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
               onChange={(e) => setUsagePeriodStart(e.target.value)}
             />
           </Field>
-          <Field label="기간 종료" required={showPeriod} width="200px">
+          <Field label={t("field.periodEnd", lang)} required={showPeriod} width="200px">
             <TextInput
               type="date"
               required={showPeriod}
@@ -221,12 +223,12 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
       )}
       {showWarehouse && (
         <Row>
-          <Field label="출고 창고" required hint="판매(TRADE) — 저장 시 각 품목이 이 창고에서 OUT 처리됩니다">
+          <Field label={t("field.warehouseShip", lang)} required hint={t("hint.tradeWarehouse", lang)}>
             <Select
               required
               value={warehouseId}
               onChange={(e) => setWarehouseId(e.target.value)}
-              placeholder="창고 선택"
+              placeholder={t("placeholder.selectWh", lang)}
               options={warehouseOptions}
             />
           </Field>
@@ -234,7 +236,7 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
       )}
 
       <Row>
-        <Field label="통화" required width="200px">
+        <Field label={t("field.currency", lang)} required width="200px">
           <Select
             required
             value={currency}
@@ -242,7 +244,7 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
             options={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
           />
         </Field>
-        <Field label="환율 (1 단위 → VND)" width="200px" hint={currency === "VND" ? "VND 는 기본 1" : `1 ${currency} = ? VND`}>
+        <Field label={t("field.fxRate", lang)} width="200px" hint={currency === "VND" ? t("hint.fxRateVndDefault", lang) : t("hint.fxRateConversion", lang).replace("{currency}", currency)}>
           <TextInput
             type="number"
             step="0.000001"
@@ -254,19 +256,19 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
         </Field>
       </Row>
 
-      <SectionTitle icon="📦" title="품목" />
+      <SectionTitle icon="📦" title={t("tab.itemsTab", lang)} />
       <Note tone="info">S/N 재고확인은 느슨 모드입니다 — S/N 이 재고에 없어도 저장 가능합니다 (Phase 2 #5 재고관리 완성 후 경고 표시).</Note>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full table-fixed text-[13px]">
           <thead className="bg-[color:var(--tts-primary-dim)] text-left text-[12px] font-bold text-[color:var(--tts-primary)]">
             <tr>
-              <th className="px-2 py-2">품목 *</th>
-              <th className="px-2 py-2" style={{ width: 130 }}>S/N</th>
-              {showPeriod && <th className="px-2 py-2" style={{ width: 130 }}>시작일</th>}
-              {showPeriod && <th className="px-2 py-2" style={{ width: 130 }}>종료일</th>}
-              <th className="px-2 py-2 text-right" style={{ width: 70 }}>수량 *</th>
-              <th className="px-2 py-2 text-right" style={{ width: 130 }}>단가 *</th>
-              <th className="px-2 py-2 text-right" style={{ width: 130 }}>금액</th>
+              <th className="px-2 py-2">{t("field.itemRequired", lang)}</th>
+              <th className="px-2 py-2" style={{ width: 130 }}>{t("col.serial", lang)}</th>
+              {showPeriod && <th className="px-2 py-2" style={{ width: 130 }}>{t("field.startDate", lang)}</th>}
+              {showPeriod && <th className="px-2 py-2" style={{ width: 130 }}>{t("field.endDate", lang)}</th>}
+              <th className="px-2 py-2 text-right" style={{ width: 70 }}>{t("col.qty", lang)} *</th>
+              <th className="px-2 py-2 text-right" style={{ width: 130 }}>{t("col.unitPrice", lang)} *</th>
+              <th className="px-2 py-2 text-right" style={{ width: 130 }}>{t("col.amount", lang)}</th>
               <th className="px-2 py-2" style={{ width: 40 }}></th>
             </tr>
           </thead>
@@ -346,13 +348,13 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
             <tr>
               <td colSpan={showPeriod ? 8 : 6} className="pt-2">
                 <Button type="button" size="sm" variant="outline" onClick={addRow}>
-                  + 품목 행 추가
+                  {t("btn.addRow", lang)}
                 </Button>
               </td>
             </tr>
             <tr>
               <td colSpan={showPeriod ? 6 : 4} className="pt-3 text-right text-[13px] font-bold text-[color:var(--tts-sub)]">
-                합계 ({currency})
+                {t("label.totalLabel", lang).replace("{currency}", currency)}
               </td>
               <td className="pt-3 text-right font-mono text-[14px] font-extrabold text-[color:var(--tts-primary)]">
                 {formatCurrency(total, currency)}
@@ -362,7 +364,7 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
             {currency !== "VND" && (
               <tr>
                 <td colSpan={showPeriod ? 6 : 4} className="pt-1 text-right text-[11px] text-[color:var(--tts-muted)]">
-                  ≈ VND 환산 (환율 {fxRate})
+                  {t("label.fxConvert", lang).replace("{rate}", fxRate)}
                 </td>
                 <td className="pt-1 text-right font-mono text-[12px] text-[color:var(--tts-sub)]">
                   {formatCurrency(total * Number(fxRate || 1), "VND")}
@@ -374,9 +376,9 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
         </table>
       </div>
 
-      <SectionTitle icon="📝" title="비고" />
+      <SectionTitle icon="📝" title={t("section.memo", lang)} />
       <Row>
-        <Field label="메모">
+        <Field label={t("field.notes", lang)}>
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
         </Field>
       </Row>
@@ -389,26 +391,26 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "저장 중..." : "매출 등록하고 상세 열기"}
+          {submitting ? t("action.saving", lang) : t("btn.salesNewSubmit", lang)}
         </Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/sales")}>
-          취소
+          {t("action.cancel", lang)}
         </Button>
       </div>
     </form>
   );
 }
 
-function mapError(code: string | undefined, field?: string): string {
-  if (code === "invalid_input" && field) return `입력값 오류: ${field}`;
+function mapError(code: string | undefined, field: string | undefined, lang: Lang): string {
+  if (code === "invalid_input" && field) return `${t("msg.invalidInputField", lang)} ${field}`;
   switch (code) {
     case "invalid_client":
-      return "선택한 거래처가 존재하지 않습니다.";
+      return t("msg.invalidClient", lang);
     case "invalid_sales_employee":
-      return "선택한 영업담당 직원이 존재하지 않습니다.";
+      return t("msg.invalidSalesEmp", lang);
     case "invalid_project":
-      return "선택한 프로젝트가 존재하지 않습니다.";
+      return t("msg.invalidProject", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }

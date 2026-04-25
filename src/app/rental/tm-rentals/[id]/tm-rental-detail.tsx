@@ -16,6 +16,7 @@ import {
   TextInput,
 } from "@/components/ui";
 import type { DataTableColumn, TabDef } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type RentalCore = {
   rentalCode: string;
@@ -58,14 +59,17 @@ type Props = {
   totalProfit: string;
   initial: RentalCore;
   items: Item[];
+  lang: Lang;
 };
 
-const TABS: TabDef[] = [
-  { key: "basic", label: "기본정보", icon: "📋" },
-  { key: "managers", label: "담당자", icon: "👥" },
-  { key: "items", label: "품목/이익", icon: "📦" },
-  { key: "sales", label: "매출 반영", icon: "💰" },
-];
+function buildTabs(lang: Lang): TabDef[] {
+  return [
+    { key: "basic", label: t("tab.basicInfo", lang), icon: "📋" },
+    { key: "managers", label: t("tab.managers", lang), icon: "👥" },
+    { key: "items", label: t("tab.itemsProfit", lang), icon: "📦" },
+    { key: "sales", label: t("tab.salesReflect", lang), icon: "💰" },
+  ];
+}
 
 function formatVnd(raw: string | number): string {
   const n = typeof raw === "number" ? raw : Number(raw);
@@ -80,6 +84,7 @@ export function TmRentalDetail({
   totalProfit,
   initial,
   items: initialItems,
+  lang,
 }: Props) {
   const router = useRouter();
   const [active, setActive] = useState("basic");
@@ -108,7 +113,7 @@ export function TmRentalDetail({
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        setError("저장 실패");
+        setError(t("msg.saveFailed", lang));
         return false;
       }
       router.refresh();
@@ -150,13 +155,13 @@ export function TmRentalDetail({
   }
 
   async function handleDelete() {
-    if (!window.confirm("이 TM 렌탈을 삭제하시겠습니까? 품목도 함께 제거됩니다.")) return;
+    if (!window.confirm(t("msg.deleteTmRentalConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/rental/tm-rentals/${rentalId}`, { method: "DELETE" });
       if (!res.ok) {
-        setError("삭제 실패");
+        setError(t("msg.tmRentalDelFail", lang));
         return;
       }
       router.push("/rental/tm-rentals");
@@ -167,7 +172,7 @@ export function TmRentalDetail({
   }
 
   async function handleReflect() {
-    if (!window.confirm("현재 품목 기준으로 매출전표를 생성하시겠습니까? (거래처 결제조건으로 미수금 자동 발생)")) {
+    if (!window.confirm(t("msg.tmRentalReflectConfirm", lang))) {
       return;
     }
     setReflecting(true);
@@ -176,7 +181,7 @@ export function TmRentalDetail({
       const res = await fetch(`/api/rental/tm-rentals/${rentalId}/reflect-sales`, { method: "POST" });
       const body = await res.json();
       if (!res.ok) {
-        setError(body.details?.message ?? body.error ?? "매출 반영 실패");
+        setError(body.details?.message ?? body.error ?? t("msg.salesReflectFail", lang));
         return;
       }
       setReflectResult({ salesNumber: body.sales.salesNumber, id: body.sales.id });
@@ -187,7 +192,7 @@ export function TmRentalDetail({
 
   return (
     <div>
-      <Tabs tabs={TABS} active={active} onChange={setActive} />
+      <Tabs tabs={buildTabs(lang)} active={active} onChange={setActive} />
 
       {error && (
         <div className="mb-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">
@@ -197,25 +202,25 @@ export function TmRentalDetail({
 
       {active === "basic" && (
         <form onSubmit={handleBasicSubmit}>
-          <SectionTitle icon="📋" title="기본 정보" />
+          <SectionTitle icon="📋" title={t("section.basicInfo", lang)} />
           <Row>
-            <Field label="TM 렌탈번호" width="200px">
+            <Field label={t("field.tmRentalCode", lang)} width="200px">
               <TextInput value={core.rentalCode} disabled />
             </Field>
-            <Field label="거래처">
+            <Field label={t("field.client", lang)}>
               <TextInput value={core.clientLabel} disabled />
             </Field>
           </Row>
           <Row>
-            <Field label="계약번호">
+            <Field label={t("field.contractNumber", lang)}>
               <TextInput value={core.contractNumber} onChange={(e) => set("contractNumber", e.target.value)} />
             </Field>
-            <Field label="주소">
+            <Field label={t("field.address", lang)}>
               <TextInput value={core.address} onChange={(e) => set("address", e.target.value)} />
             </Field>
           </Row>
           <Row>
-            <Field label="렌탈 시작" required width="200px">
+            <Field label={t("field.tmRentalStart", lang)} required width="200px">
               <TextInput
                 type="date"
                 required
@@ -223,7 +228,7 @@ export function TmRentalDetail({
                 onChange={(e) => set("startDate", e.target.value)}
               />
             </Field>
-            <Field label="렌탈 종료" required width="200px">
+            <Field label={t("field.tmRentalEnd", lang)} required width="200px">
               <TextInput
                 type="date"
                 required
@@ -235,7 +240,7 @@ export function TmRentalDetail({
 
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingBasic}>
-              {savingBasic ? "저장 중..." : "기본정보 저장"}
+              {savingBasic ? t("action.saving", lang) : t("btn.saveBasicAlt", lang)}
             </Button>
             <Button
               type="button"
@@ -244,7 +249,7 @@ export function TmRentalDetail({
               disabled={deleting}
               className="ml-auto"
             >
-              {deleting ? "삭제 중..." : "TM 렌탈 삭제"}
+              {deleting ? t("action.deleting", lang) : t("btn.deleteTmRental", lang)}
             </Button>
           </div>
         </form>
@@ -252,55 +257,60 @@ export function TmRentalDetail({
 
       {active === "managers" && (
         <form onSubmit={handleMgrSubmit}>
-          <SectionTitle icon="📋" title="계약 담당자" />
-          <MgrRow prefix="contractMgr" value={core} set={set} />
-          <SectionTitle icon="🔧" title="기술 담당자" />
-          <MgrRow prefix="technicalMgr" value={core} set={set} />
-          <SectionTitle icon="💼" title="재경 담당자" />
-          <MgrRow prefix="financeMgr" value={core} set={set} />
+          <SectionTitle icon="📋" title={t("section.contractMgr", lang)} />
+          <MgrRow prefix="contractMgr" value={core} set={set} lang={lang} />
+          <SectionTitle icon="🔧" title={t("section.technicalMgr", lang)} />
+          <MgrRow prefix="technicalMgr" value={core} set={set} lang={lang} />
+          <SectionTitle icon="💼" title={t("section.financeMgr", lang)} />
+          <MgrRow prefix="financeMgr" value={core} set={set} lang={lang} />
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingMgr}>
-              {savingMgr ? "저장 중..." : "담당자 저장"}
+              {savingMgr ? t("action.saving", lang) : t("btn.saveMgr", lang)}
             </Button>
           </div>
         </form>
       )}
 
       {active === "items" && (
-        <ItemsTab rentalId={rentalId} items={items} setItems={setItems} totalSales={totalSales} totalProfit={totalProfit} />
+        <ItemsTab rentalId={rentalId} items={items} setItems={setItems} totalSales={totalSales} totalProfit={totalProfit} lang={lang} />
       )}
 
       {active === "sales" && (
         <div>
-          <SectionTitle icon="💰" title="매출 자동반영" />
+          <SectionTitle icon="💰" title={t("section.salesAuto", lang)} />
           <Note tone="info">
             이 TM 렌탈의 모든 품목을 하나의 매출전표로 변환합니다. 거래처 결제조건({paymentTerms}일)을 적용해
             미수금(PayableReceivable)이 자동 발생합니다. 반영 후 매출전표에서 추가 편집 가능.
           </Note>
           <div className="mt-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-4 text-[13px]">
             <div className="mb-2">
-              품목 <span className="font-mono font-bold">{items.length}건</span>, 매출 합계{" "}
+              {t("field.item", lang)} <span className="font-mono font-bold">{items.length}{lang === "VI" ? " mục" : lang === "EN" ? " items" : "건"}</span>, {t("field.totalSales", lang)}{" "}
               <span className="font-mono font-bold text-[color:var(--tts-primary)]">
                 {formatVnd(totalSales)} VND
               </span>
-              , 예상 이익{" "}
+              , {t("field.totalProfit", lang)}{" "}
               <span className="font-mono font-bold text-[color:var(--tts-success)]">
                 {formatVnd(totalProfit)} VND
               </span>
             </div>
             {reflectResult && (
               <div className="mt-2 rounded bg-[color:var(--tts-success-dim)] px-3 py-2 text-[color:var(--tts-success)]">
-                ✅ 매출전표{" "}
-                <Link href={`/sales/${reflectResult.id}`} className="font-mono font-bold underline">
-                  {reflectResult.salesNumber}
-                </Link>{" "}
-                가 생성되었습니다.
+                {t("msg.salesGenerated", lang).split("{salesNumber}").map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && (
+                      <Link href={`/sales/${reflectResult.id}`} className="font-mono font-bold underline">
+                        {reflectResult.salesNumber}
+                      </Link>
+                    )}
+                  </span>
+                ))}
               </div>
             )}
           </div>
           <div className="mt-3 flex gap-2">
             <Button type="button" onClick={handleReflect} disabled={reflecting || items.length === 0} variant="accent">
-              {reflecting ? "반영 중..." : "💰 매출전표 발행"}
+              {reflecting ? t("btn.reflectingSales", lang) : t("btn.issueSales", lang)}
             </Button>
           </div>
         </div>
@@ -313,23 +323,25 @@ function MgrRow({
   prefix,
   value,
   set,
+  lang,
 }: {
   prefix: "contractMgr" | "technicalMgr" | "financeMgr";
   value: RentalCore;
   set: <K extends keyof RentalCore>(k: K, v: RentalCore[K]) => void;
+  lang: Lang;
 }) {
   const nk = `${prefix}Name` as keyof RentalCore;
   const pk = `${prefix}Phone` as keyof RentalCore;
   const ek = `${prefix}Email` as keyof RentalCore;
   return (
     <Row>
-      <Field label="이름">
+      <Field label={t("field.name", lang)}>
         <TextInput value={value[nk]} onChange={(e) => set(nk, e.target.value)} />
       </Field>
-      <Field label="휴대폰">
+      <Field label={t("field.mobile", lang)}>
         <TextInput value={value[pk]} onChange={(e) => set(pk, e.target.value)} />
       </Field>
-      <Field label="이메일">
+      <Field label={t("field.email", lang)}>
         <TextInput type="email" value={value[ek]} onChange={(e) => set(ek, e.target.value)} />
       </Field>
     </Row>
@@ -342,12 +354,14 @@ function ItemsTab({
   setItems,
   totalSales,
   totalProfit,
+  lang,
 }: {
   rentalId: string;
   items: Item[];
   setItems: (v: Item[]) => void;
   totalSales: string;
   totalProfit: string;
+  lang: Lang;
 }) {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
@@ -424,7 +438,7 @@ function ItemsTab({
     setErr(null);
     setSubmitting(true);
     try {
-      if (!draft.itemId) { setErr("품목 선택 필수"); return; }
+      if (!draft.itemId) { setErr(t("msg.itemPickRequired", lang)); return; }
       const res = await fetch(`/api/rental/tm-rentals/${rentalId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -441,7 +455,7 @@ function ItemsTab({
         }),
       });
       if (!res.ok) {
-        setErr("품목 추가 실패");
+        setErr(t("msg.itemAddFail", lang));
         return;
       }
       resetDraft();
@@ -453,7 +467,7 @@ function ItemsTab({
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("이 품목을 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.deleteItemConfirm", lang))) return;
     const res = await fetch(`/api/rental/tm-rentals/${rentalId}/items/${id}`, { method: "DELETE" });
     if (res.ok) {
       await reload();
@@ -464,7 +478,7 @@ function ItemsTab({
   const columns: DataTableColumn<Item>[] = [
     {
       key: "itemName",
-      label: "품목",
+      label: t("col.item", lang),
       render: (v, row) => (
         <div>
           <div className="font-semibold">{v as string}</div>
@@ -474,13 +488,13 @@ function ItemsTab({
     },
     {
       key: "serialNumber",
-      label: "S/N",
+      label: t("col.serial", lang),
       width: "140px",
       render: (v) => <span className="font-mono text-[11px]">{v as string}</span>,
     },
     {
       key: "startDate",
-      label: "기간",
+      label: t("col.period", lang),
       width: "160px",
       render: (_, row) => (
         <span className="text-[11px]">
@@ -490,34 +504,34 @@ function ItemsTab({
     },
     {
       key: "salesPrice",
-      label: "매출가",
+      label: t("col.salesPrice", lang),
       width: "110px",
       align: "right",
       render: (v) => <span className="font-mono font-bold text-[color:var(--tts-primary)]">{formatVnd(v as string)}</span>,
     },
     {
       key: "supplierName",
-      label: "매입처",
+      label: t("col.supplier", lang),
       width: "120px",
       render: (v) => (v as string) || <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
       key: "purchasePrice",
-      label: "매입가",
+      label: t("col.purchasePrice", lang),
       width: "100px",
       align: "right",
       render: (v) => ((v as string) ? formatVnd(v as string) : <span className="text-[color:var(--tts-muted)]">—</span>),
     },
     {
       key: "commission",
-      label: "커미션",
+      label: t("col.commission", lang),
       width: "100px",
       align: "right",
       render: (v) => ((v as string) ? formatVnd(v as string) : <span className="text-[color:var(--tts-muted)]">—</span>),
     },
     {
       key: "profit",
-      label: "이익",
+      label: t("col.profit", lang),
       width: "110px",
       align: "right",
       render: (v) => {
@@ -543,10 +557,10 @@ function ItemsTab({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <SectionTitle icon="📦" title={`품목 / 이익 (${items.length}건)`} />
+        <SectionTitle icon="📦" title={t("label.tmItems", lang).replace("{count}", String(items.length))} />
         {!showAdd && (
           <Button size="sm" onClick={() => setShowAdd(true)}>
-            + 품목 추가
+            {t("btn.addItem", lang)}
           </Button>
         )}
       </div>
@@ -559,42 +573,42 @@ function ItemsTab({
           onSubmit={handleAdd}
           className="my-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3"
         >
-          <SectionTitle icon="💰" title="매출 정보" />
+          <SectionTitle icon="💰" title={t("section.salesInfo", lang)} />
           <Row>
-            <Field label="품목" required>
+            <Field label={t("field.item", lang)} required>
               <ItemCombobox
                 value={draft.itemId}
                 onChange={(id) => setDraft((p) => ({ ...p, itemId: id }))}
                 required
               />
             </Field>
-            <Field label="옵션">
+            <Field label={t("field.options", lang)}>
               <TextInput value={draft.options} onChange={(e) => setDraft((p) => ({ ...p, options: e.target.value }))} />
             </Field>
-            <Field label="S/N" required width="180px">
+            <Field label={t("field.serial", lang)} required width="180px">
               <TextInput required value={draft.serialNumber} onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))} />
             </Field>
           </Row>
           <Row>
-            <Field label="기간 시작" required width="180px">
+            <Field label={t("field.periodStart", lang)} required width="180px">
               <TextInput type="date" required value={draft.startDate} onChange={(e) => setDraft((p) => ({ ...p, startDate: e.target.value }))} />
             </Field>
-            <Field label="기간 종료" required width="180px">
+            <Field label={t("field.periodEnd", lang)} required width="180px">
               <TextInput type="date" required value={draft.endDate} onChange={(e) => setDraft((p) => ({ ...p, endDate: e.target.value }))} />
             </Field>
-            <Field label="매출가 (VND)" required width="180px">
+            <Field label={t("field.salesPrice", lang) + " (VND)"} required width="180px">
               <TextInput type="number" required value={draft.salesPrice} onChange={(e) => setDraft((p) => ({ ...p, salesPrice: e.target.value }))} />
             </Field>
           </Row>
-          <SectionTitle icon="📥" title="매입 정보 (옵션)" />
+          <SectionTitle icon="📥" title={t("section.purchaseInfoOpt", lang)} />
           <Row>
-            <Field label="매입처">
+            <Field label={t("field.supplier", lang)}>
               <TextInput value={draft.supplierName} onChange={(e) => setDraft((p) => ({ ...p, supplierName: e.target.value }))} />
             </Field>
-            <Field label="매입가 (VND)" width="180px">
+            <Field label={t("field.purchasePrice", lang) + " (VND)"} width="180px">
               <TextInput type="number" value={draft.purchasePrice} onChange={(e) => setDraft((p) => ({ ...p, purchasePrice: e.target.value }))} />
             </Field>
-            <Field label="커미션 (VND)" width="180px">
+            <Field label={t("field.commission", lang) + " (VND)"} width="180px">
               <TextInput type="number" value={draft.commission} onChange={(e) => setDraft((p) => ({ ...p, commission: e.target.value }))} />
             </Field>
           </Row>
@@ -605,23 +619,23 @@ function ItemsTab({
           )}
           <div className="mt-2 flex gap-2">
             <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? "저장 중..." : "품목 추가"}
+              {submitting ? t("action.saving", lang) : t("btn.addItem", lang).replace("+ ", "")}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={resetDraft}>
-              취소
+              {t("action.cancel", lang)}
             </Button>
           </div>
         </form>
       )}
 
-      <DataTable columns={columns} data={items} rowKey={(it) => it.id} emptyMessage="등록된 품목이 없습니다" />
+      <DataTable columns={columns} data={items} rowKey={(it) => it.id} emptyMessage={t("empty.tmItems", lang)} />
       {items.length > 0 && (
         <div className="mt-3 flex flex-wrap justify-end gap-4 text-[13px] font-bold">
           <div>
-            매출 합계 <Badge tone="primary" className="ml-1">{formatVnd(totalSales)} VND</Badge>
+            {t("field.totalSales", lang)} <Badge tone="primary" className="ml-1">{formatVnd(totalSales)} VND</Badge>
           </div>
           <div>
-            이익 합계 <Badge tone="success" className="ml-1">{formatVnd(totalProfit)} VND</Badge>
+            {t("field.totalProfit", lang)} <Badge tone="success" className="ml-1">{formatVnd(totalProfit)} VND</Badge>
           </div>
         </div>
       )}

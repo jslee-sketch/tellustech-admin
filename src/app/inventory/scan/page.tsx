@@ -27,6 +27,7 @@ export default async function InventoryScanPage() {
         </div>
         <Card>
           <ScanClient
+            lang={L}
             items={items.map((i) => ({ value: i.id, label: `${i.itemCode} · ${i.name}`, itemCode: i.itemCode, itemName: i.name }))}
             warehouses={warehouses.map((w) => ({ value: w.id, label: `${w.code} · ${w.name}`, warehouseType: w.warehouseType }))}
             clients={clients.map((c) => ({ value: c.id, label: `${c.clientCode} · ${c.companyNameVi}` }))}

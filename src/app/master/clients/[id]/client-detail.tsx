@@ -17,6 +17,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import type { DataTableColumn, TabDef } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type ClientCore = {
   clientCode: string;
@@ -60,24 +61,29 @@ type Props = {
   contacts: Contact[];
   referrerCandidates: { value: string; label: string }[];
   employeeOptions: { value: string; label: string }[];
+  lang: Lang;
 };
 
-const INDUSTRY_OPTIONS = [
-  { value: "MANUFACTURING", label: "제조" },
-  { value: "LOGISTICS", label: "물류" },
-  { value: "EDUCATION", label: "교육" },
-  { value: "IT", label: "IT" },
-  { value: "OTHER", label: "기타" },
-];
+function buildIndustryOptions(lang: Lang) {
+  return [
+    { value: "MANUFACTURING", label: t("industry.manufacturing", lang) },
+    { value: "LOGISTICS", label: t("industry.logistics", lang) },
+    { value: "EDUCATION", label: t("industry.education", lang) },
+    { value: "IT", label: t("industry.it", lang) },
+    { value: "OTHER", label: t("industry.other", lang) },
+  ];
+}
 
-const TABS: TabDef[] = [
-  { key: "basic", label: "기본정보", icon: "📋" },
-  { key: "contacts", label: "담당자", icon: "👤" },
-  { key: "sales", label: "영업관리", icon: "💼" },
-  { key: "marketing", label: "마케팅", icon: "📧" },
-  { key: "transactions", label: "거래현황", icon: "📊" },
-  { key: "ar", label: "미수금", icon: "💰" },
-];
+function buildTabs(lang: Lang): TabDef[] {
+  return [
+    { key: "basic", label: t("tab.basicInfo", lang), icon: "📋" },
+    { key: "contacts", label: t("tab.contacts", lang), icon: "👤" },
+    { key: "sales", label: t("tab.salesMgmt", lang), icon: "💼" },
+    { key: "marketing", label: t("tab.marketing", lang), icon: "📧" },
+    { key: "transactions", label: t("tab.transactions", lang), icon: "📊" },
+    { key: "ar", label: t("tab.ar", lang), icon: "💰" },
+  ];
+}
 
 export function ClientDetail({
   clientId,
@@ -85,6 +91,7 @@ export function ClientDetail({
   contacts: initialContacts,
   referrerCandidates,
   employeeOptions,
+  lang,
 }: Props) {
   const router = useRouter();
   const [active, setActive] = useState<string>("basic");
@@ -114,13 +121,13 @@ export function ClientDetail({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(body.details?.message ?? mapError(body.error));
+        setError(body.details?.message ?? mapError(body.error, lang));
         return false;
       }
       router.refresh();
       return true;
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
       return false;
     } finally {
       setSaving(false);
@@ -177,20 +184,20 @@ export function ClientDetail({
   }
 
   async function handleDelete() {
-    if (!window.confirm("이 거래처를 삭제하시겠습니까? 관련 이력이 있으면 실패합니다.")) return;
+    if (!window.confirm(t("msg.deleteClientConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/master/clients/${clientId}`, { method: "DELETE" });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string; details?: { message?: string } };
-        setError(body.details?.message ?? mapError(body.error));
+        setError(body.details?.message ?? mapError(body.error, lang));
         return;
       }
       router.push("/master/clients");
       router.refresh();
     } catch {
-      setError("네트워크 오류가 발생했습니다.");
+      setError(t("msg.networkError", lang));
     } finally {
       setDeleting(false);
     }
@@ -198,7 +205,7 @@ export function ClientDetail({
 
   return (
     <div>
-      <Tabs tabs={TABS} active={active} onChange={setActive} />
+      <Tabs tabs={buildTabs(lang)} active={active} onChange={setActive} />
 
       {error && (
         <div className="mb-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">
@@ -208,12 +215,12 @@ export function ClientDetail({
 
       {active === "basic" && (
         <form onSubmit={handleBasicSubmit}>
-          <SectionTitle icon="🏢" title="기본 정보" />
+          <SectionTitle icon="🏢" title={t("section.basicInfo", lang)} />
           <Row>
-            <Field label="거래처코드" width="200px">
+            <Field label={t("field.clientCode", lang)} width="200px">
               <TextInput value={core.clientCode} disabled />
             </Field>
-            <Field label="거래처명 (VI)" required>
+            <Field label={t("field.companyNameVi", lang)} required>
               <TextInput
                 required
                 value={core.companyNameVi}
@@ -222,13 +229,13 @@ export function ClientDetail({
             </Field>
           </Row>
           <Row>
-            <Field label="거래처명 (EN)">
+            <Field label={t("field.companyNameEn", lang)}>
               <TextInput
                 value={core.companyNameEn}
                 onChange={(e) => set("companyNameEn", e.target.value)}
               />
             </Field>
-            <Field label="거래처명 (KO)">
+            <Field label={t("field.companyNameKo", lang)}>
               <TextInput
                 value={core.companyNameKo}
                 onChange={(e) => set("companyNameKo", e.target.value)}
@@ -236,22 +243,22 @@ export function ClientDetail({
             </Field>
           </Row>
           <Row>
-            <Field label="대표자" width="200px">
+            <Field label={t("field.representative", lang)} width="200px">
               <TextInput
                 value={core.representative}
                 onChange={(e) => set("representative", e.target.value)}
                 placeholder="Mr / Ms ..."
               />
             </Field>
-            <Field label="업종" width="180px">
+            <Field label={t("field.industry", lang)} width="180px">
               <Select
                 value={core.industry}
                 onChange={(e) => set("industry", e.target.value)}
-                placeholder="선택 안 함"
-                options={INDUSTRY_OPTIONS}
+                placeholder={t("placeholder.notSelected", lang)}
+                options={buildIndustryOptions(lang)}
               />
             </Field>
-            <Field label="결제조건 (일)" width="160px" hint="공란 = 30일 기본">
+            <Field label={t("field.paymentTerms", lang)} width="160px" hint={t("hint.paymentTermsDefault", lang)}>
               <TextInput
                 type="number"
                 value={core.paymentTerms}
@@ -261,10 +268,10 @@ export function ClientDetail({
             </Field>
           </Row>
           <Row>
-            <Field label="MST (사업자번호)" width="200px">
+            <Field label={t("field.taxCode", lang)} width="200px">
               <TextInput value={core.taxCode} onChange={(e) => set("taxCode", e.target.value)} />
             </Field>
-            <Field label="사업자등록번호">
+            <Field label={t("field.businessLicenseNo", lang)}>
               <TextInput
                 value={core.businessLicenseNo}
                 onChange={(e) => set("businessLicenseNo", e.target.value)}
@@ -272,38 +279,38 @@ export function ClientDetail({
             </Field>
           </Row>
           <Row>
-            <Field label="전화">
+            <Field label={t("field.phone", lang)}>
               <TextInput value={core.phone} onChange={(e) => set("phone", e.target.value)} />
             </Field>
-            <Field label="이메일">
+            <Field label={t("field.email", lang)}>
               <TextInput type="email" value={core.email} onChange={(e) => set("email", e.target.value)} />
             </Field>
-            <Field label="이메일 수신 동의" width="160px">
+            <Field label={t("field.emailConsent", lang)} width="160px">
               <Checkbox
                 checked={core.emailConsent}
                 onChange={(e) => set("emailConsent", e.target.checked)}
-                label="마케팅 수신 동의"
+                label={t("field.marketingConsent", lang)}
               />
             </Field>
           </Row>
           <Row>
-            <Field label="주소">
+            <Field label={t("field.address", lang)}>
               <TextInput value={core.address} onChange={(e) => set("address", e.target.value)} />
             </Field>
           </Row>
 
-          <SectionTitle icon="💳" title="계좌/결제" />
+          <SectionTitle icon="💳" title={t("section.bankPayment", lang)} />
           <Row>
-            <Field label="은행명" width="200px">
+            <Field label={t("field.bank", lang)} width="200px">
               <TextInput value={core.bankName} onChange={(e) => set("bankName", e.target.value)} />
             </Field>
-            <Field label="계좌번호">
+            <Field label={t("field.bankAccountNo", lang)}>
               <TextInput
                 value={core.bankAccountNumber}
                 onChange={(e) => set("bankAccountNumber", e.target.value)}
               />
             </Field>
-            <Field label="예금주" width="200px">
+            <Field label={t("field.bankHolder", lang)} width="200px">
               <TextInput
                 value={core.bankHolder}
                 onChange={(e) => set("bankHolder", e.target.value)}
@@ -311,21 +318,21 @@ export function ClientDetail({
             </Field>
           </Row>
 
-          <SectionTitle icon="📝" title="메모" />
+          <SectionTitle icon="📝" title={t("section.memo", lang)} />
           <Row>
-            <Field label="비고">
+            <Field label={t("field.note", lang)}>
               <Textarea
                 value={core.notes}
                 onChange={(e) => set("notes", e.target.value)}
                 rows={3}
-                placeholder="자유 메모"
+                placeholder={t("placeholder.note", lang)}
               />
             </Field>
           </Row>
 
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingBasic}>
-              {savingBasic ? "저장 중..." : "기본정보 저장"}
+              {savingBasic ? t("action.saving", lang) : t("btn.saveBasicAlt", lang)}
             </Button>
             <Button
               type="button"
@@ -334,7 +341,7 @@ export function ClientDetail({
               disabled={deleting}
               className="ml-auto"
             >
-              {deleting ? "삭제 중..." : "거래처 삭제"}
+              {deleting ? t("action.deleting", lang) : t("btn.deleteClient", lang)}
             </Button>
           </div>
         </form>
@@ -346,33 +353,34 @@ export function ClientDetail({
           contacts={contacts}
           onChange={setContacts}
           onError={setError}
+          lang={lang}
         />
       )}
 
       {active === "sales" && (
         <form onSubmit={handleSalesSubmit}>
-          <SectionTitle icon="💼" title="영업 관리" />
+          <SectionTitle icon="💼" title={t("section.salesMgmt", lang)} />
           <Row>
-            <Field label="유입경로" width="220px">
+            <Field label={t("field.leadSource", lang)} width="220px">
               <Select
                 value={core.leadSource}
                 onChange={(e) => set("leadSource", e.target.value)}
-                placeholder="선택 안 함"
+                placeholder={t("placeholder.notSelected", lang)}
                 options={[
-                  { value: "visit", label: "방문" },
-                  { value: "exhibition", label: "전시회" },
-                  { value: "referral", label: "소개" },
-                  { value: "website", label: "웹사이트" },
-                  { value: "existing", label: "기존고객" },
-                  { value: "other", label: "기타" },
+                  { value: "visit", label: t("leadSource.visit", lang) },
+                  { value: "exhibition", label: t("leadSource.exhibition", lang) },
+                  { value: "referral", label: t("leadSource.referral", lang) },
+                  { value: "website", label: t("leadSource.website", lang) },
+                  { value: "existing", label: t("leadSource.existing", lang) },
+                  { value: "other", label: t("leadSource.other", lang) },
                 ]}
               />
             </Field>
-            <Field label="등급" width="140px">
+            <Field label={t("field.grade", lang)} width="140px">
               <Select
                 value={core.grade}
                 onChange={(e) => set("grade", e.target.value)}
-                placeholder="선택 안 함"
+                placeholder={t("placeholder.notSelected", lang)}
                 options={[
                   { value: "A", label: "A" },
                   { value: "B", label: "B" },
@@ -381,29 +389,29 @@ export function ClientDetail({
                 ]}
               />
             </Field>
-            <Field label="소개자 (다른 거래처)">
+            <Field label={t("field.referrerClient", lang)}>
               <Select
                 value={core.referrerId}
                 onChange={(e) => set("referrerId", e.target.value)}
-                placeholder="선택 안 함"
+                placeholder={t("placeholder.notSelected", lang)}
                 options={referrerCandidates}
               />
             </Field>
           </Row>
           <Row>
-            <Field label="영업담당 (직원)">
+            <Field label={t("field.salesPic", lang)}>
               <Select
                 value={core.salesPicId}
                 onChange={(e) => set("salesPicId", e.target.value)}
-                placeholder="선택 안 함"
+                placeholder={t("placeholder.notSelected", lang)}
                 options={employeeOptions}
               />
             </Field>
-            <Field label="소개자 (내부 직원)" hint="거래처 대신 직원이 소개한 경우">
+            <Field label={t("field.referrerEmployee", lang)} hint={t("hint.refByEmployee", lang)}>
               <Select
                 value={core.referrerEmployeeId}
                 onChange={(e) => set("referrerEmployeeId", e.target.value)}
-                placeholder="선택 안 함"
+                placeholder={t("placeholder.notSelected", lang)}
                 options={employeeOptions}
               />
             </Field>
@@ -411,7 +419,7 @@ export function ClientDetail({
 
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingSales}>
-              {savingSales ? "저장 중..." : "영업정보 저장"}
+              {savingSales ? t("action.saving", lang) : t("btn.saveSalesInfo", lang)}
             </Button>
           </div>
         </form>
@@ -419,17 +427,18 @@ export function ClientDetail({
 
       {active === "marketing" && (
         <form onSubmit={handleMarketingSubmit}>
-          <SectionTitle icon="📧" title="마케팅" />
+          <SectionTitle icon="📧" title={t("section.marketing", lang)} />
           <MarketingTagsEditor
             tags={core.marketingTags}
             onChange={(tags) => set("marketingTags", tags)}
+            lang={lang}
           />
           <Note tone="info">
             태그는 일괄 이메일 발송 / 캠페인 세분화에 사용됩니다 (Phase 2 마케팅 모듈).
           </Note>
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingMarketing}>
-              {savingMarketing ? "저장 중..." : "마케팅 정보 저장"}
+              {savingMarketing ? t("action.saving", lang) : t("btn.saveMarketingInfo", lang)}
             </Button>
           </div>
         </form>
@@ -437,7 +446,7 @@ export function ClientDetail({
 
       {active === "transactions" && (
         <div>
-          <SectionTitle icon="📊" title="거래 현황" />
+          <SectionTitle icon="📊" title={t("section.transactions", lang)} />
           <Note tone="info">
             매출 / 매입 / 계약 이력은 Phase 2 매출·매입 · Phase 2 렌탈/IT 계약 모듈 구현 후
             이 탭에 집계되어 표시됩니다. 지금은 거래 데이터가 없습니다.
@@ -447,22 +456,22 @@ export function ClientDetail({
 
       {active === "ar" && (
         <form onSubmit={handleArSubmit}>
-          <SectionTitle icon="💰" title="미수금" />
+          <SectionTitle icon="💰" title={t("section.ar", lang)} />
           <Row>
-            <Field label="미수금 상태" required width="240px">
+            <Field label={t("field.arStatus", lang)} required width="240px">
               <Select
                 required
                 value={core.receivableStatus}
                 onChange={(e) => set("receivableStatus", e.target.value)}
                 options={[
-                  { value: "NORMAL", label: "정상" },
-                  { value: "WARNING", label: "경고" },
-                  { value: "BLOCKED", label: "차단" },
+                  { value: "NORMAL", label: t("status.normal", lang) },
+                  { value: "WARNING", label: t("status.warning", lang) },
+                  { value: "BLOCKED", label: t("status.blocked", lang) },
                 ]}
               />
             </Field>
             <div className="flex items-end pb-1 text-[11px] text-[color:var(--tts-muted)]">
-              현재:{" "}
+              {t("field.status", lang)}:{" "}
               <Badge
                 tone={
                   core.receivableStatus === "NORMAL"
@@ -473,7 +482,7 @@ export function ClientDetail({
                 }
                 className="ml-1"
               >
-                {arLabel(core.receivableStatus)}
+                {arLabel(core.receivableStatus, lang)}
               </Badge>
             </div>
           </Row>
@@ -483,7 +492,7 @@ export function ClientDetail({
           </Note>
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingAr}>
-              {savingAr ? "저장 중..." : "미수금 상태 저장"}
+              {savingAr ? t("action.saving", lang) : t("btn.saveArStatus", lang)}
             </Button>
           </div>
         </form>
@@ -492,22 +501,22 @@ export function ClientDetail({
   );
 }
 
-function arLabel(s: string): string {
-  return s === "NORMAL" ? "정상" : s === "WARNING" ? "경고" : "차단";
+function arLabel(s: string, lang: Lang): string {
+  return s === "NORMAL" ? t("status.normal", lang) : s === "WARNING" ? t("status.warning", lang) : t("status.blocked", lang);
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "invalid_input":
-      return "입력값이 올바르지 않습니다.";
+      return t("msg.invalidInput", lang);
     case "invalid_referrer":
-      return "선택한 소개자 거래처가 존재하지 않습니다.";
+      return t("msg.invalidReferrer", lang);
     case "has_dependent_rows":
-      return "연결된 거래 이력이 있어 삭제할 수 없습니다.";
+      return t("msg.hasDependentsClient", lang);
     case "not_found":
-      return "거래처를 찾을 수 없습니다.";
+      return t("msg.clientDeleteFail", lang);
     default:
-      return "저장에 실패했습니다.";
+      return t("msg.saveFailed", lang);
   }
 }
 
@@ -518,11 +527,13 @@ function ContactsTab({
   contacts,
   onChange,
   onError,
+  lang,
 }: {
   clientId: string;
   contacts: Contact[];
   onChange: (next: Contact[]) => void;
   onError: (msg: string | null) => void;
+  lang: Lang;
 }) {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
@@ -572,7 +583,7 @@ function ContactsTab({
           { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
         );
         if (!res.ok) {
-          onError("담당자 수정에 실패했습니다.");
+          onError(t("msg.contactSaveFail", lang));
           return;
         }
         const data = (await res.json()) as { contact: Contact };
@@ -592,7 +603,7 @@ function ContactsTab({
           body: JSON.stringify(body),
         });
         if (!res.ok) {
-          onError("담당자 추가에 실패했습니다.");
+          onError(t("msg.contactAddFail", lang));
           return;
         }
         const data = (await res.json()) as { contact: Contact };
@@ -610,11 +621,11 @@ function ContactsTab({
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("이 담당자를 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.deleteContactConfirm", lang))) return;
     onError(null);
     const res = await fetch(`/api/master/clients/${clientId}/contacts/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      onError("담당자 삭제에 실패했습니다.");
+      onError(t("msg.contactDeleteFail", lang));
       return;
     }
     onChange(contacts.filter((c) => c.id !== id));
@@ -624,17 +635,17 @@ function ContactsTab({
   const columns: DataTableColumn<Contact>[] = [
     {
       key: "name",
-      label: "담당자명",
+      label: t("col.contactName", lang),
       render: (v, row) => (
         <span className="flex items-center gap-2 font-semibold">
           {v as string}
-          {row.isPrimary && <Badge tone="success">주</Badge>}
+          {row.isPrimary && <Badge tone="success">{lang === "VI" ? "Chính" : lang === "EN" ? "Main" : "주"}</Badge>}
         </span>
       ),
     },
-    { key: "position", label: "직책" },
-    { key: "phone", label: "전화" },
-    { key: "email", label: "이메일" },
+    { key: "position", label: t("col.position", lang) },
+    { key: "phone", label: t("col.phone", lang) },
+    { key: "email", label: t("col.email", lang) },
     {
       key: "id",
       label: "",
@@ -643,10 +654,10 @@ function ContactsTab({
       render: (_, row) => (
         <div className="flex justify-end gap-1">
           <Button size="sm" variant="ghost" onClick={() => startEdit(row)}>
-            수정
+            {t("action.edit", lang)}
           </Button>
           <Button size="sm" variant="danger" onClick={() => handleDelete(row.id)}>
-            삭제
+            {t("action.delete", lang)}
           </Button>
         </div>
       ),
@@ -658,7 +669,7 @@ function ContactsTab({
       <div className="mb-3 flex justify-end">
         {!showAdd && !editingId && (
           <Button size="sm" onClick={() => setShowAdd(true)}>
-            + 담당자 추가
+            {t("btn.addContact", lang)}
           </Button>
         )}
       </div>
@@ -668,14 +679,14 @@ function ContactsTab({
           className="mb-4 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3"
         >
           <Row>
-            <Field label="담당자명" required>
+            <Field label={t("field.contactName", lang)} required>
               <TextInput
                 required
                 value={draft.name}
                 onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
               />
             </Field>
-            <Field label="직책">
+            <Field label={t("field.position", lang)}>
               <TextInput
                 value={draft.position}
                 onChange={(e) => setDraft((p) => ({ ...p, position: e.target.value }))}
@@ -683,33 +694,33 @@ function ContactsTab({
             </Field>
           </Row>
           <Row>
-            <Field label="전화">
+            <Field label={t("field.phone", lang)}>
               <TextInput
                 value={draft.phone}
                 onChange={(e) => setDraft((p) => ({ ...p, phone: e.target.value }))}
               />
             </Field>
-            <Field label="이메일">
+            <Field label={t("field.email", lang)}>
               <TextInput
                 type="email"
                 value={draft.email}
                 onChange={(e) => setDraft((p) => ({ ...p, email: e.target.value }))}
               />
             </Field>
-            <Field label="주담당자" width="120px">
+            <Field label={t("field.primaryContact", lang)} width="120px">
               <Checkbox
                 checked={draft.isPrimary}
                 onChange={(e) => setDraft((p) => ({ ...p, isPrimary: e.target.checked }))}
-                label="지정"
+                label={t("field.designate", lang)}
               />
             </Field>
           </Row>
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? "저장 중..." : editingId ? "수정 저장" : "담당자 추가"}
+              {submitting ? t("action.saving", lang) : editingId ? t("btn.editSave", lang) : t("btn.addContact", lang).replace("+ ", "")}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={resetDraft}>
-              취소
+              {t("action.cancel", lang)}
             </Button>
           </div>
         </form>
@@ -718,7 +729,7 @@ function ContactsTab({
         columns={columns}
         data={contacts}
         rowKey={(c) => c.id}
-        emptyMessage="등록된 담당자가 없습니다"
+        emptyMessage={t("empty.contacts", lang)}
       />
     </div>
   );
@@ -740,42 +751,44 @@ function normalizeContact(c: Contact | (Omit<Contact, "position" | "phone" | "em
 function MarketingTagsEditor({
   tags,
   onChange,
+  lang,
 }: {
   tags: string[];
   onChange: (next: string[]) => void;
+  lang: Lang;
 }) {
   const [input, setInput] = useState("");
 
   function addTag() {
-    const t = input.trim();
-    if (!t) return;
-    if (tags.includes(t)) {
+    const tg = input.trim();
+    if (!tg) return;
+    if (tags.includes(tg)) {
       setInput("");
       return;
     }
-    onChange([...tags, t]);
+    onChange([...tags, tg]);
     setInput("");
   }
 
-  function removeTag(t: string) {
-    onChange(tags.filter((x) => x !== t));
+  function removeTag(tg: string) {
+    onChange(tags.filter((x) => x !== tg));
   }
 
   return (
     <div>
       <div className="mb-2 flex flex-wrap gap-1">
         {tags.length === 0 ? (
-          <span className="text-[12px] text-[color:var(--tts-muted)]">태그 없음</span>
+          <span className="text-[12px] text-[color:var(--tts-muted)]">{t("empty.tags", lang)}</span>
         ) : (
-          tags.map((t) => (
+          tags.map((tg) => (
             <span
-              key={t}
+              key={tg}
               className="inline-flex items-center gap-1 rounded bg-[color:var(--tts-purple-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-purple)]"
             >
-              {t}
+              {tg}
               <button
                 type="button"
-                onClick={() => removeTag(t)}
+                onClick={() => removeTag(tg)}
                 className="text-[11px] opacity-60 hover:opacity-100"
               >
                 ×
@@ -788,7 +801,7 @@ function MarketingTagsEditor({
         <TextInput
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="예: VIP, 신규, 북부지역"
+          placeholder={t("placeholder.tagExample", lang)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -797,7 +810,7 @@ function MarketingTagsEditor({
           }}
         />
         <Button type="button" size="sm" variant="outline" onClick={addTag}>
-          + 추가
+          {t("action.add", lang)}
         </Button>
       </div>
     </div>

@@ -3,34 +3,38 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Field, Note, Row, Select, TextInput } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type ItemOpt = { value: string; label: string; itemCode: string; itemName: string };
 type WhOpt = { value: string; label: string; warehouseType: string };
 type ClOpt = { value: string; label: string };
-type Props = { items: ItemOpt[]; warehouses: WhOpt[]; clients: ClOpt[] };
+type Props = { items: ItemOpt[]; warehouses: WhOpt[]; clients: ClOpt[]; lang: Lang };
 
-const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
-  IN: [
-    { value: "PURCHASE", label: "매입" },
-    { value: "RETURN_IN", label: "반품입고" },
-    { value: "OTHER_IN", label: "기타입고" },
-  ],
-  OUT: [
-    { value: "SALE", label: "매출" },
-    { value: "CONSUMABLE_OUT", label: "소모품출고" },
-  ],
-  TRANSFER: [
-    { value: "CALIBRATION", label: "교정" },
-    { value: "REPAIR", label: "수리" },
-    { value: "RENTAL", label: "렌탈" },
-    { value: "DEMO", label: "데모" },
-  ],
-};
+function buildReasonsByType(lang: Lang): Record<string, { value: string; label: string }[]> {
+  return {
+    IN: [
+      { value: "PURCHASE", label: t("reason.purchase", lang) },
+      { value: "RETURN_IN", label: t("reason.returnIn", lang) },
+      { value: "OTHER_IN", label: t("reason.otherIn", lang) },
+    ],
+    OUT: [
+      { value: "SALE", label: t("reason.sale", lang) },
+      { value: "CONSUMABLE_OUT", label: t("reason.consumableOut", lang) },
+    ],
+    TRANSFER: [
+      { value: "CALIBRATION", label: t("reason.calibration", lang) },
+      { value: "REPAIR", label: t("reason.repair", lang) },
+      { value: "RENTAL", label: t("reason.rental", lang) },
+      { value: "DEMO", label: t("reason.demo", lang) },
+    ],
+  };
+}
 
 const SCANNER_ELEMENT_ID = "qr-scanner-region";
 
-export function ScanClient({ items, warehouses, clients }: Props) {
+export function ScanClient({ items, warehouses, clients, lang }: Props) {
   const router = useRouter();
+  const REASONS_BY_TYPE = useMemo(() => buildReasonsByType(lang), [lang]);
   const scannerRef = useRef<{ stop: () => void; clear: () => void } | null>(null);
   const [scanning, setScanning] = useState(false);
   const [decoded, setDecoded] = useState<{ itemCode: string; serialNumber: string | null; contractNumber: string | null } | null>(null);
@@ -51,9 +55,9 @@ export function ScanClient({ items, warehouses, clients }: Props) {
   const internalWhs = useMemo(() => warehouses.filter((w) => w.warehouseType !== "EXTERNAL"), [warehouses]);
   const externalWhs = useMemo(() => warehouses.filter((w) => w.warehouseType === "EXTERNAL"), [warehouses]);
 
-  function selectType(t: "IN" | "OUT" | "TRANSFER") {
-    setTxnType(t);
-    setReason(REASONS_BY_TYPE[t][0].value);
+  function selectType(tp: "IN" | "OUT" | "TRANSFER") {
+    setTxnType(tp);
+    setReason(REASONS_BY_TYPE[tp][0].value);
     setFromWarehouseId("");
     setToWarehouseId("");
     setClientId("");
@@ -85,7 +89,7 @@ export function ScanClient({ items, warehouses, clients }: Props) {
       scannerRef.current = { stop: () => scanner.stop().catch(() => undefined), clear: () => scanner.clear() };
       setScanning(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "카메라 초기화 실패 (권한 확인)");
+      setError(e instanceof Error ? e.message : t("msg.cameraInitFail", lang));
     }
   }
 
@@ -134,23 +138,23 @@ export function ScanClient({ items, warehouses, clients }: Props) {
 
   async function handleSubmit() {
     if (!itemId) {
-      setError("품목을 선택해주세요");
+      setError(t("msg.itemRequired", lang));
       return;
     }
     if (txnType === "IN" && !toWarehouseId) {
-      setError("입고창고를 선택해주세요");
+      setError(t("msg.whInRequired", lang));
       return;
     }
     if (txnType === "OUT" && !fromWarehouseId) {
-      setError("출고창고를 선택해주세요");
+      setError(t("msg.whOutRequired", lang));
       return;
     }
     if (txnType === "TRANSFER" && (!fromWarehouseId || !toWarehouseId)) {
-      setError("출고·입고 창고 모두 선택해주세요");
+      setError(t("msg.whBothRequired", lang));
       return;
     }
     if (reason === "CONSUMABLE_OUT" && !targetEquipmentSN) {
-      setError("소모품출고 시 대상 장비 S/N 필수");
+      setError(t("msg.targetEquipRequired", lang));
       return;
     }
     setSubmitting(true);
@@ -175,10 +179,11 @@ export function ScanClient({ items, warehouses, clients }: Props) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setLastResult({ ok: false, msg: data.error ?? "저장 실패" });
+        setLastResult({ ok: false, msg: data.error ?? t("msg.txnSaveFail", lang) });
         return;
       }
-      setLastResult({ ok: true, msg: `${txnType === "IN" ? "입고" : txnType === "OUT" ? "출고" : "이동"} 완료: ${serialNumber || itemId}` });
+      const action = txnType === "IN" ? t("status.in", lang) : txnType === "OUT" ? t("status.out", lang) : t("status.transfer", lang);
+      setLastResult({ ok: true, msg: t("msg.completedTxn", lang).replace("{action}", action).replace("{sn}", serialNumber || itemId) });
       // 폼 리셋 (타입/사유는 유지 — 연속 스캔 편의)
       setItemId("");
       setSerialNumber("");
@@ -205,13 +210,13 @@ export function ScanClient({ items, warehouses, clients }: Props) {
 
       <div className="mb-3 flex items-center gap-2">
         {!scanning ? (
-          <Button onClick={startScan} variant="accent">📷 카메라 시작</Button>
+          <Button onClick={startScan} variant="accent">{t("action.scanCamera", lang)}</Button>
         ) : (
-          <Button onClick={stopScan} variant="danger">⏹ 중지</Button>
+          <Button onClick={stopScan} variant="danger">{t("action.scanStop", lang)}</Button>
         )}
         {decoded && (
           <Badge tone="success">
-            감지: {decoded.itemCode || decoded.serialNumber}{decoded.contractNumber ? ` (계약 ${decoded.contractNumber})` : ""}
+            {t("msg.detected", lang)}: {decoded.itemCode || decoded.serialNumber}{decoded.contractNumber ? ` (${t("field.contractNumber", lang)} ${decoded.contractNumber})` : ""}
           </Badge>
         )}
       </div>
@@ -219,61 +224,61 @@ export function ScanClient({ items, warehouses, clients }: Props) {
       {error && <div className="mb-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
 
       <Row>
-        <Field label="유형" required width="360px">
+        <Field label={t("field.txnType", lang)} required width="360px">
           <div className="flex gap-1 rounded-md bg-[color:var(--tts-input)] p-1">
-            {(["IN", "OUT", "TRANSFER"] as const).map((t) => (
-              <button type="button" key={t} onClick={() => selectType(t)} className={`flex-1 rounded px-3 py-2 text-[13px] font-semibold transition ${txnType === t ? "bg-[color:var(--tts-primary)] text-white" : "text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"}`}>
-                {t === "IN" ? "입고" : t === "OUT" ? "출고" : "이동"}
+            {(["IN", "OUT", "TRANSFER"] as const).map((tp) => (
+              <button type="button" key={tp} onClick={() => selectType(tp)} className={`flex-1 rounded px-3 py-2 text-[13px] font-semibold transition ${txnType === tp ? "bg-[color:var(--tts-primary)] text-white" : "text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"}`}>
+                {tp === "IN" ? t("status.in", lang) : tp === "OUT" ? t("status.out", lang) : t("status.transfer", lang)}
               </button>
             ))}
           </div>
         </Field>
-        <Field label="사유" required width="180px">
+        <Field label={t("field.reason", lang)} required width="180px">
           <Select required value={reason} onChange={(e) => setReason(e.target.value)} options={REASONS_BY_TYPE[txnType]} />
         </Field>
       </Row>
 
       <Row>
-        <Field label="품목 (QR 자동)" required>
-          <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder="QR 스캔 또는 선택" options={items.map((i) => ({ value: i.value, label: i.label }))} />
+        <Field label={t("field.itemAuto", lang)} required>
+          <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder={t("placeholder.scannerHint", lang)} options={items.map((i) => ({ value: i.value, label: i.label }))} />
         </Field>
-        <Field label="S/N">
-          <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="QR 자동" />
+        <Field label={t("field.serial", lang)}>
+          <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder={t("placeholder.qrAuto", lang)} />
         </Field>
       </Row>
 
       <Row>
         {(txnType === "OUT" || txnType === "TRANSFER") && (
-          <Field label="출고창고" required>
-            <Select required value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} placeholder="선택" options={internalWhs.map((w) => ({ value: w.value, label: w.label }))} />
+          <Field label={t("field.warehouseOut", lang)} required>
+            <Select required value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} placeholder={t("placeholder.select", lang)} options={internalWhs.map((w) => ({ value: w.value, label: w.label }))} />
           </Field>
         )}
         {(txnType === "IN" || txnType === "TRANSFER") && (
-          <Field label="입고창고" required>
-            <Select required value={toWarehouseId} onChange={(e) => setToWarehouseId(e.target.value)} placeholder="선택" options={(txnType === "TRANSFER" ? warehouses : internalWhs).map((w) => ({ value: w.value, label: w.label }))} />
+          <Field label={t("field.warehouseIn", lang)} required>
+            <Select required value={toWarehouseId} onChange={(e) => setToWarehouseId(e.target.value)} placeholder={t("placeholder.select", lang)} options={(txnType === "TRANSFER" ? warehouses : internalWhs).map((w) => ({ value: w.value, label: w.label }))} />
           </Field>
         )}
       </Row>
 
       {showClient && (
         <Row>
-          <Field label={txnType === "OUT" ? "고객 (납품처)" : "고객 (External 창고)"}>
-            <Select value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder="선택" options={clients} />
+          <Field label={txnType === "OUT" ? t("field.clientCustomer", lang) : t("field.clientExternal", lang)}>
+            <Select value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={t("placeholder.select", lang)} options={clients} />
           </Field>
         </Row>
       )}
 
       {showTargetEquip && (
         <Row>
-          <Field label="대상 장비 S/N" required>
-            <TextInput required value={targetEquipmentSN} onChange={(e) => setTargetEquipmentSN(e.target.value)} placeholder="이 소모품을 사용할 IT계약 장비의 S/N" />
+          <Field label={t("field.targetEquipSN", lang)} required>
+            <TextInput required value={targetEquipmentSN} onChange={(e) => setTargetEquipmentSN(e.target.value)} placeholder={t("placeholder.targetEquipSN", lang)} />
           </Field>
         </Row>
       )}
 
       <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button onClick={handleSubmit} disabled={submitting || !itemId} variant="accent">
-          {submitting ? "저장 중..." : "✅ 입출고 완료"}
+          {submitting ? t("action.saving", lang) : t("btn.txnComplete", lang)}
         </Button>
         {lastResult && (
           <span className={lastResult.ok ? "text-[color:var(--tts-success)]" : "text-[color:var(--tts-danger)]"}>

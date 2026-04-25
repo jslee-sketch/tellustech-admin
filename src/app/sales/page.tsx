@@ -33,6 +33,7 @@ export default async function SalesListPage() {
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.sales.title", L)}</h1>
         </div>
         <SalesClient
+          lang={L}
           initialData={sales.map((s) => ({
             id: s.id,
             salesNumber: s.salesNumber,

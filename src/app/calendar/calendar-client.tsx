@@ -7,6 +7,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Button, Field, Note, TextInput, Textarea } from "@/components/ui";
 import { pickDailyScenes, type Scene } from "./daily-scenes";
+import { t, type Lang } from "@/lib/i18n";
 
 type EventType =
   | "SCHEDULE_DEADLINE" | "WEEKLY_REPORT" | "CONTRACT_EXPIRY" | "CERT_EXPIRY"
@@ -28,30 +29,39 @@ type AggEvent = {
   badge?: Badge;
 };
 
-const FILTER_LABELS: Record<EventType, string> = {
-  SCHEDULE_DEADLINE: "일정 마감",
-  WEEKLY_REPORT:     "주간회의 마감",
-  CONTRACT_EXPIRY:   "IT계약 만료",
-  CERT_EXPIRY:       "성적서 만료",
-  LICENSE_EXPIRY:    "라이선스 만료",
-  AR_DUE:            "미수금 납기",
-  LEAVE:             "연차/휴가",
-  AS_DISPATCH:       "AS 출동",
-  RENTAL_ORDER:      "렌탈 오더",
-  BIRTHDAY:          "직원 생일",
-  HOLIDAY_VN:        "베트남 공휴일",
-  HOLIDAY_KR:        "한국 공휴일",
-  CUSTOM:            "수동 이벤트",
-};
+function buildFilterLabels(lang: Lang): Record<EventType, string> {
+  return {
+    SCHEDULE_DEADLINE: t("calendar.filter.scheduleDeadline", lang),
+    WEEKLY_REPORT:     t("calendar.filter.weeklyReport", lang),
+    CONTRACT_EXPIRY:   t("calendar.filter.contractExpiry", lang),
+    CERT_EXPIRY:       t("calendar.filter.certExpiry", lang),
+    LICENSE_EXPIRY:    t("calendar.filter.licenseExpiry", lang),
+    AR_DUE:            t("calendar.filter.arDue", lang),
+    LEAVE:             t("calendar.filter.leave", lang),
+    AS_DISPATCH:       t("calendar.filter.asDispatch", lang),
+    RENTAL_ORDER:      t("calendar.filter.rentalOrder", lang),
+    BIRTHDAY:          t("calendar.filter.birthday", lang),
+    HOLIDAY_VN:        t("calendar.filter.holidayVn", lang),
+    HOLIDAY_KR:        t("calendar.filter.holidayKr", lang),
+    CUSTOM:            t("calendar.filter.custom", lang),
+  };
+}
 
-const ALL_TYPES: EventType[] = Object.keys(FILTER_LABELS) as EventType[];
+const ALL_TYPES: EventType[] = [
+  "SCHEDULE_DEADLINE","WEEKLY_REPORT","CONTRACT_EXPIRY","CERT_EXPIRY",
+  "LICENSE_EXPIRY","AR_DUE","LEAVE","AS_DISPATCH","RENTAL_ORDER",
+  "BIRTHDAY","HOLIDAY_VN","HOLIDAY_KR","CUSTOM",
+];
 const ALL_BADGES: ("GREEN" | "YELLOW" | "RED" | "NONE")[] = ["GREEN", "YELLOW", "RED", "NONE"];
-const BADGE_LABEL: Record<"GREEN" | "YELLOW" | "RED" | "NONE", string> = {
-  GREEN: "🟢 여유",
-  YELLOW: "🟡 임박(D-3)",
-  RED: "🔴 초과",
-  NONE: "⬜ 뱃지없음",
-};
+
+function buildBadgeLabel(lang: Lang): Record<"GREEN" | "YELLOW" | "RED" | "NONE", string> {
+  return {
+    GREEN: t("calendar.badge.green", lang),
+    YELLOW: t("calendar.badge.yellow", lang),
+    RED: t("calendar.badge.red", lang),
+    NONE: t("calendar.badge.none", lang),
+  };
+}
 
 function MultiSelect({
   label,
@@ -59,14 +69,16 @@ function MultiSelect({
   options,
   onToggle,
   onClear,
+  lang,
 }: {
   label: string;
   values: Set<string>;
   options: { value: string; label: string }[];
   onToggle: (v: string) => void;
   onClear: () => void;
+  lang: Lang;
 }) {
-  const summary = values.size === 0 ? "전체" : `${values.size}개 선택`;
+  const summary = values.size === 0 ? t("calendar.allItems", lang) : t("calendar.selected", lang).replace("{count}", String(values.size));
   return (
     <details className="relative rounded-md border border-[color:var(--tts-border)] px-2 py-1 text-[12px]">
       <summary className="cursor-pointer select-none">
@@ -75,7 +87,7 @@ function MultiSelect({
       </summary>
       <div className="absolute z-10 mt-1 max-h-[260px] w-[220px] overflow-y-auto rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-2 shadow-lg">
         <div className="mb-1 flex justify-end">
-          <button type="button" className="text-[10px] text-[color:var(--tts-muted)] hover:underline" onClick={onClear}>모두 해제</button>
+          <button type="button" className="text-[10px] text-[color:var(--tts-muted)] hover:underline" onClick={onClear}>{t("calendar.clearAll", lang)}</button>
         </div>
         {options.map((o) => (
           <label key={o.value} className="mb-0.5 flex cursor-pointer items-center gap-2">
@@ -114,12 +126,15 @@ function SceneCard({ flag, country, scene }: { flag: string; country: string; sc
   );
 }
 
-export function CalendarClient({ canManage }: { canManage: boolean }) {
+export function CalendarClient({ canManage, lang }: { canManage: boolean; lang: Lang }) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [events, setEvents] = useState<AggEvent[]>([]);
   const scenes = useMemo(() => pickDailyScenes(new Date()), []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const FILTER_LABELS = useMemo(() => buildFilterLabels(lang), [lang]);
+  const BADGE_LABEL = useMemo(() => buildBadgeLabel(lang), [lang]);
 
   const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set());      // empty = 전체
   const [assigneeFilter, setAssigneeFilter] = useState<Set<string>>(new Set());
@@ -179,7 +194,7 @@ export function CalendarClient({ canManage }: { canManage: boolean }) {
   }
 
   async function createEvent() {
-    if (!title || !startDate) { setError("제목과 시작일은 필수"); return; }
+    if (!title || !startDate) { setError(t("msg.titleStartRequired", lang)); return; }
     const r = await fetch("/api/calendar", {
       method: "POST", credentials: "same-origin",
       headers: { "Content-Type": "application/" + "json" },
@@ -190,7 +205,7 @@ export function CalendarClient({ canManage }: { canManage: boolean }) {
         description: description || null,
       }),
     });
-    if (!r.ok) { setError("이벤트 등록 실패"); return; }
+    if (!r.ok) { setError(t("msg.eventCreateFail", lang)); return; }
     setShowForm(false);
     setTitle(""); setStartDate(""); setEndDate(""); setDescription("");
     const api = calendarRef.current?.getApi();
@@ -198,15 +213,17 @@ export function CalendarClient({ canManage }: { canManage: boolean }) {
   }
 
   async function deleteEvent(id: string) {
-    if (!id.startsWith("cu:")) { setError("자동 수집 이벤트는 삭제할 수 없습니다."); return; }
+    if (!id.startsWith("cu:")) { setError(t("msg.eventDeleteAuto", lang)); return; }
     const realId = id.slice(3);
-    if (!confirm("이 수동 이벤트를 삭제하시겠습니까?")) return;
+    if (!confirm(t("msg.deleteEventConfirm", lang))) return;
     const r = await fetch(`/api/calendar/${realId}`, { method: "DELETE", credentials: "same-origin" });
-    if (!r.ok) { setError("삭제 실패"); return; }
+    if (!r.ok) { setError(t("msg.deleteFailedShort", lang)); return; }
     setSelectedEvent(null);
     const api = calendarRef.current?.getApi();
     if (api) await loadRange(api.view.activeStart.toISOString(), api.view.activeEnd.toISOString());
   }
+
+  const fcLocale = lang === "VI" ? "vi" : lang === "EN" ? "en" : "ko";
 
   return (
     <div>
@@ -220,38 +237,41 @@ export function CalendarClient({ canManage }: { canManage: boolean }) {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           type="search"
-          placeholder="🔍 제목/담당자 검색"
+          placeholder={t("placeholder.searchEvent", lang)}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[12px]"
         />
         <MultiSelect
-          label="업무"
+          label={t("calendar.busiFilter", lang)}
           values={typeFilter}
-          options={ALL_TYPES.map((t) => ({ value: t, label: FILTER_LABELS[t] }))}
+          options={ALL_TYPES.map((tp) => ({ value: tp, label: FILTER_LABELS[tp] }))}
           onToggle={(v) => toggleSet(typeFilter, v, setTypeFilter)}
           onClear={() => setTypeFilter(new Set())}
+          lang={lang}
         />
         <MultiSelect
-          label="담당"
+          label={t("calendar.assignee", lang)}
           values={assigneeFilter}
           options={assigneeOptions}
           onToggle={(v) => toggleSet(assigneeFilter, v, setAssigneeFilter)}
           onClear={() => setAssigneeFilter(new Set())}
+          lang={lang}
         />
         <MultiSelect
-          label="뱃지"
+          label={t("calendar.badge", lang)}
           values={badgeFilter}
           options={ALL_BADGES.map((b) => ({ value: b, label: BADGE_LABEL[b] }))}
           onToggle={(v) => toggleSet(badgeFilter, v, setBadgeFilter)}
           onClear={() => setBadgeFilter(new Set())}
+          lang={lang}
         />
         <span className="text-[11px] text-[color:var(--tts-muted)]">
-          {visible.length} / {events.length} 건 {loading && "(로딩...)"}
+          {t("calendar.eventCount", lang).replace("{visible}", String(visible.length)).replace("{total}", String(events.length))} {loading && t("calendar.loading", lang)}
         </span>
         <div className="ml-auto">
           {canManage && (
-            <Button onClick={() => setShowForm((v) => !v)}>{showForm ? "취소" : "+ 이벤트 등록"}</Button>
+            <Button onClick={() => setShowForm((v) => !v)}>{showForm ? t("action.cancel", lang) : t("btn.submitEvent", lang)}</Button>
           )}
         </div>
       </div>
@@ -260,11 +280,11 @@ export function CalendarClient({ canManage }: { canManage: boolean }) {
 
       {showForm && (
         <div className="mb-3 grid grid-cols-2 gap-3 rounded-md border border-[color:var(--tts-border)] p-3">
-          <Field label="제목 (한국어)" className="col-span-2"><TextInput value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-          <Field label="시작일"><TextInput type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
-          <Field label="종료일 (선택)"><TextInput type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></Field>
-          <Field label="설명" className="col-span-2"><Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
-          <div className="col-span-2 flex justify-end"><Button onClick={createEvent}>저장</Button></div>
+          <Field label={t("calendar.titleKo", lang)} className="col-span-2"><TextInput value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+          <Field label={t("field.startDate", lang)}><TextInput type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></Field>
+          <Field label={t("calendar.endOptional", lang)}><TextInput type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></Field>
+          <Field label={t("field.description", lang)} className="col-span-2"><Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
+          <div className="col-span-2 flex justify-end"><Button onClick={createEvent}>{t("action.save", lang)}</Button></div>
         </div>
       )}
 
@@ -301,24 +321,24 @@ export function CalendarClient({ canManage }: { canManage: boolean }) {
             setSelectedEvent(raw);
           }
         }}
-        locale="ko"
-        buttonText={{ today: "오늘", month: "월", week: "주", day: "일" }}
+        locale={fcLocale}
+        buttonText={{ today: t("calendar.today", lang), month: t("calendar.month", lang), week: t("calendar.week", lang), day: t("calendar.day", lang) }}
       />
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setSelectedEvent(null)}>
           <div className="w-[420px] rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-bg)] p-4 text-[13px]" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-2 text-[15px] font-bold">📅 {selectedEvent.title}</h3>
-            <div className="mb-1 text-[12px] text-[color:var(--tts-muted)]">유형: {FILTER_LABELS[selectedEvent.type]}</div>
-            {selectedEvent.assignee && <div className="mb-1">담당: {selectedEvent.assignee}</div>}
-            <div className="mb-1">시작: {selectedEvent.start.slice(0, 16).replace("T", " ")}</div>
-            {selectedEvent.end && <div className="mb-1">종료: {selectedEvent.end.slice(0, 16).replace("T", " ")}</div>}
-            {selectedEvent.badge && <div className="mb-1">뱃지: {BADGE_LABEL[selectedEvent.badge]}</div>}
+            <div className="mb-1 text-[12px] text-[color:var(--tts-muted)]">{t("calendar.dialogType", lang)} {FILTER_LABELS[selectedEvent.type]}</div>
+            {selectedEvent.assignee && <div className="mb-1">{t("calendar.assignee", lang)}: {selectedEvent.assignee}</div>}
+            <div className="mb-1">{t("calendar.dialogStart", lang)} {selectedEvent.start.slice(0, 16).replace("T", " ")}</div>
+            {selectedEvent.end && <div className="mb-1">{t("calendar.dialogEnd", lang)} {selectedEvent.end.slice(0, 16).replace("T", " ")}</div>}
+            {selectedEvent.badge && <div className="mb-1">{t("calendar.dialogBadge", lang)} {BADGE_LABEL[selectedEvent.badge]}</div>}
             <div className="mt-3 flex justify-end gap-2">
               {canManage && selectedEvent.id.startsWith("cu:") && (
-                <Button onClick={() => deleteEvent(selectedEvent.id)}>삭제</Button>
+                <Button onClick={() => deleteEvent(selectedEvent.id)}>{t("action.delete", lang)}</Button>
               )}
-              <Button onClick={() => setSelectedEvent(null)}>닫기</Button>
+              <Button onClick={() => setSelectedEvent(null)}>{t("action.close", lang)}</Button>
             </div>
           </div>
         </div>

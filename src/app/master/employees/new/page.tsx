@@ -33,6 +33,7 @@ export default async function NewEmployeePage() {
         </div>
         <Card>
           <EmployeeForm
+            lang={L}
             mode="create"
             allowedCompanies={session.allowedCompanies}
             departments={departments}

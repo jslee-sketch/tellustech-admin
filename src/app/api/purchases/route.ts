@@ -12,6 +12,7 @@ import {
   trimNonEmpty,
 } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
+import { ensureInventoryItemOnReceipt } from "@/lib/inventory-receipt";
 import type { Currency } from "@/generated/prisma/client";
 
 const CURRENCIES: readonly Currency[] = ["VND", "USD", "KRW", "JPY", "CNY"] as const;
@@ -213,6 +214,7 @@ export async function POST(request: Request) {
               });
             }
             // TRADE 프로젝트 — 각 품목라인을 재고 IN 으로 자동 생성 (toWarehouseId=선택창고)
+            // S/N 이 있는 라인은 InventoryItem 마스터도 함께 생성 → QR(qrData) 자동 발급
             if (projectType === "TRADE" && warehouseId && itemsData.length > 0) {
               await tx.inventoryTransaction.createMany({
                 data: itemsData.map((it) => ({
@@ -229,6 +231,15 @@ export async function POST(request: Request) {
                   performedById: session.sub,
                 })),
               });
+              for (const it of itemsData) {
+                if (!it.serialNumber) continue;
+                await ensureInventoryItemOnReceipt(tx, {
+                  itemId: it.itemId,
+                  serialNumber: it.serialNumber,
+                  warehouseId,
+                  companyCode: session.companyCode,
+                });
+              }
             }
             const vndAmount = (Number(totalAmount) * Number(fxRate)).toFixed(2);
             await tx.payableReceivable.create({

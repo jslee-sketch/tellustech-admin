@@ -11,6 +11,7 @@ import {
   serverError,
   trimNonEmpty,
 } from "@/lib/api-utils";
+import { ensureInventoryItemOnReceipt } from "@/lib/inventory-receipt";
 import type { InventoryReason, InventoryTxnType } from "@/generated/prisma/client";
 
 const TXN_TYPES: readonly InventoryTxnType[] = ["IN", "OUT", "TRANSFER"] as const;
@@ -174,26 +175,13 @@ export async function POST(request: Request) {
         // S/N 단위 InventoryItem 마스터 자동 관리
         if (sn) {
           if (txnType === "IN" && toWarehouseId) {
-            // S/N 입고 — 없으면 생성, 있으면 창고 변경
-            const exists = await tx.inventoryItem.findUnique({ where: { serialNumber: sn } });
-            if (!exists) {
-              await tx.inventoryItem.create({
-                data: {
-                  itemId,
-                  serialNumber: sn,
-                  warehouseId: toWarehouseId,
-                  companyCode: session.companyCode,
-                  status: "NORMAL",
-                  acquiredAt: new Date(),
-                  qrData: JSON.stringify({ itemCode: "", serialNumber: sn }),
-                },
-              }).catch(() => undefined);
-            } else {
-              await tx.inventoryItem.update({
-                where: { serialNumber: sn },
-                data: { warehouseId: toWarehouseId },
-              }).catch(() => undefined);
-            }
+            // S/N 입고 — 없으면 생성(QR 자동발급), 있으면 창고만 변경
+            await ensureInventoryItemOnReceipt(tx, {
+              itemId,
+              serialNumber: sn,
+              warehouseId: toWarehouseId,
+              companyCode: session.companyCode,
+            });
           } else if (txnType === "TRANSFER" && toWarehouseId) {
             await tx.inventoryItem.update({
               where: { serialNumber: sn },

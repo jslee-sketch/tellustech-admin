@@ -135,6 +135,10 @@ function extractId(obj: AnyRecord | null): string | null {
 
 type ExtendedPrisma = ReturnType<typeof extendWithAudit>;
 
+// $transaction 콜백이 받는 클라이언트 타입(audit 확장 포함). 트랜잭션 안에서 동작하는
+// 헬퍼 함수 시그니처에 사용.
+export type TxClient = Parameters<Parameters<ExtendedPrisma["$transaction"]>[0]>[0];
+
 const globalForPrisma = globalThis as unknown as {
   _ttsPrismaBase?: PrismaClient;
   _ttsPrisma?: ExtendedPrisma;

@@ -91,17 +91,24 @@ function MultiSelect({
 function SceneCard({ flag, country, scene }: { flag: string; country: string; scene: Scene }) {
   return (
     <div
-      className="relative flex min-h-[88px] flex-1 items-center gap-3 overflow-hidden rounded-xl px-4 py-3 text-white shadow-md"
-      style={{ background: scene.gradient }}
+      className="relative flex min-h-[110px] flex-1 items-center gap-3 overflow-hidden rounded-xl px-5 py-4 text-white shadow-lg"
+      style={{
+        // 그라디언트 강도 35% 정도로 옅게 + 살짝 밝은 베이스 깔아 이미지(이모지) 가 도드라지게
+        background: `linear-gradient(135deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 100%), ${scene.gradient}`,
+        backgroundBlendMode: "soft-light, normal",
+        opacity: 0.92,
+      }}
     >
-      {/* 장식 — 큰 이모지를 우측에 흐리게 깔아 분위기 전환 */}
-      <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[88px] leading-none opacity-25 select-none">
+      {/* 큰 이미지(이모지) — 우측에 크고 또렷하게 */}
+      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[120px] leading-none opacity-95 drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)] select-none">
         {scene.emoji}
       </div>
+      {/* 좌측 빛 번짐 — 카드 밝기 +감 */}
+      <div className="pointer-events-none absolute -left-12 -top-12 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
       <div className="relative z-10">
-        <div className="text-[11px] font-bold tracking-[0.15em] opacity-80">{flag} {country}</div>
-        <div className="mt-0.5 text-[16px] font-extrabold drop-shadow">{scene.title}</div>
-        <div className="text-[12px] opacity-90">{scene.caption}</div>
+        <div className="text-[11px] font-bold tracking-[0.18em] text-white/90 drop-shadow">{flag} {country}</div>
+        <div className="mt-1 text-[18px] font-extrabold drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{scene.title}</div>
+        <div className="text-[12px] text-white/95 drop-shadow">{scene.caption}</div>
       </div>
     </div>
   );

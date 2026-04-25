@@ -100,26 +100,22 @@ const GROUPS: NavGroup[] = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [changingLang, setChangingLang] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [currentLang, setCurrentLang] = useState<"VI" | "EN" | "KO" | null>(null);
+  // SSR 으로 받은 initialLang 을 즉시 적용 — 깜빡임 제거
+  const [currentLang, setCurrentLang] = useState<Lang>(initialLang);
 
-  // 최초 마운트 시 로컬 저장 theme 복원 + 현재 언어 조회
+  // 최초 마운트 시 로컬 저장 theme 복원
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("tts-theme") : null;
     const next = saved === "light" ? "light" : "dark";
     setTheme(next);
     document.documentElement.classList.toggle("light", next === "light");
     document.documentElement.classList.toggle("dark", next === "dark");
-    // 현재 세션 언어 조회 (active 표시용)
-    fetch("/api/auth/me").then((r) => r.json()).then((d) => {
-      const lang = d?.user?.language;
-      if (lang === "VI" || lang === "EN" || lang === "KO") setCurrentLang(lang);
-    }).catch(() => undefined);
   }, []);
 
   function toggleTheme() {
@@ -171,7 +167,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setCollapsed((c) => !c)}
           className="rounded p-1 text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-          aria-label={collapsed ? t("sidebar.expand", currentLang ?? "KO") : t("sidebar.collapse", currentLang ?? "KO")}
+          aria-label={collapsed ? t("sidebar.expand", currentLang) : t("sidebar.collapse", currentLang)}
         >
           {collapsed ? "›" : "‹"}
         </button>
@@ -180,7 +176,7 @@ export function Sidebar() {
       {/* 네비 */}
       <nav className="flex-1 overflow-y-auto py-2">
         <ul className="space-y-0.5 px-2">
-          <NavItem entry={HOME} active={HOME.match(pathname)} collapsed={collapsed} lang={currentLang ?? "KO"} />
+          <NavItem entry={HOME} active={HOME.match(pathname)} collapsed={collapsed} lang={currentLang} />
         </ul>
         {GROUPS.map((g, gi) => (
           <div
@@ -197,13 +193,13 @@ export function Sidebar() {
               <div className="mb-1 flex items-center gap-2 px-3">
                 <span className="h-3.5 w-1 rounded-full bg-[color:var(--tts-accent)]" aria-hidden />
                 <span className="text-[13px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
-                  {t(g.labelKey, currentLang ?? "KO")}
+                  {t(g.labelKey, currentLang)}
                 </span>
               </div>
             )}
             <ul className="space-y-0.5 px-2">
               {g.items.map((n) => (
-                <NavItem key={n.href} entry={n} active={n.match(pathname)} collapsed={collapsed} lang={currentLang ?? "KO"} />
+                <NavItem key={n.href} entry={n} active={n.match(pathname)} collapsed={collapsed} lang={currentLang} />
               ))}
             </ul>
           </div>
@@ -240,9 +236,9 @@ export function Sidebar() {
           type="button"
           onClick={toggleTheme}
           className="mt-1 w-full rounded px-2 py-1 text-[11px] font-bold text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-          title={theme === "dark" ? t("sidebar.toLightMode", currentLang ?? "KO") : t("sidebar.toDarkMode", currentLang ?? "KO")}
+          title={theme === "dark" ? t("sidebar.toLightMode", currentLang) : t("sidebar.toDarkMode", currentLang)}
         >
-          {theme === "dark" ? (collapsed ? "☀" : `☀ ${t("sidebar.lightShort", currentLang ?? "KO")}`) : (collapsed ? "🌙" : `🌙 ${t("sidebar.darkShort", currentLang ?? "KO")}`)}
+          {theme === "dark" ? (collapsed ? "☀" : `☀ ${t("sidebar.lightShort", currentLang)}`) : (collapsed ? "🌙" : `🌙 ${t("sidebar.darkShort", currentLang)}`)}
         </button>
         {!collapsed && <div className="mt-1 text-center text-[9px] text-[color:var(--tts-muted)]">TELLUSTECH ERP</div>}
       </div>

@@ -56,6 +56,8 @@ const DICT: Dict = {
   "login.companyDenied": { vi: "Không có quyền truy cập công ty này.", en: "No access to the selected company.", ko: "선택한 회사에 접근 권한이 없습니다." },
   "login.invalidInput":  { vi: "Vui lòng kiểm tra dữ liệu nhập.",     en: "Please check your input.",            ko: "입력값을 확인해 주세요." },
   "login.failed":        { vi: "Đăng nhập thất bại.",                en: "Login failed.",                       ko: "로그인에 실패했습니다." },
+  "auth.logout":         { vi: "Đăng xuất",                          en: "Logout",                              ko: "로그아웃" },
+  "auth.loggingOut":     { vi: "Đang đăng xuất...",                  en: "Logging out...",                      ko: "로그아웃 중..." },
 
   // ── 포털 메인 ──
   "portal.title":          { vi: "Cổng khách hàng TELLUSTECH",    en: "TELLUSTECH Customer Portal",  ko: "TELLUSTECH · 고객 포탈" },

@@ -198,7 +198,7 @@ export async function computeErpMetrics(
   companyCode: CompanyCode,
 ): Promise<ErpMetrics> {
   // AsTicket/AsDispatch/Sales 는 거래처 기반으로 companyCode 필드가 없음 — 직원ID만 필터
-  const [tickets, dispatches, sales, confirms, leaves] = await Promise.all([
+  const [tickets, dispatches, sales, confirms, leaves, weeklyTasks] = await Promise.all([
     prisma.asTicket.findMany({
       where: { assignedToId: employeeId, status: "COMPLETED" },
       select: { receivedAt: true, completedAt: true },
@@ -224,6 +224,12 @@ export async function computeErpMetrics(
       select: { leaveType: true, days: true },
       take: 200,
     }),
+    // WeeklyTask — 본인이 이행자인 업무. 마감 준수 + 완료 속도 지표 보강.
+    prisma.weeklyTask.findMany({
+      where: { assigneeId: employeeId },
+      select: { expectedEndDate: true, actualEndDate: true, status: true, registeredAt: true, confirmedAt: true },
+      take: 200,
+    }),
   ]);
 
   // AS TAT
@@ -245,13 +251,23 @@ export async function computeErpMetrics(
     0,
   );
 
-  // ERP 속도: 제시간 CFM 비율
+  // ERP 속도: 제시간 CFM 비율 + WeeklyTask actualEndDate <= expectedEndDate
   const onTime = confirms.filter((c) => c.confirmedAt <= c.schedule.dueAt).length;
-  const erpSpeed = confirms.length > 0 ? (onTime / confirms.length) * 100 : 50;
+  const baseErpSpeed = confirms.length > 0 ? (onTime / confirms.length) * 100 : 50;
+  const completedTasks = weeklyTasks.filter((t) => t.actualEndDate && t.expectedEndDate);
+  const taskOnTime = completedTasks.filter((t) => t.actualEndDate! <= t.expectedEndDate!).length;
+  const taskSpeed = completedTasks.length > 0 ? (taskOnTime / completedTasks.length) * 100 : 50;
+  // 두 신호의 가중평균 (CFM 60% + WeeklyTask 40%)
+  const erpSpeed = (baseErpSpeed * 0.6) + (taskSpeed * 0.4);
 
-  // ERP 마감: 지연 비율 역수
+  // ERP 마감: 지연 비율 역수 + WeeklyTask 의 OVERDUE 비율 + 금요일 마감(=confirmedAt) 전 업데이트 여부
   const late = confirms.length - onTime;
-  const erpDeadline = confirms.length > 0 ? Math.max(0, 100 - (late / confirms.length) * 100) : 50;
+  const baseErpDeadline = confirms.length > 0 ? Math.max(0, 100 - (late / confirms.length) * 100) : 50;
+  const overdueTasks = weeklyTasks.filter((t) => t.status === "OVERDUE").length;
+  const taskDeadlineRate = weeklyTasks.length > 0
+    ? Math.max(0, 100 - (overdueTasks / weeklyTasks.length) * 100)
+    : 50;
+  const erpDeadline = (baseErpDeadline * 0.6) + (taskDeadlineRate * 0.4);
 
   // 모듈 숙련도: 지금은 50 기본 (추후 audit_log 기반 다양성으로 확장)
   const erpMastery = 50;

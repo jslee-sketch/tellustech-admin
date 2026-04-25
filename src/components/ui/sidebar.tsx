@@ -74,6 +74,18 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "주간회의",
+    items: [
+      { href: "/weekly-report", label: "Backlog/업무진행", icon: "📋", match: (p) => p.startsWith("/weekly-report") },
+    ],
+  },
+  {
+    label: "캘린더",
+    items: [
+      { href: "/calendar", label: "캘린더", icon: "📅", match: (p) => p.startsWith("/calendar") },
+    ],
+  },
+  {
     label: "메시징",
     items: [
       { href: "/chat", label: "채팅", icon: "💬", match: (p) => p.startsWith("/chat") },

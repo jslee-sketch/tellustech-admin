@@ -311,6 +311,7 @@ model Employee {
   contractStart   DateTime?
   contractEnd     DateTime?
   hireDate        DateTime?
+  birthDate       DateTime? // 캘린더 생일 표시용
   status          EmployeeStatus @default(ACTIVE)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -338,6 +339,10 @@ model Employee {
   licensesOwned      License[]
   clientsReferred    Client[]               @relation("EmployeeReferredClients")
   clientsSalesPic    Client[]               @relation("EmployeeSalesPicClients")
+  weeklyBacklogsAsSales WeeklyBacklog[]    @relation("BacklogSalesEmployee")
+  weeklyTasksWritten WeeklyTask[]           @relation("TaskWriter")
+  weeklyTasksAssigned WeeklyTask[]          @relation("TaskAssignee")
+  calendarEvents     CalendarEvent[]
 
   @@unique([companyCode, employeeCode])
   @@index([companyCode])
@@ -388,6 +393,7 @@ model Client {
   purchases        Purchase[]
   campaigns        MarketingCampaign[] @relation("CampaignClient")
   inventoryTxns    InventoryTransaction[] @relation("InventoryTxnClient")
+  weeklyBacklogs   WeeklyBacklog[]
 
   @@index([referrerEmployeeId])
   @@index([salesPicId])
@@ -1508,4 +1514,151 @@ model License {
 
   @@index([companyCode, expiresAt])
   @@map("licenses")
+}
+
+// ==================================================
+// 주간회의자료 — Backlog (영업 파이프라인) + 업무진행
+// ==================================================
+
+enum BacklogStatus {
+  OPEN
+  CLOSE
+  NG
+}
+
+enum WeeklyTaskStatus {
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+enum WeeklySalesType {
+  SALES   // 매출
+  PURCHASE // 매입
+}
+
+model WeeklyBacklog {
+  id                 String          @id @default(cuid())
+  backlogCode        String          @unique // BL-YYMMDD-###
+  companyCode        CompanyCode
+  registeredAt       DateTime        @default(now())
+  salesType          WeeklySalesType
+  clientId           String
+  salesEmployeeId    String?
+  representativeItem String?
+  amount             Decimal?        @db.Decimal(15, 2)
+  currency           Currency        @default(VND)
+  fxRate             Decimal         @default(1) @db.Decimal(15, 6)
+  status             BacklogStatus   @default(OPEN)
+  expectedCloseDate  DateTime?
+  confirmedById      String?
+  confirmedAt        DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  client        Client                 @relation(fields: [clientId], references: [id])
+  salesEmployee Employee?              @relation("BacklogSalesEmployee", fields: [salesEmployeeId], references: [id])
+  histories     WeeklyBacklogHistory[]
+
+  @@index([companyCode, status])
+  @@index([clientId])
+  @@map("weekly_backlogs")
+}
+
+model WeeklyBacklogHistory {
+  id           String   @id @default(cuid())
+  backlogId    String
+  date         DateTime @default(now())
+  contentVi    String?
+  contentEn    String?
+  contentKo    String?
+  originalLang Language @default(KO)
+  writtenById  String?
+  createdAt    DateTime @default(now())
+
+  backlog WeeklyBacklog @relation(fields: [backlogId], references: [id], onDelete: Cascade)
+
+  @@index([backlogId])
+  @@map("weekly_backlog_histories")
+}
+
+model WeeklyTask {
+  id              String           @id @default(cuid())
+  taskCode        String           @unique // WT-YYMMDD-###
+  companyCode     CompanyCode
+  registeredAt    DateTime         @default(now())
+  writerId        String
+  assigneeId      String
+  title           String
+  instructionVi   String?
+  instructionEn   String?
+  instructionKo   String?
+  instructionLang Language         @default(KO)
+  contentVi       String?
+  contentEn       String?
+  contentKo       String?
+  contentLang     Language         @default(KO)
+  expectedEndDate DateTime?
+  actualEndDate   DateTime?
+  status          WeeklyTaskStatus @default(IN_PROGRESS)
+  confirmedById   String?
+  confirmedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  writer   Employee @relation("TaskWriter", fields: [writerId], references: [id])
+  assignee Employee @relation("TaskAssignee", fields: [assigneeId], references: [id])
+
+  @@index([companyCode, status])
+  @@index([assigneeId])
+  @@map("weekly_tasks")
+}
+
+// ==================================================
+// 캘린더 — 자동수집 외 수동 이벤트
+// ==================================================
+
+enum CalendarEventType {
+  SCHEDULE_DEADLINE
+  WEEKLY_REPORT
+  CONTRACT_EXPIRY
+  CERT_EXPIRY
+  LICENSE_EXPIRY
+  AR_DUE
+  LEAVE
+  AS_DISPATCH
+  RENTAL_ORDER
+  BIRTHDAY
+  HOLIDAY_VN
+  HOLIDAY_KR
+  CUSTOM
+}
+
+model CalendarEvent {
+  id           String            @id @default(cuid())
+  eventCode    String            @unique // EVT-YYMMDD-###
+  companyCode  CompanyCode
+  title        String
+  titleVi      String?
+  titleEn      String?
+  titleKo      String?
+  startDate    DateTime
+  endDate      DateTime?
+  allDay       Boolean           @default(true)
+  eventType    CalendarEventType @default(CUSTOM)
+  color        String?
+  linkedModule String?
+  linkedId     String?
+  linkedUrl    String?
+  assigneeId   String?
+  description  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  assignee Employee? @relation(fields: [assigneeId], references: [id])
+
+  @@index([companyCode, startDate])
+  @@index([assigneeId])
+  @@map("calendar_events")
 }

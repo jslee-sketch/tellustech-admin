@@ -55,6 +55,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
       if (p.unit !== undefined) data.unit = trimNonEmpty(p.unit);
       if (p.category !== undefined) data.category = trimNonEmpty(p.category);
+      if (p.reorderPoint !== undefined) {
+        if (p.reorderPoint === null || p.reorderPoint === "") {
+          data.reorderPoint = null;
+        } else {
+          const n = Number(p.reorderPoint);
+          if (!Number.isInteger(n) || n < 0) {
+            return badRequest("invalid_input", { field: "reorderPoint" });
+          }
+          data.reorderPoint = n;
+        }
+      }
 
       if (Object.keys(data).length === 0) return ok({ item: existing });
 

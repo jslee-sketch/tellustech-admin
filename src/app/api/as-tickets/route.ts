@@ -186,14 +186,27 @@ export async function POST(request: Request) {
         { attempts: 5, isConflict: isUniqueConstraintError },
       );
 
-      // 담당자 알림 (AS_NEW) — Employee→User 매핑 있을 때만, 실패해도 본 응답엔 영향 없음
+      // 담당자 알림 (AS_NEW). 담당자 Employee 에 User 가 연결돼 있으면 그 user, 없거나
+      // 미배정이면 회사 ADMIN 모두에게 fallback 알림(워크플로 누수 방지).
+      const sourceLang: Language = (filled.vi ? "VI" : filled.en ? "EN" : "KO");
+      const sourceText = filled[sourceLang.toLowerCase() as "vi" | "en" | "ko"] ?? "";
+      const titleKo = `새 AS 접수 — ${created.ticketNumber}`;
+      const bodyKo = `${created.client.companyNameVi} · ${sourceText.slice(0, 80)}`;
+
+      const recipients = new Set<string>();
       if (assignedToUserId) {
-        const sourceLang: Language = (filled.vi ? "VI" : filled.en ? "EN" : "KO");
-        const sourceText = filled[sourceLang.toLowerCase() as "vi" | "en" | "ko"] ?? "";
-        const titleKo = `새 AS 접수 — ${created.ticketNumber}`;
-        const bodyKo = `${created.client.companyNameVi} · ${sourceText.slice(0, 80)}`;
+        recipients.add(assignedToUserId);
+      } else {
+        // fallback: 회사 ADMIN(들)
+        const admins = await prisma.user.findMany({
+          where: { role: "ADMIN", isActive: true, allowedCompanies: { has: assignedToCompanyCode ?? "TV" } },
+          select: { id: true },
+        });
+        for (const a of admins) recipients.add(a.id);
+      }
+      for (const uid of recipients) {
         createTranslatedNotification({
-          userId: assignedToUserId,
+          userId: uid,
           companyCode: assignedToCompanyCode,
           type: "AS_NEW",
           originalLang: "KO",

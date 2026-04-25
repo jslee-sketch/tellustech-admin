@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session";
 import type { CompanyCode, BranchType } from "@/generated/prisma/client";
 
 // 월별 재고 스냅샷 cron — 매월 1일 새벽 호출.
@@ -13,7 +14,12 @@ import type { CompanyCode, BranchType } from "@/generated/prisma/client";
 export async function POST(request: Request) {
   const auth = request.headers.get("authorization") ?? "";
   const expected = process.env.CRON_SECRET;
-  if (!expected || auth !== `Bearer ${expected}`) {
+  const bearerOk = expected && auth === `Bearer ${expected}`;
+  let adminOk = false;
+  if (!bearerOk) {
+    try { const s = await getSession(); adminOk = s.role === "ADMIN"; } catch { /* 비로그인 */ }
+  }
+  if (!bearerOk && !adminOk) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

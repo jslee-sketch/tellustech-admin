@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { recomputeReceivableBlocking } from "@/lib/finance-recompute";
 import { createTranslatedNotification } from "@/lib/notifications";
 import { runWithRequestContext } from "@/lib/request-context";
+import { getSession } from "@/lib/session";
 import type { CompanyCode, NotificationType } from "@/generated/prisma/client";
 
 // 일일 알림 cron — Railway cron 또는 외부 호출자가 POST 한다.
@@ -59,9 +60,18 @@ async function sendOnce(params: {
 }
 
 export async function POST(request: Request) {
+  // 인증: Bearer CRON_SECRET (외부 cron 호출자) OR 로그인된 ADMIN 세션 (수동 운영용)
   const auth = request.headers.get("authorization") ?? "";
   const expected = process.env.CRON_SECRET;
-  if (!expected || auth !== `Bearer ${expected}`) {
+  const bearerOk = expected && auth === `Bearer ${expected}`;
+  let adminOk = false;
+  if (!bearerOk) {
+    try {
+      const session = await getSession();
+      adminOk = session.role === "ADMIN";
+    } catch { /* 비로그인 */ }
+  }
+  if (!bearerOk && !adminOk) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

@@ -12,6 +12,7 @@ import {
   trimNonEmpty,
 } from "@/lib/api-utils";
 import { withUniqueRetry } from "@/lib/code-generator";
+import { fillTranslations } from "@/lib/translate";
 import type { ASStatus, Language } from "@/generated/prisma/client";
 
 // AS 접수 API
@@ -129,6 +130,11 @@ export async function POST(request: Request) {
       const originalLang = optionalEnum(p.originalLang, LANGUAGES) ??
         (symptomVi ? "VI" : symptomEn ? "EN" : "KO");
 
+      // Claude 자동 번역 — 누락된 언어 채움
+      const filled = await fillTranslations({
+        vi: symptomVi ?? null, en: symptomEn ?? null, ko: symptomKo ?? null, originalLang,
+      });
+
       // 사진 첨부 — 이미 업로드된 파일 ID 배열
       const photoIds = Array.isArray(p.photoIds)
         ? (p.photoIds as unknown[]).filter((x): x is string => typeof x === "string" && x.length > 0)
@@ -154,9 +160,9 @@ export async function POST(request: Request) {
               serialNumber: trimNonEmpty(p.serialNumber),
               status: "RECEIVED",
               receivedAt: new Date(),
-              symptomVi,
-              symptomEn,
-              symptomKo,
+              symptomVi: filled.vi,
+              symptomEn: filled.en,
+              symptomKo: filled.ko,
               originalLang,
               receivableBlocked,
               ...(photoIds.length > 0

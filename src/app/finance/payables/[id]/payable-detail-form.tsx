@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { Button, Card, Field, Note, Row, TextInput, Textarea } from "@/components/ui";
+import { Button, Card, Field, Multilingual, Note, Row, TextInput, Textarea } from "@/components/ui";
 
 type DelayReason = {
   id: string;
@@ -10,6 +10,7 @@ type DelayReason = {
   contentVi: string | null;
   contentEn: string | null;
   contentKo: string | null;
+  originalLang: string;
 };
 
 type Props = {
@@ -19,9 +20,10 @@ type Props = {
   paidAmount: number;
   dueDate: string;
   delayReasons: DelayReason[];
+  currentLang: "VI" | "EN" | "KO";
 };
 
-export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delayReasons }: Props) {
+export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delayReasons, currentLang }: Props) {
   const router = useRouter();
   const [paid, setPaid] = useState(String(paidAmount));
   const [due, setDue] = useState(dueDate);
@@ -135,9 +137,7 @@ export function PayableDetailForm({ id, kind, amount, paidAmount, dueDate, delay
             {delayReasons.map((d) => (
               <li key={d.id} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3">
                 <div className="mb-1 text-[11px] text-[color:var(--tts-muted)]">{d.recordedAt}</div>
-                {d.contentVi && <div className="text-[13px]"><span className="text-[10px] text-[color:var(--tts-accent)]">VI · </span>{d.contentVi}</div>}
-                {d.contentEn && <div className="text-[13px]"><span className="text-[10px] text-[color:var(--tts-accent)]">EN · </span>{d.contentEn}</div>}
-                {d.contentKo && <div className="text-[13px]"><span className="text-[10px] text-[color:var(--tts-accent)]">KO · </span>{d.contentKo}</div>}
+                <Multilingual vi={d.contentVi} en={d.contentEn} ko={d.contentKo} originalLang={d.originalLang as "VI" | "EN" | "KO"} currentLang={currentLang} />
               </li>
             ))}
           </ul>

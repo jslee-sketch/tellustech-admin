@@ -11,6 +11,7 @@ import {
   serverError,
   trimNonEmpty,
 } from "@/lib/api-utils";
+import { fillTranslations } from "@/lib/translate";
 import type { ASStatus, Language } from "@/generated/prisma/client";
 
 const STATUSES: readonly ASStatus[] = ["RECEIVED", "IN_PROGRESS", "DISPATCHED", "COMPLETED", "CANCELED"] as const;
@@ -52,13 +53,27 @@ export async function PATCH(request: Request, context: RouteContext) {
     try {
       const data: Record<string, unknown> = {};
       if (p.serialNumber !== undefined) data.serialNumber = trimNonEmpty(p.serialNumber);
-      if (p.symptomVi !== undefined) data.symptomVi = trimNonEmpty(p.symptomVi);
-      if (p.symptomEn !== undefined) data.symptomEn = trimNonEmpty(p.symptomEn);
-      if (p.symptomKo !== undefined) data.symptomKo = trimNonEmpty(p.symptomKo);
+      // 증상 변경 시 — 누락된 언어 자동 번역
+      const symVi = p.symptomVi !== undefined ? trimNonEmpty(p.symptomVi) : undefined;
+      const symEn = p.symptomEn !== undefined ? trimNonEmpty(p.symptomEn) : undefined;
+      const symKo = p.symptomKo !== undefined ? trimNonEmpty(p.symptomKo) : undefined;
+      let nextOrigLang: Language = existing.originalLang ?? "VI";
       if (p.originalLang !== undefined) {
         const l = optionalEnum(p.originalLang, LANGUAGES);
         if (!l) return badRequest("invalid_input", { field: "originalLang" });
+        nextOrigLang = l;
         data.originalLang = l;
+      }
+      if (symVi !== undefined || symEn !== undefined || symKo !== undefined) {
+        const filled = await fillTranslations({
+          vi: symVi !== undefined ? symVi : existing.symptomVi,
+          en: symEn !== undefined ? symEn : existing.symptomEn,
+          ko: symKo !== undefined ? symKo : existing.symptomKo,
+          originalLang: nextOrigLang,
+        });
+        data.symptomVi = filled.vi;
+        data.symptomEn = filled.en;
+        data.symptomKo = filled.ko;
       }
       if (p.status !== undefined) {
         const s = optionalEnum(p.status, STATUSES);

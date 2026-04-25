@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function PayableDetailPage({ params }: PageProps) {
-  await getSession();
+  const session = await getSession();
   const { id } = await params;
   const pr = await prisma.payableReceivable.findUnique({
     where: { id },
@@ -94,7 +94,9 @@ export default async function PayableDetailPage({ params }: PageProps) {
               contentVi: d.contentVi ?? null,
               contentEn: d.contentEn ?? null,
               contentKo: d.contentKo ?? null,
+              originalLang: d.originalLang ?? "VI",
             }))}
+            currentLang={session.language}
           />
         </div>
 

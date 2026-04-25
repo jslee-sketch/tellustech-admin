@@ -93,14 +93,20 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [changingLang, setChangingLang] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [currentLang, setCurrentLang] = useState<"VI" | "EN" | "KO" | null>(null);
 
-  // 최초 마운트 시 로컬 저장 theme 복원
+  // 최초 마운트 시 로컬 저장 theme 복원 + 현재 언어 조회
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem("tts-theme") : null;
     const next = saved === "light" ? "light" : "dark";
     setTheme(next);
     document.documentElement.classList.toggle("light", next === "light");
     document.documentElement.classList.toggle("dark", next === "dark");
+    // 현재 세션 언어 조회 (active 표시용)
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => {
+      const lang = d?.user?.language;
+      if (lang === "VI" || lang === "EN" || lang === "KO") setCurrentLang(lang);
+    }).catch(() => undefined);
   }, []);
 
   function toggleTheme() {
@@ -114,11 +120,12 @@ export function Sidebar() {
   async function changeLang(lang: "VI" | "EN" | "KO") {
     setChangingLang(true);
     try {
-      await fetch("/api/auth/language", {
+      const res = await fetch("/api/auth/language", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ language: lang }),
       });
+      if (res.ok) setCurrentLang(lang);
       router.refresh();
     } finally {
       setChangingLang(false);
@@ -187,18 +194,25 @@ export function Sidebar() {
       {/* Footer — 언어 + 테마 */}
       <div className="border-t border-[color:var(--tts-border)] px-2 py-2">
         <div className={`flex ${collapsed ? "flex-col items-center gap-1" : "justify-between gap-1"}`}>
-          {(["VI", "EN", "KO"] as const).map((l) => (
+          {(["VI", "EN", "KO"] as const).map((l) => {
+            const active = currentLang === l;
+            return (
             <button
               key={l}
               type="button"
               onClick={() => changeLang(l)}
               disabled={changingLang}
-              className="flex-1 rounded px-1 py-1 text-[10px] font-bold text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)] disabled:opacity-50"
+              className={`flex-1 rounded px-1 py-1 text-[10px] font-bold transition disabled:opacity-50 ${
+                active
+                  ? "bg-[color:var(--tts-primary)] text-white shadow"
+                  : "text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
+              }`}
               title={l === "VI" ? "Tiếng Việt" : l === "EN" ? "English" : "한국어"}
             >
               {l}
             </button>
-          ))}
+            );
+          })}
         </div>
         <button
           type="button"

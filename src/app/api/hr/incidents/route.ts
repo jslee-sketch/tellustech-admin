@@ -5,6 +5,7 @@ import {
   optionalEnum, requireEnum, requireString, serverError, trimNonEmpty,
 } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
+import { fillTranslations } from "@/lib/translate";
 import type { IncidentType, Language } from "@/generated/prisma/client";
 
 const TYPES: readonly IncidentType[] = ["PRAISE", "IMPROVEMENT"] as const;
@@ -70,6 +71,11 @@ export async function POST(request: Request) {
       const originalLang = optionalEnum(p.originalLang, LANGS) ??
         (contentVi ? "VI" : contentKo ? "KO" : "EN");
 
+      // Claude 자동 번역 — 누락된 언어 채움 (API 키 없으면 그대로)
+      const filled = await fillTranslations({
+        vi: contentVi ?? null, en: contentEn ?? null, ko: contentKo ?? null, originalLang,
+      });
+
       const created = await withUniqueRetry(
         async () => {
           const incidentCode = await generateDatedCode({
@@ -90,7 +96,7 @@ export async function POST(request: Request) {
               authorId: author.id,
               subjectId,
               type,
-              contentVi, contentEn, contentKo, originalLang,
+              contentVi: filled.vi, contentEn: filled.en, contentKo: filled.ko, originalLang,
               visibilityManagerOnly: Boolean(p.visibilityManagerOnly ?? true),
             },
           });

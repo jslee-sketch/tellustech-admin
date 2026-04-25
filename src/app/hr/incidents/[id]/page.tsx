@@ -2,14 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { Badge, Card } from "@/components/ui";
+import { Badge, Card, Multilingual } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function IncidentDetailPage({ params }: PageProps) {
   const { id } = await params;
-  await getSession();
+  const session = await getSession();
   const r = await prisma.incident.findUnique({
     where: { id },
     include: {
@@ -42,12 +42,14 @@ export default async function IncidentDetailPage({ params }: PageProps) {
           </dl>
         </Card>
         <div className="mt-4">
-          <Card title="내용 (3언어)">
-            <div className="space-y-3 text-[13px]">
-              {r.contentVi && <div><div className="text-[11px] font-bold tracking-widest text-[color:var(--tts-sub)]">VIETNAMESE</div><div className="mt-1 whitespace-pre-wrap">{r.contentVi}</div></div>}
-              {r.contentEn && <div><div className="text-[11px] font-bold tracking-widest text-[color:var(--tts-sub)]">ENGLISH</div><div className="mt-1 whitespace-pre-wrap">{r.contentEn}</div></div>}
-              {r.contentKo && <div><div className="text-[11px] font-bold tracking-widest text-[color:var(--tts-sub)]">KOREAN</div><div className="mt-1 whitespace-pre-wrap">{r.contentKo}</div></div>}
-            </div>
+          <Card title="내용">
+            <Multilingual
+              vi={r.contentVi}
+              en={r.contentEn}
+              ko={r.contentKo}
+              originalLang={r.originalLang ?? "VI"}
+              currentLang={session.language}
+            />
           </Card>
         </div>
       </div>

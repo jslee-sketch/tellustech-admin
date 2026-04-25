@@ -19,3 +19,4 @@ export type { UploaderColumn, ValidatedRow } from "./excel-uploader";
 export { ItemCombobox } from "./item-combobox";
 export type { ItemOption } from "./item-combobox";
 export { Sidebar } from "./sidebar";
+export { Multilingual } from "./multilingual";

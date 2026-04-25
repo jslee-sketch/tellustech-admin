@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, handleFieldError, notFound, ok, optionalEnum, serverError, trimNonEmpty } from "@/lib/api-utils";
+import { fillTranslations } from "@/lib/translate";
 import type { Language } from "@/generated/prisma/client";
 
 const LANGS: readonly Language[] = ["VI", "EN", "KO"] as const;
@@ -23,8 +24,11 @@ export async function POST(request: Request, context: RouteContext) {
         return badRequest("invalid_input", { field: "content", reason: "required_at_least_one" });
       }
       const originalLang = optionalEnum(p.originalLang, LANGS) ?? (contentVi ? "VI" : contentKo ? "KO" : "EN");
+      const filled = await fillTranslations({
+        vi: contentVi ?? null, en: contentEn ?? null, ko: contentKo ?? null, originalLang,
+      });
       const created = await prisma.delayReason.create({
-        data: { payableReceivableId: id, contentVi, contentEn, contentKo, originalLang },
+        data: { payableReceivableId: id, contentVi: filled.vi, contentEn: filled.en, contentKo: filled.ko, originalLang },
       });
       return ok({ delayReason: created }, { status: 201 });
     } catch (err) {

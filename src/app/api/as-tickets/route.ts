@@ -197,26 +197,41 @@ export async function POST(request: Request) {
       if (assignedToUserId) {
         recipients.add(assignedToUserId);
       } else {
-        // fallback: 회사 ADMIN(들)
+        // fallback: 회사 ADMIN(들). allowedCompanies has 필터가 환경에 따라 까다로워
+        // role 만으로 1차 검색 후 JS 에서 필터링.
         const admins = await prisma.user.findMany({
-          where: { role: "ADMIN", isActive: true, allowedCompanies: { has: assignedToCompanyCode ?? "TV" } },
-          select: { id: true },
+          where: { role: "ADMIN", isActive: true },
+          select: { id: true, allowedCompanies: true },
         });
-        for (const a of admins) recipients.add(a.id);
+        const target = assignedToCompanyCode ?? "TV";
+        for (const a of admins) {
+          if (a.allowedCompanies.includes(target)) recipients.add(a.id);
+        }
       }
-      for (const uid of recipients) {
-        createTranslatedNotification({
-          userId: uid,
-          companyCode: assignedToCompanyCode,
-          type: "AS_NEW",
-          originalLang: "KO",
-          title: titleKo,
-          body: bodyKo,
-          linkUrl: `/as/tickets/${created.id}`,
-        }).catch((e) => console.error("[as-tickets] notification failed", e));
-      }
+      const notifyResults = await Promise.allSettled(
+        Array.from(recipients).map((uid) =>
+          createTranslatedNotification({
+            userId: uid,
+            companyCode: assignedToCompanyCode,
+            type: "AS_NEW",
+            originalLang: "KO",
+            title: titleKo,
+            body: bodyKo,
+            linkUrl: `/as/tickets/${created.id}`,
+          }),
+        ),
+      );
+      const notifySent = notifyResults.filter((r) => r.status === "fulfilled").length;
+      const notifyFailed = notifyResults.length - notifySent;
 
-      return ok({ ticket: created, warning: receivableBlocked ? "receivable_blocked" : null }, { status: 201 });
+      return ok(
+        {
+          ticket: created,
+          warning: receivableBlocked ? "receivable_blocked" : null,
+          notify: { recipients: recipients.size, sent: notifySent, failed: notifyFailed },
+        },
+        { status: 201 },
+      );
     } catch (err) {
       const handled = handleFieldError(err);
       if (handled) return handled;

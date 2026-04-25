@@ -198,8 +198,8 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
   return (
     <div>
       <Note tone="info">
-        QR 코드(/inventory/labels 에서 인쇄) 또는 일반 바코드를 비추면 품목/S/N 자동 채움 → 유형/사유/창고 선택 → ✅ 완료.
-        소모품출고 시 대상 장비 S/N 필수.
+        {t("scan.guide.full", lang)}
+        {" "}{t("scan.guide.consum", lang)}
       </Note>
 
       <div

@@ -63,9 +63,9 @@ export function LabelsClient({ items, prefill, lang }: Props) {
         <Row>
           <Field label={t("field.labelSize", lang)} required width="240px">
             <Select value={size} onChange={(e) => setSize(e.target.value as LabelSize)} options={[
-              { value: "LARGE", label: LABEL_SPECS.LARGE.label },
-              { value: "MEDIUM", label: LABEL_SPECS.MEDIUM.label },
-              { value: "SMALL", label: LABEL_SPECS.SMALL.label },
+              { value: "LARGE",  label: t("labelSize.large", lang) },
+              { value: "MEDIUM", label: t("labelSize.medium", lang) },
+              { value: "SMALL",  label: t("labelSize.small", lang) },
             ]} />
           </Field>
           <Field label={t("field.perPage", lang)} width="140px">

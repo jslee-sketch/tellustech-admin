@@ -163,8 +163,8 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
   return (
     <form onSubmit={handleSubmit}>
       <Note tone="info">
-        매출번호는 저장 시 <span className="font-mono">SLS-YYMMDD-###</span> 로 자동 발급되며, 거래처의 결제조건(
-        {selectedClient ? `${selectedClient.paymentTerms}${lang === "VI" ? " ngày" : lang === "EN" ? " days" : "일"}` : (lang === "VI" ? "Cần chọn" : lang === "EN" ? "Selection required" : "선택 필요")})에 따라 미수금이 자동 생성됩니다.
+        {t("note.salesAutoNumberPre", lang)} <span className="font-mono">SLS-YYMMDD-###</span> {t("note.salesAutoNumberPost", lang)}
+        {selectedClient ? `${selectedClient.paymentTerms} ${t("common.daySuffix", lang)}` : t("common.selectionRequired", lang)}{t("note.salesAutoNumberEnd", lang)}
       </Note>
 
       <SectionTitle icon="📋" title={t("section.basicInfo", lang)} />
@@ -217,9 +217,7 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
         </Row>
       )}
       {showCert && (
-        <Note tone="info">
-          교정(CALIBRATION) 프로젝트 — 저장 후 상세 페이지에서 라인별로 교정성적서(번호 · PDF · 발행일)를 등록할 수 있습니다. 발행일 +11개월이 다음 교정일로 자동 설정됩니다.
-        </Note>
+        <Note tone="info">{t("note.calibProject", lang)}</Note>
       )}
       {showWarehouse && (
         <Row>
@@ -257,7 +255,7 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
       </Row>
 
       <SectionTitle icon="📦" title={t("tab.itemsTab", lang)} />
-      <Note tone="info">S/N 재고확인은 느슨 모드입니다 — S/N 이 재고에 없어도 저장 가능합니다 (Phase 2 #5 재고관리 완성 후 경고 표시).</Note>
+      <Note tone="info">{t("note.snLooseSales", lang)}</Note>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full table-fixed text-[13px]">
           <thead className="bg-[color:var(--tts-primary-dim)] text-left text-[12px] font-bold text-[color:var(--tts-primary)]">

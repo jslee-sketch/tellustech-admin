@@ -23,7 +23,7 @@ export default async function InventoryScanPage() {
             {t("page.invTxn.back", L)}
           </Link>
           <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("page.qrScan.title", L)}</h1>
-          <p className="mt-1 text-[12px] text-[color:var(--tts-sub)]">QR(권장) 또는 바코드 스캔 → 품목·S/N 자동 채움 → 유형/사유/창고 선택 → 저장.</p>
+          <p className="mt-1 text-[12px] text-[color:var(--tts-sub)]">{t("scan.guide.short", L)}</p>
         </div>
         <Card>
           <ScanClient

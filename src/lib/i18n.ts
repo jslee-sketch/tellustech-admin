@@ -59,6 +59,17 @@ const DICT: Dict = {
   "auth.logout":         { vi: "Đăng xuất",                          en: "Logout",                              ko: "로그아웃" },
   "auth.loggingOut":     { vi: "Đang đăng xuất...",                  en: "Logging out...",                      ko: "로그아웃 중..." },
 
+  // ── 캘린더 이벤트 동적 title prefix ──
+  "calendarEvt.weeklyDeadline": { vi: "📋 Hạn họp tuần",      en: "📋 Weekly deadline",      ko: "📋 주간회의 마감" },
+  "calendarEvt.contractExpiry": { vi: "🟠 Hết hạn HĐ IT",     en: "🟠 IT contract expiry",   ko: "🟠 IT계약 만료" },
+  "calendarEvt.certExpiry":     { vi: "🟤 Hết hạn chứng chỉ", en: "🟤 Cert expiry",          ko: "🟤 성적서 만료" },
+  "calendarEvt.licenseExpiry":  { vi: "🔴 Hết hạn giấy phép", en: "🔴 License expiry",       ko: "🔴 라이선스 만료" },
+  "calendarEvt.arDue":          { vi: "💰 Phải thu",          en: "💰 AR",                   ko: "💰 미수금" },
+  "calendarEvt.leaveSuffix":    { vi: "nghỉ phép",            en: "leave",                   ko: "연차" },
+  "calendarEvt.dispatch":       { vi: "🔧 Xuất phái BH",      en: "🔧 AS dispatch",          ko: "🔧 AS 출동" },
+  "calendarEvt.rentalOrder":    { vi: "📦 Đơn thuê",          en: "📦 Rental order",         ko: "📦 렌탈오더" },
+  "calendarEvt.birthdaySuffix": { vi: "Sinh nhật",            en: "Birthday",                ko: "생일" },
+
   // ── 포털 메인 ──
   "portal.title":          { vi: "Cổng khách hàng TELLUSTECH",    en: "TELLUSTECH Customer Portal",  ko: "TELLUSTECH · 고객 포탈" },
   "portal.notLinked":      { vi: "Khách hàng chưa được liên kết.", en: "Client not linked.",          ko: "거래처가 연결되어 있지 않습니다." },

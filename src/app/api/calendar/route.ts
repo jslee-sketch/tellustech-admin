@@ -14,6 +14,7 @@ import {
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
 import { getKoreaHolidays, getVietnamHolidays } from "@/lib/holidays";
 import { fillTranslations } from "@/lib/translate";
+import { t } from "@/lib/i18n";
 import type { CalendarEventType, Language } from "@/generated/prisma/client";
 
 const TYPES: readonly CalendarEventType[] = [
@@ -113,9 +114,10 @@ export async function GET(request: Request) {
       }
 
       // 2) 주간회의 마감 (매주 금요일)
+      const weeklyTitle = t("calendarEvt.weeklyDeadline", session.language);
       for (const fri of fridaysBetween(start, end)) {
         events.push({
-          id: `wr:${fri.toISOString().slice(0, 10)}`, title: "📋 주간회의 마감",
+          id: `wr:${fri.toISOString().slice(0, 10)}`, title: weeklyTitle,
           start: fri.toISOString(), allDay: false,
           type: "WEEKLY_REPORT", color: COLORS.WEEKLY_REPORT,
           linkedUrl: "/weekly-report",
@@ -130,7 +132,7 @@ export async function GET(request: Request) {
       });
       for (const c of contracts) {
         events.push({
-          id: `cn:${c.id}`, title: `🟠 IT계약 만료 — ${c.contractNumber}`,
+          id: `cn:${c.id}`, title: `${t("calendarEvt.contractExpiry", session.language)} — ${c.contractNumber}`,
           start: c.endDate.toISOString(), allDay: true,
           type: "CONTRACT_EXPIRY", color: COLORS.CONTRACT_EXPIRY,
           linkedUrl: `/rental/it-contracts/${c.id}`,
@@ -156,7 +158,7 @@ export async function GET(request: Request) {
         if (!ci.nextDueAt) continue;
         const empName = ci.sales.salesEmployeeId ? certEmpMap.get(ci.sales.salesEmployeeId) ?? null : null;
         events.push({
-          id: `ct:${ci.id}`, title: `🟤 성적서 만료 — ${ci.certNumber ?? ci.id.slice(-6)}`,
+          id: `ct:${ci.id}`, title: `${t("calendarEvt.certExpiry", session.language)} — ${ci.certNumber ?? ci.id.slice(-6)}`,
           start: ci.nextDueAt.toISOString(), allDay: true,
           type: "CERT_EXPIRY", color: COLORS.CERT_EXPIRY,
           linkedUrl: `/sales/${ci.salesId}`,
@@ -172,7 +174,7 @@ export async function GET(request: Request) {
       });
       for (const l of licenses) {
         events.push({
-          id: `lc:${l.id}`, title: `🔴 라이선스 만료 — ${l.name} (${l.licenseCode})`,
+          id: `lc:${l.id}`, title: `${t("calendarEvt.licenseExpiry", session.language)} — ${l.name} (${l.licenseCode})`,
           start: l.expiresAt.toISOString(), allDay: true,
           type: "LICENSE_EXPIRY", color: COLORS.LICENSE_EXPIRY,
           linkedUrl: `/master/licenses`,
@@ -202,7 +204,7 @@ export async function GET(request: Request) {
         if (!r.dueDate) continue;
         const empName = r.sales?.salesEmployeeId ? arEmpMap.get(r.sales.salesEmployeeId) ?? null : null;
         events.push({
-          id: `ar:${r.id}`, title: `💰 미수금 — ${r.sales?.salesNumber ?? r.id.slice(-6)}`,
+          id: `ar:${r.id}`, title: `${t("calendarEvt.arDue", session.language)} — ${r.sales?.salesNumber ?? r.id.slice(-6)}`,
           start: r.dueDate.toISOString(), allDay: true,
           type: "AR_DUE", color: COLORS.AR_DUE,
           linkedUrl: `/finance/payables`,
@@ -223,7 +225,7 @@ export async function GET(request: Request) {
       });
       for (const lv of leaves) {
         events.push({
-          id: `lv:${lv.id}`, title: `🟢 ${lv.employee.nameVi} 연차`,
+          id: `lv:${lv.id}`, title: `🟢 ${lv.employee.nameVi} ${t("calendarEvt.leaveSuffix", session.language)}`,
           start: lv.startDate.toISOString(), end: lv.endDate.toISOString(), allDay: true,
           type: "LEAVE", color: COLORS.LEAVE,
           linkedUrl: `/hr/leave`,
@@ -243,7 +245,7 @@ export async function GET(request: Request) {
       for (const d of dispatches) {
         if (!d.departedAt) continue;
         events.push({
-          id: `dp:${d.id}`, title: `🔧 AS 출동 — ${d.asTicket.ticketNumber}`,
+          id: `dp:${d.id}`, title: `${t("calendarEvt.dispatch", session.language)} — ${d.asTicket.ticketNumber}`,
           start: d.departedAt.toISOString(), allDay: false,
           type: "AS_DISPATCH", color: COLORS.AS_DISPATCH,
           linkedUrl: `/as/dispatches/${d.id}`,
@@ -261,7 +263,7 @@ export async function GET(request: Request) {
       });
       for (const o of orders) {
         events.push({
-          id: `ro:${o.id}`, title: `📦 렌탈오더 — ${o.itContract?.contractNumber ?? o.id.slice(-6)}`,
+          id: `ro:${o.id}`, title: `${t("calendarEvt.rentalOrder", session.language)} — ${o.itContract?.contractNumber ?? o.id.slice(-6)}`,
           start: o.billingMonth.toISOString(), allDay: true,
           type: "RENTAL_ORDER", color: COLORS.RENTAL_ORDER,
           linkedUrl: `/rental/it-contracts`,
@@ -280,7 +282,7 @@ export async function GET(request: Request) {
           const d = new Date(Date.UTC(y, e.birthDate.getUTCMonth(), e.birthDate.getUTCDate()));
           if (d >= start && d <= end) {
             events.push({
-              id: `bd:${e.id}:${y}`, title: `🎂 ${e.nameVi} 생일`,
+              id: `bd:${e.id}:${y}`, title: `🎂 ${e.nameVi} ${t("calendarEvt.birthdaySuffix", session.language)}`,
               start: d.toISOString(), allDay: true,
               type: "BIRTHDAY", color: COLORS.BIRTHDAY,
               assignee: e.nameVi,

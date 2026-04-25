@@ -637,8 +637,7 @@ function EquipmentTab({
         <div>
           <SectionTitle icon="🖨️" title={t("label.equipmentList", lang).replace("{count}", String(equipment.length))} />
           <Note tone="info">
-            S/N 엄격 재고확인은 Phase 2 #5 재고관리 구현 후 활성화됩니다. 지금은 계약 내
-            S/N 중복만 방지합니다. 엑셀 대량 업로드도 다음 청크에서 추가 예정입니다.
+            {t("note.itEquipStock", lang)}
           </Note>
         </div>
         {!showAdd && !editingId && (
@@ -1004,10 +1003,7 @@ function OrdersTab({
         </Button>
       </div>
       <Note tone="info">
-        계약기간에 해당하는 월을 자동으로 채웁니다. 이미 있는 월은 건너뛰므로 여러 번 눌러도 안전.
-        각 오더는 <strong>편집 가능</strong> 이면 금액 수정/취소/삭제가 됩니다. 취소된 오더는 활성 합계에서
-        제외됩니다. 장비 기본료 변경 시 기존 오더 금액은 자동 재산정되지 않습니다 — 개별 수정 또는 해당 월을
-        삭제 후 재생성.
+        {t("note.itGenerateOrders", lang)}
       </Note>
       {generateResult && (
         <div className="my-3 rounded-md bg-[color:var(--tts-success-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-success)]">
@@ -1267,10 +1263,7 @@ function BillingsTab({
         )}
       </div>
       <Note tone="info">
-        이전 월 카운터와의 delta 로 사용량을 계산해 장비별 기본료 + 흑백/컬러 초과 과금을 자동 합산합니다.
-        <strong>첫 월은 이전 기록이 없어 현재 카운터 전체를 사용량으로 간주</strong>합니다 — 설치 시점 공장
-        초기값이 아닌 기존 사용 기기라면 설치 시 카운터를 별도로 관리하는 첫 컨펌 레코드를 먼저 생성하고
-        이후 월부터 delta 가 맞게 계산되도록 사용하세요. 고객 서명은 HTML5 Canvas 에서 base64 PNG 로 저장.
+        {t("note.itBillingDelta", lang)}
       </Note>
       {lastCalc && (
         <div className="my-3 rounded-md bg-[color:var(--tts-success-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-success)]">

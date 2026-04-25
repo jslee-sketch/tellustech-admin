@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge, Button, Card, DataTable, ExcelDownload, SearchBar } from "@/components/ui";
 import type { BadgeTone, DataTableColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 export type PurchaseRow = {
   id: string;
@@ -29,14 +30,18 @@ const projectTypeTone: Record<string, BadgeTone> = {
   REPAIR: "warn",
   OTHER: "neutral",
 };
-const projectTypeLabel: Record<string, string> = {
-  TRADE: "구매",
-  MAINTENANCE: "유지",
-  RENTAL: "렌탈",
-  CALIBRATION: "교정",
-  REPAIR: "수리",
-  OTHER: "기타",
-};
+
+function projectTypeLabel(type: string, lang: Lang): string {
+  switch (type) {
+    case "TRADE": return t("status.purchaseTrade", lang);
+    case "MAINTENANCE": return t("status.purchaseMaint", lang);
+    case "RENTAL": return t("status.purchaseRental", lang);
+    case "CALIBRATION": return t("status.purchaseCalibration", lang);
+    case "REPAIR": return t("status.purchaseRepair", lang);
+    case "OTHER": return t("status.purchaseOther", lang);
+    default: return type;
+  }
+}
 
 const statusTone: Record<string, BadgeTone> = {
   OPEN: "warn",
@@ -44,12 +49,16 @@ const statusTone: Record<string, BadgeTone> = {
   PAID: "success",
   WRITTEN_OFF: "neutral",
 };
-const statusLabel: Record<string, string> = {
-  OPEN: "미지급",
-  PARTIAL: "부분지급",
-  PAID: "완결",
-  WRITTEN_OFF: "대손",
-};
+
+function statusLabel(s: string, lang: Lang): string {
+  switch (s) {
+    case "OPEN": return t("status.unpaid", lang);
+    case "PARTIAL": return t("status.paidPartial", lang);
+    case "PAID": return t("status.paidFull", lang);
+    case "WRITTEN_OFF": return t("status.writeOff", lang);
+    default: return s;
+  }
+}
 
 function formatVnd(raw: string): string {
   const n = Number(raw);
@@ -57,7 +66,7 @@ function formatVnd(raw: string): string {
   return new Intl.NumberFormat("vi-VN").format(n);
 }
 
-export function PurchasesClient({ initialData }: { initialData: PurchaseRow[] }) {
+export function PurchasesClient({ initialData, lang }: { initialData: PurchaseRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
 
@@ -77,7 +86,7 @@ export function PurchasesClient({ initialData }: { initialData: PurchaseRow[] })
   const columns: DataTableColumn<PurchaseRow>[] = [
     {
       key: "purchaseNumber",
-      label: "매입번호",
+      label: t("col.purchaseNumber", lang),
       width: "160px",
       render: (v, row) => (
         <Link
@@ -88,10 +97,10 @@ export function PurchasesClient({ initialData }: { initialData: PurchaseRow[] })
         </Link>
       ),
     },
-    { key: "createdAt", label: "등록일", width: "110px" },
+    { key: "createdAt", label: t("col.createdAt", lang), width: "110px" },
     {
       key: "supplierName",
-      label: "공급사",
+      label: t("col.supplier", lang),
       render: (_v, row) => (
         <div>
           <span className="font-semibold">{row.supplierName}</span>{" "}
@@ -101,7 +110,7 @@ export function PurchasesClient({ initialData }: { initialData: PurchaseRow[] })
     },
     {
       key: "projectCode",
-      label: "프로젝트",
+      label: t("col.project", lang),
       width: "150px",
       render: (v, row) => {
         if (!v) return <span className="text-[color:var(--tts-muted)]">—</span>;
@@ -109,44 +118,46 @@ export function PurchasesClient({ initialData }: { initialData: PurchaseRow[] })
         return (
           <div className="flex flex-col gap-0.5">
             <span className="font-mono text-[11px]">{v as string}</span>
-            {type && <Badge tone={projectTypeTone[type] ?? "neutral"}>{projectTypeLabel[type] ?? type}</Badge>}
+            {type && <Badge tone={projectTypeTone[type] ?? "neutral"}>{projectTypeLabel(type, lang)}</Badge>}
           </div>
         );
       },
     },
     {
       key: "itemCount",
-      label: "품목",
+      label: t("col.itemCount", lang),
       width: "60px",
       align: "right",
       render: (v) => <span className="font-mono text-[12px]">{v as number}</span>,
     },
     {
       key: "totalAmount",
-      label: "금액 (VND)",
+      label: t("col.amountVnd", lang),
       width: "170px",
       align: "right",
       render: (v, r) => (
         <div className="font-mono">
           <div className="text-[13px] font-bold">{formatVnd(v as string)}</div>
           {r.currency !== "VND" && (
-            <div className="text-[10px] text-[color:var(--tts-muted)]">원화 {r.currency} · 환율 {r.fxRate}</div>
+            <div className="text-[10px] text-[color:var(--tts-muted)]">
+              {lang === "VI" ? "Gốc" : lang === "EN" ? "Orig" : "원화"} {r.currency} · {lang === "VI" ? "Tỷ giá" : lang === "EN" ? "Rate" : "환율"} {r.fxRate}
+            </div>
           )}
         </div>
       ),
     },
     {
       key: "payableStatus",
-      label: "미지급",
+      label: t("col.apStatus", lang),
       width: "100px",
       render: (v) => {
         const s = v as string | null;
-        return s ? <Badge tone={statusTone[s] ?? "neutral"}>{statusLabel[s] ?? s}</Badge> : "—";
+        return s ? <Badge tone={statusTone[s] ?? "neutral"}>{statusLabel(s, lang)}</Badge> : "—";
       },
     },
     {
       key: "dueDate",
-      label: "납기일",
+      label: t("col.dueDate", lang),
       width: "110px",
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
@@ -154,49 +165,49 @@ export function PurchasesClient({ initialData }: { initialData: PurchaseRow[] })
 
   return (
     <Card
-      title="매입 전표"
+      title={t("card.purchaseVouchers", lang)}
       count={filtered.length}
       action={
         <div className="flex gap-2">
           <ExcelDownload
             rows={filtered}
             columns={[
-              { key: "purchaseNumber", header: "매입번호" },
-              { key: "createdAt", header: "일자" },
-              { key: "supplierCode", header: "공급사코드" },
-              { key: "supplierName", header: "공급사명" },
-              { key: "projectCode", header: "프로젝트" },
-              { key: "totalAmount", header: "금액(VND)" },
-              { key: "currency", header: "원통화" },
-              { key: "fxRate", header: "환율" },
-              { key: "itemCount", header: "품목수" },
-              { key: "payableStatus", header: "미지급상태" },
-              { key: "dueDate", header: "납기" },
+              { key: "purchaseNumber", header: t("col.purchaseNumber", lang) },
+              { key: "createdAt", header: t("col.dateCol", lang) },
+              { key: "supplierCode", header: t("col.supplierCode", lang) },
+              { key: "supplierName", header: t("col.supplierName", lang) },
+              { key: "projectCode", header: t("col.project", lang) },
+              { key: "totalAmount", header: t("col.amountVnd", lang) },
+              { key: "currency", header: t("col.currencyCol", lang) },
+              { key: "fxRate", header: t("col.fxRateCol", lang) },
+              { key: "itemCount", header: t("col.itemCountShort", lang) },
+              { key: "payableStatus", header: t("col.apStatus", lang) },
+              { key: "dueDate", header: t("col.dueShort", lang) },
             ]}
             filename={`purchases-${new Date().toISOString().slice(0, 10)}.xlsx`}
             sheetName="Purchases"
           />
           <Link href="/purchases/new">
-            <Button>+ 매입 등록</Button>
+            <Button>{t("btn.registerPurchase", lang)}</Button>
           </Link>
         </div>
       }
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <SearchBar value={q} onChange={setQ} placeholder="매입번호/공급사 검색..." />
+        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchPurchase", lang)} />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 미지급 상태</option>
-          <option value="OPEN">미지급</option>
-          <option value="PARTIAL">부분지급</option>
-          <option value="PAID">완결</option>
-          <option value="WRITTEN_OFF">대손</option>
+          <option value="all">{t("filter.allApStatuses", lang)}</option>
+          <option value="OPEN">{t("status.unpaid", lang)}</option>
+          <option value="PARTIAL">{t("status.paidPartial", lang)}</option>
+          <option value="PAID">{t("status.paidFull", lang)}</option>
+          <option value="WRITTEN_OFF">{t("status.writeOff", lang)}</option>
         </select>
       </div>
-      <DataTable columns={columns} data={filtered} rowKey={(s) => s.id} emptyMessage="등록된 매입이 없습니다" />
+      <DataTable columns={columns} data={filtered} rowKey={(s) => s.id} emptyMessage={t("empty.purchases", lang)} />
     </Card>
   );
 }

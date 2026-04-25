@@ -18,6 +18,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import type { DataTableColumn, TabDef } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type PurchaseCore = {
   purchaseNumber: string;
@@ -65,13 +66,16 @@ type Props = {
   payable: Payable | null;
   projects: ProjectInfo[];
   employeeOptions: { value: string; label: string }[];
+  lang: Lang;
 };
 
-const TABS: TabDef[] = [
-  { key: "basic", label: "기본정보", icon: "📋" },
-  { key: "items", label: "품목", icon: "📦" },
-  { key: "ap", label: "미지급금", icon: "💰" },
-];
+function buildTabs(lang: Lang): TabDef[] {
+  return [
+    { key: "basic", label: t("tab.basicInfo", lang), icon: "📋" },
+    { key: "items", label: t("tab.itemsTab", lang), icon: "📦" },
+    { key: "ap", label: t("tab.ap", lang), icon: "💰" },
+  ];
+}
 
 function formatVnd(raw: string | number): string {
   const n = typeof raw === "number" ? raw : Number(raw);
@@ -86,6 +90,7 @@ export function PurchaseDetail({
   payable,
   projects,
   employeeOptions,
+  lang,
 }: Props) {
   const router = useRouter();
   const projectOptions = projects.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }));
@@ -120,7 +125,7 @@ export function PurchaseDetail({
           warehouseInboundDone: core.warehouseInboundDone,
         }),
       });
-      if (!res.ok) setError("저장에 실패했습니다.");
+      if (!res.ok) setError(t("msg.saveFailed", lang));
       else router.refresh();
     } finally {
       setSavingBasic(false);
@@ -128,12 +133,12 @@ export function PurchaseDetail({
   }
 
   async function handleDelete() {
-    if (!window.confirm("이 매입을 삭제하면 관련 미지급금도 같이 삭제됩니다. 진행할까요?")) return;
+    if (!window.confirm(t("msg.deletePurchaseConfirm", lang))) return;
     setDeleting(true);
     setError(null);
     try {
       const res = await fetch(`/api/purchases/${purchaseId}`, { method: "DELETE" });
-      if (!res.ok) setError("삭제에 실패했습니다.");
+      if (!res.ok) setError(t("msg.deleteFailed", lang));
       else {
         router.push("/purchases");
         router.refresh();
@@ -145,7 +150,7 @@ export function PurchaseDetail({
 
   return (
     <div>
-      <Tabs tabs={TABS} active={active} onChange={setActive} />
+      <Tabs tabs={buildTabs(lang)} active={active} onChange={setActive} />
 
       {error && (
         <div className="mb-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">
@@ -155,78 +160,78 @@ export function PurchaseDetail({
 
       {active === "basic" && (
         <form onSubmit={handleBasicSubmit}>
-          <SectionTitle icon="📋" title="기본 정보" />
+          <SectionTitle icon="📋" title={t("section.basicInfo", lang)} />
           <Row>
-            <Field label="매입번호" width="200px">
+            <Field label={t("field.purchaseNumber", lang)} width="200px">
               <TextInput value={core.purchaseNumber} disabled />
             </Field>
-            <Field label="등록일" width="160px">
+            <Field label={t("field.createdAt", lang)} width="160px">
               <TextInput value={core.createdAt} disabled />
             </Field>
-            <Field label="공급사">
+            <Field label={t("field.supplierField", lang)}>
               <TextInput value={core.supplierLabel} disabled />
             </Field>
           </Row>
           <Row>
-            <Field label="프로젝트">
+            <Field label={t("field.project", lang)}>
               <Select
                 value={core.projectId}
                 onChange={(e) => set("projectId", e.target.value)}
-                placeholder="선택 안 함"
+                placeholder={t("placeholder.notSelected", lang)}
                 options={projectOptions}
               />
             </Field>
-            <Field label="영업담당">
+            <Field label={t("field.salesEmployee", lang)}>
               <Select
                 value={core.salesEmployeeId}
                 onChange={(e) => set("salesEmployeeId", e.target.value)}
-                placeholder="선택 안 함"
+                placeholder={t("placeholder.notSelected", lang)}
                 options={employeeOptions}
               />
             </Field>
           </Row>
           <Row>
-            <Field label="사용기간 시작" width="200px">
+            <Field label={t("field.usageStart", lang)} width="200px">
               <TextInput
                 type="date"
                 value={core.usagePeriodStart}
                 onChange={(e) => set("usagePeriodStart", e.target.value)}
               />
             </Field>
-            <Field label="사용기간 종료" width="200px">
+            <Field label={t("field.usageEnd", lang)} width="200px">
               <TextInput
                 type="date"
                 value={core.usagePeriodEnd}
                 onChange={(e) => set("usagePeriodEnd", e.target.value)}
               />
             </Field>
-            <Field label="창고입고" width="180px">
+            <Field label={t("field.warehouseInbound", lang)} width="180px">
               <Checkbox
                 checked={core.warehouseInboundDone}
                 onChange={(e) => set("warehouseInboundDone", e.target.checked)}
-                label="입고 완료"
+                label={t("field.warehouseInboundDone", lang)}
               />
             </Field>
           </Row>
           <Row>
-            <Field label="비고">
+            <Field label={t("field.note", lang)}>
               <Textarea value={core.note} onChange={(e) => set("note", e.target.value)} rows={3} />
             </Field>
           </Row>
 
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingBasic}>
-              {savingBasic ? "저장 중..." : "기본정보 저장"}
+              {savingBasic ? t("action.saving", lang) : t("btn.savePurchaseBasic", lang)}
             </Button>
             <Button type="button" variant="danger" onClick={handleDelete} disabled={deleting} className="ml-auto">
-              {deleting ? "삭제 중..." : "매입 삭제"}
+              {deleting ? t("action.deleting", lang) : t("btn.deletePurchase", lang)}
             </Button>
           </div>
         </form>
       )}
 
       {active === "items" && (
-        <ItemsTab purchaseId={purchaseId} items={items} setItems={setItems} totalAmount={core.totalAmount} setCore={setCore} isCalibration={isCalibration} isPeriodic={isPeriodic} headerStart={core.usagePeriodStart} headerEnd={core.usagePeriodEnd} />
+        <ItemsTab purchaseId={purchaseId} items={items} setItems={setItems} totalAmount={core.totalAmount} setCore={setCore} isCalibration={isCalibration} isPeriodic={isPeriodic} headerStart={core.usagePeriodStart} headerEnd={core.usagePeriodEnd} lang={lang} />
       )}
 
       {active === "ap" && (
@@ -235,6 +240,7 @@ export function PurchaseDetail({
           totalAmount={core.totalAmount}
           paymentTerms={core.supplierPaymentTerms}
           createdAt={core.createdAt}
+          lang={lang}
         />
       )}
     </div>
@@ -251,6 +257,7 @@ function ItemsTab({
   isPeriodic,
   headerStart,
   headerEnd,
+  lang,
 }: {
   purchaseId: string;
   items: ItemRow[];
@@ -261,6 +268,7 @@ function ItemsTab({
   isPeriodic: boolean;
   headerStart: string;
   headerEnd: string;
+  lang: Lang;
 }) {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
@@ -365,7 +373,7 @@ function ItemsTab({
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("이 품목을 삭제하시겠습니까?")) return;
+    if (!window.confirm(t("msg.deleteItemConfirm", lang))) return;
     const res = await fetch(`/api/purchases/${purchaseId}/items/${id}`, { method: "DELETE" });
     if (res.ok) {
       await reload();
@@ -376,7 +384,7 @@ function ItemsTab({
   const columns: DataTableColumn<ItemRow>[] = [
     {
       key: "itemName",
-      label: "품목명",
+      label: t("col.itemName", lang),
       render: (v, row) => (
         <div>
           <span className="font-semibold">{v as string}</span>
@@ -386,11 +394,11 @@ function ItemsTab({
         </div>
       ),
     },
-    { key: "quantity", label: "수량", width: "80px", align: "right" },
-    { key: "unitPrice", label: "단가", width: "120px", align: "right", render: (v) => formatVnd(v as string) },
+    { key: "quantity", label: t("col.qty", lang), width: "80px", align: "right" },
+    { key: "unitPrice", label: t("col.unitPrice", lang), width: "120px", align: "right", render: (v) => formatVnd(v as string) },
     {
       key: "amount",
-      label: "금액",
+      label: t("col.amount", lang),
       width: "140px",
       align: "right",
       render: (v) => <span className="font-mono font-bold">{formatVnd(v as string)}</span>,
@@ -402,7 +410,7 @@ function ItemsTab({
       align: "right",
       render: (_, row) => (
         <Button size="sm" variant="danger" onClick={() => handleDelete(row.id)}>
-          삭제
+          {t("action.delete", lang)}
         </Button>
       ),
     },
@@ -411,10 +419,10 @@ function ItemsTab({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <SectionTitle icon="📦" title={`품목 (${items.length}건)`} />
+        <SectionTitle icon="📦" title={t("label.itemsCount", lang).replace("{count}", String(items.length))} />
         {!showAdd && (
           <Button size="sm" onClick={() => setShowAdd(true)}>
-            + 품목 추가
+            {t("btn.addItem", lang)}
           </Button>
         )}
       </div>
@@ -424,20 +432,20 @@ function ItemsTab({
           className="mb-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3"
         >
           <Row>
-            <Field label="품목" required>
+            <Field label={t("field.item", lang)} required>
               <ItemCombobox
                 value={draft.itemId}
                 onChange={(id) => setDraft((p) => ({ ...p, itemId: id }))}
                 required
               />
             </Field>
-            <Field label="S/N" width="200px">
+            <Field label={t("field.serial", lang)} width="200px">
               <TextInput
                 value={draft.serialNumber}
                 onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))}
               />
             </Field>
-            <Field label="수량" required width="100px">
+            <Field label={t("field.qty", lang)} required width="100px">
               <TextInput
                 type="number"
                 required
@@ -445,7 +453,7 @@ function ItemsTab({
                 onChange={(e) => setDraft((p) => ({ ...p, quantity: e.target.value }))}
               />
             </Field>
-            <Field label="단가" required width="160px">
+            <Field label={t("field.unitPrice", lang)} required width="160px">
               <TextInput
                 type="number"
                 required
@@ -456,27 +464,27 @@ function ItemsTab({
           </Row>
           {isPeriodic && (
             <Row>
-              <Field label="시작일" width="200px" hint="헤더 기본값 자동">
+              <Field label={t("field.startDate", lang)} width="200px" hint={t("hint.headerDefault", lang)}>
                 <TextInput type="date" value={lineStart} onChange={(e) => setLineStart(e.target.value)} />
               </Field>
-              <Field label="종료일" width="200px">
+              <Field label={t("field.endDate", lang)} width="200px">
                 <TextInput type="date" value={lineEnd} onChange={(e) => setLineEnd(e.target.value)} />
               </Field>
             </Row>
           )}
           {isCalibration && (
             <div className="mb-3 rounded-md bg-[color:var(--tts-primary-dim)] p-3">
-              <div className="mb-1 text-[11px] font-bold text-[color:var(--tts-primary)]">교정 성적서 (라인당 1개)</div>
+              <div className="mb-1 text-[11px] font-bold text-[color:var(--tts-primary)]">{t("label.calibCertOnePerLine", lang)}</div>
               <Row>
-                <Field label="성적서 번호" width="240px">
-                  <TextInput value={certNumber} onChange={(e) => setCertNumber(e.target.value)} placeholder="예: CERT-2026-0001" />
+                <Field label={t("field.certificateNo", lang)} width="240px">
+                  <TextInput value={certNumber} onChange={(e) => setCertNumber(e.target.value)} placeholder="CERT-2026-0001" />
                 </Field>
-                <Field label="발행일" width="180px">
+                <Field label={t("field.issuedAt", lang)} width="180px">
                   <TextInput type="date" value={issuedAt} onChange={(e) => setIssuedAt(e.target.value)} />
                 </Field>
-                <Field label="성적서 PDF">
+                <Field label={t("field.certPdf", lang)}>
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-sub)] hover:border-[color:var(--tts-primary)]">
-                    📎 {certFile ? certFile.name : "PDF 선택"}
+                    📎 {certFile ? certFile.name : t("btn.selectPdf", lang)}
                     <input type="file" accept=".pdf,application/pdf" className="hidden" onChange={(e) => setCertFile(e.target.files?.[0] ?? null)} />
                   </label>
                 </Field>
@@ -485,7 +493,7 @@ function ItemsTab({
           )}
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? "저장 중..." : "품목 추가"}
+              {submitting ? t("action.saving", lang) : t("btn.addItem", lang).replace("+ ", "")}
             </Button>
             <Button
               type="button"
@@ -496,14 +504,14 @@ function ItemsTab({
                 setDraft({ itemId: "", itemCode: "", itemName: "", serialNumber: "", quantity: "1", unitPrice: "0" });
               }}
             >
-              취소
+              {t("action.cancel", lang)}
             </Button>
           </div>
         </form>
       )}
-      <DataTable columns={columns} data={items} rowKey={(it) => it.id} emptyMessage="품목이 없습니다" />
+      <DataTable columns={columns} data={items} rowKey={(it) => it.id} emptyMessage={t("empty.purchaseItems", lang)} />
       <div className="mt-3 text-right text-[14px] font-bold">
-        합계 (VND){" "}
+        {t("label.totalSum", lang)} (VND){" "}
         <span className="ml-3 font-mono text-[16px] text-[color:var(--tts-primary)]">{formatVnd(totalAmount)}</span>
       </div>
     </div>
@@ -515,27 +523,29 @@ function PayableTab({
   totalAmount,
   paymentTerms,
   createdAt,
+  lang,
 }: {
   payable: Payable | null;
   totalAmount: string;
   paymentTerms: number;
   createdAt: string;
+  lang: Lang;
 }) {
   if (!payable) {
     return (
       <div>
-        <SectionTitle icon="💰" title="미지급금" />
-        <Note tone="warn">이 매입에 연결된 미지급금이 없습니다 (시스템 이상).</Note>
+        <SectionTitle icon="💰" title={t("section.ap", lang)} />
+        <Note tone="warn">{t("msg.purchaseNoPayable", lang)}</Note>
       </div>
     );
   }
   const outstanding = Number(payable.amount) - Number(payable.paidAmount);
   return (
     <div>
-      <SectionTitle icon="💰" title="미지급금" />
+      <SectionTitle icon="💰" title={t("section.ap", lang)} />
       <div className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-4">
         <div className="grid grid-cols-[160px_1fr] gap-y-2 text-[13px]">
-          <div className="text-[color:var(--tts-sub)]">상태</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.status", lang)}</div>
           <div>
             <Badge
               tone={
@@ -551,24 +561,24 @@ function PayableTab({
               {payable.status}
             </Badge>
           </div>
-          <div className="text-[color:var(--tts-sub)]">매입 합계</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.totalPurchase", lang)}</div>
           <div className="font-mono font-bold">{formatVnd(totalAmount)} VND</div>
-          <div className="text-[color:var(--tts-sub)]">청구 금액</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.billedAmount", lang)}</div>
           <div className="font-mono">{formatVnd(payable.amount)} VND</div>
-          <div className="text-[color:var(--tts-sub)]">지급 금액</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.paidAmount", lang)}</div>
           <div className="font-mono">{formatVnd(payable.paidAmount)} VND</div>
-          <div className="text-[color:var(--tts-sub)]">잔액</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.outstanding", lang)}</div>
           <div className="font-mono font-bold text-[color:var(--tts-danger)]">{formatVnd(outstanding)} VND</div>
-          <div className="text-[color:var(--tts-sub)]">공급사 결제조건</div>
-          <div>{paymentTerms}일</div>
-          <div className="text-[color:var(--tts-sub)]">납기일</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.supplierPaymentTerms", lang)}</div>
+          <div>{paymentTerms} {t("common.days", lang)}</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.dueDate", lang)}</div>
           <div className="font-mono">{payable.dueDate}</div>
-          <div className="text-[color:var(--tts-sub)]">매입 등록일</div>
+          <div className="text-[color:var(--tts-sub)]">{t("field.purchaseCreatedAt", lang)}</div>
           <div className="font-mono">{createdAt}</div>
         </div>
       </div>
       <Note tone="info" className="mt-3">
-        지급 확인 · 납기 연장 · 지연사유 기록 UI 는 Phase 4 재경 모듈에서 제공됩니다.
+        {t("note.purchaseApPhase4", lang)}
       </Note>
     </div>
   );

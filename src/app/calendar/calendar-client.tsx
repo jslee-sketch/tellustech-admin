@@ -6,7 +6,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Button, Field, Note, TextInput, Textarea } from "@/components/ui";
-import { pickDailyScenes, type Scene } from "./daily-scenes";
+import { pickDailyScenes, type LocalizedScene } from "./daily-scenes";
 import { t, type Lang } from "@/lib/i18n";
 
 type EventType =
@@ -100,7 +100,7 @@ function MultiSelect({
   );
 }
 
-function SceneCard({ flag, country, scene }: { flag: string; country: string; scene: Scene }) {
+function SceneCard({ flag, country, scene }: { flag: string; country: string; scene: LocalizedScene }) {
   return (
     <div
       className="relative flex min-h-[110px] flex-1 items-center gap-3 overflow-hidden rounded-xl px-5 py-4 text-white shadow-lg"
@@ -129,7 +129,7 @@ function SceneCard({ flag, country, scene }: { flag: string; country: string; sc
 export function CalendarClient({ canManage, lang }: { canManage: boolean; lang: Lang }) {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [events, setEvents] = useState<AggEvent[]>([]);
-  const scenes = useMemo(() => pickDailyScenes(new Date()), []);
+  const scenes = useMemo(() => pickDailyScenes(new Date(), lang), [lang]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

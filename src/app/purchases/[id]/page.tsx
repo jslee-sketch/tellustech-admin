@@ -69,7 +69,7 @@ export default async function PurchaseDetailPage({ params }: PageProps) {
               href={`/inventory/labels?purchaseId=${purchase.id}`}
               className="ml-auto rounded-md bg-[color:var(--tts-accent)] px-3 py-1.5 text-[11px] font-bold text-white hover:opacity-90"
             >
-              🏷️ QR 라벨 인쇄
+              🏷️ {t("nav.qrLabel", L)}
             </Link>
           </h1>
           <div className="mt-1 text-[13px] text-[color:var(--tts-sub)]">
@@ -81,6 +81,7 @@ export default async function PurchaseDetailPage({ params }: PageProps) {
         </div>
         <Card>
           <PurchaseDetail
+            lang={L}
             purchaseId={purchase.id}
             initial={{
               purchaseNumber: purchase.purchaseNumber,
@@ -126,7 +127,7 @@ export default async function PurchaseDetailPage({ params }: PageProps) {
         </Card>
         <div className="mt-4">
           <Card title={t("page.purchases.import", L)}>
-            <PurchaseItemsImport purchaseId={purchase.id} />
+            <PurchaseItemsImport purchaseId={purchase.id} lang={L} />
           </Card>
         </div>
       </div>

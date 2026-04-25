@@ -162,7 +162,7 @@ export default async function Home() {
             { href: "/inventory/stock",        label: t("nav.stock", L),  icon: "📊" },
             { href: "/inventory/transactions", label: t("nav.invTxn", L), icon: "🔄" },
             { href: "/inventory/scan",         label: t("nav.qrScan", L), icon: "📷" },
-            { href: "/inventory/depreciation", label: "감가상각",          icon: "📉" },
+            { href: "/inventory/depreciation", label: t("nav.depreciation", L), icon: "📉" },
           ]} />
           <NavCard title={t("dash.card.hr", L)} subtitle="Human Resources" accent="primary" items={[
             { href: "/hr/onboarding",  label: t("nav.onboarding", L),  icon: "📝" },

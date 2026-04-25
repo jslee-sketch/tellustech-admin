@@ -46,6 +46,7 @@ export default async function NewPurchasePage() {
         </div>
         <Card>
           <PurchaseNewForm
+            lang={L}
             suppliers={suppliers.map((c) => ({
               id: c.id,
               label: `${c.clientCode} · ${c.companyNameVi}`,

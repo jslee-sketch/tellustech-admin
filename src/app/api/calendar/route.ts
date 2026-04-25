@@ -289,17 +289,19 @@ export async function GET(request: Request) {
         }
       }
 
-      // 11) 공휴일 (VN + KR)
-      for (const h of getVietnamHolidays(start, end)) {
+      // 11) 공휴일 (VN + KR) — 사용자 언어로 표시 + 다른 언어 부제
+      for (const h of getVietnamHolidays(start, end, session.language)) {
+        const altName = session.language === "VI" ? h.nameKo : session.language === "EN" ? h.nameVi : h.nameVi;
         events.push({
-          id: `hvn:${h.date}`, title: `🇻🇳 ${h.nameVi} (${h.nameKo})`,
+          id: `hvn:${h.date}`, title: `🇻🇳 ${h.name} (${altName})`,
           start: h.date + "T00:00:00", allDay: true,
           type: "HOLIDAY_VN", color: COLORS.HOLIDAY_VN,
         });
       }
-      for (const h of getKoreaHolidays(start, end)) {
+      for (const h of getKoreaHolidays(start, end, session.language)) {
+        const altName = session.language === "KO" ? h.nameVi : session.language === "EN" ? h.nameKo : h.nameKo;
         events.push({
-          id: `hkr:${h.date}`, title: `🇰🇷 ${h.nameKo} (${h.nameVi})`,
+          id: `hkr:${h.date}`, title: `🇰🇷 ${h.name} (${altName})`,
           start: h.date + "T00:00:00", allDay: true,
           type: "HOLIDAY_KR", color: COLORS.HOLIDAY_KR,
         });

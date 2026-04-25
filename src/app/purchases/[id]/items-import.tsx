@@ -4,31 +4,32 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ExcelUploader } from "@/components/ui";
 import type { UploaderColumn } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type ItemRef = { id: string; itemCode: string; name: string };
 
-function buildColumns(items: ItemRef[]): UploaderColumn[] {
+function buildColumns(items: ItemRef[], lang: Lang): UploaderColumn[] {
   const codeSet = new Set(items.map((i) => i.itemCode));
   const nameSet = new Set(items.map((i) => i.name));
   return [
-    { key: "itemCode", header: "품목코드", required: true, validate: (raw) => {
+    { key: "itemCode", header: t("col.itemCode", lang), required: true, validate: (raw) => {
         if (codeSet.has(raw)) return { normalized: raw };
         if (nameSet.has(raw)) {
           const match = items.find((i) => i.name === raw);
           return { normalized: match?.itemCode ?? raw };
         }
-        return { error: "품목코드/품목명 DB 불일치" };
+        return { error: t("msg.purchasesItemCodeNotInDb", lang) };
       },
     },
-    { key: "quantity", header: "수량", required: true, validate: (raw) => {
+    { key: "quantity", header: t("col.qty", lang), required: true, validate: (raw) => {
         const n = Number(raw);
-        if (!Number.isFinite(n) || n <= 0) return { error: "양수" };
+        if (!Number.isFinite(n) || n <= 0) return { error: t("msg.mustBePositive", lang) };
         return { normalized: String(n) };
       },
     },
-    { key: "unitPrice", header: "단가", required: true, validate: (raw) => {
+    { key: "unitPrice", header: t("col.unitPrice", lang), required: true, validate: (raw) => {
         const n = Number(raw);
-        if (!Number.isFinite(n) || n < 0) return { error: "숫자 ≥0" };
+        if (!Number.isFinite(n) || n < 0) return { error: t("msg.mustBeNonNegative", lang) };
         return { normalized: String(n) };
       },
     },
@@ -36,7 +37,7 @@ function buildColumns(items: ItemRef[]): UploaderColumn[] {
   ];
 }
 
-export function PurchaseItemsImport({ purchaseId }: { purchaseId: string }) {
+export function PurchaseItemsImport({ purchaseId, lang = "EN" }: { purchaseId: string; lang?: Lang }) {
   const router = useRouter();
   const [items, setItems] = useState<ItemRef[] | null>(null);
 
@@ -44,13 +45,14 @@ export function PurchaseItemsImport({ purchaseId }: { purchaseId: string }) {
     fetch("/api/master/items").then((r) => r.json()).then((j) => setItems(j?.items ?? [])).catch(() => setItems([]));
   }, []);
 
-  if (!items) return <div className="text-[12px] text-[color:var(--tts-muted)]">품목 참조 로드 중...</div>;
+  if (!items) return <div className="text-[12px] text-[color:var(--tts-muted)]">{t("common.itemRefLoading", lang)}</div>;
 
   return (
     <ExcelUploader
-      title="매입 라인 일괄 업로드"
+      lang={lang}
+      title={t("title.purchaseLinesImport", lang)}
       templateName="purchase-items-template.xlsx"
-      columns={buildColumns(items)}
+      columns={buildColumns(items, lang)}
       onSave={async (rows) => {
         let ok = 0, failed = 0;
         for (const r of rows) {
@@ -69,7 +71,7 @@ export function PurchaseItemsImport({ purchaseId }: { purchaseId: string }) {
           if (res.ok) ok++; else failed++;
         }
         if (failed === 0) { router.refresh(); return { ok: true }; }
-        return { ok: false, message: `${ok}건 성공 · ${failed}건 실패` };
+        return { ok: false, message: t("ph.purchaseItemsImportFailed", lang).replace("{ok}", String(ok)).replace("{failed}", String(failed)) };
       }}
     />
   );

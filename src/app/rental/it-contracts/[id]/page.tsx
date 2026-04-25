@@ -11,12 +11,15 @@ export const dynamic = "force-dynamic";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-const statusLabel: Record<string, string> = {
-  DRAFT: "작성중",
-  ACTIVE: "활성",
-  EXPIRED: "만료",
-  CANCELED: "취소",
-};
+function statusLabel(s: string, lang: import("@/lib/i18n").Lang): string {
+  switch (s) {
+    case "DRAFT": return t("status.itDraft", lang);
+    case "ACTIVE": return t("status.itActive", lang);
+    case "EXPIRED": return t("status.itExpired", lang);
+    case "CANCELED": return t("status.itCanceled", lang);
+    default: return s;
+  }
+}
 
 const statusTone: Record<string, "neutral" | "success" | "warn" | "danger"> = {
   DRAFT: "neutral",
@@ -85,7 +88,7 @@ export default async function ItContractDetailPage({ params }: PageProps) {
           <h1 className="mt-1 flex items-center gap-3 text-2xl font-extrabold text-[color:var(--tts-text)]">
             <span className="font-mono text-[18px] text-[color:var(--tts-primary)]">{contract.contractNumber}</span>
             <Badge tone={statusTone[contract.status] ?? "neutral"}>
-              {statusLabel[contract.status] ?? contract.status}
+              {statusLabel(contract.status, L)}
             </Badge>
           </h1>
           <div className="mt-1 text-[13px] text-[color:var(--tts-sub)]">
@@ -96,7 +99,7 @@ export default async function ItContractDetailPage({ params }: PageProps) {
             {contract.client.receivableStatus !== "NORMAL" && (
               <span className="ml-2">
                 <Badge tone={contract.client.receivableStatus === "BLOCKED" ? "danger" : "warn"}>
-                  미수금 {contract.client.receivableStatus === "BLOCKED" ? "차단" : "경고"}
+                  {contract.client.receivableStatus === "BLOCKED" ? t("label.itArBlocked", L) : t("label.itArWarning", L)}
                 </Badge>
               </span>
             )}
@@ -181,18 +184,18 @@ export default async function ItContractDetailPage({ params }: PageProps) {
         {/* 장비별 누적 비용 */}
         {validCosts.length > 0 && (
           <div className="mt-4">
-            <Card title={`💰 장비별 누적 비용 (계약 합계 ${contractTotalCost.toLocaleString("vi-VN")} ₫)`}>
+            <Card title={t("label.itEquipCostsTitle", L).replace("{total}", contractTotalCost.toLocaleString("vi-VN"))}>
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
-                    <th className="py-2 text-left">S/N</th>
-                    <th className="py-2 text-left">품목</th>
-                    <th className="py-2 text-right">매입가</th>
-                    <th className="py-2 text-right">부품비</th>
-                    <th className="py-2 text-right">소모품비</th>
-                    <th className="py-2 text-right">교통비</th>
-                    <th className="py-2 text-right">합계</th>
-                    <th className="py-2 text-left">최종 서비스</th>
+                    <th className="py-2 text-left">{t("col.snLabel", L)}</th>
+                    <th className="py-2 text-left">{t("col.itemLabel", L)}</th>
+                    <th className="py-2 text-right">{t("col.purchaseCost", L)}</th>
+                    <th className="py-2 text-right">{t("col.partsCost", L)}</th>
+                    <th className="py-2 text-right">{t("col.consumablesCost", L)}</th>
+                    <th className="py-2 text-right">{t("col.transportCost", L)}</th>
+                    <th className="py-2 text-right">{t("col.totalSum", L)}</th>
+                    <th className="py-2 text-left">{t("col.lastService", L)}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -216,21 +219,21 @@ export default async function ItContractDetailPage({ params }: PageProps) {
 
         {/* 소모품 사용 이력 */}
         <div className="mt-4">
-          <Card title={`🧴 소모품 사용 이력 (${consumables.length}건)`}>
+          <Card title={t("label.itConsumablesTitle", L).replace("{count}", String(consumables.length))}>
             {consumables.length === 0 ? (
               <div className="py-4 text-center text-[12px] text-[color:var(--tts-muted)]">
-                이 계약의 장비 S/N 대상으로 출고된 소모품이 없습니다.<br />
-                <span className="text-[11px]">입출고 등록 시 "소모품출고" 선택 + 대상 장비 S/N 입력하면 여기 표시됩니다.</span>
+                {t("msg.itNoConsumables", L)}<br />
+                <span className="text-[11px]">{t("msg.itConsumableHint", L)}</span>
               </div>
             ) : (
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
-                    <th className="py-2 text-left">출고일</th>
-                    <th className="py-2 text-left">대상 장비 S/N</th>
-                    <th className="py-2 text-left">소모품명</th>
-                    <th className="py-2 text-left">소모품 S/N</th>
-                    <th className="py-2 text-left">비고</th>
+                    <th className="py-2 text-left">{t("col.outboundDate", L)}</th>
+                    <th className="py-2 text-left">{t("col.targetEquipSnHdr", L)}</th>
+                    <th className="py-2 text-left">{t("col.consumableName", L)}</th>
+                    <th className="py-2 text-left">{t("col.consumableSn", L)}</th>
+                    <th className="py-2 text-left">{t("col.noteCol", L)}</th>
                   </tr>
                 </thead>
                 <tbody>

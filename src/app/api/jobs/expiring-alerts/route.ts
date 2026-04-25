@@ -275,5 +275,5 @@ export async function POST(request: Request) {
 
 // 헬스체크
 export async function GET() {
-  return NextResponse.json({ ok: true, route: "_jobs/expiring-alerts" });
+  return NextResponse.json({ ok: true, route: "jobs/expiring-alerts" });
 }

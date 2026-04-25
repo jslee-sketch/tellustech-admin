@@ -4,7 +4,7 @@ import { prisma } from "./prisma";
 // 미수금 상태 자동 재평가 로직(거래처 단위).
 // - 연체 0건 → NORMAL 유지(이미 NORMAL 이면 변경 없음)
 // - 연체 1건 이상 → WARNING (또는 30일↑/3건↑ 이면 BLOCKED)
-// 호출자: 수동 트리거(/api/finance/recompute-blocking) 또는 일일 cron(/api/_jobs/expiring-alerts).
+// 호출자: 수동 트리거(/api/finance/recompute-blocking) 또는 일일 cron(/api/jobs/expiring-alerts).
 export async function recomputeReceivableBlocking(): Promise<{
   scanned: number;
   affectedClients: number;

@@ -91,5 +91,5 @@ function monthAnchor(yyyymm: string | null): Date {
 }
 
 export async function GET() {
-  return NextResponse.json({ ok: true, route: "_jobs/inventory-snapshot" });
+  return NextResponse.json({ ok: true, route: "jobs/inventory-snapshot" });
 }

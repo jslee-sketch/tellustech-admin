@@ -25,6 +25,13 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
+// /api/jobs/* 는 외부 cron 호출자용. 라우트 자체에서 Bearer CRON_SECRET 또는 ADMIN
+// 세션을 직접 검증하므로 미들웨어 인증 가드(401)를 우회한다. 단, 세션 쿠키가 있으면
+// 평소처럼 헤더를 주입해서 ADMIN bypass 가 동작하도록 한다.
+function isCronPath(pathname: string): boolean {
+  return pathname.startsWith("/api/jobs/");
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -36,6 +43,8 @@ export function proxy(request: NextRequest) {
   const session = token ? verifySession(token) : null;
 
   if (!session) {
+    // /api/jobs/* 는 라우트가 자체 인증(Bearer or ADMIN session) — 그냥 통과.
+    if (isCronPath(pathname)) return NextResponse.next();
     // API 요청은 401 JSON, 페이지 요청은 /login 리다이렉트
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 });

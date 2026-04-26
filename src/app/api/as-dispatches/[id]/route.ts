@@ -54,6 +54,12 @@ export async function GET(_r: Request, context: RouteContext) {
         },
         dispatchEmployee: { select: { id: true, employeeCode: true, nameVi: true } },
         receipt: { select: { id: true, originalName: true, sizeBytes: true } },
+        parts: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            item: { select: { itemCode: true, name: true } },
+          },
+        },
       },
     });
     if (!dispatch) return notFound();

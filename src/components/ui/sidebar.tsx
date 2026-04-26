@@ -183,7 +183,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
         <div className={`flex ${collapsed ? "flex-col items-center gap-2" : "justify-center gap-2"}`}>
           {(["VI", "EN", "KO"] as const).map((l) => {
             const active = currentLang === l;
-            const flag = l === "VI" ? "🇻🇳" : l === "EN" ? "🇺🇸" : "🇰🇷";
+            const flagSrc = l === "VI" ? "/flags/vn.svg" : l === "EN" ? "/flags/us.svg" : "/flags/kr.svg";
             const title = l === "VI" ? "Tiếng Việt" : l === "EN" ? "English" : "한국어";
             return (
               <button
@@ -193,7 +193,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
                 disabled={changingLang}
                 title={title}
                 aria-label={title}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-[18px] leading-none transition disabled:opacity-50 ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 p-0 overflow-hidden transition disabled:opacity-50 ${
                   active
                     ? "border-[color:var(--tts-accent)]"
                     : "border-[color:var(--tts-border)] opacity-60 hover:opacity-100"
@@ -202,7 +202,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
                   boxShadow: "0 0 12px 2px var(--tts-accent), 0 0 4px 1px rgba(232,148,58,0.6) inset",
                 } : undefined}
               >
-                <span aria-hidden>{flag}</span>
+                <img src={flagSrc} alt={title} aria-hidden className="h-full w-full rounded-full object-cover" />
               </button>
             );
           })}

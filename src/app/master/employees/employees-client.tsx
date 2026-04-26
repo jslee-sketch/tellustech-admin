@@ -35,6 +35,8 @@ const statusLabelKey: Record<string, string> = {
 
 export function EmployeesClient({ initialData, lang }: { initialData: EmployeeRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("all");
 
   const filtered = useMemo(() => {

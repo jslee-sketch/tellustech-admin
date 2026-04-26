@@ -112,6 +112,43 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   // SSR 으로 받은 initialLang 을 즉시 적용 — 깜빡임 제거
   const [currentLang, setCurrentLang] = useState<Lang>(initialLang);
+  // Phase 2.B+ 권한 가림 — /api/auth/me 응답 캐시
+  const [perms, setPerms] = useState<Record<string, "HIDDEN" | "VIEW" | "WRITE">>({});
+  const [companyCode, setCompanyCode] = useState<string>("");
+  const [allowedCompanies, setAllowedCompanies] = useState<string[]>([]);
+  useEffect(() => {
+    fetch("/api/auth/me", { credentials: "same-origin" }).then((r) => r.json()).then((j) => {
+      if (j?.permissions) setPerms(j.permissions);
+      if (j?.user?.companyCode) setCompanyCode(j.user.companyCode);
+      if (j?.user?.allowedCompanies) setAllowedCompanies(j.user.allowedCompanies);
+    }).catch(() => undefined);
+  }, []);
+  async function switchCompany(code: string) {
+    if (code === companyCode) return;
+    const r = await fetch("/api/auth/company", {
+      method: "PUT", headers: {"Content-Type":"application/json"}, credentials: "same-origin",
+      body: JSON.stringify({ companyCode: code }),
+    });
+    if (r.ok) location.reload();
+  }
+  // labelKey → PermissionModule 매핑 (대표 모듈만)
+  const KEY_TO_MODULE: Record<string, string> = {
+    "nav.clients":"CLIENTS","nav.items":"ITEMS","nav.warehouses":"WAREHOUSES","nav.employees":"EMPLOYEES",
+    "nav.departments":"DEPARTMENTS","nav.projects":"PROJECTS","nav.licenses":"LICENSES","nav.schedules":"SCHEDULES",
+    "nav.sales":"SALES","nav.purchases":"PURCHASES","nav.itContracts":"IT_CONTRACTS","nav.tmRentals":"TM_RENTALS",
+    "nav.asTickets":"AS_TICKETS","nav.asDispatches":"AS_DISPATCHES","nav.calibrations":"CALIBRATIONS",
+    "nav.stock":"INVENTORY","nav.txns":"INVENTORY","nav.qrScan":"INVENTORY","nav.qrPrint":"INVENTORY",
+    "nav.leave":"HR_LEAVE","nav.onboarding":"HR_ONBOARDING","nav.offboarding":"HR_OFFBOARDING",
+    "nav.incidents":"HR_INCIDENT","nav.evaluations":"HR_EVALUATION","nav.payroll":"HR_PAYROLL","nav.incentive":"HR_INCENTIVE",
+    "nav.payables":"FINANCE_PAYABLE","nav.expenses":"FINANCE_EXPENSE",
+    "nav.stats":"STATS","nav.chat":"CHAT","nav.calendar":"CALENDAR","nav.audit":"AUDIT",
+    "nav.permissions":"ADMIN","nav.closings":"ADMIN","nav.trash":"ADMIN",
+  };
+  function isHidden(labelKey: string): boolean {
+    const mod = KEY_TO_MODULE[labelKey];
+    if (!mod) return false;
+    return perms[mod] === "HIDDEN";
+  }
 
   // 최초 마운트 시 로컬 저장 theme 복원
   useEffect(() => {
@@ -213,6 +250,33 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
         </div>
       </div>
 
+      {/* 회사 선택 — 2개 이상 권한이 있을 때만 노출 (ADMIN/MANAGER 통합조회 ALL 포함) */}
+      {allowedCompanies.length >= 2 && (
+        <div className="border-b border-[color:var(--tts-border)] px-2 py-2">
+          {!collapsed && (
+            <div className="mb-1 px-1 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-muted)]">
+              회사
+            </div>
+          )}
+          <div className={`flex ${collapsed ? "flex-col items-center gap-1" : "justify-center gap-1"}`}>
+            {[...allowedCompanies, "ALL"].map((c) => {
+              const active = companyCode === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => switchCompany(c)}
+                  title={c === "ALL" ? "통합조회" : c}
+                  className={`rounded px-2 py-1 text-[11px] font-bold ${active ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)] text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"}`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 네비 */}
       <nav className="flex-1 overflow-y-auto py-2">
         <ul className="space-y-0.5 px-2">
@@ -238,7 +302,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
               </div>
             )}
             <ul className="space-y-0.5 px-2">
-              {g.items.map((n) => (
+              {g.items.filter((n) => !isHidden(n.labelKey)).map((n) => (
                 <NavItem key={n.href} entry={n} active={n.match(pathname)} collapsed={collapsed} lang={currentLang} />
               ))}
             </ul>

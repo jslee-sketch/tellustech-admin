@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { dependentsPreview, softDeleteOne } from "@/lib/api/crud";
 import { canEdit } from "@/lib/record-policy";
 import { withSessionContext } from "@/lib/session";
 import {
@@ -115,23 +116,23 @@ export async function PATCH(request: Request, context: RouteContext) {
   });
 }
 
-export async function DELETE(_r: Request, context: RouteContext) {
-  return withSessionContext(async (session) => {
+export async function DELETE(request: Request, context: RouteContext) {
+  return withSessionContext(async () => {
     const { id } = await context.params;
-    const existing = await prisma.employee.findUnique({ where: { id } });
-    if (!existing) return notFound();
-    if (!session.allowedCompanies.includes(existing.companyCode)) return forbidden();
-
+    const url = new URL(request.url);
+    if (url.searchParams.get("preview") === "1") {
+      const counts = await dependentsPreview("Employee", id);
+      return ok({ preview: true, dependents: counts });
+    }
     try {
-      await prisma.employee.delete({ where: { id } });
-      return ok({ ok: true });
-    } catch (err) {
-      if (isForeignKeyError(err)) {
-        return conflict("has_dependent_rows", {
-          message:
-            "이 직원에 연결된 사용자 계정·입사카드·평가·AS 배정 등이 있어 삭제할 수 없습니다. 상태를 '퇴사'로 변경해 주세요.",
-        });
+      const result = await softDeleteOne("Employee", id);
+      if (!result.ok) {
+        if (result.reason === "not_found") return notFound();
+        return conflict(result.reason);
       }
+      return ok({ ok: true, softDeleted: true });
+    } catch (err) {
+      if (isForeignKeyError(err)) return conflict("has_dependent_rows");
       if (isRecordNotFoundError(err)) return notFound();
       return serverError(err);
     }

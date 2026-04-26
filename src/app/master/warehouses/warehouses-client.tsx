@@ -29,6 +29,8 @@ const typeLabelKey: Record<string, string> = {
 
 export function WarehousesClient({ initialData, lang }: { initialData: WarehouseRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
   const [type, setType] = useState("all");
 
   const filtered = useMemo(() => {

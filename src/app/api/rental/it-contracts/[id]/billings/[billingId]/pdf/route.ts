@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { notFound } from "@/lib/api-utils";
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
+import { embedCjkFont } from "@/lib/pdf-fonts";
 
 // GET /api/rental/it-contracts/[id]/billings/[billingId]/pdf
 //   해당 IT 월별 청구서를 PDF 로 다운로드.
@@ -23,11 +24,11 @@ export async function GET(_r: Request, context: RouteContext) {
     if (!bill || bill.itContractId !== id) return notFound();
 
     const doc = await PDFDocument.create();
-    const font = await doc.embedFont(StandardFonts.Helvetica);
-    const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+    const font = await embedCjkFont(doc);
+    const bold = font;
     const page = doc.addPage([595, 842]);
     let y = 800;
-    page.drawText("IT Monthly Billing / Hoa don thang", { x: 50, y, font: bold, size: 16 });
+    page.drawText("IT 월별 청구서 / IT Monthly Billing / Hóa đơn tháng", { x: 50, y, font: bold, size: 14 });
     y -= 30;
     const lines: [string, string][] = [
       ["Contract", bill.itContract.contractNumber],

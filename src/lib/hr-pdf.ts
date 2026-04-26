@@ -1,5 +1,6 @@
 import "server-only";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, rgb } from "pdf-lib";
+import { embedCjkFont } from "./pdf-fonts";
 
 // HR 카드 PDF 자동생성 — 입사·퇴사 카드 두 종.
 // 한글·베트남어 텍스트는 표준 폰트로는 한계가 있어 ASCII 라벨 + 데이터는 다른 줄에 영문 보강.
@@ -31,8 +32,8 @@ function flattenKv(prefix: string, obj: unknown, out: Kv[]) {
 
 async function buildKvPdf(title: string, header: Kv[], sections: { title: string; items: Kv[] }[]): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const font = await embedCjkFont(doc);
+  const bold = font;
   let page = doc.addPage([PAGE_W, PAGE_H]);
   let y = PAGE_H - MARGIN;
 

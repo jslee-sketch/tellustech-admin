@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { dependentsPreview, softDeleteOne } from "@/lib/api/crud";
 import { canEdit } from "@/lib/record-policy";
 import { withSessionContext } from "@/lib/session";
 import {
@@ -76,22 +77,23 @@ export async function PATCH(request: Request, context: RouteContext) {
   });
 }
 
-export async function DELETE(_r: Request, context: RouteContext) {
-  return withSessionContext(async (session) => {
+export async function DELETE(request: Request, context: RouteContext) {
+  return withSessionContext(async () => {
     const { id } = await context.params;
-    const existing = await prisma.project.findUnique({ where: { id } });
-    if (!existing) return notFound();
-    if (!session.allowedCompanies.includes(existing.companyCode)) return forbidden();
-
+    const url = new URL(request.url);
+    if (url.searchParams.get("preview") === "1") {
+      const counts = await dependentsPreview("Project", id);
+      return ok({ preview: true, dependents: counts });
+    }
     try {
-      await prisma.project.delete({ where: { id } });
-      return ok({ ok: true });
-    } catch (err) {
-      if (isForeignKeyError(err)) {
-        return conflict("has_dependent_rows", {
-          message: "이 프로젝트에 연결된 매출/매입 이력이 있어 삭제할 수 없습니다.",
-        });
+      const result = await softDeleteOne("Project", id);
+      if (!result.ok) {
+        if (result.reason === "not_found") return notFound();
+        return conflict(result.reason);
       }
+      return ok({ ok: true, softDeleted: true });
+    } catch (err) {
+      if (isForeignKeyError(err)) return conflict("has_dependent_rows");
       if (isRecordNotFoundError(err)) return notFound();
       return serverError(err);
     }

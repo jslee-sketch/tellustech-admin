@@ -96,6 +96,8 @@ const GROUPS: NavGroup[] = [
     labelKey: "nav.admin",
     items: [
       { href: "/admin/audit-logs", labelKey: "nav.audit", icon: "🧾", match: (p) => p.startsWith("/admin/audit-logs") },
+      { href: "/admin/permissions", labelKey: "nav.permissions", icon: "🔐", match: (p) => p.startsWith("/admin/permissions") },
+      { href: "/stats", labelKey: "nav.stats", icon: "📈", match: (p) => p.startsWith("/stats") },
     ],
   },
 ];

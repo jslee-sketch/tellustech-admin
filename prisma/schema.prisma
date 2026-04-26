@@ -1389,8 +1389,67 @@ model User {
   chatMessages    ChatMessage[]
   chatRoomMembers ChatRoomMember[]
   filesUploaded   File[]           @relation("FileUploader")
+  permissions     UserPermission[]
 
   @@map("users")
+}
+
+// 사용자별 모듈 접근 권한 — 보기(VIEW) / 쓰기(WRITE) / 가림(HIDDEN)
+// HIDDEN 이면 사이드바·접근 모두 차단. WRITE 면 작성·수정 모두 가능. VIEW 면 GET 만.
+// role=ADMIN 은 자동으로 모든 모듈 WRITE — 이 테이블 무시.
+model UserPermission {
+  id        String         @id @default(cuid())
+  userId    String
+  module    PermissionModule
+  level     PermissionLevel @default(VIEW)
+  updatedAt DateTime       @updatedAt
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+  @@index([userId])
+  @@map("user_permissions")
+}
+
+enum PermissionLevel {
+  HIDDEN
+  VIEW
+  WRITE
+}
+
+enum PermissionModule {
+  CLIENTS
+  ITEMS
+  WAREHOUSES
+  EMPLOYEES
+  DEPARTMENTS
+  PROJECTS
+  LICENSES
+  SCHEDULES
+  SALES
+  PURCHASES
+  IT_CONTRACTS
+  TM_RENTALS
+  AS_TICKETS
+  AS_DISPATCHES
+  CALIBRATIONS
+  INVENTORY
+  HR_LEAVE
+  HR_ONBOARDING
+  HR_OFFBOARDING
+  HR_INCIDENT
+  HR_EVALUATION
+  HR_PAYROLL
+  HR_INCENTIVE
+  FINANCE_PAYABLE
+  FINANCE_RECEIVABLE
+  FINANCE_EXPENSE
+  STATS
+  CHAT
+  CALENDAR
+  AUDIT
+  ADMIN
 }
 
 model AuditLog {

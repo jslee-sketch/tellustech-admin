@@ -126,6 +126,8 @@ const DICT: Dict = {
   "nav.weeklyReport":{ vi: "Backlog/Công việc", en: "Backlog/Tasks", ko: "Backlog/업무진행" },
   "nav.chat":        { vi: "Trò chuyện",      en: "Chat",            ko: "채팅" },
   "nav.audit":       { vi: "Nhật ký kiểm toán", en: "Audit Logs",    ko: "감사로그" },
+  "nav.permissions": { vi: "Phân quyền",       en: "Permissions",   ko: "권한관리" },
+  "nav.stats":       { vi: "Thống kê",         en: "Statistics",    ko: "통계" },
 
   // ── 대시보드 ──
   "dash.title":      { vi: "Bảng điều khiển", en: "Dashboard",       ko: "대시보드" },

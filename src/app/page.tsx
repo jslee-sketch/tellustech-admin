@@ -115,6 +115,15 @@ export default async function Home() {
             <h1 className="mt-2 text-[30px] font-black leading-none tracking-tight text-[color:var(--tts-text)]">
               {t("dash.title", L)}
               <span className="ml-3 rounded-lg bg-[color:var(--tts-primary)] px-3 py-1 align-middle text-[14px] font-extrabold text-white">{session.companyCode}</span>
+              <a
+                href="/login?portal=1"
+                target="_blank"
+                rel="noopener"
+                title="고객 포탈 로그인 / Đăng nhập cổng khách hàng"
+                className="ml-2 inline-block rounded-lg border border-[color:var(--tts-accent)] bg-[color:var(--tts-accent-dim)] px-3 py-1 align-middle text-[14px] font-extrabold text-[color:var(--tts-accent)] hover:bg-[color:var(--tts-accent)] hover:text-white"
+              >
+                🛒 고객포탈 / Cổng KH
+              </a>
               <span className="ml-3 align-middle text-[16px] font-medium text-[color:var(--tts-sub)]">{session.username}</span>
             </h1>
           </div>

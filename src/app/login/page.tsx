@@ -62,7 +62,7 @@ function LoginForm() {
       router.push(mode === "portal" ? "/portal" : nextPath);
       router.refresh();
     } catch {
-      setError("네트워크 오류 / Lỗi mạng");
+      setError("네트워크 오류 / Lỗi mạng / Network error");
     } finally {
       setSubmitting(false);
     }
@@ -82,17 +82,17 @@ function LoginForm() {
             TELLUSTECH VINA
           </div>
           <div className="mt-1 text-[22px] font-extrabold text-[color:var(--tts-text)]">
-            {mode === "portal" ? "고객 포탈 / Cổng khách hàng" : "ERP Login / Đăng nhập"}
+            {mode === "portal" ? "고객 포탈 / Cổng khách hàng / Customer Portal" : "ERP 로그인 / Đăng nhập / Sign in"}
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {mode === "staff" && (
-            <Field label="회사코드 / Mã công ty" required>
+            <Field label="회사코드 / Mã công ty / Company" required>
               <Select
                 value={companyCode}
                 onChange={setCompanyCode}
-                placeholder="선택 / Chọn"
+                placeholder="선택 / Chọn / Select"
                 options={[
                   { v: "TV", l: "TV — Tellustech Vina" },
                   { v: "VR", l: "VR — Vietrental" },
@@ -102,7 +102,7 @@ function LoginForm() {
             </Field>
           )}
 
-          <Field label={mode === "portal" ? "고객코드 / Mã khách hàng" : "아이디 / Tên đăng nhập"} required>
+          <Field label={mode === "portal" ? "고객코드 / Mã khách hàng / Client Code" : "아이디 / Tên đăng nhập / Username"} required>
             <TextInput
               value={username}
               onChange={setUsername}
@@ -112,7 +112,7 @@ function LoginForm() {
             />
           </Field>
 
-          <Field label="비밀번호 / Mật khẩu" required>
+          <Field label="비밀번호 / Mật khẩu / Password" required>
             <TextInput
               type="password"
               value={password}
@@ -123,7 +123,7 @@ function LoginForm() {
             />
           </Field>
 
-          <Field label="언어 / Ngôn ngữ">
+          <Field label="언어 / Ngôn ngữ / Language">
             <Select
               value={language}
               onChange={setLanguage}
@@ -146,7 +146,7 @@ function LoginForm() {
             disabled={submitting}
             className="mt-2 w-full rounded-lg bg-[color:var(--tts-primary)] py-3 text-[15px] font-bold text-white disabled:opacity-60"
           >
-            {submitting ? "로그인 중… / Đang đăng nhập…" : "로그인 / Đăng nhập"}
+            {submitting ? "로그인 중… / Đang đăng nhập… / Signing in…" : "로그인 / Đăng nhập / Sign in"}
           </button>
         </form>
 
@@ -158,7 +158,7 @@ function LoginForm() {
               onClick={() => switchMode("portal")}
               className="w-full rounded-lg border border-[color:var(--tts-border)] py-2.5 text-[13px] font-semibold text-[color:var(--tts-sub)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
             >
-              🛒 고객 포탈 로그인 / Đăng nhập cổng khách hàng
+              🛒 고객 포탈 로그인 / Đăng nhập cổng khách hàng / Customer Portal
             </button>
           ) : (
             <button
@@ -166,7 +166,7 @@ function LoginForm() {
               onClick={() => switchMode("staff")}
               className="w-full rounded-lg border border-[color:var(--tts-border)] py-2.5 text-[13px] font-semibold text-[color:var(--tts-sub)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
             >
-              🏢 사내 직원 로그인 / Đăng nhập nội bộ
+              🏢 사내 직원 로그인 / Đăng nhập nội bộ / Staff Login
             </button>
           )}
         </div>
@@ -178,13 +178,13 @@ function LoginForm() {
 function mapError(code: string | undefined): string {
   switch (code) {
     case "invalid_credentials":
-      return "아이디 또는 비밀번호가 올바르지 않습니다 / Tên đăng nhập hoặc mật khẩu sai";
+      return "아이디 또는 비밀번호가 올바르지 않습니다 / Tên đăng nhập hoặc mật khẩu sai / Invalid credentials";
     case "company_not_allowed":
-      return "이 회사 접근 권한이 없습니다 / Không có quyền truy cập công ty này";
+      return "이 회사 접근 권한이 없습니다 / Không có quyền truy cập công ty này / Not allowed for this company";
     case "invalid_input":
-      return "입력값이 올바르지 않습니다 / Đầu vào không hợp lệ";
+      return "입력값이 올바르지 않습니다 / Đầu vào không hợp lệ / Invalid input";
     default:
-      return "로그인 실패 / Đăng nhập thất bại";
+      return "로그인 실패 / Đăng nhập thất bại / Login failed";
   }
 }
 

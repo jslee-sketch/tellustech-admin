@@ -18,5 +18,7 @@ export { ExcelUploader } from "./excel-uploader";
 export type { UploaderColumn, ValidatedRow } from "./excel-uploader";
 export { ItemCombobox } from "./item-combobox";
 export type { ItemOption } from "./item-combobox";
+export { ClientCombobox } from "./client-combobox";
+export type { ClientOption } from "./client-combobox";
 export { Sidebar } from "./sidebar";
 export { Multilingual } from "./multilingual";

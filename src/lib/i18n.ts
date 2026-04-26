@@ -2008,6 +2008,23 @@ const DICT: Dict = {
     en: "EXTERNAL warehouse requires a matching client.",
     ko: "EXTERNAL 창고는 거래처를 함께 선택해야 합니다.",
   },
+
+  // ── 입출고 폼: 창고 범위(scope) ──
+  "field.whScope":   { vi: "Phạm vi kho",        en: "Warehouse scope",     ko: "창고 범위" },
+  "scope.internal":  { vi: "Nội bộ (Tellus)",     en: "Internal (Tellus)",   ko: "내부 (Tellus)" },
+  "scope.external":  { vi: "Ngoài (Khách hàng)",  en: "External (Client)",   ko: "외부 (고객)" },
+  "field.fromScope": { vi: "Phạm vi xuất",        en: "From scope",          ko: "출발 범위" },
+  "field.toScope":   { vi: "Phạm vi nhập",        en: "To scope",            ko: "도착 범위" },
+  "field.fromWh":    { vi: "Kho xuất",            en: "From warehouse",      ko: "출발 창고" },
+  "field.toWh":      { vi: "Kho nhập",            en: "To warehouse",        ko: "도착 창고" },
+  "msg.noWhInScope": { vi: "Không có kho thuộc phạm vi đã chọn.", en: "No warehouse in the selected scope.", ko: "선택한 범위에 등록된 창고가 없습니다." },
+
+  // ── ClientCombobox ──
+  "client.searchPlaceholder": { vi: "Tìm khách hàng (mã hoặc tên)…", en: "Search client (code or name)…", ko: "거래처 검색 (코드 또는 이름)…" },
+  "client.enterQuery":        { vi: "Nhập từ khóa để tìm khách hàng", en: "Type to search clients",        ko: "거래처를 찾으려면 입력하세요" },
+  "client.searching":         { vi: "Đang tìm…",                     en: "Searching…",                     ko: "검색 중…" },
+  "client.noMatch":           { vi: "Không có khách hàng phù hợp.",  en: "No matching client.",            ko: "일치하는 거래처가 없습니다." },
+  "client.registerClient":    { vi: "Đăng ký khách hàng mới",        en: "Register new client",            ko: "거래처 신규 등록" },
   "sidebar.toLightMode":     { vi: "Sang chế độ sáng",    en: "Switch to light mode", ko: "라이트 모드로" },
   "sidebar.toDarkMode":      { vi: "Sang chế độ tối",     en: "Switch to dark mode",  ko: "다크 모드로" },
   "sidebar.lightShort":      { vi: "Sáng",                en: "Light",              ko: "라이트" },

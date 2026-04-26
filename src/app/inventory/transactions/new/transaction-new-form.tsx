@@ -2,21 +2,27 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { Button, Field, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
+import { Button, ClientCombobox, Field, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
+
+type Scope = "INTERNAL" | "EXTERNAL";
 
 type Props = {
   items: { value: string; label: string }[];
   warehouses: { value: string; label: string; warehouseType: string }[];
-  clients: { value: string; label: string }[];
+  // Note: clients prop 은 더 이상 사용 안 함 (ClientCombobox 가 서버 검색)
+  clients?: { value: string; label: string }[];
   lang: Lang;
 };
 
-export function TransactionNewForm({ items, warehouses, clients, lang }: Props) {
+export function TransactionNewForm({ items, warehouses, lang }: Props) {
   const router = useRouter();
   const [itemId, setItemId] = useState("");
   const [txnType, setTxnType] = useState<"IN" | "OUT" | "TRANSFER">("IN");
   const [reason, setReason] = useState("PURCHASE");
+  // Scope (INTERNAL/EXTERNAL) 를 먼저 선택 → 그 안에서 창고 선택
+  const [fromScope, setFromScope] = useState<Scope>("INTERNAL");
+  const [toScope, setToScope] = useState<Scope>("INTERNAL");
   const [fromWarehouseId, setFromWarehouseId] = useState("");
   const [toWarehouseId, setToWarehouseId] = useState("");
   const [clientId, setClientId] = useState("");
@@ -48,20 +54,35 @@ export function TransactionNewForm({ items, warehouses, clients, lang }: Props) 
   const internalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType !== "EXTERNAL"), [warehouses]);
   const externalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType === "EXTERNAL"), [warehouses]);
 
-  // 유형 전환 시 사유 자동 리셋 + 창고 필드 초기화
+  function whOptionsFor(scope: Scope): { value: string; label: string }[] {
+    const list = scope === "EXTERNAL" ? externalWarehouses : internalWarehouses;
+    return list.map((w) => ({ value: w.value, label: w.label }));
+  }
+
+  // 유형 전환 시 사유 자동 리셋 + 창고/scope 초기화
   function selectType(type: "IN" | "OUT" | "TRANSFER") {
     setTxnType(type);
     setReason(REASONS_BY_TYPE[type][0].value);
+    setFromScope("INTERNAL");
+    setToScope("INTERNAL");
     setFromWarehouseId("");
     setToWarehouseId("");
     setClientId("");
     setTargetEquipmentSN("");
   }
 
-  // EXTERNAL 창고가 from 또는 to 에 잡히면 client 필수
-  const fromIsExternal = !!fromWarehouseId && externalWarehouses.some((w) => w.value === fromWarehouseId);
-  const toIsExternal   = !!toWarehouseId   && externalWarehouses.some((w) => w.value === toWarehouseId);
-  const externalInvolved = fromIsExternal || toIsExternal;
+  function selectFromScope(scope: Scope) {
+    setFromScope(scope);
+    setFromWarehouseId(""); // 범위 전환 시 창고 선택 초기화
+  }
+  function selectToScope(scope: Scope) {
+    setToScope(scope);
+    setToWarehouseId("");
+  }
+
+  const externalInvolved =
+    (txnType === "TRANSFER" && (fromScope === "EXTERNAL" || toScope === "EXTERNAL")) ||
+    (txnType === "OUT" && fromScope === "EXTERNAL");
   const showClient = externalInvolved || txnType === "OUT";
   const clientRequired = externalInvolved || txnType === "OUT";
 
@@ -162,35 +183,69 @@ export function TransactionNewForm({ items, warehouses, clients, lang }: Props) 
         </Note>
       )}
 
-      <Row>
-        {(txnType === "OUT" || txnType === "TRANSFER") && (
-          <Field label={t("field.warehouseOut", lang)} required>
+      {/* 출발 — OUT/TRANSFER 시 노출. TRANSFER 면 INTERNAL/EXTERNAL 범위 선택, OUT 은 INTERNAL 강제 */}
+      {(txnType === "OUT" || txnType === "TRANSFER") && (
+        <Row>
+          {txnType === "TRANSFER" && (
+            <Field label={t("field.fromScope", lang)} required width="200px">
+              <Select
+                value={fromScope}
+                onChange={(e) => selectFromScope(e.target.value as Scope)}
+                options={[
+                  { value: "INTERNAL", label: t("scope.internal", lang) },
+                  { value: "EXTERNAL", label: t("scope.external", lang) },
+                ]}
+              />
+            </Field>
+          )}
+          <Field label={t("field.fromWh", lang)} required>
             <Select
               required
               value={fromWarehouseId}
               onChange={(e) => setFromWarehouseId(e.target.value)}
-              placeholder={t("placeholder.select", lang)}
-              options={(txnType === "TRANSFER" ? warehouses : internalWarehouses).map((w) => ({ value: w.value, label: w.label }))}
+              placeholder={whOptionsFor(txnType === "TRANSFER" ? fromScope : "INTERNAL").length === 0 ? t("msg.noWhInScope", lang) : t("placeholder.select", lang)}
+              options={whOptionsFor(txnType === "TRANSFER" ? fromScope : "INTERNAL")}
             />
           </Field>
-        )}
-        {(txnType === "IN" || txnType === "TRANSFER") && (
-          <Field label={t("field.warehouseIn", lang)} required>
+        </Row>
+      )}
+
+      {/* 도착 — IN/TRANSFER 시 노출 */}
+      {(txnType === "IN" || txnType === "TRANSFER") && (
+        <Row>
+          {txnType === "TRANSFER" && (
+            <Field label={t("field.toScope", lang)} required width="200px">
+              <Select
+                value={toScope}
+                onChange={(e) => selectToScope(e.target.value as Scope)}
+                options={[
+                  { value: "INTERNAL", label: t("scope.internal", lang) },
+                  { value: "EXTERNAL", label: t("scope.external", lang) },
+                ]}
+              />
+            </Field>
+          )}
+          <Field label={t("field.toWh", lang)} required>
             <Select
               required
               value={toWarehouseId}
               onChange={(e) => setToWarehouseId(e.target.value)}
-              placeholder={t("placeholder.select", lang)}
-              options={(txnType === "TRANSFER" ? warehouses : internalWarehouses).map((w) => ({ value: w.value, label: w.label }))}
+              placeholder={whOptionsFor(txnType === "TRANSFER" ? toScope : "INTERNAL").length === 0 ? t("msg.noWhInScope", lang) : t("placeholder.select", lang)}
+              options={whOptionsFor(txnType === "TRANSFER" ? toScope : "INTERNAL")}
             />
           </Field>
-        )}
-      </Row>
+        </Row>
+      )}
 
       {showClient && (
         <Row>
           <Field label={txnType === "OUT" ? t("field.clientCustomer", lang) : t("field.clientExternal", lang)} required={clientRequired}>
-            <Select value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={t("placeholder.select", lang)} options={clients} />
+            <ClientCombobox
+              value={clientId}
+              onChange={setClientId}
+              required={clientRequired}
+              lang={lang}
+            />
           </Field>
         </Row>
       )}

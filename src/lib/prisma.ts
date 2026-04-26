@@ -16,6 +16,17 @@ import { getRequestContext } from "./request-context";
 const SKIP_MODELS = new Set(["AuditLog", "Notification"]);
 const USER_META_FIELDS = new Set(["lastLoginAt", "preferredLang", "updatedAt"]);
 
+// Phase 2.A — soft-delete가 적용된 모델 화이트리스트.
+// 이 목록의 모델은 findMany/findFirst/count 시 자동으로 deletedAt=null 필터가 주입됨.
+// 호출 측이 `where.deletedAt`를 명시(`null` 포함)하면 우회 — 휴지통/관리 모드에서 사용.
+const SOFT_DELETE_MODELS = new Set([
+  "Client", "Item", "Warehouse", "Employee", "Department", "License", "Project",
+  "Sales", "Purchase", "ItContract", "TmRental", "AsTicket", "AsDispatch",
+  "Expense", "Payroll", "Incentive", "LeaveRecord", "OnboardingCard",
+  "OffboardingCard", "Incident", "Evaluation", "CalendarEvent", "Schedule",
+  "Calibration", "PayableReceivable",
+]);
+
 type AnyRecord = Record<string, unknown>;
 
 function createBase(): PrismaClient {
@@ -23,9 +34,22 @@ function createBase(): PrismaClient {
   return new PrismaClient({ adapter });
 }
 
+// 호출 측이 where.deletedAt 를 명시했는지 확인 (true 면 자동주입 우회).
+function callerWantsDeleted(args: unknown): boolean {
+  const where = (args as { where?: { deletedAt?: unknown } } | undefined)?.where;
+  return !!where && Object.prototype.hasOwnProperty.call(where, "deletedAt");
+}
+
+// where 에 { deletedAt: null } 자동 합성. AND/OR 절은 건드리지 않음. args 가 undefined 면 새 객체.
+function injectSoftDeleteFilter(args: unknown): unknown {
+  const a = (args ?? {}) as { where?: AnyRecord };
+  const cur = a.where ?? {};
+  return { ...a, where: { ...cur, deletedAt: null } };
+}
+
 function extendWithAudit(base: PrismaClient) {
   return base.$extends({
-    name: "audit",
+    name: "audit-softdelete",
     query: {
       $allModels: {
         async create({ model, args, query }) {
@@ -51,7 +75,6 @@ function extendWithAudit(base: PrismaClient) {
         },
 
         async upsert({ model, args, query }) {
-          // upsert where 절로 사전 조회 → before 가 있으면 UPDATE, 없으면 INSERT.
           const before = await fetchBefore(base, model, { where: (args as { where: unknown }).where });
           const result = (await query(args)) as AnyRecord;
           await writeAudit({
@@ -61,6 +84,27 @@ function extendWithAudit(base: PrismaClient) {
             after: result,
           });
           return result;
+        },
+
+        async findMany({ model, args, query }) {
+          const next = SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(args)
+            ? injectSoftDeleteFilter(args)
+            : args;
+          return query(next as never);
+        },
+
+        async findFirst({ model, args, query }) {
+          const next = SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(args)
+            ? injectSoftDeleteFilter(args)
+            : args;
+          return query(next as never);
+        },
+
+        async count({ model, args, query }) {
+          const next = SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(args)
+            ? injectSoftDeleteFilter(args)
+            : args;
+          return query(next as never);
         },
       },
     },

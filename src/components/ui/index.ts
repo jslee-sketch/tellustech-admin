@@ -6,6 +6,7 @@ export type { BadgeTone } from "./badge";
 export { Field, TextInput, Select, Textarea, Checkbox, FileUpload } from "./field";
 export { DataTable } from "./table";
 export type { DataTableColumn } from "./table";
+export { RowActions } from "./row-actions";
 export { Tabs } from "./tabs";
 export type { TabDef } from "./tabs";
 export { SearchBar } from "./search-bar";

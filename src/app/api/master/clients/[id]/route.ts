@@ -13,6 +13,8 @@ import {
   serverError,
   trimNonEmpty,
 } from "@/lib/api-utils";
+import { canEdit } from "@/lib/record-policy";
+import { dependentsPreview, softDeleteOne } from "@/lib/api/crud";
 import type { ClientGrade, Industry, ReceivableStatus } from "@/generated/prisma/client";
 
 const GRADES: readonly ClientGrade[] = ["A", "B", "C", "D"] as const;
@@ -57,6 +59,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const existing = await prisma.client.findUnique({ where: { id } });
     if (!existing) return notFound();
+    const verdict = canEdit(existing);
+    if (!verdict.allowed) return conflict(verdict.reason);
 
     let body: unknown;
     try {
@@ -162,18 +166,24 @@ export async function PATCH(request: Request, context: RouteContext) {
   });
 }
 
-export async function DELETE(_r: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   return withSessionContext(async () => {
     const { id } = await context.params;
+    const url = new URL(request.url);
+    // ?preview=1 → 의존성 카운트만 반환, 실제 삭제 안 함 (UX confirm step)
+    if (url.searchParams.get("preview") === "1") {
+      const counts = await dependentsPreview("Client", id);
+      return ok({ preview: true, dependents: counts });
+    }
     try {
-      await prisma.client.delete({ where: { id } });
-      return ok({ ok: true });
-    } catch (err) {
-      if (isForeignKeyError(err)) {
-        return conflict("has_dependent_rows", {
-          message: "이 거래처에 연결된 계약·AS·매출·매입 등의 이력이 있어 삭제할 수 없습니다.",
-        });
+      const result = await softDeleteOne("Client", id);
+      if (!result.ok) {
+        if (result.reason === "not_found") return notFound();
+        return conflict(result.reason);
       }
+      return ok({ ok: true, softDeleted: true });
+    } catch (err) {
+      if (isForeignKeyError(err)) return conflict("has_dependent_rows");
       if (isRecordNotFoundError(err)) return notFound();
       return serverError(err);
     }

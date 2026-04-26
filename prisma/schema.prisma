@@ -318,6 +318,7 @@ model Department {
   branchType  BranchType
   managerId   String?
   createdAt   DateTime    @default(now())
+  deletedAt   DateTime?
   updatedAt   DateTime    @updatedAt
 
   manager   Employee?  @relation("DepartmentManager", fields: [managerId], references: [id])
@@ -351,6 +352,7 @@ model Employee {
   birthDate       DateTime? // 캘린더 생일 표시용
   status          EmployeeStatus @default(ACTIVE)
   createdAt       DateTime       @default(now())
+  deletedAt   DateTime?
   updatedAt       DateTime       @updatedAt
 
   department         Department?            @relation("DepartmentMembers", fields: [departmentId], references: [id])
@@ -415,6 +417,7 @@ model Client {
   receivableStatus    ReceivableStatus @default(NORMAL)
   notes               String?
   createdAt           DateTime         @default(now())
+  deletedAt   DateTime?
   updatedAt           DateTime         @updatedAt
 
   referrer         Client?             @relation("ClientReferrer", fields: [referrerId], references: [id])
@@ -464,6 +467,7 @@ model Item {
   category      String?
   reorderPoint  Int? // 재고부족 알림 임계치 — null 이면 알림 없음(소모품 계열에서만 의미)
   createdAt     DateTime @default(now())
+  deletedAt   DateTime?
   updatedAt     DateTime @updatedAt
 
   inventoryStocks       InventoryStock[]
@@ -533,6 +537,7 @@ model Warehouse {
   branchType    BranchType?
   location      String?
   createdAt     DateTime      @default(now())
+  deletedAt   DateTime?
   updatedAt     DateTime      @updatedAt
 
   inventoryStocks         InventoryStock[]
@@ -554,6 +559,7 @@ model Project {
   name        String
   salesType   SalesType
   createdAt   DateTime    @default(now())
+  deletedAt   DateTime?
   updatedAt   DateTime    @updatedAt
 
   sales     Sales[]
@@ -597,6 +603,9 @@ model ItContract {
   financeMgrOffice     String?
   financeMgrEmail      String?
   createdAt            DateTime       @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt            DateTime       @updatedAt
 
   client          Client                @relation(fields: [clientId], references: [id])
@@ -687,6 +696,9 @@ model TmRental {
   currency          Currency @default(VND)
   fxRate            Decimal  @default(1) @db.Decimal(15, 6)
   createdAt         DateTime @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt         DateTime @updatedAt
 
   client     Client              @relation(fields: [clientId], references: [id])
@@ -848,6 +860,9 @@ model AsTicket {
   originalLang      Language?
   receivableBlocked Boolean   @default(false) // 미수금 차단 자동 확인
   createdAt         DateTime  @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt         DateTime  @updatedAt
 
   client     Client       @relation(fields: [clientId], references: [id])
@@ -879,6 +894,9 @@ model AsDispatch {
   completedAt        DateTime?
   note               String?
   createdAt          DateTime  @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt          DateTime  @updatedAt
 
   // 대상 장비 S/N (AS 티켓에서 자동 propagate, 사용자 변경 가능)
@@ -945,6 +963,9 @@ model Sales {
   fxRate           Decimal   @default(1) @db.Decimal(15, 6) // 1 단위 currency → VND 환산율
   note             String?
   createdAt        DateTime  @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt        DateTime  @updatedAt
 
   client      Client              @relation(fields: [clientId], references: [id])
@@ -1009,6 +1030,9 @@ model Purchase {
   warehouseInboundDone Boolean   @default(false)
   note                 String?
   createdAt            DateTime  @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt            DateTime  @updatedAt
 
   supplier    Client                 @relation(fields: [supplierId], references: [id])
@@ -1068,6 +1092,9 @@ model Payroll {
   deductions  Decimal     @default(0) @db.Decimal(15, 2)
   netPay      Decimal     @db.Decimal(15, 2)
   createdAt   DateTime    @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt   DateTime    @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
@@ -1086,6 +1113,9 @@ model Incentive {
   amount      Decimal     @db.Decimal(15, 2)
   note        String?
   createdAt   DateTime    @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt   DateTime    @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
@@ -1112,6 +1142,9 @@ model LeaveRecord {
   approverId  String?
   status      LeaveStatus @default(PENDING)
   createdAt   DateTime    @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt   DateTime    @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
@@ -1135,6 +1168,9 @@ model Incident {
   evidenceFileId        String?
   visibilityManagerOnly Boolean      @default(true)
   createdAt             DateTime     @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt             DateTime     @updatedAt
 
   author   Employee @relation("IncidentAuthor", fields: [authorId], references: [id])
@@ -1189,6 +1225,9 @@ model Evaluation {
   managerAdjustment   Decimal?        @db.Decimal(5, 2) // ±10%
   managerAdjustReason String?
   createdAt           DateTime        @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt           DateTime        @updatedAt
 
   subject Employee @relation("EvaluationSubject", fields: [subjectId], references: [id])
@@ -1235,6 +1274,9 @@ model Expense {
   note             String?
   incurredAt       DateTime
   createdAt        DateTime    @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt        DateTime    @updatedAt
 
   allocations ExpenseAllocation[]
@@ -1276,6 +1318,9 @@ model PayableReceivable {
   dueDate     DateTime?
   status      PayableReceivableStatus @default(OPEN)
   createdAt   DateTime                @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt   DateTime                @updatedAt
 
   sales        Sales?        @relation("SalesReceivable", fields: [salesId], references: [id])
@@ -1478,6 +1523,9 @@ model OnboardingCard {
   generatedPdfId   String?
   status           OnboardingOffboardingStatus @default(DRAFT)
   createdAt        DateTime                    @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt        DateTime                    @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
@@ -1500,6 +1548,9 @@ model OffboardingCard {
   generatedPdfId      String?
   status              OnboardingOffboardingStatus @default(DRAFT)
   createdAt           DateTime                    @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt           DateTime                    @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
@@ -1518,6 +1569,9 @@ model Schedule {
   alertBeforeHours Int?
   relatedModule    String? // 연관 모듈명
   createdAt        DateTime    @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt        DateTime    @updatedAt
 
   targets       Employee[]             @relation("ScheduleTargets")
@@ -1557,6 +1611,7 @@ model License {
   alertBeforeDays   Int?
   certificateFileId String?
   createdAt         DateTime    @default(now())
+  deletedAt   DateTime?
   updatedAt         DateTime    @updatedAt
 
   owner Employee? @relation(fields: [ownerEmployeeId], references: [id])
@@ -1703,6 +1758,9 @@ model CalendarEvent {
   assigneeId   String?
   description  String?
   createdAt    DateTime          @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt    DateTime          @updatedAt
 
   assignee Employee? @relation(fields: [assigneeId], references: [id])

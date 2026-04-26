@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { canEdit } from "@/lib/record-policy";
 import { withSessionContext } from "@/lib/session";
 import {
   badRequest,
@@ -34,6 +35,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const existing = await prisma.item.findUnique({ where: { id } });
     if (!existing) return notFound();
 
+    const _v = canEdit(existing);
+    if (!_v.allowed) return conflict(_v.reason);
     let body: unknown;
     try {
       body = await request.json();

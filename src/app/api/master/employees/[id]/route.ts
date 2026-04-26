@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { canEdit } from "@/lib/record-policy";
 import { withSessionContext } from "@/lib/session";
 import {
   badRequest,
@@ -54,6 +55,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const existing = await prisma.employee.findUnique({ where: { id } });
     if (!existing) return notFound();
+    const _v = canEdit(existing);
+    if (!_v.allowed) return conflict(_v.reason);
     if (!session.allowedCompanies.includes(existing.companyCode)) return forbidden();
 
     let body: unknown;

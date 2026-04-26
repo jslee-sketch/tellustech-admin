@@ -109,6 +109,12 @@ export async function POST(request: Request) {
       if (!REASON_BY_TYPE[txnType].includes(reason)) {
         return badRequest("invalid_input", { field: "reason", reason: `not_allowed_for_${txnType}` });
       }
+      // A안: 매입/매출/매입반품은 매입·매출·Adjustment 모듈을 통해서만 생성. 직접 호출 차단.
+      // X-Internal-Caller 헤더를 사용하면 우회(매입/매출 라우트가 직접 prisma 사용하므로 사실상 영향 없음).
+      const MANUAL_FORBIDDEN: readonly InventoryReason[] = ["PURCHASE", "SALE", "RETURN_IN"];
+      if (MANUAL_FORBIDDEN.includes(reason)) {
+        return badRequest("invalid_input", { field: "reason", reason: "use_purchase_or_sales_module" });
+      }
 
       const quantity = parseIntOrNull(p.quantity);
       if (!quantity) return badRequest("invalid_input", { field: "quantity" });

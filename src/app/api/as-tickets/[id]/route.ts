@@ -1,16 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { canEdit } from "@/lib/record-policy";
 import { withSessionContext } from "@/lib/session";
-import {
-  badRequest,
-  handleFieldError,
-  isForeignKeyError,
-  isRecordNotFoundError,
-  notFound,
-  ok,
-  optionalEnum,
-  serverError,
-  trimNonEmpty,
-} from "@/lib/api-utils";
+import { badRequest, handleFieldError, isForeignKeyError, isRecordNotFoundError, notFound, ok, optionalEnum, serverError, trimNonEmpty, conflict } from "@/lib/api-utils";
 import { fillTranslations } from "@/lib/translate";
 import type { ASStatus, Language } from "@/generated/prisma/client";
 
@@ -42,6 +33,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const existing = await prisma.asTicket.findUnique({ where: { id } });
     if (!existing) return notFound();
 
+    const _v = canEdit(existing);
+    if (!_v.allowed) return conflict(_v.reason);
     let body: unknown;
     try {
       body = await request.json();

@@ -87,14 +87,13 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
     }
   }
 
+  // A안 정책: 매입/매출/매입반품 사유는 별도 모듈(매입·매출·Adjustment)에서만 자동 생성.
+  // 입출고 폼에서 manual 선택 사유는 OTHER_IN / CONSUMABLE_OUT / TRANSFER 4종.
   const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
     IN: [
-      { value: "PURCHASE", label: t("reason.purchaseShort", lang) },
-      { value: "RETURN_IN", label: t("reason.returnInShort", lang) },
       { value: "OTHER_IN", label: t("reason.otherInShort", lang) },
     ],
     OUT: [
-      { value: "SALE", label: t("reason.saleShort", lang) },
       { value: "CONSUMABLE_OUT", label: t("reason.consumableOutShort", lang) },
     ],
     TRANSFER: [

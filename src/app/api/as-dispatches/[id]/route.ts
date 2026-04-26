@@ -1,14 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { canEdit } from "@/lib/record-policy";
 import { withSessionContext } from "@/lib/session";
-import {
-  badRequest,
-  handleFieldError,
-  isRecordNotFoundError,
-  notFound,
-  ok,
-  serverError,
-  trimNonEmpty,
-} from "@/lib/api-utils";
+import { badRequest, handleFieldError, isRecordNotFoundError, notFound, ok, serverError, trimNonEmpty, conflict } from "@/lib/api-utils";
 
 const DISTANCE_TOLERANCE_RATIO = 0.1;
 
@@ -73,6 +66,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const existing = await prisma.asDispatch.findUnique({ where: { id } });
     if (!existing) return notFound();
 
+    const _v = canEdit(existing);
+    if (!_v.allowed) return conflict(_v.reason);
     let body: unknown;
     try {
       body = await request.json();

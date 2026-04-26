@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { canEdit } from "@/lib/record-policy";
 import { withSessionContext } from "@/lib/session";
-import { badRequest, handleFieldError, isRecordNotFoundError, notFound, ok, optionalEnum, serverError, trimNonEmpty } from "@/lib/api-utils";
+import { badRequest, handleFieldError, isRecordNotFoundError, notFound, ok, optionalEnum, serverError, trimNonEmpty, conflict } from "@/lib/api-utils";
 import type { PayableReceivableStatus } from "@/generated/prisma/client";
 
 const STATUSES: readonly PayableReceivableStatus[] = ["OPEN", "PARTIAL", "PAID", "WRITTEN_OFF"] as const;
@@ -45,6 +46,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const existing = await prisma.payableReceivable.findUnique({ where: { id } });
     if (!existing) return notFound();
+    const _v = canEdit(existing);
+    if (!_v.allowed) return conflict(_v.reason);
     let body: unknown;
     try { body = await request.json(); } catch { return badRequest("invalid_body"); }
     const p = body as Record<string, unknown>;

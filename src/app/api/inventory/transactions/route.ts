@@ -126,8 +126,15 @@ export async function POST(request: Request) {
       if (txnType === "OUT" && !fromWarehouseId) {
         return badRequest("invalid_input", { field: "fromWarehouseId", reason: "required_for_OUT" });
       }
-      if (txnType === "TRANSFER" && (!fromWarehouseId || !toWarehouseId)) {
-        return badRequest("invalid_input", { field: "warehouses", reason: "both_required_for_TRANSFER" });
+      // TRANSFER: 출발/도착 각각 warehouseId 또는 clientId 중 하나 필수.
+      // EXTERNAL 측은 거래처가 곧 출발/도착지이므로 warehouseId 가 null 이고 clientId 가 있어야 함.
+      const clientIdForGuard = trimNonEmpty(p.clientId);
+      if (txnType === "TRANSFER") {
+        const fromOk = !!fromWarehouseId || !!clientIdForGuard;
+        const toOk   = !!toWarehouseId   || !!clientIdForGuard;
+        if (!fromOk || !toOk) {
+          return badRequest("invalid_input", { field: "transferEndpoints", reason: "from_and_to_required" });
+        }
       }
       // 소모품출고 시 대상장비 S/N 필수
       if (reason === "CONSUMABLE_OUT" && !targetEquipmentSN) {
@@ -138,25 +145,22 @@ export async function POST(request: Request) {
       const item = await prisma.item.findUnique({ where: { id: itemId }, select: { id: true } });
       if (!item) return badRequest("invalid_item");
 
-      let fromIsExternal = false;
-      let toIsExternal = false;
       if (fromWarehouseId) {
-        const wh = await prisma.warehouse.findUnique({ where: { id: fromWarehouseId }, select: { id: true, warehouseType: true } });
+        const wh = await prisma.warehouse.findUnique({ where: { id: fromWarehouseId }, select: { id: true } });
         if (!wh) return badRequest("invalid_warehouse", { field: "fromWarehouseId" });
-        fromIsExternal = wh.warehouseType === "EXTERNAL";
       }
       if (toWarehouseId) {
-        const wh = await prisma.warehouse.findUnique({ where: { id: toWarehouseId }, select: { id: true, warehouseType: true } });
+        const wh = await prisma.warehouse.findUnique({ where: { id: toWarehouseId }, select: { id: true } });
         if (!wh) return badRequest("invalid_warehouse", { field: "toWarehouseId" });
-        toIsExternal = wh.warehouseType === "EXTERNAL";
       }
       if (clientId) {
         const cl = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
         if (!cl) return badRequest("invalid_client");
       }
-      // EXTERNAL 창고 관여 시 client 필수 — "이 외부 창고가 누구의 보관처인지" 추적
-      if ((fromIsExternal || toIsExternal) && !clientId) {
-        return badRequest("invalid_input", { field: "clientId", reason: "required_for_external_warehouse" });
+      // TRANSFER 의 한쪽이 창고 없이 거래처만 있다면 EXTERNAL 측 — clientId 강제됨 (위 가드).
+      // OUT 도 clientId 강제 (납품처).
+      if (txnType === "OUT" && !clientId) {
+        return badRequest("invalid_input", { field: "clientId", reason: "required_for_OUT" });
       }
 
       const sn = trimNonEmpty(p.serialNumber);

@@ -2017,6 +2017,8 @@ const DICT: Dict = {
   "field.toScope":   { vi: "Phạm vi nhập",        en: "To scope",            ko: "도착 범위" },
   "field.fromWh":    { vi: "Kho xuất",            en: "From warehouse",      ko: "출발 창고" },
   "field.toWh":      { vi: "Kho nhập",            en: "To warehouse",        ko: "도착 창고" },
+  "field.fromClient":{ vi: "Khách hàng xuất",     en: "From client",         ko: "출발 거래처" },
+  "field.toClient":  { vi: "Khách hàng nhập",     en: "To client",           ko: "도착 거래처" },
   "msg.noWhInScope": { vi: "Không có kho thuộc phạm vi đã chọn.", en: "No warehouse in the selected scope.", ko: "선택한 범위에 등록된 창고가 없습니다." },
 
   // ── ClientCombobox ──

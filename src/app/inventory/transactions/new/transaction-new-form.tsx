@@ -25,6 +25,10 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
   const [toScope, setToScope] = useState<Scope>("INTERNAL");
   const [fromWarehouseId, setFromWarehouseId] = useState("");
   const [toWarehouseId, setToWarehouseId] = useState("");
+  // EXTERNAL 측은 창고 대신 거래처를 직접 선택 — INTERNAL ↔ EXTERNAL 한 트랜잭션에 한쪽만 EXTERNAL 이 일반적.
+  const [fromClientId, setFromClientId] = useState("");
+  const [toClientId, setToClientId] = useState("");
+  // OUT 의 납품처 (TRANSFER 에는 사용 안 함 — EXTERNAL 측이 곧 거래처)
   const [clientId, setClientId] = useState("");
   const [targetEquipmentSN, setTargetEquipmentSN] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -59,7 +63,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
     return list.map((w) => ({ value: w.value, label: w.label }));
   }
 
-  // 유형 전환 시 사유 자동 리셋 + 창고/scope 초기화
+  // 유형 전환 시 사유 자동 리셋 + 창고/scope/거래처 초기화
   function selectType(type: "IN" | "OUT" | "TRANSFER") {
     setTxnType(type);
     setReason(REASONS_BY_TYPE[type][0].value);
@@ -67,24 +71,26 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
     setToScope("INTERNAL");
     setFromWarehouseId("");
     setToWarehouseId("");
+    setFromClientId("");
+    setToClientId("");
     setClientId("");
     setTargetEquipmentSN("");
   }
 
   function selectFromScope(scope: Scope) {
     setFromScope(scope);
-    setFromWarehouseId(""); // 범위 전환 시 창고 선택 초기화
+    setFromWarehouseId("");
+    setFromClientId("");
   }
   function selectToScope(scope: Scope) {
     setToScope(scope);
     setToWarehouseId("");
+    setToClientId("");
   }
 
-  const externalInvolved =
-    (txnType === "TRANSFER" && (fromScope === "EXTERNAL" || toScope === "EXTERNAL")) ||
-    (txnType === "OUT" && fromScope === "EXTERNAL");
-  const showClient = externalInvolved || txnType === "OUT";
-  const clientRequired = externalInvolved || txnType === "OUT";
+  // OUT 은 별도 client 필드 노출. TRANSFER 는 EXTERNAL 측이 곧 거래처라 별도 필드 불필요.
+  const showOutClient = txnType === "OUT";
+  const outClientRequired = txnType === "OUT";
 
   const showTargetEquipment = reason === "CONSUMABLE_OUT";
 
@@ -101,11 +107,50 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    if (clientRequired && !clientId) {
+
+    // TRANSFER 의 EXTERNAL 측은 창고 대신 거래처 1건이 destination/source.
+    // 단일 clientId 로 압축: to 우선, 없으면 from.
+    let txnFromWarehouseId: string | null = null;
+    let txnToWarehouseId: string | null = null;
+    let txnClientId: string | null = null;
+
+    if (txnType === "IN") {
+      txnToWarehouseId = toWarehouseId || null;
+    } else if (txnType === "OUT") {
+      txnFromWarehouseId = fromWarehouseId || null;
+      txnClientId = clientId || null;
+    } else {
+      // TRANSFER
+      if (fromScope === "INTERNAL") {
+        txnFromWarehouseId = fromWarehouseId || null;
+      } else {
+        // EXTERNAL → warehouse null + client 사용
+        txnClientId = fromClientId || null;
+      }
+      if (toScope === "INTERNAL") {
+        txnToWarehouseId = toWarehouseId || null;
+      } else {
+        txnClientId = toClientId || txnClientId;
+      }
+      // 양측 모두 INTERNAL 이면 client 필요 없음
+      if (fromScope === "EXTERNAL" && !fromClientId) {
+        setError(t("msg.externalRequiresClient", lang));
+        setSubmitting(false);
+        return;
+      }
+      if (toScope === "EXTERNAL" && !toClientId) {
+        setError(t("msg.externalRequiresClient", lang));
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    if (txnType === "OUT" && outClientRequired && !clientId) {
       setError(t("msg.externalRequiresClient", lang));
       setSubmitting(false);
       return;
     }
+
     try {
       const res = await fetch("/api/inventory/transactions", {
         method: "POST",
@@ -114,9 +159,9 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
           itemId,
           txnType,
           reason,
-          fromWarehouseId: fromWarehouseId || null,
-          toWarehouseId: toWarehouseId || null,
-          clientId: clientId || null,
+          fromWarehouseId: txnFromWarehouseId,
+          toWarehouseId: txnToWarehouseId,
+          clientId: txnClientId,
           targetEquipmentSN: targetEquipmentSN || null,
           quantity,
           serialNumber: serialNumber || null,
@@ -183,7 +228,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
         </Note>
       )}
 
-      {/* 출발 — OUT/TRANSFER 시 노출. TRANSFER 면 INTERNAL/EXTERNAL 범위 선택, OUT 은 INTERNAL 강제 */}
+      {/* 출발 — OUT/TRANSFER 시 노출. TRANSFER 의 EXTERNAL 은 거래처가 곧 출발지 */}
       {(txnType === "OUT" || txnType === "TRANSFER") && (
         <Row>
           {txnType === "TRANSFER" && (
@@ -198,19 +243,25 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
               />
             </Field>
           )}
-          <Field label={t("field.fromWh", lang)} required>
-            <Select
-              required
-              value={fromWarehouseId}
-              onChange={(e) => setFromWarehouseId(e.target.value)}
-              placeholder={whOptionsFor(txnType === "TRANSFER" ? fromScope : "INTERNAL").length === 0 ? t("msg.noWhInScope", lang) : t("placeholder.select", lang)}
-              options={whOptionsFor(txnType === "TRANSFER" ? fromScope : "INTERNAL")}
-            />
-          </Field>
+          {txnType === "TRANSFER" && fromScope === "EXTERNAL" ? (
+            <Field label={t("field.fromClient", lang)} required>
+              <ClientCombobox value={fromClientId} onChange={setFromClientId} required lang={lang} />
+            </Field>
+          ) : (
+            <Field label={t("field.fromWh", lang)} required>
+              <Select
+                required
+                value={fromWarehouseId}
+                onChange={(e) => setFromWarehouseId(e.target.value)}
+                placeholder={t("placeholder.select", lang)}
+                options={whOptionsFor("INTERNAL")}
+              />
+            </Field>
+          )}
         </Row>
       )}
 
-      {/* 도착 — IN/TRANSFER 시 노출 */}
+      {/* 도착 — IN/TRANSFER 시 노출. TRANSFER 의 EXTERNAL 은 거래처가 곧 도착지 */}
       {(txnType === "IN" || txnType === "TRANSFER") && (
         <Row>
           {txnType === "TRANSFER" && (
@@ -225,25 +276,32 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
               />
             </Field>
           )}
-          <Field label={t("field.toWh", lang)} required>
-            <Select
-              required
-              value={toWarehouseId}
-              onChange={(e) => setToWarehouseId(e.target.value)}
-              placeholder={whOptionsFor(txnType === "TRANSFER" ? toScope : "INTERNAL").length === 0 ? t("msg.noWhInScope", lang) : t("placeholder.select", lang)}
-              options={whOptionsFor(txnType === "TRANSFER" ? toScope : "INTERNAL")}
-            />
-          </Field>
+          {txnType === "TRANSFER" && toScope === "EXTERNAL" ? (
+            <Field label={t("field.toClient", lang)} required>
+              <ClientCombobox value={toClientId} onChange={setToClientId} required lang={lang} />
+            </Field>
+          ) : (
+            <Field label={t("field.toWh", lang)} required>
+              <Select
+                required
+                value={toWarehouseId}
+                onChange={(e) => setToWarehouseId(e.target.value)}
+                placeholder={t("placeholder.select", lang)}
+                options={whOptionsFor("INTERNAL")}
+              />
+            </Field>
+          )}
         </Row>
       )}
 
-      {showClient && (
+      {/* OUT 의 납품처 — TRANSFER 와 무관. OUT 은 도착 창고가 없어 별도 client 필드 유지 */}
+      {showOutClient && (
         <Row>
-          <Field label={txnType === "OUT" ? t("field.clientCustomer", lang) : t("field.clientExternal", lang)} required={clientRequired}>
+          <Field label={t("field.clientCustomer", lang)} required={outClientRequired}>
             <ClientCombobox
               value={clientId}
               onChange={setClientId}
-              required={clientRequired}
+              required={outClientRequired}
               lang={lang}
             />
           </Field>

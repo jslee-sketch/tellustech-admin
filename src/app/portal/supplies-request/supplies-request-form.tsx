@@ -32,16 +32,10 @@ export function SuppliesRequestForm({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/as-tickets", {
+      const res = await fetch("/api/portal/supplies-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId,
-          itemId,
-          originalLang: "KO",
-          symptomKo: `[소모품요청] 수량 ${quantity}${note ? ` · ${note}` : ""}`,
-          symptomVi: `[Yêu cầu vật tư] SL ${quantity}${note ? ` · ${note}` : ""}`,
-        }),
+        body: JSON.stringify({ itemId, quantity: Number(quantity), note }),
       });
       const body = await res.json();
       if (!res.ok) {

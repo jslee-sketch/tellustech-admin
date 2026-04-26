@@ -21,11 +21,10 @@ export function PortalAsRequestForm({ clientId, defaultLang, lang }: { clientId:
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/as-tickets", {
+      const res = await fetch("/api/portal/as-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clientId,
           serialNumber: serialNumber || null,
           originalLang,
           symptomVi: symptomVi || null,

@@ -27,6 +27,8 @@ function formatVnd(raw: string): string {
 
 export function TmRentalsClient({ initialData, lang }: { initialData: TmRentalRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
@@ -130,7 +132,21 @@ export function TmRentalsClient({ initialData, lang }: { initialData: TmRentalRo
       <div className="mb-3 flex flex-wrap gap-2">
         <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchTm", lang)} />
       </div>
-      <DataTable columns={columns} data={filtered} rowKey={(r) => r.id} emptyMessage={t("empty.tmRentals", lang)} />
+      <DataTable columns={columns} data={filtered} rowKey={(r) => r.id} emptyMessage={t("empty.tmRentals", lang)}
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActionBar={(ids, clear) => (
+          <Button type="button" size="sm" variant="ghost" onClick={async () => {
+            if (!confirm(`선택된 ${ids.length}건 (TM 렌탈) 삭제(soft)?`)) return;
+            setBusy(true);
+            for (const id of ids) {
+              await fetch(`/api/rental/tm-rentals/${id}`, { method: "DELETE" });
+            }
+            setBusy(false); clear(); location.reload();
+          }} disabled={busy}>{busy ? "삭제 중…" : `선택 삭제 (${ids.length})`}</Button>
+        )}
+      />
     </Card>
   );
 }

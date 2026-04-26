@@ -1,0 +1,20 @@
+{
+  "name": "Tellustech 고객 포탈",
+  "short_name": "TTS Portal",
+  "description": "고객 포탈 / Cổng khách hàng / Customer Portal",
+  "start_url": "/portal",
+  "scope": "/portal",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#5b9bd5",
+  "background_color": "#111113",
+  "lang": "ko",
+  "icons": [
+    { "src": "/flags/kr.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "AS 요청 / AS Request", "url": "/portal/as-request", "icons": [{ "src": "/flags/kr.svg", "sizes": "any" }] },
+    { "name": "소모품 요청 / Supplies", "url": "/portal/supplies-request", "icons": [{ "src": "/flags/kr.svg", "sizes": "any" }] },
+    { "name": "사용량 컨펌 / Usage Confirm", "url": "/portal/usage-confirm", "icons": [{ "src": "/flags/kr.svg", "sizes": "any" }] }
+  ]
+}

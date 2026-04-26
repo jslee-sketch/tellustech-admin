@@ -131,17 +131,24 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
     });
     if (r.ok) location.reload();
   }
-  // labelKey → PermissionModule 매핑 (대표 모듈만)
+  // labelKey → PermissionModule 매핑. sidebar 실제 키와 일치해야 가림 작동.
   const KEY_TO_MODULE: Record<string, string> = {
     "nav.clients":"CLIENTS","nav.items":"ITEMS","nav.warehouses":"WAREHOUSES","nav.employees":"EMPLOYEES",
     "nav.departments":"DEPARTMENTS","nav.projects":"PROJECTS","nav.licenses":"LICENSES","nav.schedules":"SCHEDULES",
-    "nav.sales":"SALES","nav.purchases":"PURCHASES","nav.itContracts":"IT_CONTRACTS","nav.tmRentals":"TM_RENTALS",
-    "nav.asTickets":"AS_TICKETS","nav.asDispatches":"AS_DISPATCHES","nav.calibrations":"CALIBRATIONS",
-    "nav.stock":"INVENTORY","nav.txns":"INVENTORY","nav.qrScan":"INVENTORY","nav.qrPrint":"INVENTORY",
+    "nav.salesOrder":"SALES","nav.sales":"SALES",
+    "nav.purchase":"PURCHASES","nav.purchases":"PURCHASES",
+    "nav.itContract":"IT_CONTRACTS","nav.itContracts":"IT_CONTRACTS",
+    "nav.tmRental":"TM_RENTALS","nav.tmRentals":"TM_RENTALS",
+    "nav.asTickets":"AS_TICKETS",
+    "nav.dispatches":"AS_DISPATCHES","nav.asDispatches":"AS_DISPATCHES",
+    "nav.calibrations":"CALIBRATIONS",
+    "nav.stock":"INVENTORY","nav.invTxn":"INVENTORY","nav.txns":"INVENTORY",
+    "nav.qrScan":"INVENTORY","nav.qrLabel":"INVENTORY","nav.qrPrint":"INVENTORY",
     "nav.leave":"HR_LEAVE","nav.onboarding":"HR_ONBOARDING","nav.offboarding":"HR_OFFBOARDING",
     "nav.incidents":"HR_INCIDENT","nav.evaluations":"HR_EVALUATION","nav.payroll":"HR_PAYROLL","nav.incentive":"HR_INCENTIVE",
-    "nav.payables":"FINANCE_PAYABLE","nav.expenses":"FINANCE_EXPENSE",
+    "nav.payables":"FINANCE_PAYABLE","nav.expenses":"FINANCE_EXPENSE","nav.receivables":"FINANCE_RECEIVABLE",
     "nav.stats":"STATS","nav.chat":"CHAT","nav.calendar":"CALENDAR","nav.audit":"AUDIT",
+    "nav.weeklyReport":"STATS",
     "nav.permissions":"ADMIN","nav.closings":"ADMIN","nav.trash":"ADMIN",
   };
   function isHidden(labelKey: string): boolean {

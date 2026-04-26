@@ -73,7 +73,7 @@ export async function withUniqueRetry<T>(
     isConflict: () => false,
   },
 ): Promise<T> {
-  const attempts = opts.attempts ?? 5;
+  const attempts = opts.attempts ?? 12; // 동시성 race — attempts 상향 (이전 5)
   let lastErr: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
@@ -81,6 +81,9 @@ export async function withUniqueRetry<T>(
     } catch (err) {
       lastErr = err;
       if (!opts.isConflict(err)) throw err;
+      // exponential backoff (50, 100, 200, ... ms) + jitter — 동시 충돌 분산
+      const wait = Math.min(50 * Math.pow(1.6, i), 800) + Math.random() * 50;
+      await new Promise((r) => setTimeout(r, wait));
     }
   }
   throw lastErr;

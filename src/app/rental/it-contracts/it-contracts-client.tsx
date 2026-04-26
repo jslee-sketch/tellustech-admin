@@ -34,6 +34,8 @@ const statusLabelKey: Record<string, string> = {
 
 export function ItContractsClient({ initialData, lang }: { initialData: ItContractRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("all");
 
   const filtered = useMemo(() => {
@@ -154,6 +156,19 @@ export function ItContractsClient({ initialData, lang }: { initialData: ItContra
         data={filtered}
         rowKey={(c) => c.id}
         emptyMessage={t("empty.itContracts", lang)}
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActionBar={(ids, clear) => (
+          <Button type="button" size="sm" variant="ghost" onClick={async () => {
+            if (!confirm(`선택된 ${ids.length}건 (계약) 삭제(soft)?`)) return;
+            setBusy(true);
+            for (const id of ids) {
+              await fetch(`/api/rental/it-contracts/${id}`, { method: "DELETE" });
+            }
+            setBusy(false); clear(); location.reload();
+          }} disabled={busy}>{busy ? "삭제 중…" : `선택 삭제 (${ids.length})`}</Button>
+        )}
       />
     </Card>
   );

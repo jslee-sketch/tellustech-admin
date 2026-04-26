@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Tellustech ERP",
   description: "Tellustech Vina / Vietrental — ERP",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "TTS Portal" },
+  themeColor: "#5b9bd5",
 };
 
 // SSR 시점에 미들웨어가 주입한 세션 헤더에서 언어를 꺼내 Sidebar 의 초기값으로 전달.
@@ -51,6 +54,11 @@ export default async function RootLayout({
           <Sidebar initialLang={initialLang} />
           <div className="flex min-h-full flex-1 flex-col">{children}</div>
         </div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ("serviceWorker" in navigator && location.pathname.startsWith("/portal")) {
+            navigator.serviceWorker.register("/sw.js", { scope: "/portal" }).catch(() => undefined);
+          }
+        `}} />
       </body>
     </html>
   );

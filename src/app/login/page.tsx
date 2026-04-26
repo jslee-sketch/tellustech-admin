@@ -22,8 +22,10 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const nextPath = params.get("next") || "/";
+  // ?portal=1 또는 ?mode=portal 로 외부 링크 진입 시 포탈 모드 자동 활성화
+  const initialMode = (params.get("portal") === "1" || params.get("mode") === "portal") ? "portal" : "staff";
 
-  const [mode, setMode] = useState<"staff" | "portal">("staff");
+  const [mode, setMode] = useState<"staff" | "portal">(initialMode);
   const [companyCode, setCompanyCode] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

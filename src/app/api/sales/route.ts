@@ -164,12 +164,38 @@ export async function POST(request: Request) {
         if (!quantity) return badRequest("invalid_input", { field: `items[${i}].quantity` });
         const unitPrice = parseDecimal(it.unitPrice);
         if (unitPrice === null) return badRequest("invalid_input", { field: `items[${i}].unitPrice` });
+
+        // S/N 검증 — TRADE 매출의 경우 (1) 이미 출고된 S/N 차단 (2) 활성 IT/TM 계약 충돌 차단
+        const lineSn = trimNonEmpty(it.serialNumber);
+        if (lineSn && projectType === "TRADE" && p.forceBlocked !== true) {
+          // (1) 이중 출고 방지 — 마지막 트랜잭션이 OUT 이면 이미 판매됨
+          const lastTxn = await prisma.inventoryTransaction.findFirst({
+            where: { serialNumber: lineSn },
+            orderBy: { performedAt: "desc" },
+            select: { txnType: true, performedAt: true },
+          });
+          if (lastTxn?.txnType === "OUT") {
+            return badRequest("serial_already_sold", { field: `items[${i}].serialNumber`, sn: lineSn });
+          }
+          // (2) 활성 IT 계약 / TM 렌탈에 등록된 S/N 차단
+          const { findSerialDuplicates } = await import("@/lib/sn-dupcheck");
+          const dups = await findSerialDuplicates(lineSn);
+          const blocking = dups.filter((d) => d.source === "IT" || d.source === "TM");
+          if (blocking.length > 0) {
+            return badRequest("serial_in_active_contract", {
+              field: `items[${i}].serialNumber`,
+              sn: lineSn,
+              detail: blocking.map((d) => `${d.source}:${d.ref}`).join(", "),
+            });
+          }
+        }
+
         const amount = (Number(quantity) * Number(unitPrice)).toFixed(2);
         const lineStart = parseDateOrNull(it.startDate) ?? usagePeriodStart;
         const lineEnd = parseDateOrNull(it.endDate) ?? usagePeriodEnd;
         itemsData.push({
           itemId,
-          serialNumber: trimNonEmpty(it.serialNumber),
+          serialNumber: lineSn,
           quantity,
           unitPrice,
           amount,

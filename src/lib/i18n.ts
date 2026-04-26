@@ -1967,6 +1967,7 @@ const DICT: Dict = {
   // Sidebar
   "sidebar.collapse":        { vi: "Thu gọn",             en: "Collapse",           ko: "접기" },
   "sidebar.expand":          { vi: "Mở rộng",             en: "Expand",             ko: "펼치기" },
+  "sidebar.langSelect":      { vi: "Chọn ngôn ngữ",       en: "Language",           ko: "언어선택" },
   "sidebar.toLightMode":     { vi: "Sang chế độ sáng",    en: "Switch to light mode", ko: "라이트 모드로" },
   "sidebar.toDarkMode":      { vi: "Sang chế độ tối",     en: "Switch to dark mode",  ko: "다크 모드로" },
   "sidebar.lightShort":      { vi: "Sáng",                en: "Light",              ko: "라이트" },

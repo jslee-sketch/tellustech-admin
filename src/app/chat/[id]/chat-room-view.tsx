@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { Badge, Button, Select, Textarea } from "@/components/ui";
+import { Badge, Button, Textarea } from "@/components/ui";
 import { t, type Lang as I18nLang } from "@/lib/i18n";
 
 type Lang = "VI" | "EN" | "KO";
@@ -28,11 +28,19 @@ type Props = {
 
 const LANG_LABELS: Record<Lang, string> = { VI: "Tiếng Việt", EN: "English", KO: "한국어" };
 
-export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMessages, lang }: Props) {
+// 텍스트 → 언어 자동 감지. 한글 1자라도 있으면 KO, 베트남어 특수문자 있으면 VI, 그 외 EN.
+function detectLang(text: string): Lang {
+  if (/[가-힣]/.test(text)) return "KO";
+  if (/[ăâđêôơưĂÂĐÊÔƠƯáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵÁÀẢÃẠẮẰẲẴẶẤẦẨẪẬÉÈẺẼẸẾỀỂỄỆÍÌỈĨỊÓÒỎÕỌỐỒỔỖỘỚỜỞỠỢÚÙỦŨỤỨỪỬỮỰÝỲỶỸỴ]/.test(text)) return "VI";
+  return "EN";
+}
+
+export function ChatRoomView({ roomId, currentUserId, initialMessages, lang }: Props) {
+  // 표시 언어 = 사이드바의 세션 언어(lang). 별도 state 불필요.
+  // 원문 언어 = 입력 텍스트에서 자동 감지. 별도 셀렉터 불필요.
+  const displayLang: Lang = lang;
   const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [displayLang, setDisplayLang] = useState<Lang>(currentLanguage);
   const [content, setContent] = useState("");
-  const [originalLang, setOriginalLang] = useState<Lang>(currentLanguage);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
@@ -102,10 +110,11 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
     setSending(true);
     setError(null);
     try {
+      const detectedLang = detectLang(text);
       const res = await fetch(`/api/chat/rooms/${roomId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text, originalLang }),
+        body: JSON.stringify({ content: text, originalLang: detectedLang }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -133,22 +142,6 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
 
   return (
     <div className="flex flex-col">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="text-[11px] text-[color:var(--tts-muted)]">
-          {t("label.displayLang", lang)}
-        </div>
-        <Select
-          value={displayLang}
-          onChange={(e) => setDisplayLang(e.target.value as Lang)}
-          options={[
-            { value: "VI", label: "VI · Tiếng Việt" },
-            { value: "EN", label: "EN · English" },
-            { value: "KO", label: "KO · 한국어" },
-          ]}
-          className="w-40"
-        />
-      </div>
-
       <div
         ref={listRef}
         className="h-[480px] overflow-y-auto rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] p-3"
@@ -201,19 +194,8 @@ export function ChatRoomView({ roomId, currentUserId, currentLanguage, initialMe
       </div>
 
       <form onSubmit={handleSend} className="mt-3">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="text-[11px] text-[color:var(--tts-muted)]">{t("label.originalLangLbl", lang)}</span>
-          <Select
-            value={originalLang}
-            onChange={(e) => setOriginalLang(e.target.value as Lang)}
-            options={[
-              { value: "VI", label: "VI" },
-              { value: "EN", label: "EN" },
-              { value: "KO", label: "KO" },
-            ]}
-            className="w-24"
-          />
-          <span className="text-[10px] text-[color:var(--tts-muted)]">{t("label.aiAutoTranslateNote", lang)}</span>
+        <div className="mb-1 text-[10px] text-[color:var(--tts-muted)]">
+          {t("label.aiAutoTranslateNote", lang)}
         </div>
         <Textarea
           rows={2}

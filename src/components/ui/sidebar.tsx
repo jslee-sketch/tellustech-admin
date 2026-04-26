@@ -173,6 +173,42 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
         </button>
       </div>
 
+      {/* 언어 선택 — 상단, 동그란 국기, 활성 시 발광 테두리 */}
+      <div className="border-b border-[color:var(--tts-border)] px-2 py-3">
+        {!collapsed && (
+          <div className="mb-2 px-1 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-muted)]">
+            {t("sidebar.langSelect", currentLang)}
+          </div>
+        )}
+        <div className={`flex ${collapsed ? "flex-col items-center gap-2" : "justify-center gap-2"}`}>
+          {(["VI", "EN", "KO"] as const).map((l) => {
+            const active = currentLang === l;
+            const flag = l === "VI" ? "🇻🇳" : l === "EN" ? "🇺🇸" : "🇰🇷";
+            const title = l === "VI" ? "Tiếng Việt" : l === "EN" ? "English" : "한국어";
+            return (
+              <button
+                key={l}
+                type="button"
+                onClick={() => changeLang(l)}
+                disabled={changingLang}
+                title={title}
+                aria-label={title}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-[18px] leading-none transition disabled:opacity-50 ${
+                  active
+                    ? "border-[color:var(--tts-accent)]"
+                    : "border-[color:var(--tts-border)] opacity-60 hover:opacity-100"
+                }`}
+                style={active ? {
+                  boxShadow: "0 0 12px 2px var(--tts-accent), 0 0 4px 1px rgba(232,148,58,0.6) inset",
+                } : undefined}
+              >
+                <span aria-hidden>{flag}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 네비 */}
       <nav className="flex-1 overflow-y-auto py-2">
         <ul className="space-y-0.5 px-2">
@@ -206,36 +242,12 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
         ))}
       </nav>
 
-      {/* Footer — 언어 + 테마 */}
+      {/* Footer — 테마만 (언어 셀렉터는 상단으로 이동) */}
       <div className="border-t border-[color:var(--tts-border)] px-2 py-2">
-        <div className={`flex ${collapsed ? "flex-col items-center gap-1" : "justify-between gap-1"}`}>
-          {(["VI", "EN", "KO"] as const).map((l) => {
-            const active = currentLang === l;
-            return (
-              <button
-                key={l}
-                type="button"
-                onClick={() => changeLang(l)}
-                disabled={changingLang}
-                style={active
-                  ? { backgroundColor: "var(--tts-primary)", color: "#fff", fontWeight: 800 }
-                  : undefined}
-                className={`flex-1 rounded px-1 py-1 text-[10px] font-bold transition disabled:opacity-50 ${
-                  active
-                    ? "shadow"
-                    : "text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-                }`}
-                title={l === "VI" ? "Tiếng Việt" : l === "EN" ? "English" : "한국어"}
-              >
-                {l}
-              </button>
-            );
-          })}
-        </div>
         <button
           type="button"
           onClick={toggleTheme}
-          className="mt-1 w-full rounded px-2 py-1 text-[11px] font-bold text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
+          className="w-full rounded px-2 py-1 text-[11px] font-bold text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
           title={theme === "dark" ? t("sidebar.toLightMode", currentLang) : t("sidebar.toDarkMode", currentLang)}
         >
           {theme === "dark" ? (collapsed ? "☀" : `☀ ${t("sidebar.lightShort", currentLang)}`) : (collapsed ? "🌙" : `🌙 ${t("sidebar.darkShort", currentLang)}`)}

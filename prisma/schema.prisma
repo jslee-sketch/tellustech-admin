@@ -321,8 +321,9 @@ model Department {
   deletedAt   DateTime?
   updatedAt   DateTime    @updatedAt
 
-  manager   Employee?  @relation("DepartmentManager", fields: [managerId], references: [id])
-  employees Employee[] @relation("DepartmentMembers")
+  manager           Employee?           @relation("DepartmentManager", fields: [managerId], references: [id])
+  employees         Employee[]          @relation("DepartmentMembers")
+  expenseAllocations ExpenseAllocation[] @relation("ExpenseAllocDept")
 
   @@unique([companyCode, code])
   @@index([companyCode])
@@ -562,8 +563,9 @@ model Project {
   deletedAt   DateTime?
   updatedAt   DateTime    @updatedAt
 
-  sales     Sales[]
-  purchases Purchase[]
+  sales              Sales[]
+  purchases          Purchase[]
+  expenseAllocations ExpenseAllocation[] @relation("ExpenseAllocProject")
 
   @@unique([companyCode, projectCode])
   @@index([companyCode])
@@ -968,11 +970,12 @@ model Sales {
   lockReason  String?
   updatedAt        DateTime  @updatedAt
 
-  client      Client              @relation(fields: [clientId], references: [id])
-  project     Project?            @relation(fields: [projectId], references: [id])
-  items       SalesItem[]
-  receivables PayableReceivable[] @relation("SalesReceivable")
-  adjustments SalesAdjustment[]   @relation("SalesAdjustments")
+  client          Client              @relation(fields: [clientId], references: [id])
+  project         Project?            @relation(fields: [projectId], references: [id])
+  items           SalesItem[]
+  receivables     PayableReceivable[] @relation("SalesReceivable")
+  adjustments     SalesAdjustment[]   @relation("SalesAdjustments")
+  linkedExpenses  Expense[]           @relation("ExpenseLinkedSales")
 
   @@index([clientId])
   @@index([projectId])
@@ -1035,11 +1038,12 @@ model Purchase {
   lockReason  String?
   updatedAt            DateTime  @updatedAt
 
-  supplier    Client                 @relation(fields: [supplierId], references: [id])
-  project     Project?               @relation(fields: [projectId], references: [id])
-  items       PurchaseItem[]
-  payables    PayableReceivable[]    @relation("PurchasePayable")
-  adjustments PurchaseAdjustment[]   @relation("PurchaseAdjustments")
+  supplier        Client                 @relation(fields: [supplierId], references: [id])
+  project         Project?               @relation(fields: [projectId], references: [id])
+  items           PurchaseItem[]
+  payables        PayableReceivable[]    @relation("PurchasePayable")
+  adjustments     PurchaseAdjustment[]   @relation("PurchaseAdjustments")
+  linkedExpenses  Expense[]              @relation("ExpenseLinkedPurchase")
 
   @@index([supplierId])
   @@index([projectId])
@@ -1279,10 +1283,14 @@ model Expense {
   lockReason  String?
   updatedAt        DateTime    @updatedAt
 
-  allocations ExpenseAllocation[]
-  payables    PayableReceivable[] @relation("ExpensePayable")
+  allocations    ExpenseAllocation[]
+  payables       PayableReceivable[] @relation("ExpensePayable")
+  linkedSales    Sales?              @relation("ExpenseLinkedSales", fields: [linkedSalesId], references: [id])
+  linkedPurchase Purchase?           @relation("ExpenseLinkedPurchase", fields: [linkedPurchaseId], references: [id])
 
   @@index([expenseType])
+  @@index([linkedSalesId])
+  @@index([linkedPurchaseId])
   @@map("expenses")
 }
 
@@ -1297,7 +1305,9 @@ model ExpenseAllocation {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
-  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  expense    Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  project    Project?    @relation("ExpenseAllocProject", fields: [projectId], references: [id])
+  department Department? @relation("ExpenseAllocDept",    fields: [departmentId], references: [id])
 
   @@index([expenseId])
   @@map("expense_allocations")

@@ -669,6 +669,9 @@ model ItMonthlyBilling {
   yieldVerified     Boolean       @default(false)
   computedAmount    Decimal?      @db.Decimal(15, 2)
   createdAt         DateTime      @default(now())
+  deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt         DateTime      @updatedAt
 
   itContract ItContract @relation(fields: [itContractId], references: [id], onDelete: Cascade)

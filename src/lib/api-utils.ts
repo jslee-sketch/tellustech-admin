@@ -37,7 +37,11 @@ export function serverError(error: unknown) {
 // 업무 테이블에서 WHERE company_code = session.companyCode 를 명시적으로 주입.
 // 공유 마스터(Client/Item/Warehouse)에는 사용하지 않음.
 
-export function companyScope(session: SessionPayload): { companyCode: CompanyCode } {
+export function companyScope(session: SessionPayload): { companyCode?: CompanyCode | { in: CompanyCode[] } } {
+  // 통합조회 모드 (companyCode='ALL' 가상값): allowedCompanies 전체로 IN 절.
+  if ((session.companyCode as unknown as string) === "ALL") {
+    return { companyCode: { in: session.allowedCompanies } };
+  }
   return { companyCode: session.companyCode };
 }
 

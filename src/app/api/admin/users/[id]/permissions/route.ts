@@ -35,6 +35,8 @@ export async function PUT(request: Request, context: RouteContext) {
     if (!p?.permissions || typeof p.permissions !== "object") return badRequest("invalid_input");
 
     try {
+      const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+      if (!target) return badRequest("not_found");
       // Upsert each entry
       for (const [k, v] of Object.entries(p.permissions)) {
         if (!ALL_MODULES.includes(k as PermissionModule)) continue;
@@ -45,7 +47,7 @@ export async function PUT(request: Request, context: RouteContext) {
           update: { level: v as PermissionLevel },
         });
       }
-      const final = await getAllPermissions(id, "USER" /* placeholder; admin path */);
+      const final = await getAllPermissions(id, target.role);
       return ok({ permissions: final });
     } catch (err) {
       return serverError(err);

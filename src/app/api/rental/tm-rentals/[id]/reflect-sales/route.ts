@@ -32,12 +32,18 @@ export async function POST(_r: Request, context: RouteContext) {
       },
     });
     if (!rental) return notFound();
-    if (rental.items.length === 0) {
-      return badRequest("no_items", { message: "품목이 없어 매출로 반영할 수 없습니다." });
+    // 차후 정책: 호출 시점에 active 한 라인만 반영
+    //   - endDate >= now 인 항목만 active.
+    //   - Amendment 가 endDate 를 단축(REMOVE/TERMINATE)했다면 자동 제외됨.
+    //   - 새로 추가된 ADD 라인은 자동 포함됨.
+    const now = new Date();
+    const activeItems = rental.items.filter((it) => it.endDate >= now);
+    if (activeItems.length === 0) {
+      return badRequest("no_items", { message: "활성 품목이 없어 매출로 반영할 수 없습니다." });
     }
 
     try {
-      const totalAmount = rental.items
+      const totalAmount = activeItems
         .reduce((sum, it) => sum + Number(it.salesPrice), 0)
         .toFixed(2);
       const paymentDays = rental.client.paymentTerms ?? DEFAULT_PAYMENT_DAYS;
@@ -72,7 +78,7 @@ export async function POST(_r: Request, context: RouteContext) {
               },
             });
             await tx.salesItem.createMany({
-              data: rental.items.map((it) => ({
+              data: activeItems.map((it) => ({
                 salesId: sales.id,
                 itemId: it.itemId,
                 serialNumber: it.serialNumber,

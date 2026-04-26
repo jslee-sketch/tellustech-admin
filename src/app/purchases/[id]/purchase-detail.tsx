@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import type { DataTableColumn, TabDef } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
+import { PurchaseAdjustmentsTab } from "./adjustments-tab";
 
 type PurchaseCore = {
   purchaseNumber: string;
@@ -66,6 +67,7 @@ type Props = {
   payable: Payable | null;
   projects: ProjectInfo[];
   employeeOptions: { value: string; label: string }[];
+  warehouseOptions: { value: string; label: string }[];
   lang: Lang;
 };
 
@@ -74,6 +76,7 @@ function buildTabs(lang: Lang): TabDef[] {
     { key: "basic", label: t("tab.basicInfo", lang), icon: "📋" },
     { key: "items", label: t("tab.itemsTab", lang), icon: "📦" },
     { key: "ap", label: t("tab.ap", lang), icon: "💰" },
+    { key: "adjust", label: t("tab.adjustments", lang), icon: "🔄" },
   ];
 }
 
@@ -90,6 +93,7 @@ export function PurchaseDetail({
   payable,
   projects,
   employeeOptions,
+  warehouseOptions,
   lang,
 }: Props) {
   const router = useRouter();
@@ -240,6 +244,22 @@ export function PurchaseDetail({
           totalAmount={core.totalAmount}
           paymentTerms={core.supplierPaymentTerms}
           createdAt={core.createdAt}
+          lang={lang}
+        />
+      )}
+
+      {active === "adjust" && (
+        <PurchaseAdjustmentsTab
+          purchaseId={purchaseId}
+          originalItems={items.map((it) => ({
+            id: it.id,
+            itemId: it.itemId,
+            itemCode: it.itemCode,
+            itemName: it.itemName,
+            serialNumber: it.serialNumber,
+            unitPrice: it.unitPrice,
+          }))}
+          warehouses={warehouseOptions}
           lang={lang}
         />
       )}

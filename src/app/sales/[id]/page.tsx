@@ -31,7 +31,7 @@ export default async function SalesDetailPage({ params }: PageProps) {
   });
   if (!sales) notFound();
 
-  const [projects, employees] = await Promise.all([
+  const [projects, employees, warehouses] = await Promise.all([
     prisma.project.findMany({
       where: companyScope(session),
       orderBy: { projectCode: "asc" },
@@ -41,6 +41,11 @@ export default async function SalesDetailPage({ params }: PageProps) {
       where: { companyCode: session.companyCode, status: "ACTIVE" },
       orderBy: { employeeCode: "asc" },
       select: { id: true, employeeCode: true, nameVi: true },
+    }),
+    prisma.warehouse.findMany({
+      where: { warehouseType: "INTERNAL" },
+      orderBy: { code: "asc" },
+      select: { id: true, code: true, name: true },
     }),
   ]);
 
@@ -117,6 +122,7 @@ export default async function SalesDetailPage({ params }: PageProps) {
             }
             projects={projects.map((p) => ({ id: p.id, code: p.projectCode, name: p.name, salesType: p.salesType }))}
             employeeOptions={employees.map((e) => ({ value: e.id, label: `${e.employeeCode} · ${e.nameVi}` }))}
+            warehouseOptions={warehouses.map((w) => ({ value: w.id, label: `${w.code} · ${w.name}` }))}
           />
         </Card>
         <div className="mt-4">

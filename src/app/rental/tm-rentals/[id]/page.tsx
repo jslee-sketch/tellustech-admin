@@ -45,6 +45,12 @@ export default async function TmRentalDetailPage({ params }: PageProps) {
   const totalSales = rental.items.reduce((s, it) => s + Number(it.salesPrice), 0).toFixed(2);
   const totalProfit = rental.items.reduce((s, it) => s + Number(it.profit ?? 0), 0).toFixed(2);
 
+  const warehouses = await prisma.warehouse.findMany({
+    where: { warehouseType: "INTERNAL" },
+    orderBy: { code: "asc" },
+    select: { id: true, code: true, name: true },
+  });
+
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-6xl">
@@ -103,6 +109,7 @@ export default async function TmRentalDetailPage({ params }: PageProps) {
               commission: dec(it.commission),
               profit: dec(it.profit),
             }))}
+            warehouseOptions={warehouses.map((w) => ({ value: w.id, label: `${w.code} · ${w.name}` }))}
           />
         </Card>
         <div className="mt-4">

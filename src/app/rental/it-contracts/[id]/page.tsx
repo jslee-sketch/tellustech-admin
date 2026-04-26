@@ -56,6 +56,12 @@ export default async function ItContractDetailPage({ params }: PageProps) {
   });
   if (!contract) notFound();
 
+  const warehouses = await prisma.warehouse.findMany({
+    where: { warehouseType: "INTERNAL" },
+    orderBy: { code: "asc" },
+    select: { id: true, code: true, name: true },
+  });
+
   // 소모품 사용 이력 — 계약 장비 S/N 대상으로 CONSUMABLE_OUT 조회
   const equipmentSNs = contract.equipment.map((e) => e.serialNumber).filter((s): s is string => !!s);
   // 장비별 누적 비용
@@ -173,6 +179,7 @@ export default async function ItContractDetailPage({ params }: PageProps) {
               value: e.serialNumber,
               label: `${e.serialNumber} · ${e.item.name}`,
             }))}
+            warehouseOptions={warehouses.map((w) => ({ value: w.id, label: `${w.code} · ${w.name}` }))}
           />
         </Card>
         <div className="mt-4">

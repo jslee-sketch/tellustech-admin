@@ -5,6 +5,7 @@ import { prisma } from "./prisma";
 // - 이전 월 카운터와 이번 달 카운터의 delta 로 사용량 도출.
 // - 흑백/컬러 각각 기본 제공 매수를 초과한 만큼 단가 곱해 과금.
 // - 이전 월이 없으면 delta=0 으로 처리 (첫 달은 base 만).
+// - Amendment(PRICE_CHANGE) 의 monthlyDelta 는 effectiveDate <= billingMonth 합산.
 
 export type ComputeInput = {
   monthlyBaseFee: number;
@@ -74,4 +75,23 @@ export async function deriveUsage(
     colorUsage: Math.max(0, curColor - prevColor),
     prevMonth: prev ? prev.billingMonth.toISOString().slice(0, 7) : null,
   };
+}
+
+/**
+ * 해당 (계약, billingMonth) 에 적용 가능한 PRICE_CHANGE Amendment 의 monthlyDelta 합.
+ * effectiveDate <= billingMonth 인 amendment 만 합산.
+ */
+export async function sumPriceChangeDelta(
+  itContractId: string,
+  billingMonth: Date,
+): Promise<number> {
+  const amendments = await prisma.itContractAmendment.findMany({
+    where: {
+      contractId: itContractId,
+      type: "PRICE_CHANGE",
+      effectiveDate: { lte: billingMonth },
+    },
+    select: { monthlyDelta: true },
+  });
+  return amendments.reduce((sum, a) => sum + Number(a.monthlyDelta ?? 0), 0);
 }

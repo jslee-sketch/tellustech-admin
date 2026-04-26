@@ -269,6 +269,43 @@ enum Currency {
   CNY
 }
 
+// ─── Adjustment / Amendment 공통 ──────────────────────────────────────
+// 사후조정(Adjustment)은 매출/매입 발생 후의 반품·교환·금액조정.
+// 계약변경(Amendment)은 IT/TM 계약의 장비 추가/제거/교체/단가변경/해지.
+enum AdjustmentType {
+  RETURN_FULL
+  RETURN_PARTIAL
+  EXCHANGE_FULL
+  EXCHANGE_PARTIAL
+  PRICE_ADJUST
+}
+
+enum AdjustmentItemAction {
+  RETURN
+  EXCHANGE_OUT // sales 의 경우 새 출고
+  EXCHANGE_IN  // purchase 의 경우 새 입고
+}
+
+enum AmendmentType {
+  REMOVE_EQUIPMENT
+  ADD_EQUIPMENT
+  REPLACE_EQUIPMENT
+  PRICE_CHANGE
+  TERMINATE
+}
+
+enum AmendmentItemAction {
+  REMOVE
+  ADD
+  REPLACE_OUT
+  REPLACE_IN
+}
+
+enum AmendmentSource {
+  CONTRACT_DETAIL
+  INVENTORY_TXN
+}
+
 // ==================================================
 // 기초등록 (7)
 // ==================================================
@@ -502,6 +539,10 @@ model Warehouse {
   inventoryTransactionsFrom InventoryTransaction[] @relation("FromWarehouse")
   inventoryTransactionsTo   InventoryTransaction[] @relation("ToWarehouse")
   inventoryItems            InventoryItem[]        @relation("InventoryItemWarehouse")
+  salesAdjustments          SalesAdjustment[]      @relation("SalesAdjustmentWh")
+  purchaseAdjustments       PurchaseAdjustment[]   @relation("PurchaseAdjustmentWh")
+  itAmendments              ItContractAmendment[]  @relation("ItAmendmentWh")
+  tmAmendments              TmRentalAmendment[]    @relation("TmAmendmentWh")
 
   @@map("warehouses")
 }
@@ -562,6 +603,7 @@ model ItContract {
   monthlyBillings ItMonthlyBilling[]
   rentalOrders    RentalOrder[]
   equipment       ItContractEquipment[]
+  amendments      ItContractAmendment[]
 
   @@index([clientId])
   @@index([status])
@@ -647,8 +689,9 @@ model TmRental {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  client Client         @relation(fields: [clientId], references: [id])
-  items  TmRentalItem[]
+  client     Client              @relation(fields: [clientId], references: [id])
+  items      TmRentalItem[]
+  amendments TmRentalAmendment[]
 
   @@index([clientId])
   @@map("tm_rentals")
@@ -908,6 +951,7 @@ model Sales {
   project     Project?            @relation(fields: [projectId], references: [id])
   items       SalesItem[]
   receivables PayableReceivable[] @relation("SalesReceivable")
+  adjustments SalesAdjustment[]   @relation("SalesAdjustments")
 
   @@index([clientId])
   @@index([projectId])
@@ -967,10 +1011,11 @@ model Purchase {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  supplier Client              @relation(fields: [supplierId], references: [id])
-  project  Project?            @relation(fields: [projectId], references: [id])
-  items    PurchaseItem[]
-  payables PayableReceivable[] @relation("PurchasePayable")
+  supplier    Client                 @relation(fields: [supplierId], references: [id])
+  project     Project?               @relation(fields: [projectId], references: [id])
+  items       PurchaseItem[]
+  payables    PayableReceivable[]    @relation("PurchasePayable")
+  adjustments PurchaseAdjustment[]   @relation("PurchaseAdjustments")
 
   @@index([supplierId])
   @@index([projectId])
@@ -1661,4 +1706,199 @@ model CalendarEvent {
   @@index([companyCode, startDate])
   @@index([assigneeId])
   @@map("calendar_events")
+}
+
+// ==================================================
+// Adjustment / Amendment — 사후조정 + 계약변경
+// ==================================================
+
+/// 매출 사후조정 (반품/교환/금액조정).
+/// quantity 는 항상 1 (S/N 단위) — items 행 1개 = S/N 1개.
+model SalesAdjustment {
+  id              String         @id @default(cuid())
+  adjustCode      String         @unique // ADJ-S-YYMMDD-###
+  companyCode     CompanyCode
+  originalSalesId String
+  type            AdjustmentType
+  reason          String?
+  reasonVi        String?
+  reasonEn        String?
+  reasonKo        String?
+  warehouseId     String?        // PRICE_ADJUST 만 null 가능
+  performedAt     DateTime       @default(now())
+  performedById   String
+  // 회계 영향 — refundAmount (반품으로 차감), newAmount (교환/추가로 가산), netAmount = newAmount - refundAmount
+  refundAmount    Decimal        @default(0) @db.Decimal(15, 2)
+  newAmount       Decimal        @default(0) @db.Decimal(15, 2)
+  netAmount       Decimal        @default(0) @db.Decimal(15, 2)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  originalSales Sales                 @relation("SalesAdjustments", fields: [originalSalesId], references: [id])
+  warehouse     Warehouse?            @relation("SalesAdjustmentWh", fields: [warehouseId], references: [id])
+  items         SalesAdjustmentItem[]
+
+  @@index([companyCode])
+  @@index([originalSalesId])
+  @@map("sales_adjustments")
+}
+
+model SalesAdjustmentItem {
+  id                  String               @id @default(cuid())
+  adjustmentId        String
+  action              AdjustmentItemAction
+  serialNumber        String
+  itemId              String
+  originalSalesItemId String?
+  unitPrice           Decimal              @db.Decimal(15, 2)
+  createdAt           DateTime             @default(now())
+
+  adjustment SalesAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+
+  @@index([serialNumber])
+  @@index([originalSalesItemId])
+  @@map("sales_adjustment_items")
+}
+
+/// 매입 사후조정 — 매출과 대칭. RETURN=출고, EXCHANGE_IN=새 입고.
+model PurchaseAdjustment {
+  id                 String         @id @default(cuid())
+  adjustCode         String         @unique // ADJ-P-YYMMDD-###
+  companyCode        CompanyCode
+  originalPurchaseId String
+  type               AdjustmentType
+  reason             String?
+  reasonVi           String?
+  reasonEn           String?
+  reasonKo           String?
+  warehouseId        String?
+  performedAt        DateTime       @default(now())
+  performedById      String
+  refundAmount       Decimal        @default(0) @db.Decimal(15, 2)
+  newAmount          Decimal        @default(0) @db.Decimal(15, 2)
+  netAmount          Decimal        @default(0) @db.Decimal(15, 2)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  originalPurchase Purchase                  @relation("PurchaseAdjustments", fields: [originalPurchaseId], references: [id])
+  warehouse        Warehouse?                @relation("PurchaseAdjustmentWh", fields: [warehouseId], references: [id])
+  items            PurchaseAdjustmentItem[]
+
+  @@index([companyCode])
+  @@index([originalPurchaseId])
+  @@map("purchase_adjustments")
+}
+
+model PurchaseAdjustmentItem {
+  id                     String               @id @default(cuid())
+  adjustmentId           String
+  action                 AdjustmentItemAction
+  serialNumber           String
+  itemId                 String
+  originalPurchaseItemId String?
+  unitPrice              Decimal              @db.Decimal(15, 2)
+  createdAt              DateTime             @default(now())
+
+  adjustment PurchaseAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+
+  @@index([serialNumber])
+  @@index([originalPurchaseItemId])
+  @@map("purchase_adjustment_items")
+}
+
+/// IT 계약 변경 — 차후(다음 매출 발생 시) 정책으로 반영.
+/// PRICE_CHANGE 의 monthlyDelta 는 effectiveDate 이후 월 매출에 가산/차감.
+model ItContractAmendment {
+  id               String          @id @default(cuid())
+  amendmentCode    String          @unique // AMD-IT-YYMMDD-###
+  contractId       String
+  type             AmendmentType
+  source           AmendmentSource @default(CONTRACT_DETAIL)
+  triggeredByTxnId String?         // InventoryTransaction.id (경로 B 진입 시)
+  effectiveDate    DateTime
+  reason           String?
+  reasonVi         String?
+  reasonEn         String?
+  reasonKo         String?
+  warehouseId      String?
+  monthlyDelta     Decimal?        @db.Decimal(15, 2) // PRICE_CHANGE 차월 매출 차액
+  performedAt      DateTime        @default(now())
+  performedById    String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  contract  ItContract                 @relation(fields: [contractId], references: [id])
+  warehouse Warehouse?                 @relation("ItAmendmentWh", fields: [warehouseId], references: [id])
+  items     ItContractAmendmentItem[]
+
+  @@index([contractId])
+  @@index([effectiveDate])
+  @@map("it_contract_amendments")
+}
+
+model ItContractAmendmentItem {
+  id                  String              @id @default(cuid())
+  amendmentId         String
+  action              AmendmentItemAction
+  serialNumber        String
+  itemId              String
+  originalEquipmentId String?
+  monthlyBaseFee      Decimal?            @db.Decimal(15, 2)
+  bwIncludedPages     Int?
+  bwOverageRate       Decimal?            @db.Decimal(10, 2)
+  colorIncludedPages  Int?
+  colorOverageRate    Decimal?            @db.Decimal(10, 2)
+  manufacturer        String?
+  createdAt           DateTime            @default(now())
+
+  amendment ItContractAmendment @relation(fields: [amendmentId], references: [id], onDelete: Cascade)
+
+  @@index([serialNumber])
+  @@map("it_contract_amendment_items")
+}
+
+/// TM 렌탈 변경 — IT 와 같은 패턴.
+model TmRentalAmendment {
+  id               String          @id @default(cuid())
+  amendmentCode    String          @unique // AMD-TM-YYMMDD-###
+  rentalId         String
+  type             AmendmentType
+  source           AmendmentSource @default(CONTRACT_DETAIL)
+  triggeredByTxnId String?
+  effectiveDate    DateTime
+  reason           String?
+  reasonVi         String?
+  reasonEn         String?
+  reasonKo         String?
+  warehouseId      String?
+  performedAt      DateTime        @default(now())
+  performedById    String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  rental    TmRental                @relation(fields: [rentalId], references: [id])
+  warehouse Warehouse?              @relation("TmAmendmentWh", fields: [warehouseId], references: [id])
+  items     TmRentalAmendmentItem[]
+
+  @@index([rentalId])
+  @@index([effectiveDate])
+  @@map("tm_rental_amendments")
+}
+
+model TmRentalAmendmentItem {
+  id             String              @id @default(cuid())
+  amendmentId    String
+  action         AmendmentItemAction
+  serialNumber   String
+  itemId         String
+  originalItemId String?             // TmRentalItem.id
+  salesPrice     Decimal?            @db.Decimal(15, 2)
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime            @default(now())
+
+  amendment TmRentalAmendment @relation(fields: [amendmentId], references: [id], onDelete: Cascade)
+
+  @@index([serialNumber])
+  @@map("tm_rental_amendment_items")
 }

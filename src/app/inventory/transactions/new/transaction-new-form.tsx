@@ -7,6 +7,24 @@ import { t, type Lang } from "@/lib/i18n";
 
 type Scope = "INTERNAL" | "EXTERNAL";
 
+type ActiveContract = {
+  kind: "IT" | "TM";
+  contractId?: string;
+  contractNumber?: string;
+  rentalId?: string;
+  rentalCode?: string;
+  status: string;
+  itemId: string;
+  item: { id: string; itemCode: string; name: string };
+  client: { id: string; clientCode: string; companyNameVi: string };
+  monthlyBaseFee?: string | null;
+  salesPrice?: string | null;
+  equipmentId?: string;
+  rentalItemId?: string;
+};
+
+type SnIntent = "RECOVER" | "REPLACE" | "NORMAL";
+
 type Props = {
   items: { value: string; label: string }[];
   warehouses: { value: string; label: string; warehouseType: string }[];
@@ -36,6 +54,38 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // S/N 활성 계약 lookup 결과 + 의도 모달
+  const [snContracts, setSnContracts] = useState<ActiveContract[] | null>(null);
+  const [snIntent, setSnIntent] = useState<SnIntent | null>(null);
+  const [replaceNewSn, setReplaceNewSn] = useState("");
+  const [replaceMonthlyFee, setReplaceMonthlyFee] = useState("");
+  const [showSnModal, setShowSnModal] = useState(false);
+
+  async function handleSerialBlur() {
+    const sn = serialNumber.trim();
+    if (!sn) {
+      setSnContracts(null);
+      setSnIntent(null);
+      setShowSnModal(false);
+      return;
+    }
+    try {
+      const r = await fetch(`/api/inventory/sn/${encodeURIComponent(sn)}/active-contracts`).then((r) => r.json());
+      const list: ActiveContract[] = r.contracts ?? [];
+      if (list.length > 0) {
+        setSnContracts(list);
+        setShowSnModal(true);
+        setSnIntent(null);
+      } else {
+        setSnContracts(null);
+        setSnIntent("NORMAL");
+        setShowSnModal(false);
+      }
+    } catch {
+      // ignore network — 서버측에서 다시 검사할 것
+    }
+  }
 
   const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
     IN: [
@@ -173,6 +223,75 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
         setError(data.error ? `${data.error} ${JSON.stringify(data.details ?? "")}` : t("msg.saveFailedShort", lang));
         return;
       }
+      const txnBody = (await res.json().catch(() => null)) as { transaction?: { id: string } } | null;
+      const txnId = txnBody?.transaction?.id ?? null;
+
+      // 경로 B — S/N 의도가 RECOVER/REPLACE 면 자동으로 Amendment 생성
+      if (snIntent && snIntent !== "NORMAL" && snContracts && snContracts.length > 0) {
+        const today = new Date().toISOString().slice(0, 10);
+        for (const c of snContracts) {
+          if (c.kind === "IT" && c.contractId) {
+            const items: Array<Record<string, unknown>> = [
+              {
+                action: snIntent === "RECOVER" ? "REMOVE" : "REPLACE_OUT",
+                serialNumber: serialNumber,
+                itemId: c.itemId,
+                originalEquipmentId: c.equipmentId,
+              },
+            ];
+            if (snIntent === "REPLACE" && replaceNewSn) {
+              items.push({
+                action: "REPLACE_IN",
+                serialNumber: replaceNewSn,
+                itemId: c.itemId,
+                monthlyBaseFee: replaceMonthlyFee || c.monthlyBaseFee || null,
+              });
+            }
+            await fetch(`/api/rental/it-contracts/${c.contractId}/amend`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: snIntent === "RECOVER" ? "REMOVE_EQUIPMENT" : "REPLACE_EQUIPMENT",
+                source: "INVENTORY_TXN",
+                triggeredByTxnId: txnId,
+                effectiveDate: today,
+                warehouseId: txnToWarehouseId,
+                items,
+              }),
+            });
+          } else if (c.kind === "TM" && c.rentalId) {
+            const items: Array<Record<string, unknown>> = [
+              {
+                action: snIntent === "RECOVER" ? "REMOVE" : "REPLACE_OUT",
+                serialNumber: serialNumber,
+                itemId: c.itemId,
+                originalItemId: c.rentalItemId,
+              },
+            ];
+            if (snIntent === "REPLACE" && replaceNewSn) {
+              items.push({
+                action: "REPLACE_IN",
+                serialNumber: replaceNewSn,
+                itemId: c.itemId,
+                salesPrice: c.salesPrice ?? null,
+              });
+            }
+            await fetch(`/api/rental/tm-rentals/${c.rentalId}/amend`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: snIntent === "RECOVER" ? "REMOVE_EQUIPMENT" : "REPLACE_EQUIPMENT",
+                source: "INVENTORY_TXN",
+                triggeredByTxnId: txnId,
+                effectiveDate: today,
+                warehouseId: txnToWarehouseId,
+                items,
+              }),
+            });
+          }
+        }
+      }
+
       router.push("/inventory/transactions");
       router.refresh();
     } finally {
@@ -216,7 +335,12 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
           <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder={t("placeholder.select", lang)} options={items} />
         </Field>
         <Field label={t("field.serial", lang)}>
-          <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="SN-XXX" />
+          <TextInput
+            value={serialNumber}
+            onChange={(e) => setSerialNumber(e.target.value)}
+            onBlur={handleSerialBlur}
+            placeholder="SN-XXX"
+          />
         </Field>
       </Row>
 
@@ -324,10 +448,127 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
 
       {error && <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
 
+      {/* S/N 활성 계약 알림 — 의도 표시 (RECOVER/REPLACE/NORMAL) */}
+      {snIntent && snIntent !== "NORMAL" && snContracts && snContracts.length > 0 && (
+        <Note tone="warn">
+          <div className="font-bold">{t("note.snDetectedActive", lang)}</div>
+          <ul className="mt-1 list-disc pl-4 text-[12px]">
+            {snContracts.map((c, i) => (
+              <li key={i}>
+                {c.kind === "IT" ? c.contractNumber : c.rentalCode} · {c.client.companyNameVi} · {c.item.name}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-1 text-[11px] text-[color:var(--tts-sub)]">
+            Intent: <span className="font-bold">{snIntent}</span>
+            {snIntent === "REPLACE" && replaceNewSn && <> → newSN: <span className="font-mono">{replaceNewSn}</span></>}
+          </div>
+        </Note>
+      )}
+
       <div className="mt-4 flex gap-2 border-t border-[color:var(--tts-border)] pt-3">
         <Button type="submit" disabled={submitting}>{submitting ? t("action.saving", lang) : t("btn.txnRegister", lang)}</Button>
         <Button type="button" variant="ghost" onClick={() => router.push("/inventory/transactions")}>{t("action.cancel", lang)}</Button>
       </div>
+
+      {/* S/N 활성계약 모달 */}
+      {showSnModal && snContracts && snContracts.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowSnModal(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-lg border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-2 text-[14px] font-bold text-[color:var(--tts-text)]">
+              {t("modal.snContractTitle", lang)}
+            </div>
+            <div className="mb-3 max-h-[180px] overflow-auto rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] p-2 text-[12px]">
+              <ul className="list-disc pl-4">
+                {snContracts.map((c, i) => (
+                  <li key={i}>
+                    <span className="font-mono font-bold">
+                      {c.kind === "IT" ? c.contractNumber : c.rentalCode}
+                    </span>{" "}
+                    · {c.client.companyNameVi} · {c.item.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-2 text-[13px]">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="snIntent"
+                  checked={snIntent === "RECOVER"}
+                  onChange={() => setSnIntent("RECOVER")}
+                />
+                {t("modal.snAction.recover", lang)}
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="snIntent"
+                  checked={snIntent === "REPLACE"}
+                  onChange={() => setSnIntent("REPLACE")}
+                />
+                {t("modal.snAction.replace", lang)}
+              </label>
+              {snIntent === "REPLACE" && (
+                <div className="ml-6 space-y-2 border-l-2 border-[color:var(--tts-border)] pl-3">
+                  <Field label={t("modal.newSnLabel", lang)} required>
+                    <TextInput
+                      value={replaceNewSn}
+                      onChange={(e) => setReplaceNewSn(e.target.value)}
+                      placeholder="SN-NEW-001"
+                    />
+                  </Field>
+                  <Field label={t("modal.newMonthlyFee", lang)}>
+                    <TextInput
+                      type="number"
+                      value={replaceMonthlyFee}
+                      onChange={(e) => setReplaceMonthlyFee(e.target.value)}
+                    />
+                  </Field>
+                </div>
+              )}
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="radio"
+                  name="snIntent"
+                  checked={snIntent === "NORMAL"}
+                  onChange={() => setSnIntent("NORMAL")}
+                />
+                {t("modal.snAction.normal", lang)}
+              </label>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2 border-t border-[color:var(--tts-border)] pt-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSnIntent("NORMAL");
+                  setShowSnModal(false);
+                }}
+              >
+                {t("modal.skip", lang)}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={!snIntent || (snIntent === "REPLACE" && !replaceNewSn)}
+                onClick={() => setShowSnModal(false)}
+              >
+                {t("modal.proceed", lang)}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

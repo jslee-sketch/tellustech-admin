@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import type { DataTableColumn, TabDef } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
+import { TmAmendmentsTab } from "./amendments-tab";
 
 type RentalCore = {
   rentalCode: string;
@@ -59,6 +60,7 @@ type Props = {
   totalProfit: string;
   initial: RentalCore;
   items: Item[];
+  warehouseOptions: { value: string; label: string }[];
   lang: Lang;
 };
 
@@ -68,6 +70,7 @@ function buildTabs(lang: Lang): TabDef[] {
     { key: "managers", label: t("tab.managers", lang), icon: "👥" },
     { key: "items", label: t("tab.itemsProfit", lang), icon: "📦" },
     { key: "sales", label: t("tab.salesReflect", lang), icon: "💰" },
+    { key: "amend", label: t("tab.amendments", lang), icon: "🔧" },
   ];
 }
 
@@ -84,6 +87,7 @@ export function TmRentalDetail({
   totalProfit,
   initial,
   items: initialItems,
+  warehouseOptions,
   lang,
 }: Props) {
   const router = useRouter();
@@ -313,6 +317,25 @@ export function TmRentalDetail({
             </Button>
           </div>
         </div>
+      )}
+
+      {active === "amend" && (
+        <TmAmendmentsTab
+          rentalId={rentalId}
+          originalItems={items
+            .filter((it) => !it.endDate || new Date(it.endDate) >= new Date())
+            .map((it) => ({
+              id: it.id,
+              itemId: it.itemId,
+              itemCode: it.itemCode,
+              itemName: it.itemName,
+              serialNumber: it.serialNumber,
+              salesPrice: it.salesPrice,
+              endDate: it.endDate,
+            }))}
+          warehouses={warehouseOptions}
+          lang={lang}
+        />
       )}
     </div>
   );

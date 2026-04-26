@@ -12,7 +12,7 @@ import {
   serverError,
   trimNonEmpty,
 } from "@/lib/api-utils";
-import { computeBillingAmount, deriveUsage } from "@/lib/billing-calc";
+import { computeBillingAmount, deriveUsage, sumPriceChangeDelta } from "@/lib/billing-calc";
 import type { BillingMethod } from "@/generated/prisma/client";
 
 // IT 월별 사용량 컨펌
@@ -108,6 +108,11 @@ export async function POST(request: Request, context: RouteContext) {
         bwUsage,
         colorUsage,
       });
+      // PRICE_CHANGE Amendment 의 monthlyDelta 합산. 다중 S/N 행이 있으면 첫 행에만 가산하지 않고
+      // 각 S/N 별 빌링은 그 S/N 의 base + overage. 계약 전체 PRICE_CHANGE 는 첫 빌링에만 한 번 가산되도록
+      // 단순 분할이 어려우므로 totalAmount 에 그대로 더해 노출(운영자가 인지 가능).
+      const priceDelta = await sumPriceChangeDelta(id, billingMonth);
+      const totalWithDelta = (Number(calc.total) + priceDelta).toFixed(2);
 
       const created = await prisma.itMonthlyBilling.create({
         data: {
@@ -120,7 +125,7 @@ export async function POST(request: Request, context: RouteContext) {
           photoUrl: trimNonEmpty(p.photoUrl),
           customerSignature: trimNonEmpty(p.customerSignature),
           yieldVerified: Boolean(p.yieldVerified),
-          computedAmount: calc.total,
+          computedAmount: totalWithDelta,
         },
       });
       return ok({ billing: created, calc }, { status: 201 });

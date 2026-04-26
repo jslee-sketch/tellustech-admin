@@ -20,6 +20,7 @@ import {
 } from "@/components/ui";
 import type { DataTableColumn, TabDef } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
+import { ItAmendmentsTab } from "./amendments-tab";
 
 type ContractCore = {
   contractNumber: string;
@@ -92,6 +93,7 @@ type Props = {
   orders: RentalOrder[];
   billings: MonthlyBilling[];
   equipmentOptions: { value: string; label: string }[];
+  warehouseOptions: { value: string; label: string }[];
   lang: Lang;
 };
 
@@ -102,6 +104,7 @@ function buildTabs(lang: Lang): TabDef[] {
     { key: "equipment", label: t("tab.equipment", lang), icon: "🖨️" },
     { key: "orders", label: t("tab.rentalOrders", lang), icon: "📅" },
     { key: "billing", label: t("tab.billing", lang), icon: "🧾" },
+    { key: "amend", label: t("tab.amendments", lang), icon: "🔧" },
   ];
 }
 
@@ -112,6 +115,7 @@ export function ItContractDetail({
   orders: initialOrders,
   billings: initialBillings,
   equipmentOptions,
+  warehouseOptions,
   lang,
 }: Props) {
   const router = useRouter();
@@ -366,6 +370,24 @@ export function ItContractDetail({
           setBillings={setBillings}
           equipmentOptions={equipmentOptions}
           onError={setError}
+          lang={lang}
+        />
+      )}
+
+      {active === "amend" && (
+        <ItAmendmentsTab
+          contractId={contractId}
+          originalEquipment={equipment
+            .filter((e) => !e.removedAt)
+            .map((e) => ({
+              id: e.id,
+              itemId: e.itemId,
+              itemCode: e.itemCode,
+              itemName: e.itemName,
+              serialNumber: e.serialNumber,
+              monthlyBaseFee: e.monthlyBaseFee,
+            }))}
+          warehouses={warehouseOptions}
           lang={lang}
         />
       )}

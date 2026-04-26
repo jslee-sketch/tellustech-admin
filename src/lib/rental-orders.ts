@@ -44,7 +44,7 @@ export type GenerateResult = {
 export async function generateMissingOrders(contractId: string): Promise<GenerateResult> {
   const contract = await prisma.itContract.findUnique({
     where: { id: contractId },
-    include: { equipment: true },
+    include: { equipment: true, amendments: true },
   });
   if (!contract) throw new Error("contract_not_found");
 
@@ -67,6 +67,11 @@ export async function generateMissingOrders(contractId: string): Promise<Generat
   });
   const existingYm = new Set(existing.map((o) => isoYm(o.billingMonth)));
 
+  // PRICE_CHANGE amendment 월별 누계 — effectiveDate <= billingMonth 인 것만.
+  const priceAmendments = contract.amendments
+    .filter((a) => a.type === "PRICE_CHANGE" && a.monthlyDelta !== null)
+    .map((a) => ({ effectiveDate: a.effectiveDate, delta: Number(a.monthlyDelta) }));
+
   // 누락 월에 대해 amount 계산 후 배열 구성
   const toCreate: {
     companyCode: CompanyCode;
@@ -78,20 +83,23 @@ export async function generateMissingOrders(contractId: string): Promise<Generat
   for (const m of months) {
     if (existingYm.has(isoYm(m))) continue;
     const monthEnd = lastOfMonth(m);
+    // active equipment: installedAt <= monthEnd AND (removedAt is null OR removedAt > m)
     const active = contract.equipment.filter((e) => {
       const installed = e.installedAt ?? contract.startDate;
       const removed = e.removedAt;
-      return installed <= monthEnd && (!removed || removed >= m);
+      return installed <= monthEnd && (!removed || removed > m);
     });
-    const amount = active
-      .reduce((sum, e) => sum + Number(e.monthlyBaseFee ?? 0), 0)
-      .toFixed(2);
+    let amount = active.reduce((sum, e) => sum + Number(e.monthlyBaseFee ?? 0), 0);
+    // price-change deltas applicable to this billing month
+    for (const pa of priceAmendments) {
+      if (pa.effectiveDate <= monthEnd) amount += pa.delta;
+    }
     toCreate.push({
       companyCode,
       itContractId: contractId,
       rentalType: "IT",
       billingMonth: m,
-      amount,
+      amount: amount.toFixed(2),
     });
   }
 

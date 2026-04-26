@@ -18,6 +18,7 @@ import {
 } from "@/components/ui";
 import type { DataTableColumn, TabDef } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
+import { SalesAdjustmentsTab } from "./adjustments-tab";
 
 type SalesCore = {
   salesNumber: string;
@@ -64,6 +65,7 @@ type Props = {
   receivable: Receivable | null;
   projects: ProjectInfo[];
   employeeOptions: { value: string; label: string }[];
+  warehouseOptions: { value: string; label: string }[];
   lang: Lang;
 };
 
@@ -72,6 +74,7 @@ function buildTabs(lang: Lang): TabDef[] {
     { key: "basic", label: t("tab.basicInfo", lang), icon: "📋" },
     { key: "items", label: t("tab.itemsTab", lang), icon: "📦" },
     { key: "ar", label: t("tab.ar", lang), icon: "💰" },
+    { key: "adjust", label: t("tab.adjustments", lang), icon: "🔄" },
   ];
 }
 
@@ -88,6 +91,7 @@ export function SalesDetail({
   receivable,
   projects,
   employeeOptions,
+  warehouseOptions,
   lang,
 }: Props) {
   const router = useRouter();
@@ -251,6 +255,22 @@ export function SalesDetail({
           totalAmount={core.totalAmount}
           paymentTerms={core.clientPaymentTerms}
           createdAt={core.createdAt}
+          lang={lang}
+        />
+      )}
+
+      {active === "adjust" && (
+        <SalesAdjustmentsTab
+          salesId={salesId}
+          originalItems={items.map((it) => ({
+            id: it.id,
+            itemId: it.itemId,
+            itemCode: it.itemCode,
+            itemName: it.itemName,
+            serialNumber: it.serialNumber,
+            unitPrice: it.unitPrice,
+          }))}
+          warehouses={warehouseOptions}
           lang={lang}
         />
       )}

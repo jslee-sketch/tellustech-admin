@@ -15,6 +15,8 @@ const PUBLIC_PATHS = new Set<string>([
   "/login",
   "/api/auth/login",
   "/api/auth/logout",
+  "/sw.js",
+  "/manifest.webmanifest",
 ]);
 
 // PORTAL_MODE=true 면 인스턴스 자체가 고객 포탈 전용.
@@ -32,6 +34,8 @@ function isPortalAllowedPath(p: string): boolean {
     p.startsWith("/flags") ||
     p === "/login" ||
     p === "/favicon.ico" ||
+    p === "/sw.js" ||
+    p === "/manifest.webmanifest" ||
     p === "/" // landing redirect to /portal
   );
 }

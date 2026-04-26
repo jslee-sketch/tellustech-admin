@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import {
   badRequest,
+  conflict,
   handleFieldError,
   isForeignKeyError,
   isRecordNotFoundError,
@@ -10,6 +11,7 @@ import {
   serverError,
   trimNonEmpty,
 } from "@/lib/api-utils";
+import { canEdit } from "@/lib/record-policy";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -43,6 +45,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const existing = await prisma.purchase.findUnique({ where: { id } });
     if (!existing) return notFound();
+    const verdict = canEdit(existing);
+    if (!verdict.allowed) return conflict(verdict.reason);
 
     let body: unknown;
     try {

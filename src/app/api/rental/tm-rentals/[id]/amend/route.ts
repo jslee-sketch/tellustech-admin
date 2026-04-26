@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import {
   badRequest,
+  conflict,
   handleFieldError,
   notFound,
   ok,
@@ -11,6 +12,7 @@ import {
   trimNonEmpty,
 } from "@/lib/api-utils";
 import { createTmAmendment } from "@/lib/amendments";
+import { canEdit } from "@/lib/record-policy";
 import type {
   AmendmentItemAction,
   AmendmentSource,
@@ -44,8 +46,10 @@ function parseDateOrNull(v: unknown): Date | null {
 export async function POST(request: Request, context: RouteContext) {
   return withSessionContext(async (session) => {
     const { id } = await context.params;
-    const rental = await prisma.tmRental.findUnique({ where: { id }, select: { id: true } });
+    const rental = await prisma.tmRental.findUnique({ where: { id }, select: { id: true, deletedAt: true, lockedAt: true, lockReason: true } });
     if (!rental) return notFound();
+    const verdict = canEdit(rental);
+    if (!verdict.allowed) return conflict(verdict.reason);
 
     let body: unknown;
     try {

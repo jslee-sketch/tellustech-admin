@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import {
   badRequest,
+  conflict,
   handleFieldError,
   notFound,
   ok,
@@ -11,6 +12,7 @@ import {
   trimNonEmpty,
 } from "@/lib/api-utils";
 import { createItAmendment } from "@/lib/amendments";
+import { canEdit } from "@/lib/record-policy";
 import type {
   AmendmentItemAction,
   AmendmentSource,
@@ -51,8 +53,10 @@ function parseIntOrNull(v: unknown): number | null {
 export async function POST(request: Request, context: RouteContext) {
   return withSessionContext(async (session) => {
     const { id } = await context.params;
-    const contract = await prisma.itContract.findUnique({ where: { id }, select: { id: true } });
+    const contract = await prisma.itContract.findUnique({ where: { id }, select: { id: true, deletedAt: true, lockedAt: true, lockReason: true } });
     if (!contract) return notFound();
+    const verdict = canEdit(contract);
+    if (!verdict.allowed) return conflict(verdict.reason);
 
     let body: unknown;
     try {

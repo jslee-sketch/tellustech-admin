@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import {
   badRequest,
+  conflict,
   handleFieldError,
   notFound,
   ok,
@@ -10,6 +11,7 @@ import {
   trimNonEmpty,
 } from "@/lib/api-utils";
 import { createPurchaseAdjustment } from "@/lib/adjustments";
+import { canEdit } from "@/lib/record-policy";
 import type { AdjustmentItemAction, AdjustmentType } from "@/generated/prisma/client";
 
 const TYPES: readonly AdjustmentType[] = [
@@ -30,8 +32,10 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: Request, context: RouteContext) {
   return withSessionContext(async (session) => {
     const { id } = await context.params;
-    const purchase = await prisma.purchase.findUnique({ where: { id }, select: { id: true } });
+    const purchase = await prisma.purchase.findUnique({ where: { id }, select: { id: true, deletedAt: true, lockedAt: true, lockReason: true } });
     if (!purchase) return notFound();
+    const verdict = canEdit(purchase);
+    if (!verdict.allowed) return conflict(verdict.reason);
 
     let body: unknown;
     try {

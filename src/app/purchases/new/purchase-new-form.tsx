@@ -189,6 +189,9 @@ export function PurchaseNewForm({ suppliers, projects, employeeOptions, warehous
       {showCert && (
         <Note tone="info">{t("note.calibrationProject", lang)}</Note>
       )}
+      {salesType && salesType !== "TRADE" && (
+        <Note tone="info">{t("note.nonTradeStock", lang)}</Note>
+      )}
       {showWarehouse && (
         <Row>
           <Field label={t("field.warehouseInbnd", lang)} required hint={t("hint.tradeWarehouseIn", lang)}>

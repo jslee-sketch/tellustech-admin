@@ -138,17 +138,25 @@ export async function POST(request: Request) {
       const item = await prisma.item.findUnique({ where: { id: itemId }, select: { id: true } });
       if (!item) return badRequest("invalid_item");
 
+      let fromIsExternal = false;
+      let toIsExternal = false;
       if (fromWarehouseId) {
-        const wh = await prisma.warehouse.findUnique({ where: { id: fromWarehouseId }, select: { id: true } });
+        const wh = await prisma.warehouse.findUnique({ where: { id: fromWarehouseId }, select: { id: true, warehouseType: true } });
         if (!wh) return badRequest("invalid_warehouse", { field: "fromWarehouseId" });
+        fromIsExternal = wh.warehouseType === "EXTERNAL";
       }
       if (toWarehouseId) {
-        const wh = await prisma.warehouse.findUnique({ where: { id: toWarehouseId }, select: { id: true } });
+        const wh = await prisma.warehouse.findUnique({ where: { id: toWarehouseId }, select: { id: true, warehouseType: true } });
         if (!wh) return badRequest("invalid_warehouse", { field: "toWarehouseId" });
+        toIsExternal = wh.warehouseType === "EXTERNAL";
       }
       if (clientId) {
         const cl = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
         if (!cl) return badRequest("invalid_client");
+      }
+      // EXTERNAL 창고 관여 시 client 필수 — "이 외부 창고가 누구의 보관처인지" 추적
+      if ((fromIsExternal || toIsExternal) && !clientId) {
+        return badRequest("invalid_input", { field: "clientId", reason: "required_for_external_warehouse" });
       }
 
       const sn = trimNonEmpty(p.serialNumber);

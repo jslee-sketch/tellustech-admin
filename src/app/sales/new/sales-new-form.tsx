@@ -219,6 +219,9 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
       {showCert && (
         <Note tone="info">{t("note.calibProject", lang)}</Note>
       )}
+      {salesType && salesType !== "TRADE" && (
+        <Note tone="info">{t("note.nonTradeStock", lang)}</Note>
+      )}
       {showWarehouse && (
         <Row>
           <Field label={t("field.warehouseShip", lang)} required hint={t("hint.tradeWarehouse", lang)}>

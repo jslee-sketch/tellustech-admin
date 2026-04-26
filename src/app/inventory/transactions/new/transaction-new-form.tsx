@@ -58,16 +58,33 @@ export function TransactionNewForm({ items, warehouses, clients, lang }: Props) 
     setTargetEquipmentSN("");
   }
 
-  const showClient =
-    (txnType === "TRANSFER" && toWarehouseId && externalWarehouses.some((w) => w.value === toWarehouseId)) ||
-    txnType === "OUT";
+  // EXTERNAL 창고가 from 또는 to 에 잡히면 client 필수
+  const fromIsExternal = !!fromWarehouseId && externalWarehouses.some((w) => w.value === fromWarehouseId);
+  const toIsExternal   = !!toWarehouseId   && externalWarehouses.some((w) => w.value === toWarehouseId);
+  const externalInvolved = fromIsExternal || toIsExternal;
+  const showClient = externalInvolved || txnType === "OUT";
+  const clientRequired = externalInvolved || txnType === "OUT";
 
   const showTargetEquipment = reason === "CONSUMABLE_OUT";
+
+  // TRANSFER 사유별 가이드 텍스트
+  const transferGuide = txnType === "TRANSFER"
+    ? (reason === "REPAIR" ? t("txnGuide.repair", lang)
+      : reason === "CALIBRATION" ? t("txnGuide.calib", lang)
+      : reason === "RENTAL" ? t("txnGuide.rental", lang)
+      : reason === "DEMO" ? t("txnGuide.demo", lang)
+      : null)
+    : null;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    if (clientRequired && !clientId) {
+      setError(t("msg.externalRequiresClient", lang));
+      setSubmitting(false);
+      return;
+    }
     try {
       const res = await fetch("/api/inventory/transactions", {
         method: "POST",
@@ -137,10 +154,24 @@ export function TransactionNewForm({ items, warehouses, clients, lang }: Props) 
         </Field>
       </Row>
 
+      {transferGuide && (
+        <Note tone="info">
+          <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
+          {transferGuide}<br/>
+          {t("txnGuide.externalNeedsClient", lang)}
+        </Note>
+      )}
+
       <Row>
         {(txnType === "OUT" || txnType === "TRANSFER") && (
           <Field label={t("field.warehouseOut", lang)} required>
-            <Select required value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} placeholder={t("placeholder.select", lang)} options={internalWarehouses.map((w) => ({ value: w.value, label: w.label }))} />
+            <Select
+              required
+              value={fromWarehouseId}
+              onChange={(e) => setFromWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={(txnType === "TRANSFER" ? warehouses : internalWarehouses).map((w) => ({ value: w.value, label: w.label }))}
+            />
           </Field>
         )}
         {(txnType === "IN" || txnType === "TRANSFER") && (
@@ -158,7 +189,7 @@ export function TransactionNewForm({ items, warehouses, clients, lang }: Props) 
 
       {showClient && (
         <Row>
-          <Field label={txnType === "OUT" ? t("field.clientCustomer", lang) : t("field.clientExternal", lang)} required={txnType === "OUT"}>
+          <Field label={txnType === "OUT" ? t("field.clientCustomer", lang) : t("field.clientExternal", lang)} required={clientRequired}>
             <Select value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={t("placeholder.select", lang)} options={clients} />
           </Field>
         </Row>

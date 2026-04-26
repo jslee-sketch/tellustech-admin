@@ -1968,6 +1968,46 @@ const DICT: Dict = {
   "sidebar.collapse":        { vi: "Thu gọn",             en: "Collapse",           ko: "접기" },
   "sidebar.expand":          { vi: "Mở rộng",             en: "Expand",             ko: "펼치기" },
   "sidebar.langSelect":      { vi: "Chọn ngôn ngữ",       en: "Language",           ko: "언어선택" },
+
+  // ── 매출/매입: TRADE 외 프로젝트 안내 (재고 자동영향 없음) ──
+  "note.nonTradeStock": {
+    vi: "ℹ️ Loại dự án này KHÔNG tự động ảnh hưởng tồn kho. Việc di chuyển thiết bị thực tế cần được đăng ký riêng tại Xuất nhập kho → TRANSFER với lý do tương ứng (REPAIR/CALIBRATION/RENTAL/DEMO).",
+    en: "ℹ️ This project type does NOT auto-affect stock. Register actual equipment movement separately under Inventory → Transactions → TRANSFER with the matching reason (REPAIR/CALIBRATION/RENTAL/DEMO).",
+    ko: "ℹ️ 이 프로젝트 유형은 재고에 자동 영향을 주지 않습니다. 실제 장비 이동은 입출고 현황 → TRANSFER + 사유(REPAIR/CALIBRATION/RENTAL/DEMO) 로 별도 등록하세요.",
+  },
+
+  // ── 입출고 폼: TRANSFER 사유별 가이드 ──
+  "txnGuide.title":     { vi: "Hướng dẫn chuyển kho theo lý do", en: "Transfer guide by reason", ko: "TRANSFER 사유별 가이드" },
+  "txnGuide.repair":    {
+    vi: "REPAIR: Sửa chữa nội bộ — chuyển giữa các kho INTERNAL. Sửa chữa thuê ngoài — chuyển từ INTERNAL sang kho EXTERNAL (khách hàng được đăng ký là trung tâm sửa chữa). Khi sửa xong, chuyển ngược lại.",
+    en: "REPAIR: Internal repair — move between INTERNAL warehouses. Outsourced repair — move from INTERNAL to EXTERNAL (the repair center registered as a client). After repair, move back.",
+    ko: "REPAIR: 자체수리는 INTERNAL 창고 간 이동. 외주수리는 INTERNAL → EXTERNAL(고객으로 등록된 수리센터) 로 이동. 수리 완료 시 반대 방향 TRANSFER.",
+  },
+  "txnGuide.calib":     {
+    vi: "CALIBRATION: Hiệu chuẩn tại hiện trường thì KHÔNG cần ghi nhận xuất nhập. Chỉ khi mang thiết bị đi đến trung tâm hiệu chuẩn mới cần TRANSFER ra EXTERNAL và quay lại.",
+    en: "CALIBRATION: Field calibration does NOT need an inventory entry. Only when shipping to an external calibration lab — TRANSFER to EXTERNAL and back.",
+    ko: "CALIBRATION: 현지 출장 교정은 입출고 입력 불필요. 장비를 외부 교정기관에 보낼 때만 EXTERNAL 로 TRANSFER 후 회수.",
+  },
+  "txnGuide.rental":    {
+    vi: "RENTAL: Khi cho thuê — TRANSFER từ INTERNAL ra EXTERNAL (kho gắn với khách hàng thuê). Khi thu hồi — TRANSFER ngược lại.",
+    en: "RENTAL: On rental dispatch — TRANSFER from INTERNAL to EXTERNAL (warehouse tied to the renting client). On return — TRANSFER back.",
+    ko: "RENTAL: 출고 시 INTERNAL → EXTERNAL(임차 고객 창고). 회수 시 반대 방향 TRANSFER.",
+  },
+  "txnGuide.demo":      {
+    vi: "DEMO: Tương tự RENTAL — TRANSFER ra EXTERNAL của khách hàng demo, sau đó thu hồi.",
+    en: "DEMO: Same as RENTAL — TRANSFER to demo client's EXTERNAL warehouse, then collect back.",
+    ko: "DEMO: RENTAL 과 동일 — 데모 고객의 EXTERNAL 창고로 TRANSFER 후 회수.",
+  },
+  "txnGuide.externalNeedsClient": {
+    vi: "Khi chọn kho EXTERNAL bắt buộc chọn KHÁCH HÀNG (kho thuộc về ai).",
+    en: "When selecting an EXTERNAL warehouse, the CLIENT (owner of the warehouse) is required.",
+    ko: "EXTERNAL 창고 선택 시 거래처(창고 소유주) 선택 필수.",
+  },
+  "msg.externalRequiresClient": {
+    vi: "Kho EXTERNAL cần chọn khách hàng tương ứng.",
+    en: "EXTERNAL warehouse requires a matching client.",
+    ko: "EXTERNAL 창고는 거래처를 함께 선택해야 합니다.",
+  },
   "sidebar.toLightMode":     { vi: "Sang chế độ sáng",    en: "Switch to light mode", ko: "라이트 모드로" },
   "sidebar.toDarkMode":      { vi: "Sang chế độ tối",     en: "Switch to dark mode",  ko: "다크 모드로" },
   "sidebar.lightShort":      { vi: "Sáng",                en: "Light",              ko: "라이트" },

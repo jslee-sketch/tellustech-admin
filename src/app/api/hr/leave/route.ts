@@ -5,10 +5,12 @@ import {
   optionalEnum, requireEnum, requireString, serverError, trimNonEmpty,
 } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
-import type { LeaveStatus, LeaveType } from "@/generated/prisma/client";
+import { fillTranslations } from "@/lib/translate";
+import type { Language, LeaveStatus, LeaveType } from "@/generated/prisma/client";
 
 const TYPES: readonly LeaveType[] = ["LT", "P", "KSX", "CT7", "DB", "TS", "KL", "X"] as const;
 const STATUSES: readonly LeaveStatus[] = ["PENDING", "APPROVED", "REJECTED"] as const;
+const LANGS: readonly Language[] = ["VI", "EN", "KO"] as const;
 
 export async function GET(request: Request) {
   return withSessionContext(async (session) => {
@@ -45,6 +47,16 @@ export async function POST(request: Request) {
       }
       const days = Math.max(0.5, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1));
 
+      const reasonVi = trimNonEmpty(p.reasonVi);
+      const reasonEn = trimNonEmpty(p.reasonEn);
+      const reasonKo = trimNonEmpty(p.reasonKo);
+      const reasonLegacy = trimNonEmpty(p.reason);
+      const originalLang = optionalEnum(p.originalLang, LANGS) ??
+        (reasonVi ? "VI" : reasonKo ? "KO" : reasonEn ? "EN" : null);
+      const filled = (reasonVi || reasonEn || reasonKo) && originalLang
+        ? await fillTranslations({ vi: reasonVi ?? null, en: reasonEn ?? null, ko: reasonKo ?? null, originalLang })
+        : { vi: null, en: null, ko: null };
+
       const created = await withUniqueRetry(
         async () => {
           const leaveCode = await generateDatedCode({
@@ -66,7 +78,11 @@ export async function POST(request: Request) {
               leaveType,
               startDate, endDate,
               days: days.toFixed(2),
-              reason: trimNonEmpty(p.reason),
+              reason: reasonLegacy ?? filled.ko ?? filled.vi ?? filled.en ?? null,
+              reasonVi: filled.vi,
+              reasonEn: filled.en,
+              reasonKo: filled.ko,
+              originalLang,
               status: "PENDING",
             },
           });

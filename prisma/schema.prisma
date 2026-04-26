@@ -1105,6 +1105,10 @@ model LeaveRecord {
   endDate     DateTime
   days        Decimal     @db.Decimal(5, 2)
   reason      String?
+  reasonVi    String?
+  reasonEn    String?
+  reasonKo    String?
+  originalLang Language?
   approverId  String?
   status      LeaveStatus @default(PENDING)
   createdAt   DateTime    @default(now())

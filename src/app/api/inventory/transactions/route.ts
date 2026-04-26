@@ -164,6 +164,16 @@ export async function POST(request: Request) {
       }
 
       const sn = trimNonEmpty(p.serialNumber);
+      // 정합성: targetEquipmentSN 이 활성 IT 계약 장비라면 targetContractId 자동매핑
+      // (소모품/부품 비용을 IT 계약별로 집계하기 위함 — AS dispatch parts 와 동일 정책)
+      let resolvedTargetContractId = targetContractId ?? null;
+      if (!resolvedTargetContractId && targetEquipmentSN) {
+        const eq = await prisma.itContractEquipment.findFirst({
+          where: { serialNumber: targetEquipmentSN, removedAt: null },
+          select: { itContractId: true },
+        });
+        if (eq) resolvedTargetContractId = eq.itContractId;
+      }
       const created = await prisma.$transaction(async (tx) => {
         const txn = await tx.inventoryTransaction.create({
           data: {
@@ -179,7 +189,7 @@ export async function POST(request: Request) {
             scannedBarcode: trimNonEmpty(p.scannedBarcode),
             note: trimNonEmpty(p.note),
             targetEquipmentSN: targetEquipmentSN ?? null,
-            targetContractId: targetContractId ?? null,
+            targetContractId: resolvedTargetContractId,
             performedAt: new Date(),
           },
         });

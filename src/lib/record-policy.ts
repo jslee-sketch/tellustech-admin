@@ -64,7 +64,7 @@ export async function getDependents(model: string, id: string): Promise<Dependen
     }
     case "Item": {
       const [stocks, salesItems, purchaseItems] = await Promise.all([
-        prisma.inventoryItem.count({ where: { itemId: id, deletedAt: null } }),
+        prisma.inventoryItem.count({ where: { itemId: id } }),
         prisma.salesItem.count({ where: { itemId: id } }),
         prisma.purchaseItem.count({ where: { itemId: id } }),
       ]);
@@ -75,7 +75,7 @@ export async function getDependents(model: string, id: string): Promise<Dependen
     }
     case "Warehouse": {
       const [items, fromTxns, toTxns] = await Promise.all([
-        prisma.inventoryItem.count({ where: { warehouseId: id, deletedAt: null } }),
+        prisma.inventoryItem.count({ where: { warehouseId: id } }),
         prisma.inventoryTransaction.count({ where: { fromWarehouseId: id } }),
         prisma.inventoryTransaction.count({ where: { toWarehouseId: id } }),
       ]);
@@ -87,7 +87,7 @@ export async function getDependents(model: string, id: string): Promise<Dependen
     case "Employee": {
       const [asAssigned, dispatches, leaves, incidents] = await Promise.all([
         prisma.asTicket.count({ where: { assignedToId: id } }),
-        prisma.asDispatch.count({ where: { dispatchedById: id } }),
+        prisma.asDispatch.count({ where: { dispatchEmployeeId: id } }),
         prisma.leaveRecord.count({ where: { employeeId: id } }),
         prisma.incident.count({ where: { OR: [{ subjectId: id }, { authorId: id }] } }),
       ]);

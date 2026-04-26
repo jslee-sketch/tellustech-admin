@@ -1400,6 +1400,17 @@ model User {
   @@map("users")
 }
 
+// 코드 시퀀스 atomic counter — race condition 0.
+// key = "<prefix>-<dateSeg>" 또는 "<prefix>" (sequential).
+// upsert + 1 atomic 으로 다음 순번 발급.
+model CodeSequence {
+  key       String   @id // 예: "CL-260427" 또는 "TNV-"
+  next      Int      @default(1)
+  updatedAt DateTime @updatedAt
+
+  @@map("code_sequences")
+}
+
 // 사용자별 모듈 접근 권한 — 보기(VIEW) / 쓰기(WRITE) / 가림(HIDDEN)
 // HIDDEN 이면 사이드바·접근 모두 차단. WRITE 면 작성·수정 모두 가능. VIEW 면 GET 만.
 // role=ADMIN 은 자동으로 모든 모듈 WRITE — 이 테이블 무시.

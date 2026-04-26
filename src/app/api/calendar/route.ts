@@ -375,7 +375,7 @@ export async function POST(request: Request) {
             prefix: "EVT",
             lookupLast: async (fp) => {
               const last = await prisma.calendarEvent.findFirst({
-                where: { eventCode: { startsWith: fp } },
+                where: { deletedAt: undefined, eventCode: { startsWith: fp } },
                 orderBy: { eventCode: "desc" },
                 select: { eventCode: true },
               });

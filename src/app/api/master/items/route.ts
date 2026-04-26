@@ -72,7 +72,7 @@ export async function POST(request: Request) {
             prefix: "ITM",
             lookupLast: async (fullPrefix) => {
               const last = await prisma.item.findFirst({
-                where: { itemCode: { startsWith: fullPrefix } },
+                where: { deletedAt: undefined, itemCode: { startsWith: fullPrefix } },
                 orderBy: { itemCode: "desc" },
                 select: { itemCode: true },
               });

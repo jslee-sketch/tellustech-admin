@@ -82,7 +82,7 @@ export async function POST(request: Request) {
             prefix: "INC",
             lookupLast: async (fp) => {
               const last = await prisma.incident.findFirst({
-                where: { incidentCode: { startsWith: fp } },
+                where: { deletedAt: undefined, incidentCode: { startsWith: fp } },
                 orderBy: { incidentCode: "desc" },
                 select: { incidentCode: true },
               });

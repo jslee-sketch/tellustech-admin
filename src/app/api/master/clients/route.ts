@@ -86,7 +86,7 @@ export async function POST(request: Request) {
             prefix: "CL",
             lookupLast: async (fullPrefix) => {
               const last = await prisma.client.findFirst({
-                where: { clientCode: { startsWith: fullPrefix } },
+                where: { deletedAt: undefined, clientCode: { startsWith: fullPrefix } },
                 orderBy: { clientCode: "desc" },
                 select: { clientCode: true },
               });

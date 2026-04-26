@@ -63,7 +63,7 @@ export async function POST(request: Request) {
             prefix: "LV",
             lookupLast: async (fp) => {
               const last = await prisma.leaveRecord.findFirst({
-                where: { leaveCode: { startsWith: fp } },
+                where: { deletedAt: undefined, leaveCode: { startsWith: fp } },
                 orderBy: { leaveCode: "desc" },
                 select: { leaveCode: true },
               });

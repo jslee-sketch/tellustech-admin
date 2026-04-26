@@ -40,7 +40,7 @@ export async function POST(request: Request) {
             prefix: "LIC",
             lookupLast: async (fp) => {
               const last = await prisma.license.findFirst({
-                where: { licenseCode: { startsWith: fp } },
+                where: { deletedAt: undefined, licenseCode: { startsWith: fp } },
                 orderBy: { licenseCode: "desc" },
                 select: { licenseCode: true },
               });

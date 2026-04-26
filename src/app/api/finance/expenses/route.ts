@@ -66,7 +66,7 @@ export async function POST(request: Request) {
             prefix: "EXP",
             lookupLast: async (fp) => {
               const last = await prisma.expense.findFirst({
-                where: { expenseCode: { startsWith: fp } },
+                where: { deletedAt: undefined, expenseCode: { startsWith: fp } },
                 orderBy: { expenseCode: "desc" },
                 select: { expenseCode: true },
               });

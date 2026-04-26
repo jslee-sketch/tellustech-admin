@@ -36,7 +36,7 @@ export async function POST(request: Request) {
             prefix: "SCH",
             lookupLast: async (fp) => {
               const last = await prisma.schedule.findFirst({
-                where: { scheduleCode: { startsWith: fp } },
+                where: { deletedAt: undefined, scheduleCode: { startsWith: fp } },
                 orderBy: { scheduleCode: "desc" },
                 select: { scheduleCode: true },
               });

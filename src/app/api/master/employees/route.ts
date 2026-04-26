@@ -134,7 +134,7 @@ export async function POST(request: Request) {
             prefix: codePrefix(companyCode),
             lookupLast: async (prefix) => {
               const last = await prisma.employee.findFirst({
-                where: { companyCode, employeeCode: { startsWith: prefix } },
+                where: { companyCode, deletedAt: undefined, employeeCode: { startsWith: prefix } },
                 orderBy: { employeeCode: "desc" },
                 select: { employeeCode: true },
               });

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
             prefix: "OFF",
             lookupLast: async (fp) => {
               const last = await prisma.offboardingCard.findFirst({
-                where: { offboardingCode: { startsWith: fp } },
+                where: { deletedAt: undefined, offboardingCode: { startsWith: fp } },
                 orderBy: { offboardingCode: "desc" },
                 select: { offboardingCode: true },
               });

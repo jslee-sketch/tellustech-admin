@@ -120,7 +120,7 @@ export async function POST(request: Request) {
             prefix: contractPrefix(session.companyCode),
             lookupLast: async (fullPrefix) => {
               const last = await prisma.itContract.findFirst({
-                where: { contractNumber: { startsWith: fullPrefix } },
+                where: { deletedAt: undefined, contractNumber: { startsWith: fullPrefix } },
                 orderBy: { contractNumber: "desc" },
                 select: { contractNumber: true },
               });

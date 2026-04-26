@@ -49,7 +49,7 @@ export async function POST(request: Request, context: RouteContext) {
             prefix: "LIC",
             lookupLast: async (fp) => {
               const last = await prisma.license.findFirst({
-                where: { licenseCode: { startsWith: fp } },
+                where: { deletedAt: undefined, licenseCode: { startsWith: fp } },
                 orderBy: { licenseCode: "desc" },
                 select: { licenseCode: true },
               });
@@ -60,7 +60,7 @@ export async function POST(request: Request, context: RouteContext) {
             prefix: "SCH",
             lookupLast: async (fp) => {
               const last = await prisma.schedule.findFirst({
-                where: { scheduleCode: { startsWith: fp } },
+                where: { deletedAt: undefined, scheduleCode: { startsWith: fp } },
                 orderBy: { scheduleCode: "desc" },
                 select: { scheduleCode: true },
               });

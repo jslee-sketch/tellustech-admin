@@ -57,7 +57,7 @@ export async function POST(_r: Request, context: RouteContext) {
             prefix: "SLS",
             lookupLast: async (fullPrefix) => {
               const last = await prisma.sales.findFirst({
-                where: { salesNumber: { startsWith: fullPrefix } },
+                where: { deletedAt: undefined, salesNumber: { startsWith: fullPrefix } },
                 orderBy: { salesNumber: "desc" },
                 select: { salesNumber: true },
               });

@@ -208,7 +208,7 @@ export async function POST(request: Request) {
             prefix: "PUR",
             lookupLast: async (fullPrefix) => {
               const last = await prisma.purchase.findFirst({
-                where: { purchaseNumber: { startsWith: fullPrefix } },
+                where: { deletedAt: undefined, purchaseNumber: { startsWith: fullPrefix } },
                 orderBy: { purchaseNumber: "desc" },
                 select: { purchaseNumber: true },
               });

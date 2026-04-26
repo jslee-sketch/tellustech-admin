@@ -37,7 +37,7 @@ function todayYyMmDd(): string {
 async function nextAsTicketNumber(): Promise<string> {
   const prefix = `${todayYyMmDd()}-`;
   const last = await prisma.asTicket.findFirst({
-    where: { ticketNumber: { startsWith: prefix } },
+    where: { deletedAt: undefined, ticketNumber: { startsWith: prefix } },
     orderBy: { ticketNumber: "desc" },
     select: { ticketNumber: true },
   });

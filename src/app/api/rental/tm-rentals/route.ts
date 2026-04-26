@@ -173,7 +173,7 @@ export async function POST(request: Request) {
             prefix: "TM",
             lookupLast: async (fullPrefix) => {
               const last = await prisma.tmRental.findFirst({
-                where: { rentalCode: { startsWith: fullPrefix } },
+                where: { deletedAt: undefined, rentalCode: { startsWith: fullPrefix } },
                 orderBy: { rentalCode: "desc" },
                 select: { rentalCode: true },
               });

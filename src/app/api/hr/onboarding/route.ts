@@ -30,7 +30,7 @@ export async function POST(request: Request) {
             prefix: "ONB",
             lookupLast: async (fp) => {
               const last = await prisma.onboardingCard.findFirst({
-                where: { onboardingCode: { startsWith: fp } },
+                where: { deletedAt: undefined, onboardingCode: { startsWith: fp } },
                 orderBy: { onboardingCode: "desc" },
                 select: { onboardingCode: true },
               });

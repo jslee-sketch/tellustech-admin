@@ -61,7 +61,7 @@ export async function POST(request: Request) {
             },
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
       return ok({ license: created }, { status: 201 });
     } catch (err) {

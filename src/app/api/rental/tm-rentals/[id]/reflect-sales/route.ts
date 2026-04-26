@@ -105,7 +105,7 @@ export async function POST(_r: Request, context: RouteContext) {
             return sales;
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       return ok(

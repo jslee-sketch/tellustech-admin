@@ -214,7 +214,7 @@ export async function POST(request: Request) {
             return rental;
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       const full = await prisma.tmRental.findUnique({

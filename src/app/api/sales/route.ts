@@ -284,7 +284,7 @@ export async function POST(request: Request) {
             return sales;
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       // 전체 레코드를 items 포함으로 반환

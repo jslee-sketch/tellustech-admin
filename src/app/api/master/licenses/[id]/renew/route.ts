@@ -101,7 +101,7 @@ export async function POST(request: Request, context: RouteContext) {
             return created;
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       return ok({ license: result }, { status: 201 });

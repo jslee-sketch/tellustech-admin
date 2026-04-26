@@ -58,7 +58,7 @@ export async function POST(request: Request) {
             },
           });
         },
-        { attempts: 5, isConflict: () => true },
+        { isConflict: () => true },
       );
       return ok({ ticket: { id: created.id, ticketNumber: created.ticketNumber } }, { status: 201 });
     } catch (err) { return serverError(err); }

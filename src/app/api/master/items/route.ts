@@ -83,7 +83,7 @@ export async function POST(request: Request) {
             data: { itemCode, itemType, name, unit, category },
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       return ok({ item: created }, { status: 201 });

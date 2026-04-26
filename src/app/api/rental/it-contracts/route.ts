@@ -156,7 +156,7 @@ export async function POST(request: Request) {
             },
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       return ok({ contract: created }, { status: 201 });

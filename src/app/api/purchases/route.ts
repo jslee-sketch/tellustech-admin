@@ -282,7 +282,7 @@ export async function POST(request: Request) {
             return purchase;
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       const full = await prisma.purchase.findUnique({

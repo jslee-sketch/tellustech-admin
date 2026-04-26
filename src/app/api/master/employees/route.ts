@@ -145,7 +145,7 @@ export async function POST(request: Request) {
             data: { ...data, employeeCode },
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       return ok({ employee: created }, { status: 201 });

@@ -53,7 +53,7 @@ export async function POST(request: Request) {
             },
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
       return ok({ card: created }, { status: 201 });
     } catch (err) {

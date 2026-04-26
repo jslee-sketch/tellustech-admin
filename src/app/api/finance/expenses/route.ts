@@ -95,7 +95,7 @@ export async function POST(request: Request) {
             return exp;
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
       return ok({ expense: created }, { status: 201 });
     } catch (err) {

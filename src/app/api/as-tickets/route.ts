@@ -183,7 +183,7 @@ export async function POST(request: Request) {
             },
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
 
       // 담당자 알림 (AS_NEW). 담당자 Employee 에 User 가 연결돼 있으면 그 user, 없거나

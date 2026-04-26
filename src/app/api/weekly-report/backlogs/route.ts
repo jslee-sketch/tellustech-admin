@@ -119,7 +119,7 @@ export async function POST(request: Request) {
             },
           });
         },
-        { attempts: 5, isConflict: isUniqueConstraintError },
+        { isConflict: isUniqueConstraintError },
       );
       return ok({ backlog: created }, { status: 201 });
     } catch (err) {

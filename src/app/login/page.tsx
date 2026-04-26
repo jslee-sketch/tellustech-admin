@@ -44,7 +44,7 @@ function LoginForm() {
     setSubmitting(true);
     try {
       const body = mode === "portal"
-        ? { username, password, language: "VI" }                     // 포탈 = clientCode 로 username, 회사코드 없음
+        ? { username, password, language }                           // 포탈도 사용자 언어 선택 사용
         : { companyCode, username, password, language };
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -123,19 +123,17 @@ function LoginForm() {
             />
           </Field>
 
-          {mode === "staff" && (
-            <Field label="언어 / Ngôn ngữ">
-              <Select
-                value={language}
-                onChange={setLanguage}
-                options={[
-                  { v: "VI", l: "Tiếng Việt" },
-                  { v: "KO", l: "한국어" },
-                  { v: "EN", l: "English" },
-                ]}
-              />
-            </Field>
-          )}
+          <Field label="언어 / Ngôn ngữ">
+            <Select
+              value={language}
+              onChange={setLanguage}
+              options={[
+                { v: "VI", l: "Tiếng Việt" },
+                { v: "KO", l: "한국어" },
+                { v: "EN", l: "English" },
+              ]}
+            />
+          </Field>
 
           {error && (
             <div className="rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { ok, trimNonEmpty } from "@/lib/api-utils";
+import { requireModulePermission } from "@/lib/permissions";
 
 function parseDate(s: string | null): Date | null { if (!s) return null; const d = new Date(s); return Number.isNaN(d.getTime()) ? null : d; }
 function defaultRange() { const n = new Date(); return { from: new Date(n.getFullYear(), n.getMonth(), 1), to: new Date(n.getFullYear(), n.getMonth()+1, 0, 23,59,59) }; }
@@ -8,7 +9,9 @@ function splitIds(s: string | null): string[] { return (s ?? "").split(",").map(
 
 // 이익현황 — 해당 기간의 총매입 / 총매출 / 총비용 / 이익(매출-매입-비용)
 export async function GET(request: Request) {
-  return withSessionContext(async () => {
+  return withSessionContext(async (session) => {
+    const g = await requireModulePermission(session.sub, session.role, "STATS", "READ");
+    if (g) return g;
     const u = new URL(request.url);
     const from = parseDate(trimNonEmpty(u.searchParams.get("from"))) ?? defaultRange().from;
     const to   = parseDate(trimNonEmpty(u.searchParams.get("to")))   ?? defaultRange().to;

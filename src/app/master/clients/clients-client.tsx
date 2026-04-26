@@ -42,6 +42,8 @@ export function ClientsClient({ initialData, lang }: { initialData: ClientRow[];
   const [q, setQ] = useState("");
   const [grade, setGrade] = useState("all");
   const [receivable, setReceivable] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
@@ -174,6 +176,27 @@ export function ClientsClient({ initialData, lang }: { initialData: ClientRow[];
         data={filtered}
         rowKey={(c) => c.id}
         emptyMessage={t("empty.clients", lang)}
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActionBar={(ids, clear) => (
+          <>
+            <Button type="button" size="sm" variant="ghost" onClick={async () => {
+              if (ids.length === 0) return;
+              // Dependents preview for the first selected
+              const r = await fetch(`/api/master/clients/${ids[0]}?preview=1`, { method: 'DELETE' }).then(r => r.json());
+              const lines = Object.entries(r?.dependents ?? {}).map(([k,v]) => `${k}: ${v}`).join('\n');
+              if (!confirm(`첫 항목 의존성 미리보기:\n${lines}\n\n선택된 ${ids.length}건 모두 삭제(soft)? 회복 가능.`)) return;
+              setBusy(true);
+              for (const id of ids) {
+                await fetch(`/api/master/clients/${id}`, { method: 'DELETE' });
+              }
+              setBusy(false);
+              clear();
+              location.reload();
+            }} disabled={busy}>{busy ? '삭제 중…' : `선택 삭제 (${ids.length})`}</Button>
+          </>
+        )}
       />
       <div className="mt-4">
         <ClientsImport lang={lang} />

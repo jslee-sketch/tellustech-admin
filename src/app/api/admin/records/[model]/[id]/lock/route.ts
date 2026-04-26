@@ -13,6 +13,7 @@ const LOCKABLE = new Set([
   "Expense", "Payroll", "Incentive", "LeaveRecord", "Incident", "Evaluation",
   "PayableReceivable", "CalendarEvent", "Schedule", "Calibration",
   "OnboardingCard", "OffboardingCard",
+  "Employee", // 퇴사 후 잠금
 ]);
 
 type RouteContext = { params: Promise<{ model: string; id: string }> };

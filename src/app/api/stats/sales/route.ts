@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { ok, trimNonEmpty } from "@/lib/api-utils";
+import { requireModulePermission } from "@/lib/permissions";
 
 // GET /api/stats/sales?from=YYYY-MM-DD&to=YYYY-MM-DD&clients=id1,id2&items=id1,id2
 //                      &projects=id1,id2&employees=id1,id2
@@ -22,7 +23,9 @@ function splitIds(s: string | null): string[] {
 }
 
 export async function GET(request: Request) {
-  return withSessionContext(async () => {
+  return withSessionContext(async (session) => {
+    const g = await requireModulePermission(session.sub, session.role, "STATS", "READ");
+    if (g) return g;
     const u = new URL(request.url);
     const from = parseDate(trimNonEmpty(u.searchParams.get("from"))) ?? defaultRange().from;
     const to   = parseDate(trimNonEmpty(u.searchParams.get("to")))   ?? defaultRange().to;

@@ -65,3 +65,14 @@ export function canRead(level: EffectivePermission): boolean {
 export function canWrite(level: EffectivePermission): boolean {
   return level === "WRITE";
 }
+
+// API 라우트 인입가드. 통과 시 null, 실패 시 Response(403). 호출 측이 if(g) return g; 로 사용.
+import { forbidden } from "./api-utils";
+export async function requireModulePermission(
+  userId: string, role: string, module: PermissionModule, need: "READ" | "WRITE",
+): Promise<Response | null> {
+  const lv = await getEffectivePermission(userId, role, module);
+  if (lv === "HIDDEN") return forbidden();
+  if (need === "WRITE" && lv !== "WRITE") return forbidden();
+  return null;
+}

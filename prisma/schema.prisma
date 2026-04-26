@@ -330,6 +330,7 @@ model Department {
   @@map("departments")
 }
 
+// NOTE: Employee gets lockedAt/lockReason via the post-add (퇴사 후 잠금 정책).
 model Employee {
   id              String         @id @default(cuid())
   companyCode     CompanyCode
@@ -354,6 +355,8 @@ model Employee {
   status          EmployeeStatus @default(ACTIVE)
   createdAt       DateTime       @default(now())
   deletedAt   DateTime?
+  lockedAt    DateTime?
+  lockReason  String?
   updatedAt       DateTime       @updatedAt
 
   department         Department?            @relation("DepartmentMembers", fields: [departmentId], references: [id])

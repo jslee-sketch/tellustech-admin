@@ -17,6 +17,25 @@ const PUBLIC_PATHS = new Set<string>([
   "/api/auth/logout",
 ]);
 
+// PORTAL_MODE=true 면 인스턴스 자체가 고객 포탈 전용.
+//   - /portal/*, /api/portal/*, /api/auth/*, /api/files/*, /login, /favicon, /flags 만 허용
+//   - 그 외 사내 라우트(/master, /sales, /admin, /stats 등)는 모두 404
+//   - CLIENT 외 역할 로그인 시도 시 즉시 logout + /login redirect
+const IS_PORTAL_MODE = process.env.PORTAL_MODE === "true";
+
+function isPortalAllowedPath(p: string): boolean {
+  return (
+    p.startsWith("/portal") ||
+    p.startsWith("/api/portal") ||
+    p.startsWith("/api/auth") ||
+    p.startsWith("/api/files") ||
+    p.startsWith("/flags") ||
+    p === "/login" ||
+    p === "/favicon.ico" ||
+    p === "/" // landing redirect to /portal
+  );
+}
+
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
   // Next.js 내부/정적 파일은 matcher에서 거르지만 한 번 더 방어.
@@ -34,6 +53,14 @@ function isCronPath(pathname: string): boolean {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // PORTAL_MODE 인스턴스는 사내 라우트 접근 자체 차단
+  if (IS_PORTAL_MODE && !isPortalAllowedPath(pathname) && !pathname.startsWith("/_next")) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "portal_mode_only" }, { status: 404 });
+    }
+    return NextResponse.redirect(new URL("/portal", request.url));
+  }
 
   if (isPublicPath(pathname)) {
     return NextResponse.next();
@@ -55,6 +82,14 @@ export function proxy(request: NextRequest) {
       loginUrl.searchParams.set("next", pathname);
     }
     return NextResponse.redirect(loginUrl);
+  }
+
+  // PORTAL_MODE 인스턴스에서 비-CLIENT 로그인 시도 → 즉시 차단 (admin 계정 portal 접근 불가)
+  if (IS_PORTAL_MODE && session.role !== "CLIENT") {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "client_only" }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/login?reason=client_only", request.url));
   }
 
   // CLIENT (고객 포탈) 세션 경로 제한: /portal, /api/portal, /api/auth/*, /login, /api/files 만 허용.

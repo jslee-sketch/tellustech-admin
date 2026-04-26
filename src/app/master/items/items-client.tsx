@@ -130,6 +130,17 @@ export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lan
         data={filtered}
         rowKey={(it) => it.id}
         emptyMessage={t("empty.items", lang)}
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActionBar={(ids, clear) => (
+          <Button type="button" size="sm" variant="ghost" onClick={async () => {
+            if (!confirm(`선택된 ${ids.length}건 (item) 삭제(soft)?`)) return;
+            setBusy(true);
+            for (const id of ids) await fetch(`/api/master/items/${id}`, { method: 'DELETE' });
+            setBusy(false); clear(); location.reload();
+          }} disabled={busy}>{busy ? '삭제 중…' : `선택 삭제 (${ids.length})`}</Button>
+        )}
       />
       <div className="mt-4">
         <ItemsImport lang={lang} />

@@ -120,6 +120,17 @@ export function ProjectsClient({ initialData, lang }: { initialData: ProjectRow[
         data={filtered}
         rowKey={(p) => p.id}
         emptyMessage={t("empty.projects", lang)}
+        selectable
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        bulkActionBar={(ids, clear) => (
+          <Button type="button" size="sm" variant="ghost" onClick={async () => {
+            if (!confirm(`선택된 ${ids.length}건 (project) 삭제(soft)?`)) return;
+            setBusy(true);
+            for (const id of ids) await fetch(`/api/master/projects/${id}`, { method: 'DELETE' });
+            setBusy(false); clear(); location.reload();
+          }} disabled={busy}>{busy ? '삭제 중…' : `선택 삭제 (${ids.length})`}</Button>
+        )}
       />
     </Card>
   );

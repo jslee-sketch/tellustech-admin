@@ -20,23 +20,29 @@ export default async function PayablesPage() {
       amount: true,
       paidAmount: true,
       dueDate: true,
-      sales: { select: { salesNumber: true, client: { select: { clientCode: true, companyNameVi: true, receivableStatus: true } } } },
-      purchase: { select: { purchaseNumber: true, supplier: { select: { clientCode: true, companyNameVi: true, receivableStatus: true } } } },
+      revisedDueDate: true,
+      createdAt: true,
+      sales: { select: { salesNumber: true, client: { select: { id: true, clientCode: true, companyNameVi: true, receivableStatus: true } } } },
+      purchase: { select: { purchaseNumber: true, supplier: { select: { id: true, clientCode: true, companyNameVi: true, receivableStatus: true } } } },
     },
   });
   const data = rows.map((r) => {
     const partner = r.sales?.client ?? r.purchase?.supplier ?? null;
+    const revised = r.revisedDueDate ?? r.dueDate;
     return {
       id: r.id,
       kind: r.kind,
       status: r.status,
+      clientId: partner?.id ?? null,
       clientLabel: partner ? `${partner.clientCode} · ${partner.companyNameVi}` : "—",
       clientBlocked: partner?.receivableStatus === "BLOCKED",
       ref: r.sales?.salesNumber ?? r.purchase?.purchaseNumber ?? "—",
       amount: r.amount.toString(),
       paidAmount: r.paidAmount.toString(),
       outstanding: (Number(r.amount) - Number(r.paidAmount)).toFixed(2),
-      dueDate: r.dueDate ? r.dueDate.toISOString().slice(0, 10) : "—",
+      dueDate: r.dueDate ? r.dueDate.toISOString().slice(0, 10) : null,
+      revisedDueDate: revised ? revised.toISOString().slice(0, 10) : null,
+      createdAt: r.createdAt.toISOString().slice(0, 10),
     };
   });
   const totalOutstanding = data.reduce((s, d) => s + Number(d.outstanding), 0);
@@ -68,7 +74,7 @@ export default async function PayablesPage() {
           />
         </div>
         <Card title={t("title.payables", L)} count={data.length}>
-          <PayablesListClient data={data} lang={L} />
+          <PayablesListClient initialRows={data} lang={L} />
         </Card>
       </div>
     </main>

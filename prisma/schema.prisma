@@ -1365,7 +1365,8 @@ model PayableReceivable {
   clientId    String?
   amount      Decimal                 @db.Decimal(15, 2)
   paidAmount  Decimal                 @default(0) @db.Decimal(15, 2)
-  dueDate     DateTime?
+  dueDate        DateTime? // 예정일 (최초 발행 시 결제조건으로 셋팅, 이후 불변 — 원래 약속된 날)
+  revisedDueDate DateTime? // 변경일 (상세에서 수정 — null 이면 dueDate 와 동일하게 표시)
   status      PayableReceivableStatus @default(OPEN)
   createdAt   DateTime                @default(now())
   deletedAt   DateTime?

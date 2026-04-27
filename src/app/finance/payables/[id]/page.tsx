@@ -65,8 +65,8 @@ export default async function PayableDetailPage({ params }: PageProps) {
               </div>
             </div>
             <div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("col.dueDateShort", L)}</div>
-              <div className="font-mono">{pr.dueDate ? pr.dueDate.toISOString().slice(0, 10) : "—"}</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("col.revisedDueDate", L)}</div>
+              <div className="font-mono">{(pr.revisedDueDate ?? pr.dueDate) ? (pr.revisedDueDate ?? pr.dueDate)!.toISOString().slice(0, 10) : "—"}</div>
             </div>
             <div>
               <div className="text-[11px] text-[color:var(--tts-muted)]">{t("field.amount", L)}</div>
@@ -93,6 +93,7 @@ export default async function PayableDetailPage({ params }: PageProps) {
             initialPaidAmount={String(pr.paidAmount)}
             initialStatus={pr.status}
             initialCompletedAt={pr.completedAt ? pr.completedAt.toISOString() : null}
+            initialRevisedDueDate={(pr.revisedDueDate ?? pr.dueDate) ? (pr.revisedDueDate ?? pr.dueDate)!.toISOString().slice(0, 10) : null}
             initialContactLogs={pr.contactLogs.map(l => ({
               id: l.id,
               recordedAt: l.recordedAt.toISOString(),

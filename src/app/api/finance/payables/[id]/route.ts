@@ -77,7 +77,10 @@ export async function PATCH(request: Request, context: RouteContext) {
         if (!s) return badRequest("invalid_input", { field: "status" });
         data.status = s;
       }
-      if (p.dueDate !== undefined) data.dueDate = parseDateOrUndefined(p.dueDate);
+      // dueDate (예정일) 는 최초 생성 시 셋팅되며 이후 불변. 변경은 revisedDueDate (변경일) 로만.
+      if (p.revisedDueDate !== undefined) data.revisedDueDate = parseDateOrUndefined(p.revisedDueDate);
+      // 호환: 구 클라이언트가 dueDate 로 보내도 revisedDueDate 로 라우팅 (실제 dueDate 는 안 바뀜).
+      if (p.revisedDueDate === undefined && p.dueDate !== undefined) data.revisedDueDate = parseDateOrUndefined(p.dueDate);
       if (Object.keys(data).length === 0) return ok({ pr: existing });
       const updated = await prisma.payableReceivable.update({ where: { id }, data });
       return ok({ pr: updated });

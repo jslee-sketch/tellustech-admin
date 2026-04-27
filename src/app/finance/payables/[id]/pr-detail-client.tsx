@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Field, TextInput, Textarea, Badge } from "@/components/ui";
-import type { Lang } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 
 type ContactLog = {
   id: string;
@@ -32,6 +32,8 @@ type Props = {
   initialPaidAmount: string;
   initialStatus: string;
   initialCompletedAt: string|null;
+  /** 변경일(revisedDueDate). null/undef 면 페이지 server 측에서 dueDate(예정일) 로 fallback 후 ISO 문자열 전달 */
+  initialRevisedDueDate: string|null;
   lang: Lang;
 };
 
@@ -59,6 +61,10 @@ export function PrDetailClient(props: Props) {
   const [paidAmount, setPaidAmount] = useState<string>(props.initialPaidAmount);
   const [status, setStatus] = useState<string>(props.initialStatus);
   const [completedAt, setCompletedAt] = useState<string|null>(props.initialCompletedAt);
+  const [revisedDueDate, setRevisedDueDate] = useState<string>(props.initialRevisedDueDate ?? "");
+  const [savingRevised, setSavingRevised] = useState(false);
+  const [revisedErr, setRevisedErr] = useState<string|null>(null);
+  const [revisedSavedAt, setRevisedSavedAt] = useState<number>(0);
 
   // contact log form
   const [noteKo, setNoteKo] = useState(""); const [noteVi, setNoteVi] = useState(""); const [noteEn, setNoteEn] = useState("");
@@ -116,6 +122,22 @@ export function PrDetailClient(props: Props) {
       router.refresh();
     } finally { setSavingPay(false); }
   }
+  async function saveRevisedDueDate() {
+    setSavingRevised(true); setRevisedErr(null);
+    try {
+      const r = await fetch(`/api/finance/payables/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revisedDueDate: revisedDueDate || null }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        setRevisedErr(j?.error ?? "fail");
+        return;
+      }
+      setRevisedSavedAt(Date.now());
+      router.refresh();
+    } finally { setSavingRevised(false); }
+  }
   async function markComplete() {
     if (!confirm("완료 처리 (수동) / Đánh dấu hoàn tất?")) return;
     const r = await fetch(`/api/finance/payables/${id}`, {
@@ -150,6 +172,21 @@ export function PrDetailClient(props: Props) {
             <div><Badge tone={STATUS_TONE[status] ?? "neutral"}>{STATUS_LABEL[status] ?? status}</Badge></div>
             {completedAt && <div className="mt-1 text-[10px] text-[color:var(--tts-muted)]">완료일 {String(completedAt).slice(0,10)}</div>}
           </div>
+        </div>
+        {/* 변경일 — 상세에서 편집. 비워두면 서버에서 예정일(dueDate) fallback */}
+        <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-[color:var(--tts-border)] pt-3">
+          <Field label={t("field.revisedDueDate", lang)} width="220px">
+            <TextInput
+              type="date"
+              value={revisedDueDate}
+              onChange={(e) => setRevisedDueDate(e.target.value)}
+            />
+          </Field>
+          <Button onClick={saveRevisedDueDate} disabled={savingRevised}>
+            {savingRevised ? "..." : t("action.save", lang)}
+          </Button>
+          {revisedErr && <span className="text-[12px] text-[color:var(--tts-danger)]">{revisedErr}</span>}
+          {revisedSavedAt > 0 && !revisedErr && <span className="text-[11px] text-[color:var(--tts-success)]">✓</span>}
         </div>
         {status !== "PAID" && Number(remaining) <= 0 && (
           <div className="mt-3"><Button onClick={markComplete}>✓ 완료 처리 / Hoàn tất</Button></div>

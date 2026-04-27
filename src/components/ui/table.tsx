@@ -10,7 +10,11 @@ export type DataTableColumn<Row> = {
   width?: string;
   align?: "left" | "right" | "center";
   className?: string;
+  /** true 면 헤더 클릭으로 정렬 가능 (외부 sortBy/sortDir 와 onSortChange 콜백 사용). */
+  sortable?: boolean;
 };
+
+export type SortDir = "asc" | "desc";
 
 type DataTableProps<Row> = {
   columns: DataTableColumn<Row>[];
@@ -30,6 +34,13 @@ type DataTableProps<Row> = {
   lockReasonOf?: (row: Row) => string | null;
   /** 선택 시 상단 bulk action 바 컨텐츠 (삭제/잠금/해제 버튼 등). */
   bulkActionBar?: (selectedIds: string[], clear: () => void) => ReactNode;
+  // ── 컬럼 정렬 ────────────────────────────────────────────────
+  /** 현재 정렬 중인 컬럼 key. */
+  sortBy?: string;
+  /** 현재 정렬 방향. */
+  sortDir?: SortDir;
+  /** sortable 컬럼 헤더 클릭 시 호출. 동일 key 재클릭이면 방향 토글, 다른 key면 asc 로 시작. */
+  onSortChange?: (key: string, dir: SortDir) => void;
 };
 
 export function DataTable<Row extends Record<string, unknown>>({
@@ -45,6 +56,9 @@ export function DataTable<Row extends Record<string, unknown>>({
   isRowLocked,
   lockReasonOf,
   bulkActionBar,
+  sortBy,
+  sortDir,
+  onSortChange,
 }: DataTableProps<Row>) {
   const selSet = useMemo(() => new Set(selectedIds ?? []), [selectedIds]);
   const allIds = useMemo(
@@ -103,15 +117,40 @@ export function DataTable<Row extends Record<string, unknown>>({
                   />
                 </th>
               )}
-              {columns.map((col, i) => (
-                <th
-                  key={i}
-                  style={{ textAlign: col.align ?? "left", width: col.width }}
-                  className="whitespace-nowrap border-b border-[color:var(--tts-primary)] px-3 py-2.5 text-[12px] font-bold text-[color:var(--tts-primary)]"
-                >
-                  {col.label}
-                </th>
-              ))}
+              {columns.map((col, i) => {
+                const colKey = String(col.key);
+                const isSorted = col.sortable && sortBy === colKey;
+                const arrow = isSorted ? (sortDir === "asc" ? "▲" : "▼") : col.sortable ? "▲▼" : "";
+                const onClick = col.sortable && onSortChange
+                  ? () => {
+                      if (sortBy === colKey) onSortChange(colKey, sortDir === "asc" ? "desc" : "asc");
+                      else onSortChange(colKey, "asc");
+                    }
+                  : undefined;
+                return (
+                  <th
+                    key={i}
+                    style={{ textAlign: col.align ?? "left", width: col.width }}
+                    onClick={onClick}
+                    className={
+                      "whitespace-nowrap border-b border-[color:var(--tts-primary)] px-3 py-2.5 text-[12px] font-bold text-[color:var(--tts-primary)]" +
+                      (col.sortable ? " cursor-pointer select-none hover:bg-[color:var(--tts-primary-dim)]/70" : "")
+                    }
+                  >
+                    {col.label}
+                    {col.sortable && (
+                      <span
+                        className={
+                          "ml-1 text-[10px] " +
+                          (isSorted ? "text-[color:var(--tts-accent)]" : "text-[color:var(--tts-muted)] opacity-60")
+                        }
+                      >
+                        {arrow}
+                      </span>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>

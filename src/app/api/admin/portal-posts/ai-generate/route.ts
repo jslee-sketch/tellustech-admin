@@ -51,8 +51,9 @@ async function generateNews(category: PostCategory, topic: string): Promise<{ ti
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
   const guide = CATEGORY_GUIDE[category];
-  // 카테고리·주제·금지사항을 강하게 enforce. 마지막에 footer/disclaimer.
-  const prompt = `당신은 텔러스테크(Tellustech, 베트남 OA/계측기 렌탈·서비스 회사)의 고객 포탈 뉴스 에디터입니다.
+  // Tellustech 는 사용자 자신의 회사. 검증 불필요. 카테고리·주제·금지사항만 enforce.
+  // web_search 는 외부 사실(베트남 공휴일/한국 경제 등) 확인에만 사용.
+  const prompt = `당신은 텔러스테크(Tellustech) 회사의 사내 콘텐츠 에디터입니다. 텔러스테크는 베트남에 있는 OA(프린터/복합기)·계측기 렌탈·서비스 회사이며, 사용자(관리자)가 회사 공식 채널에 게시할 글을 작성 의뢰합니다. 회사의 존재나 마케팅 권한은 별도 확인이 필요 없으며, 사용자가 제시한 주제·카테고리에 따라 즉시 작성합니다.
 
 【카테고리】${category}
 【반드시 작성해야 할 것】${guide.mustBe}
@@ -60,17 +61,16 @@ async function generateNews(category: PostCategory, topic: string): Promise<{ ti
 【톤】${guide.tone}
 【주제】${topic}
 
-⚠️ 위 카테고리와 주제에 정확히 부합하는 글만 작성. 카테고리와 다른 내용 금지. 주제와 무관한 내용 금지.
+위 카테고리·주제에 부합하는 한국어 글 1편을 즉시 작성하세요. 카테고리와 다른 내용 금지. 주제와 무관한 내용 금지.
 
-조건:
-- 한국어 본문 300~500자
-- 제목 30자 이내 (한 줄)
-- 가능하면 web_search 도구로 실제 사실/데이터 확인 후 작성
-- 사실 검증된 출처 URL이 있으면 sources 배열에 포함 (없으면 빈 배열)
-- 마케팅 톤이어도 과장된 약속·허위 사실 금지
+web_search 도구는 "외부 사실" 확인이 필요할 때만 사용 — 예: 베트남 공휴일, 한국 경제 지표, 업계 동향. 텔러스테크 자체 정보(가격·이벤트 등)는 사용자가 제공한 주제를 그대로 사용. 마케팅 글이라도 사용자가 지정한 혜택은 그대로 반영하되, 주제에 없는 새 약속 추가 금지.
 
-출력 형식 (JSON 외 다른 텍스트 금지):
-{"title": "제목", "body": "본문 (개행 포함)", "sources": ["https://...", "..."]}`;
+⚠️ 출력은 반드시 단일 JSON 객체. 그 외 reasoning/설명/markdown 코드블록 사용 금지. 순수 JSON으로만 응답.
+
+JSON 스키마:
+{"title": "제목 (30자 이내)", "body": "본문 한국어 300~500자, 개행은 \\n", "sources": ["https://외부사실출처URL", ...]}
+
+sources 배열은 web_search 로 확인한 외부 사실의 출처 URL만 포함. 없으면 [].`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -83,9 +83,13 @@ async function generateNews(category: PostCategory, topic: string): Promise<{ ti
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 4096,
-        // web_search 도구 활성화 — 모델이 필요 시 검색 후 출처 URL 포함
+        system: "당신은 텔러스테크 회사의 사내 에디터입니다. 사용자(관리자)가 의뢰하는 사내 콘텐츠를 즉시 작성합니다. 출력은 항상 단일 JSON 객체만 — 그 외 텍스트 일체 금지.",
+        // web_search 도구 활성화 — 외부 사실 확인용 (선택)
         tools: [{ type: "web_search_20250305" as any, name: "web_search", max_uses: 3 }],
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          { role: "user", content: prompt },
+          { role: "assistant", content: '{"title":"' },
+        ],
       }),
     });
     if (!res.ok) {
@@ -100,8 +104,10 @@ async function generateNews(category: PostCategory, topic: string): Promise<{ ti
     for (const b of blocks) {
       if (b.url && typeof b.url === "string" && b.url.startsWith("http")) searchUrls.push(b.url);
     }
-    // 텍스트 블록 전체 합치기
-    const allText = blocks.filter((c) => c.type === "text" && typeof c.text === "string").map((c) => c.text!).join("\n");
+    // 텍스트 블록 전체 합치기 — assistant prefill 적용으로 첫 텍스트는 '"title":...' 부터 시작.
+    // Anthropic API 는 prefill 을 응답에 포함하지 않으므로 우리가 prefix 를 다시 prepend.
+    const rawText = blocks.filter((c) => c.type === "text" && typeof c.text === "string").map((c) => c.text!).join("\n");
+    const allText = rawText.startsWith("{") || rawText.includes("```") ? rawText : '{"title":"' + rawText;
     // JSON 객체를 텍스트 어디에서든 추출 (모델이 markdown ```json … ``` 또는 reasoning + JSON 형태 가능)
     const tryParseJson = (txt: string): { title?: string; body?: string; sources?: string[] } | null => {
       // 1) 우선 markdown 코드블록 안의 JSON

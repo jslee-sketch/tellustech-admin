@@ -12,6 +12,7 @@ import {
   trimNonEmpty,
 } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
+import { fillTranslations } from "@/lib/translate";
 import type { ClientGrade, Industry, ReceivableStatus } from "@/generated/prisma/client";
 
 // Client 는 공유 마스터 — 회사 스코프 없음.
@@ -78,7 +79,17 @@ export async function POST(request: Request) {
     const p = body as Record<string, unknown>;
 
     try {
-      const companyNameVi = requireString(p.companyNameVi, "companyNameVi");
+      // 회사명 — 한 언어만 입력해도 자동으로 나머지 2개 채움
+      // companyNameVi 가 표시 default 라 필수지만, 실제로는 사용자가 어느 언어든 입력하면 채워줌
+      const inVi = trimNonEmpty(p.companyNameVi);
+      const inEn = trimNonEmpty(p.companyNameEn);
+      const inKo = trimNonEmpty(p.companyNameKo);
+      if (!inVi && !inEn && !inKo) return badRequest("invalid_input", { field: "companyName" });
+      const original = inVi ? "VI" as const : inKo ? "KO" as const : "EN" as const;
+      const filled = await fillTranslations({
+        vi: inVi ?? null, en: inEn ?? null, ko: inKo ?? null, originalLang: original,
+      });
+      const companyNameVi = filled.vi ?? inVi ?? inEn ?? inKo!;
 
       const created = await withUniqueRetry(
         async () => {
@@ -97,8 +108,8 @@ export async function POST(request: Request) {
             data: {
               clientCode,
               companyNameVi,
-              companyNameEn: trimNonEmpty(p.companyNameEn),
-              companyNameKo: trimNonEmpty(p.companyNameKo),
+              companyNameEn: filled.en ?? inEn ?? null,
+              companyNameKo: filled.ko ?? inKo ?? null,
               representative: trimNonEmpty(p.representative),
               taxCode: trimNonEmpty(p.taxCode),
               businessLicenseNo: trimNonEmpty(p.businessLicenseNo),

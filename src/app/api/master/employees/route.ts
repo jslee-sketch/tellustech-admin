@@ -14,6 +14,7 @@ import {
   trimNonEmpty,
 } from "@/lib/api-utils";
 import { generateSequentialCode, withUniqueRetry } from "@/lib/code-generator";
+import { fillTranslations } from "@/lib/translate";
 import type { CompanyCode, EmployeeStatus } from "@/generated/prisma/client";
 
 const COMPANY_CODES: readonly CompanyCode[] = ["TV", "VR"] as const;
@@ -96,7 +97,15 @@ export async function POST(request: Request) {
         return forbidden();
       }
 
-      const nameVi = requireString(p.nameVi, "nameVi");
+      // 이름 — 한 언어 입력 시 자동 3언어 채움 (실제 이름은 베트남어 음역 등 어색할 수 있어 transliteration 안전)
+      const inVi = trimNonEmpty(p.nameVi);
+      const inEn = trimNonEmpty(p.nameEn);
+      const inKo = trimNonEmpty(p.nameKo);
+      if (!inVi && !inEn && !inKo) return badRequest("invalid_input", { field: "name" });
+      const sourceLang = inVi ? "VI" as const : inKo ? "KO" as const : "EN" as const;
+      const filled = await fillTranslations({ vi: inVi ?? null, en: inEn ?? null, ko: inKo ?? null, originalLang: sourceLang });
+      const nameVi = filled.vi ?? inVi ?? inEn ?? inKo!;
+
       const departmentId = trimNonEmpty(p.departmentId);
       if (!departmentId) return badRequest("invalid_input", { field: "departmentId" });
 
@@ -111,8 +120,8 @@ export async function POST(request: Request) {
         companyCode,
         departmentId,
         nameVi,
-        nameEn: trimNonEmpty(p.nameEn),
-        nameKo: trimNonEmpty(p.nameKo),
+        nameEn: filled.en ?? inEn ?? null,
+        nameKo: filled.ko ?? inKo ?? null,
         position: trimNonEmpty(p.position),
         email: trimNonEmpty(p.email),
         phone: trimNonEmpty(p.phone),

@@ -15,6 +15,7 @@ import {
 } from "@/lib/api-utils";
 import { canEdit } from "@/lib/record-policy";
 import { dependentsPreview, softDeleteOne } from "@/lib/api/crud";
+import { fillTranslations } from "@/lib/translate";
 import type { ClientGrade, Industry, ReceivableStatus } from "@/generated/prisma/client";
 
 const GRADES: readonly ClientGrade[] = ["A", "B", "C", "D"] as const;
@@ -73,9 +74,25 @@ export async function PATCH(request: Request, context: RouteContext) {
     try {
       const data: Record<string, unknown> = {};
 
-      if (p.companyNameVi !== undefined) data.companyNameVi = requireString(p.companyNameVi, "companyNameVi");
-      if (p.companyNameEn !== undefined) data.companyNameEn = trimNonEmpty(p.companyNameEn);
-      if (p.companyNameKo !== undefined) data.companyNameKo = trimNonEmpty(p.companyNameKo);
+      // 회사명 — 어느 한 언어가 변경되면 자동으로 나머지 2개 재번역 (3 필드 모두 동기화)
+      const nameViChanged = p.companyNameVi !== undefined;
+      const nameEnChanged = p.companyNameEn !== undefined;
+      const nameKoChanged = p.companyNameKo !== undefined;
+      if (nameViChanged || nameEnChanged || nameKoChanged) {
+        const inVi = nameViChanged ? trimNonEmpty(p.companyNameVi) : existing.companyNameVi;
+        const inEn = nameEnChanged ? trimNonEmpty(p.companyNameEn) : existing.companyNameEn;
+        const inKo = nameKoChanged ? trimNonEmpty(p.companyNameKo) : existing.companyNameKo;
+        // 사용자가 새로 입력한 것이 source. 그것 기반으로 다른 언어 자동.
+        const sourceLang: "VI" | "EN" | "KO" =
+          nameViChanged && trimNonEmpty(p.companyNameVi) ? "VI"
+          : nameKoChanged && trimNonEmpty(p.companyNameKo) ? "KO"
+          : nameEnChanged && trimNonEmpty(p.companyNameEn) ? "EN"
+          : (inVi ? "VI" : inKo ? "KO" : "EN");
+        const refilled = await fillTranslations({ vi: inVi, en: inEn, ko: inKo, originalLang: sourceLang });
+        if (refilled.vi) data.companyNameVi = refilled.vi;
+        if (refilled.en !== undefined) data.companyNameEn = refilled.en;
+        if (refilled.ko !== undefined) data.companyNameKo = refilled.ko;
+      }
       if (p.representative !== undefined) data.representative = trimNonEmpty(p.representative);
       if (p.taxCode !== undefined) data.taxCode = trimNonEmpty(p.taxCode);
       if (p.businessLicenseNo !== undefined) data.businessLicenseNo = trimNonEmpty(p.businessLicenseNo);

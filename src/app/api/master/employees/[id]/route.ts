@@ -16,6 +16,7 @@ import {
   serverError,
   trimNonEmpty,
 } from "@/lib/api-utils";
+import { fillTranslations } from "@/lib/translate";
 import type { EmployeeStatus } from "@/generated/prisma/client";
 
 const EMPLOYEE_STATUSES: readonly EmployeeStatus[] = ["ACTIVE", "ON_LEAVE", "TERMINATED"] as const;
@@ -72,9 +73,22 @@ export async function PATCH(request: Request, context: RouteContext) {
       // employeeCode 와 companyCode 는 불변
       const data: Record<string, unknown> = {};
 
-      if (p.nameVi !== undefined) data.nameVi = requireString(p.nameVi, "nameVi");
-      if (p.nameEn !== undefined) data.nameEn = trimNonEmpty(p.nameEn);
-      if (p.nameKo !== undefined) data.nameKo = trimNonEmpty(p.nameKo);
+      // 이름 — 어느 한 언어 변경 시 자동 3언어 재번역
+      const viCh = p.nameVi !== undefined, enCh = p.nameEn !== undefined, koCh = p.nameKo !== undefined;
+      if (viCh || enCh || koCh) {
+        const inVi = viCh ? trimNonEmpty(p.nameVi) : existing.nameVi;
+        const inEn = enCh ? trimNonEmpty(p.nameEn) : existing.nameEn;
+        const inKo = koCh ? trimNonEmpty(p.nameKo) : existing.nameKo;
+        const sourceLang: "VI" | "EN" | "KO" =
+          viCh && trimNonEmpty(p.nameVi) ? "VI"
+          : koCh && trimNonEmpty(p.nameKo) ? "KO"
+          : enCh && trimNonEmpty(p.nameEn) ? "EN"
+          : (inVi ? "VI" : inKo ? "KO" : "EN");
+        const refilled = await fillTranslations({ vi: inVi, en: inEn, ko: inKo, originalLang: sourceLang });
+        if (refilled.vi) data.nameVi = refilled.vi;
+        if (refilled.en !== undefined) data.nameEn = refilled.en;
+        if (refilled.ko !== undefined) data.nameKo = refilled.ko;
+      }
       if (p.position !== undefined) data.position = trimNonEmpty(p.position);
       if (p.email !== undefined) data.email = trimNonEmpty(p.email);
       if (p.phone !== undefined) data.phone = trimNonEmpty(p.phone);

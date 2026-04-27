@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, forbidden, notFound, ok, requireString, serverError } from "@/lib/api-utils";
+import { grantPoints } from "@/lib/portal-points";
 
 // POST /api/portal/usage-confirm
 // body: { billingId: string, signature: string }
@@ -36,7 +37,17 @@ export async function POST(request: Request) {
         where: { id: billingId },
         data: { customerSignature: signature },
       });
-      return ok({ billing: updated });
+      const granted = await grantPoints({
+        clientId: user.clientId,
+        reason: "USAGE_CONFIRM",
+        linkedModel: "ItMonthlyBilling",
+        linkedId: billingId,
+      }).catch(() => null);
+      return ok({
+        billing: updated,
+        pointsEarned: granted?.pointsEarned ?? null,
+        pointBalance: granted?.balance ?? null,
+      });
     } catch (err) {
       return serverError(err);
     }

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, ok, serverError, trimNonEmpty } from "@/lib/api-utils";
+import { grantPoints } from "@/lib/portal-points";
 import { Prisma } from "@/generated/prisma/client";
 
 // POST /api/portal/supplies-request
@@ -76,7 +77,17 @@ export async function POST(request: Request) {
           suppliesItems: itemsParsed as unknown as Prisma.InputJsonValue,
         },
       });
-      return ok({ ticket: { id: created.id, ticketNumber: created.ticketNumber } }, { status: 201 });
+      const granted = await grantPoints({
+        clientId,
+        reason: "SUPPLIES_REQUEST",
+        linkedModel: "AsTicket",
+        linkedId: created.id,
+      }).catch(() => null);
+      return ok({
+        ticket: { id: created.id, ticketNumber: created.ticketNumber },
+        pointsEarned: granted?.pointsEarned ?? null,
+        pointBalance: granted?.balance ?? null,
+      }, { status: 201 });
     } catch (err) { return serverError(err); }
   });
 }

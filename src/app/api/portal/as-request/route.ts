@@ -3,6 +3,7 @@ import { withSessionContext } from "@/lib/session";
 import { badRequest, ok, optionalEnum, requireString, serverError, trimNonEmpty } from "@/lib/api-utils";
 import { fillTranslations } from "@/lib/translate";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
+import { grantPoints } from "@/lib/portal-points";
 import type { Language } from "@/generated/prisma/client";
 
 // POST /api/portal/as-request — CLIENT 가 본인 거래처로 AS 티켓 발행.
@@ -61,7 +62,17 @@ export async function POST(request: Request) {
         },
         { isConflict: () => true },
       );
-      return ok({ ticket: { id: created.id, ticketNumber: created.ticketNumber } }, { status: 201 });
+      const granted = await grantPoints({
+        clientId: user.clientAccount!.id,
+        reason: "AS_REQUEST",
+        linkedModel: "AsTicket",
+        linkedId: created.id,
+      }).catch(() => null);
+      return ok({
+        ticket: { id: created.id, ticketNumber: created.ticketNumber },
+        pointsEarned: granted?.pointsEarned ?? null,
+        pointBalance: granted?.balance ?? null,
+      }, { status: 201 });
     } catch (err) { return serverError(err); }
   });
 }

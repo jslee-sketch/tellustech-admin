@@ -1,10 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Card, Badge } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 const CATEGORIES = ["", "MARKETING", "COMPANY_NEWS", "KOREA_NEWS", "VIETNAM_NEWS", "INDUSTRY_NEWS", "TIP", "COMMUNITY"] as const;
+
+// 본문 안의 URL 을 자동으로 클릭 가능한 링크로 — "출처: https://..." 같은 줄도 링크 처리
+function renderWithLinks(text: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const re = /(https?:\/\/[^\s<>"]+)/g;
+  let last = 0; let m: RegExpExecArray | null; let key = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    const url = m[0];
+    parts.push(<a key={`u${key++}`} href={url} target="_blank" rel="noopener noreferrer" className="text-[color:var(--tts-accent)] underline break-all">{url}</a>);
+    last = m.index + url.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
 
 export function PostsClient({ lang }: { lang: Lang }) {
   const [items, setItems] = useState<any[]>([]);
@@ -56,7 +71,7 @@ export function PostsClient({ lang }: { lang: Lang }) {
                     <span className="text-[11px] text-[color:var(--tts-muted)]">{String(p.publishedAt ?? p.createdAt).slice(0, 10)} · {p.viewCount} {t("portal.posts.viewCount", lang)}</span>
                   </button>
                   {openId === p.id && openContent && (
-                    <div className="mt-2 rounded bg-[color:var(--tts-card-hover)] p-3 text-[13px] whitespace-pre-wrap">{openContent.bodyKo || openContent.bodyVi || openContent.bodyEn}</div>
+                    <div className="mt-2 rounded bg-[color:var(--tts-card-hover)] p-3 text-[13px] whitespace-pre-wrap">{renderWithLinks(openContent.bodyKo || openContent.bodyVi || openContent.bodyEn || "")}</div>
                   )}
                 </li>
               ))}

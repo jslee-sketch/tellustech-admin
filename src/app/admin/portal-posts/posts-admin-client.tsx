@@ -82,6 +82,12 @@ export function PostsAdminClient({ lang }: { lang: Lang }) {
     if (editing?.id === id) setEditing(null);
     refetch();
   }
+  async function cleanupAi(id: string) {
+    const r = await fetch(`/api/admin/portal-posts/${id}/cleanup`, { method: "POST", credentials: "same-origin" });
+    const j = await r.json();
+    if (!r.ok) { alert("정리 실패: " + (j?.error ?? "JSON 미발견 — 수동 편집 필요")); return; }
+    refetch();
+  }
 
   return (
     <main className="flex-1 p-6 md:p-8">
@@ -121,7 +127,7 @@ export function PostsAdminClient({ lang }: { lang: Lang }) {
             <Card><p className="text-center text-[13px] text-[color:var(--tts-muted)]">게시글이 없습니다</p></Card>
           ) : (
             filtered.map((p) => (
-              <PostRow key={p.id} post={p} onClick={() => setEditing(p)} onTogglePublish={() => togglePublish(p, !p.isPublished)} onTogglePinned={() => togglePinned(p, !p.isPinned)} onDelete={() => remove(p.id)} />
+              <PostRow key={p.id} post={p} onClick={() => setEditing(p)} onTogglePublish={() => togglePublish(p, !p.isPublished)} onTogglePinned={() => togglePinned(p, !p.isPinned)} onDelete={() => remove(p.id)} onCleanup={() => cleanupAi(p.id)} />
             ))
           )}
         </div>
@@ -138,11 +144,13 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
   return <button onClick={onClick} className={`px-4 py-2 text-[13px] font-bold ${active ? "border-b-2 border-[color:var(--tts-accent)] text-[color:var(--tts-accent)]" : "text-[color:var(--tts-muted)] hover:text-[color:var(--tts-text)]"}`}>{children}</button>;
 }
 
-function PostRow({ post, onClick, onTogglePublish, onTogglePinned, onDelete }: { post: Post; onClick: () => void; onTogglePublish: () => void; onTogglePinned: () => void; onDelete: () => void }) {
+function PostRow({ post, onClick, onTogglePublish, onTogglePinned, onDelete, onCleanup }: { post: Post; onClick: () => void; onTogglePublish: () => void; onTogglePinned: () => void; onDelete: () => void; onCleanup: () => void }) {
   const title = post.titleKo || post.titleVi || post.titleEn || "(제목 없음)";
   const preview = (post.bodyKo || post.bodyVi || post.bodyEn || "").slice(0, 100);
+  // 본문에 ```json 또는 reasoning 흔적이 있으면 정리 권장
+  const needsCleanup = post.isAiGenerated && (post.bodyKo?.includes("```json") || post.bodyKo?.includes("\"title\":\""));
   return (
-    <div className={`rounded border ${post.isPublished ? "border-[color:var(--tts-border)]" : "border-[color:var(--tts-warn)]"} bg-[color:var(--tts-card)] p-3 hover:bg-[color:var(--tts-card-hover)] cursor-pointer`} onClick={onClick}>
+    <div className={`rounded border ${post.isPublished ? "border-[color:var(--tts-border)]" : "border-[color:var(--tts-warn)]"} ${needsCleanup ? "ring-2 ring-[color:var(--tts-danger)]" : ""} bg-[color:var(--tts-card)] p-3 hover:bg-[color:var(--tts-card-hover)] cursor-pointer`} onClick={onClick}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2 text-[11px]">
@@ -150,6 +158,7 @@ function PostRow({ post, onClick, onTogglePublish, onTogglePinned, onDelete }: {
             {post.isAiGenerated && <Badge tone="accent">🤖 AI</Badge>}
             {!post.isPublished && <Badge tone="warn">📝 초안</Badge>}
             {post.isPublished && <Badge tone="success">✅ 발행됨</Badge>}
+            {needsCleanup && <Badge tone="danger">⚠ 정리필요</Badge>}
             {post.isPinned && <span title="상단 고정">📌</span>}
             {post.bonusPoints > 0 && <Badge tone="warn">+{post.bonusPoints}d</Badge>}
             <span className="text-[color:var(--tts-muted)]">{post.postCode} · {String(post.createdAt).slice(0, 10)} · 조회 {post.viewCount}</span>
@@ -158,6 +167,7 @@ function PostRow({ post, onClick, onTogglePublish, onTogglePinned, onDelete }: {
           {preview && <div className="mt-1 text-[12px] text-[color:var(--tts-sub)] line-clamp-2">{preview}…</div>}
         </div>
         <div className="flex shrink-0 flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+          {needsCleanup && <button onClick={onCleanup} className="rounded bg-[color:var(--tts-danger)] px-2 py-1 text-[11px] font-bold text-white" title="JSON 추출 + footer 부착">🧹 AI 정리</button>}
           <button onClick={onTogglePublish} className={`rounded px-2 py-1 text-[11px] font-bold ${post.isPublished ? "bg-[color:var(--tts-success)] text-white" : "bg-[color:var(--tts-accent)] text-white"}`}>{post.isPublished ? "발행취소" : "발행하기"}</button>
           <button onClick={onTogglePinned} className="rounded border border-[color:var(--tts-border)] px-2 py-1 text-[11px]">{post.isPinned ? "고정해제" : "📌 고정"}</button>
           <button onClick={onDelete} className="rounded border border-[color:var(--tts-danger)] px-2 py-1 text-[11px] text-[color:var(--tts-danger)]">삭제</button>

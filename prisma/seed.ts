@@ -309,6 +309,51 @@ async function seedItems() {
   console.log(`  ✓ items: ${SAMPLE_ITEMS.length}`);
 }
 
+// Phase A — 포탈 포인트 시스템 기본 단가 + 사이드바 배너
+const POINT_DEFAULTS = [
+  { reason: "AS_REQUEST", amount: 1000 },
+  { reason: "SUPPLIES_REQUEST", amount: 1000 },
+  { reason: "SERVICE_CONFIRM", amount: 1000 },
+  { reason: "USAGE_CONFIRM", amount: 1000 },
+  { reason: "QUOTE_REQUEST", amount: 1000 },
+  { reason: "FEEDBACK_PRAISE", amount: 1000 },
+  { reason: "FEEDBACK_IMPROVE", amount: 1000 },
+  { reason: "FEEDBACK_SUGGEST", amount: 1000 },
+  { reason: "SURVEY_COMPLETE", amount: 10000 },
+  { reason: "POST_WRITE", amount: 1000 },
+  { reason: "POST_READ_BONUS", amount: 0 },
+  { reason: "REFERRAL_CONTRACT", amount: 100000 },
+  { reason: "ADMIN_GRANT", amount: 0 },
+  { reason: "ADMIN_DEDUCT", amount: 0 },
+] as const;
+
+async function seedPointConfigs() {
+  for (const cfg of POINT_DEFAULTS) {
+    await (prisma as any).pointConfig.upsert({
+      where: { reason: cfg.reason },
+      update: {}, // 기존 단가 보존 (관리자가 변경했을 수 있음)
+      create: { reason: cfg.reason as any, amount: cfg.amount, isActive: true },
+    });
+  }
+  console.log(`  ✓ point configs: ${POINT_DEFAULTS.length}`);
+}
+
+const BANNER_DEFAULTS = [
+  { slot: "OA", textKo: "프린터 걱정 없는 올인원 렌탈", textVi: "Cho thuê máy in trọn gói", textEn: "All-in-one printer rental", linkUrl: "https://tellustech.co.kr/oa" },
+  { slot: "TM", textKo: "교정·수리·렌탈 한번에", textVi: "Hiệu chuẩn · Sửa chữa · Cho thuê", textEn: "Calibration · Repair · Rental", linkUrl: "https://tellustech.co.kr/tm" },
+];
+
+async function seedPortalBanners() {
+  for (const b of BANNER_DEFAULTS) {
+    await (prisma as any).portalBanner.upsert({
+      where: { slot: b.slot },
+      update: {},
+      create: { ...b, isActive: true },
+    });
+  }
+  console.log(`  ✓ portal banners: ${BANNER_DEFAULTS.length}`);
+}
+
 async function main() {
   console.log("🌱 Seeding Tellustech ERP database...");
   await seedDepartments();
@@ -317,6 +362,8 @@ async function main() {
   await seedClients();
   await seedProjects();
   await seedItems();
+  await seedPointConfigs();
+  await seedPortalBanners();
   console.log("✅ Seed complete");
 }
 

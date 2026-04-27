@@ -34,6 +34,14 @@ export async function GET(_r: Request, context: RouteContext) {
         purchase: { select: { purchaseNumber: true, supplier: { select: { clientCode: true, companyNameVi: true } } } },
         expense: { select: { expenseCode: true } },
         delayReasons: { orderBy: { recordedAt: "desc" } },
+        contactLogs: {
+          orderBy: { recordedAt: "desc" },
+          include: { contactedBy: { select: { employeeCode: true, nameVi: true, nameKo: true } } },
+        },
+        payments: {
+          orderBy: { paidAt: "desc" },
+          include: { recordedBy: { select: { employeeCode: true, nameVi: true, nameKo: true } } },
+        },
       },
     });
     if (!pr) return notFound();

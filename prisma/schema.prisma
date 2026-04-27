@@ -393,6 +393,8 @@ model Employee {
   weeklyTasksWritten WeeklyTask[]           @relation("TaskWriter")
   weeklyTasksAssigned WeeklyTask[]          @relation("TaskAssignee")
   calendarEvents     CalendarEvent[]
+  prContactLogs      PrContactLog[]         @relation("PrContactedBy")
+  prPaymentsRecorded PrPayment[]            @relation("PrPaymentRecordedBy")
 
   @@unique([companyCode, employeeCode])
   @@index([companyCode])
@@ -1371,15 +1373,69 @@ model PayableReceivable {
   lockReason  String?
   updatedAt   DateTime                @updatedAt
 
+  // 완료 추적 — 모두 입금/지급되면 자동 set
+  completedAt DateTime?
+
   sales        Sales?        @relation("SalesReceivable", fields: [salesId], references: [id])
   purchase     Purchase?     @relation("PurchasePayable", fields: [purchaseId], references: [id])
   expense      Expense?      @relation("ExpensePayable", fields: [expenseId], references: [id])
   delayReasons DelayReason[]
+  contactLogs  PrContactLog[]
+  payments     PrPayment[]
 
   @@index([companyCode, kind])
   @@index([kind, status])
   @@index([dueDate])
   @@map("payables_receivables")
+}
+
+/// 미수/미지급 담당자 연락 로그 — 고객(공급처)와의 연락내용 + 답변 + 예상입금
+model PrContactLog {
+  id                  String    @id @default(cuid())
+  payableReceivableId String
+  recordedAt          DateTime  @default(now())
+  contactedById       String?   // 담당 직원 (Employee.id)
+  // 연락 내용 (3언어)
+  contactNoteVi       String?
+  contactNoteEn       String?
+  contactNoteKo       String?
+  // 고객 답변 (3언어)
+  responseVi          String?
+  responseEn          String?
+  responseKo          String?
+  originalLang        Language?
+  // 예상 입금/지급
+  expectedAmount      Decimal?  @db.Decimal(15, 2)
+  expectedDate        DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  payableReceivable PayableReceivable @relation(fields: [payableReceivableId], references: [id], onDelete: Cascade)
+  contactedBy       Employee?         @relation("PrContactedBy", fields: [contactedById], references: [id])
+
+  @@index([payableReceivableId])
+  @@index([recordedAt])
+  @@map("pr_contact_logs")
+}
+
+/// 미수/미지급 입금 기록 (부분/전체) — paidAmount 자동 누적 + status 자동 갱신
+model PrPayment {
+  id                  String    @id @default(cuid())
+  payableReceivableId String
+  paidAt              DateTime  @default(now())
+  amount              Decimal   @db.Decimal(15, 2)
+  method              String?   // 송금/현금/수표 등
+  reference           String?   // 거래번호/은행
+  recordedById        String?   // 기록 직원 (Employee.id)
+  note                String?
+  createdAt           DateTime  @default(now())
+
+  payableReceivable PayableReceivable @relation(fields: [payableReceivableId], references: [id], onDelete: Cascade)
+  recordedBy        Employee?         @relation("PrPaymentRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([payableReceivableId])
+  @@index([paidAt])
+  @@map("pr_payments")
 }
 
 /// 지연사유 이력 (날짜+내용 복수기록, AI 번역)

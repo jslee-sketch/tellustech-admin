@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
 import { Badge, Card, Note } from "@/components/ui";
-import { PayableDetailForm } from "./payable-detail-form";
+import { PrDetailClient } from "./pr-detail-client";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +25,8 @@ export default async function PayableDetailPage({ params }: PageProps) {
       },
       expense: { select: { expenseCode: true } },
       delayReasons: { orderBy: { recordedAt: "desc" } },
+      contactLogs: { orderBy: { recordedAt: "desc" }, include: { contactedBy: { select: { employeeCode: true, nameVi: true, nameKo: true } } } },
+      payments:    { orderBy: { paidAt: "desc" },     include: { recordedBy:  { select: { employeeCode: true, nameVi: true, nameKo: true } } } },
     },
   });
   if (!pr) return notFound();
@@ -84,29 +86,31 @@ export default async function PayableDetailPage({ params }: PageProps) {
         </Card>
 
         <div className="mt-4">
-          <PayableDetailForm
+          <PrDetailClient
             id={pr.id}
             kind={pr.kind}
-            amount={amount}
-            paidAmount={paid}
-            dueDate={pr.dueDate ? pr.dueDate.toISOString().slice(0, 10) : ""}
-            delayReasons={pr.delayReasons.map((d) => ({
-              id: d.id,
-              recordedAt: d.recordedAt.toISOString().slice(0, 16).replace("T", " "),
-              contentVi: d.contentVi ?? null,
-              contentEn: d.contentEn ?? null,
-              contentKo: d.contentKo ?? null,
-              originalLang: d.originalLang ?? "VI",
+            totalAmount={String(pr.amount)}
+            initialPaidAmount={String(pr.paidAmount)}
+            initialStatus={pr.status}
+            initialCompletedAt={pr.completedAt ? pr.completedAt.toISOString() : null}
+            initialContactLogs={pr.contactLogs.map(l => ({
+              id: l.id,
+              recordedAt: l.recordedAt.toISOString(),
+              contactedBy: l.contactedBy,
+              contactNoteKo: l.contactNoteKo, contactNoteVi: l.contactNoteVi, contactNoteEn: l.contactNoteEn,
+              responseKo: l.responseKo, responseVi: l.responseVi, responseEn: l.responseEn,
+              expectedAmount: l.expectedAmount ? String(l.expectedAmount) : null,
+              expectedDate: l.expectedDate ? l.expectedDate.toISOString() : null,
             }))}
-            currentLang={session.language}
+            initialPayments={pr.payments.map(p => ({
+              id: p.id,
+              paidAt: p.paidAt.toISOString(),
+              amount: String(p.amount),
+              method: p.method, reference: p.reference, note: p.note,
+              recordedBy: p.recordedBy,
+            }))}
             lang={L}
           />
-        </div>
-
-        <div className="mt-4">
-          <Note tone="info">
-            {t("msg.payableInfoNote", L)}
-          </Note>
         </div>
       </div>
     </main>

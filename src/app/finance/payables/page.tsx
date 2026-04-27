@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Card, ExcelDownload } from "@/components/ui";
+import { PayablesListClient } from "./payables-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -67,29 +68,7 @@ export default async function PayablesPage() {
           />
         </div>
         <Card title={t("title.payables", L)} count={data.length}>
-          <DataTable
-            columns={[
-              { key: "kind", label: t("col.kind", L), width: "90px", render: (v, r) => <Link href={`/finance/payables/${r.id}`} className="hover:underline"><Badge tone={v === "RECEIVABLE" ? "success" : "warn"}>{v === "RECEIVABLE" ? t("kind.AR", L) : t("kind.AP", L)}</Badge></Link> },
-              { key: "status", label: t("col.statusShort", L), width: "100px", render: (v) => <Badge tone={v === "PAID" ? "success" : v === "PARTIAL" ? "accent" : v === "WRITTEN_OFF" ? "neutral" : "warn"}>{v as string}</Badge> },
-              { key: "ref", label: t("col.refReceipt", L), width: "160px", render: (v, r) => <Link href={`/finance/payables/${r.id}`} className="font-mono text-[11px] text-[color:var(--tts-accent)] hover:underline">{v as string}</Link> },
-              { key: "clientLabel", label: t("col.client", L), render: (_, r) => (
-                <span>
-                  {r.clientLabel}
-                  {r.clientBlocked && <span className="ml-2"><Badge tone="danger">{t("label.AR_blocked", L)}</Badge></span>}
-                </span>
-              ) },
-              { key: "amount", label: t("field.amount", L), width: "130px", align: "right", render: (v) => <span className="font-mono text-[12px]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-              { key: "paidAmount", label: t("col.paidVnd", L), width: "130px", align: "right", render: (v) => <span className="font-mono text-[12px] text-[color:var(--tts-success)]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-              { key: "outstanding", label: t("field.outstanding", L), width: "130px", align: "right", render: (v) => {
-                const n = Number(v);
-                return <span className={`font-mono text-[13px] font-bold ${n > 0 ? "text-[color:var(--tts-danger)]" : ""}`}>{new Intl.NumberFormat("vi-VN").format(n)}</span>;
-              } },
-              { key: "dueDate", label: t("col.dueDateShort", L), width: "110px" },
-            ]}
-            data={data}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.payables", L)}
-          />
+          <PayablesListClient data={data} lang={L} />
         </Card>
       </div>
     </main>

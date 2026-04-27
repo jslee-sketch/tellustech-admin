@@ -216,14 +216,24 @@ export function PrDetailClient(props: Props) {
                   {l.contactedBy && <span>{l.contactedBy.employeeCode} {l.contactedBy.nameKo ?? l.contactedBy.nameVi}</span>}
                 </div>
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                  <div>
-                    <div className="text-[10px] font-bold text-[color:var(--tts-sub)]">연락 내용</div>
-                    <div>{l.contactNoteKo ?? l.contactNoteVi ?? l.contactNoteEn ?? "-"}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold text-[color:var(--tts-sub)]">고객 답변</div>
-                    <div>{l.responseKo ?? l.responseVi ?? l.responseEn ?? "-"}</div>
-                  </div>
+                  {(() => {
+                    const pickVE = (ko: string|null|undefined, vi: string|null|undefined, en: string|null|undefined) => {
+                      const order = lang === "VI" ? [vi, en, ko] : lang === "EN" ? [en, vi, ko] : [ko, vi, en];
+                      return order.find(v => v && v.trim()) ?? "-";
+                    };
+                    return (
+                      <>
+                        <div>
+                          <div className="text-[10px] font-bold text-[color:var(--tts-sub)]">연락 내용 / Liên hệ / Contact</div>
+                          <div>{pickVE(l.contactNoteKo, l.contactNoteVi, l.contactNoteEn)}</div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold text-[color:var(--tts-sub)]">고객 답변 / Phản hồi / Response</div>
+                          <div>{pickVE(l.responseKo, l.responseVi, l.responseEn)}</div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 {(l.expectedAmount || l.expectedDate) && (
                   <div className="mt-2 text-[11px] text-[color:var(--tts-accent)]">

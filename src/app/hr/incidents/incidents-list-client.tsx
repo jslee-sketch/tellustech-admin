@@ -24,7 +24,10 @@ export function IncidentsListClient({ rows, lang }: { rows: IncidentRow[]; lang:
       render: (_, r) => <span>{r.subject?.employeeCode} · {r.subject?.nameVi}</span> },
     { key: "contentVi", label: t("col.contentSummary", lang),
       render: (_, r) => {
-        const text = r.contentVi ?? r.contentKo ?? r.contentEn ?? "";
+        const order = lang === "VI" ? [r.contentVi, r.contentEn, r.contentKo]
+                    : lang === "EN" ? [r.contentEn, r.contentVi, r.contentKo]
+                    : [r.contentKo, r.contentVi, r.contentEn];
+        const text = order.find(v => v && v.trim()) ?? "";
         return <span className="text-[12px] text-[color:var(--tts-sub)]">{text.slice(0, 60)}{text.length > 60 ? "..." : ""}</span>;
       } },
     { key: "createdAt", label: t("col.writtenAt", lang), width: "110px",

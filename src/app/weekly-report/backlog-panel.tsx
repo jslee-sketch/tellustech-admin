@@ -240,12 +240,19 @@ export function BacklogPanel({
                       <div className="border-t border-[color:var(--tts-border)] pt-2">
                         <div className="mb-1 text-[11px] font-bold text-[color:var(--tts-muted)]">{t("label.history", lang)}</div>
                         {r.histories.length === 0 && <div className="text-[12px] text-[color:var(--tts-muted)]">{t("label.noHistory", lang)}</div>}
-                        {r.histories.map((h) => (
-                          <div key={h.id} className="text-[12px]">
-                            <span className="font-mono text-[11px] text-[color:var(--tts-muted)]">{h.date.slice(0, 10)}:</span>{" "}
-                            {h.ko ?? h.vi ?? h.en}
-                          </div>
-                        ))}
+                        {r.histories.map((h) => {
+                          // 사용자 언어 우선 + fallback
+                          const order = lang === "VI" ? [h.vi, h.en, h.ko]
+                                     : lang === "EN" ? [h.en, h.vi, h.ko]
+                                     : [h.ko, h.vi, h.en];
+                          const text = order.find((v) => v && v.trim()) ?? "";
+                          return (
+                            <div key={h.id} className="text-[12px]">
+                              <span className="font-mono text-[11px] text-[color:var(--tts-muted)]">{h.date.slice(0, 10)}:</span>{" "}
+                              {text}
+                            </div>
+                          );
+                        })}
                         <div className="mt-2 flex gap-2">
                           <input
                             className="flex-1 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-bg)] px-2 py-1 text-[12px]"

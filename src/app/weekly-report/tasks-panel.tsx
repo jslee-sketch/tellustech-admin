@@ -13,12 +13,25 @@ export type TaskRow = {
   assignee: { code: string; name: string };
   title: string;
   instructionKo: string | null;
+  instructionVi: string | null;
+  instructionEn: string | null;
   contentKo: string | null;
+  contentVi: string | null;
+  contentEn: string | null;
   expectedEndDate: string | null;
   actualEndDate: string | null;
   status: "IN_PROGRESS" | "COMPLETED" | "OVERDUE" | "CANCELLED";
   confirmedAt: string | null;
 };
+
+// 사용자 언어 우선 + fallback (다른 언어 → KO 마지막)
+function pick3(rec: { ko: string|null; vi: string|null; en: string|null }, lang: Lang): string {
+  const order = lang === "VI" ? [rec.vi, rec.en, rec.ko]
+              : lang === "EN" ? [rec.en, rec.vi, rec.ko]
+              : [rec.ko, rec.vi, rec.en];
+  for (const v of order) if (v && v.trim()) return v;
+  return "";
+}
 
 type Option = { id: string; label: string };
 
@@ -121,8 +134,8 @@ export function TasksPanel({
             writer: `${r.writer.code} · ${r.writer.name}`,
             assignee: `${r.assignee.code} · ${r.assignee.name}`,
             title: r.title,
-            instruction: r.instructionKo ?? "",
-            content: r.contentKo ?? "",
+            instruction: pick3({ ko: r.instructionKo, vi: r.instructionVi, en: r.instructionEn }, lang),
+            content: pick3({ ko: r.contentKo, vi: r.contentVi, en: r.contentEn }, lang),
             expectedEndDate: r.expectedEndDate ? r.expectedEndDate.slice(0, 10) : "",
             actualEndDate: r.actualEndDate ? r.actualEndDate.slice(0, 10) : "",
             status: r.status,
@@ -205,13 +218,21 @@ export function TasksPanel({
                 <tr key={r.id + "-d"} className="bg-[color:var(--tts-row-hover,rgba(255,255,255,0.02))]">
                   <td colSpan={9} className="px-3 py-2">
                     <div className="space-y-1.5 text-[12px]">
-                      {r.instructionKo && <div><span className="font-bold">{t("label.instructionLabel", lang)}</span> {r.instructionKo}</div>}
-                      {r.contentKo && (
-                        <div>
-                          <span className="font-bold">{t("label.contentLabel", lang)}</span>
-                          <pre className="mt-1 whitespace-pre-wrap text-[11px]">{r.contentKo}</pre>
-                        </div>
-                      )}
+                      {(() => {
+                        const ins = pick3({ ko: r.instructionKo, vi: r.instructionVi, en: r.instructionEn }, lang);
+                        const con = pick3({ ko: r.contentKo, vi: r.contentVi, en: r.contentEn }, lang);
+                        return (
+                          <>
+                            {ins && <div><span className="font-bold">{t("label.instructionLabel", lang)}</span> {ins}</div>}
+                            {con && (
+                              <div>
+                                <span className="font-bold">{t("label.contentLabel", lang)}</span>
+                                <pre className="mt-1 whitespace-pre-wrap text-[11px]">{con}</pre>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div className="mt-2 flex gap-2">
                         <input
                           className="flex-1 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-bg)] px-2 py-1 text-[12px]"

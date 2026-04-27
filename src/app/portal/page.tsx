@@ -3,12 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t, pickName } from "@/lib/i18n";
 import { Badge, Card } from "@/components/ui";
-import LogoutButton from "../logout-button";
 import { ConfirmButton } from "./confirm-button";
+import { getServicePayments } from "@/lib/portal-payment-status";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_TONE: Record<string, "primary"|"warn"|"success"|"accent"|"neutral"|"danger"> = {
+const STATUS_TONE: Record<string, "primary" | "warn" | "success" | "accent" | "neutral" | "danger"> = {
   RECEIVED: "warn",
   IN_PROGRESS: "primary",
   DISPATCHED: "primary",
@@ -29,134 +29,100 @@ export default async function PortalHome() {
   const session = await getSession();
   const L = session.language;
   if (session.role !== "CLIENT") return <div className="p-8">{t("portal.clientOnly", L)}</div>;
-
   const user = await prisma.user.findUnique({ where: { id: session.sub }, include: { clientAccount: true } });
   if (!user?.clientAccount) return <div className="p-8">{t("portal.notLinked", L)}</div>;
   const client = user.clientAccount;
 
-  const [contracts, tickets, certCount] = await Promise.all([
-    prisma.itContract.findMany({
-      where: { clientId: client.id },
-      orderBy: { contractNumber: "desc" },
-      take: 10,
-      include: { _count: { select: { equipment: true } } },
-    }),
+  const [oaContracts, tmRentals, repairs, calibrations, maintenance, purchases, tickets] = await Promise.all([
+    prisma.itContract.findMany({ where: { clientId: client.id, deletedAt: null }, select: { id: true, equipment: { where: { removedAt: null }, select: { id: true } } } }),
+    prisma.tmRental.findMany({ where: { clientId: client.id, deletedAt: null }, select: { id: true, items: { select: { id: true } } } }),
+    prisma.sales.count({ where: { clientId: client.id, deletedAt: null, project: { is: { salesType: "REPAIR" } } } }),
+    prisma.sales.count({ where: { clientId: client.id, deletedAt: null, project: { is: { salesType: "CALIBRATION" } } } }),
+    prisma.sales.count({ where: { clientId: client.id, deletedAt: null, project: { is: { salesType: "MAINTENANCE" } } } }),
+    prisma.sales.count({ where: { clientId: client.id, deletedAt: null, project: { is: { salesType: "TRADE" } } } }),
     prisma.asTicket.findMany({
       where: { clientId: client.id },
       orderBy: { receivedAt: "desc" },
-      take: 20,
-      select: { id: true, ticketNumber: true, kind: true, status: true, receivedAt: true, completedAt: true },
-    }),
-    prisma.salesItem.count({
-      where: {
-        sales: { clientId: client.id, project: { salesType: "CALIBRATION" } },
-        OR: [{ certNumber: { not: null } }, { certFileId: { not: null } }],
-      },
+      take: 10,
+      select: { id: true, ticketNumber: true, kind: true, status: true, receivedAt: true },
     }),
   ]);
 
+  const types = ["oa_rental", "tm_rental", "repair", "calibration", "maintenance", "purchase"] as const;
+  const summaries = await Promise.all(types.map((tt) => getServicePayments(client.id, tt)));
+  const unpaid = summaries.reduce(
+    (acc, s) => ({
+      count: acc.count + s.summary.unpaidCount,
+      amount: acc.amount + s.summary.totalUnpaid,
+      overdueCount: acc.overdueCount + s.summary.overdueCount,
+    }),
+    { count: 0, amount: 0, overdueCount: 0 },
+  );
+
+  const oaEqCount = oaContracts.reduce((n, c) => n + c.equipment.length, 0);
+  const tmEqCount = tmRentals.reduce((n, r) => n + r.items.length, 0);
   const blocked = client.receivableStatus === "BLOCKED";
 
+  const cardCls = "rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] px-3 py-2 hover:bg-[color:var(--tts-card-hover)]";
+
   return (
-    <main className="flex-1 p-8">
+    <main className="flex-1 p-6 md:p-8">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)]">{t("portal.title", L)}</div>
-            <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-              {pickName(client, L, "companyName")}
-              <span className="ml-3 font-mono text-[13px] text-[color:var(--tts-primary)]">{client.clientCode}</span>
-              {blocked && <span className="ml-2"><Badge tone="danger">{t("portal.arBlocked", L)}</Badge></span>}
-            </h1>
-          </div>
-          <LogoutButton />
+        <div className="mb-5">
+          <div className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)]">{t("portal.title", L)}</div>
+          <h1 className="mt-1 text-2xl font-extrabold">
+            {pickName(client, L, "companyName")}
+            <span className="ml-3 font-mono text-[13px] text-[color:var(--tts-primary)]">{client.clientCode}</span>
+            {blocked && <span className="ml-2"><Badge tone="danger">{t("portal.arBlocked", L)}</Badge></span>}
+          </h1>
         </div>
 
-        {blocked && (
-          <div className="mb-4 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[13px] text-[color:var(--tts-danger)]">
-            {t("portal.arBlockedDesc", L)}
+        {unpaid.count > 0 && (
+          <div className={`mb-4 rounded-md px-4 py-2.5 text-[13px] ${unpaid.overdueCount > 0 ? "bg-[color:var(--tts-danger-dim)] text-[color:var(--tts-danger)]" : "bg-[color:var(--tts-warn-dim)] text-[color:var(--tts-warn)]"}`}>
+            ⚠️ {t("portal.status.unpaidAlert", L).replace("{count}", String(unpaid.count)).replace("{amount}", new Intl.NumberFormat("vi-VN").format(unpaid.amount))}
+            {unpaid.overdueCount > 0 && <> — {t("portal.status.overdueIncluded", L).replace("{n}", String(unpaid.overdueCount))}</>}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Card title="빠른 요청 / Yêu cầu nhanh">
-            <ul className="space-y-2 text-[14px]">
-              <li>
-                <Link href="/portal/as-request" className={blocked ? "text-[color:var(--tts-muted)] line-through" : "text-[color:var(--tts-primary)] hover:underline"}>
-                  🛠 AS 요청 / Yêu cầu BH
-                </Link>
-              </li>
-              <li>
-                <Link href="/portal/supplies-request" className={blocked ? "text-[color:var(--tts-muted)] line-through" : "text-[color:var(--tts-primary)] hover:underline"}>
-                  📦 소모품 요청 / Yêu cầu vật tư
-                </Link>
-              </li>
-              <li>
-                <Link href="/portal/usage-confirm" className="text-[color:var(--tts-primary)] hover:underline">
-                  ✍️ 사용량 컨펌 / Xác nhận sử dụng
-                </Link>
-              </li>
-              <li>
-                <Link href="/portal/cal-certs" className="text-[color:var(--tts-primary)] hover:underline">
-                  📄 교정성적서 / Chứng chỉ ({certCount})
-                </Link>
-              </li>
-            </ul>
-          </Card>
-
-          <Card title="내 IT 계약 / Hợp đồng IT" count={contracts.length}>
-            {contracts.length === 0 ? (
-              <p className="text-[13px] text-[color:var(--tts-muted)]">{t("portal.noContracts", L)}</p>
-            ) : (
-              <ul className="space-y-1 text-[13px]">
-                {contracts.map((c) => (
-                  <li key={c.id} className="flex justify-between">
-                    <span className="font-mono text-[color:var(--tts-primary)]">{c.contractNumber}</span>
-                    <span className="text-[color:var(--tts-muted)]">{c.status} · {c._count.equipment} 대</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          {/* 통합 요청 현황 — 최근 AS 카드 대체 */}
-          <Card title="내 요청 현황 / Trạng thái yêu cầu" count={tickets.length} className="md:col-span-2">
-            {tickets.length === 0 ? (
-              <p className="text-[13px] text-[color:var(--tts-muted)]">아직 요청이 없습니다 / Chưa có yêu cầu</p>
-            ) : (
-              <table className="w-full text-[12px]">
-                <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
-                  <tr>
-                    <th className="px-2 py-1 text-left">접수번호 / Số</th>
-                    <th className="px-2 py-1 text-left">종류 / Loại</th>
-                    <th className="px-2 py-1 text-left">접수일 / Ngày</th>
-                    <th className="px-2 py-1 text-left">상태 / Trạng thái</th>
-                    <th className="px-2 py-1 text-right">액션</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tickets.map((tk) => (
-                    <tr key={tk.id} className="border-b border-[color:var(--tts-border)]/50">
-                      <td className="px-2 py-2 font-mono">{tk.ticketNumber}</td>
-                      <td className="px-2 py-2">{tk.kind === "SUPPLIES_REQUEST" ? "📦 소모품 / Vật tư" : "🛠 AS / BH"}</td>
-                      <td className="px-2 py-2">{tk.receivedAt.toISOString().slice(0,10)}</td>
-                      <td className="px-2 py-2">
-                        <Badge tone={STATUS_TONE[tk.status] ?? "neutral"}>{STATUS_LABEL[tk.status] ?? tk.status}</Badge>
-                      </td>
-                      <td className="px-2 py-2 text-right">
-                        {tk.status === "COMPLETED" && (
-                          <ConfirmButton ticketId={tk.id} />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </Card>
+        <h2 className="mb-2 text-[14px] font-bold">{t("portal.serviceSummary", L)}</h2>
+        <div className="mb-6 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
+          <Link href="/portal/oa/rentals" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">OA</div><div className="text-[16px] font-bold">{oaContracts.length}</div><div className="text-[11px] text-[color:var(--tts-sub)]">{oaEqCount} {t("portal.units", L)}</div></Link>
+          <Link href="/portal/tm/rentals" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">TM</div><div className="text-[16px] font-bold">{tmRentals.length}</div><div className="text-[11px] text-[color:var(--tts-sub)]">{tmEqCount} {t("portal.units", L)}</div></Link>
+          <Link href="/portal/tm/calibrations" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.calibration", L)}</div><div className="text-[16px] font-bold">{calibrations}</div></Link>
+          <Link href="/portal/tm/repairs" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.repair", L)}</div><div className="text-[16px] font-bold">{repairs}</div></Link>
+          <Link href="/portal/tm/maintenance" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.maintenance", L)}</div><div className="text-[16px] font-bold">{maintenance}</div></Link>
+          <Link href="/portal/tm/purchases" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.purchase", L)}</div><div className="text-[16px] font-bold">{purchases}</div></Link>
         </div>
+
+        <Card title={t("portal.requestStatus", L)} count={tickets.length}>
+          {tickets.length === 0 ? (
+            <p className="text-[13px] text-[color:var(--tts-muted)]">{t("portal.noRequests", L)}</p>
+          ) : (
+            <table className="w-full text-[12px]">
+              <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
+                <tr>
+                  <th className="px-2 py-1 text-left">{t("portal.ticketNumber", L)}</th>
+                  <th className="px-2 py-1 text-left">{t("portal.kindShort", L)}</th>
+                  <th className="px-2 py-1 text-left">{t("portal.receivedAt", L)}</th>
+                  <th className="px-2 py-1 text-left">{t("col.statusShort", L)}</th>
+                  <th className="px-2 py-1 text-right" />
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map((tk) => (
+                  <tr key={tk.id} className="border-b border-[color:var(--tts-border)]/50">
+                    <td className="px-2 py-2 font-mono">{tk.ticketNumber}</td>
+                    <td className="px-2 py-2">{tk.kind === "SUPPLIES_REQUEST" ? "📦" : "🛠"}</td>
+                    <td className="px-2 py-2">{tk.receivedAt.toISOString().slice(0, 10)}</td>
+                    <td className="px-2 py-2"><Badge tone={STATUS_TONE[tk.status] ?? "neutral"}>{STATUS_LABEL[tk.status] ?? tk.status}</Badge></td>
+                    <td className="px-2 py-2 text-right">{tk.status === "COMPLETED" && <ConfirmButton ticketId={tk.id} />}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
       </div>
     </main>
   );
 }
-

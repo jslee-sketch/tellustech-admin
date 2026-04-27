@@ -47,6 +47,8 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
   const [banners, setBanners] = useState<Banner[]>([]);
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [openGroups, setOpenGroups] = useState<Record<GroupKey, boolean>>({ oa: true, tm: true, comm: true });
+  // 모바일 drawer
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false);
 
   useEffect(() => {
     fetch("/api/portal/points", { credentials: "same-origin" }).then((r) => r.json()).then((j) => { if (typeof j?.balance === "number") setBalance(j.balance); }).catch(() => undefined);
@@ -97,6 +99,50 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
   function isActive(href: string) { return pathname === href || (href !== "/" && pathname.startsWith(href)); }
   const itemCls = (active: boolean) => `flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition ${active ? "bg-[color:var(--tts-accent)] text-white font-bold" : "text-[color:var(--tts-text)] hover:bg-[color:var(--tts-card-hover)]"}`;
 
+  // 모바일 햄버거 + drawer (md 미만에서만 보임)
+  const mobileHeader = (
+    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[color:var(--tts-border)] bg-[color:var(--tts-card)] px-4 py-2 md:hidden">
+      <button onClick={() => setMobileOpen(true)} className="rounded border border-[color:var(--tts-border)] px-2 py-1 text-[14px]" title="메뉴">☰</button>
+      <Link href="/portal" className="text-[12px] font-bold tracking-wider text-[color:var(--tts-accent)]">TELLUSTECH</Link>
+      <Link href="/portal/points" className="text-[11px] font-mono text-[color:var(--tts-warn)]">🏆 {new Intl.NumberFormat("vi-VN").format(balance)}d</Link>
+    </header>
+  );
+  const mobileDrawer = mobileOpen ? (
+    <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMobileOpen(false)}>
+      <div className="absolute inset-0 bg-black/60" />
+      <aside className="absolute left-0 top-0 h-full w-[280px] overflow-y-auto bg-[color:var(--tts-card)] shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between border-b border-[color:var(--tts-border)] p-4">
+          <div className="min-w-0 flex-1">
+            <Link href="/portal" onClick={() => setMobileOpen(false)} className="block text-[11px] font-bold tracking-[0.18em] text-[color:var(--tts-accent)]">TELLUSTECH PORTAL</Link>
+            <div className="mt-1 truncate text-[14px] font-bold">{clientName}</div>
+            <Link href="/portal/points" onClick={() => setMobileOpen(false)} className="mt-2 inline-flex items-center gap-1 text-[12px] font-mono text-[color:var(--tts-warn)]">🏆 {new Intl.NumberFormat("vi-VN").format(balance)}d</Link>
+          </div>
+          <button onClick={() => setMobileOpen(false)} className="text-[18px] text-[color:var(--tts-muted)]">✕</button>
+        </div>
+        <div className="px-2 pb-3">
+          <SectionTab label={t("portal.sidebar.oaDivision", lang)} open={openGroups.oa} onToggle={() => toggleGroup("oa")} />
+          {openGroups.oa && (<ul className="space-y-0.5">{OA_ITEMS.map((it) => <li key={it.href}><Link href={it.href} onClick={() => setMobileOpen(false)} className={itemCls(isActive(it.href))}>{t(it.labelKey, lang)}</Link></li>)}</ul>)}
+          <SectionTab label={t("portal.sidebar.tmDivision", lang)} open={openGroups.tm} onToggle={() => toggleGroup("tm")} />
+          {openGroups.tm && (<ul className="space-y-0.5">{TM_ITEMS.map((it) => <li key={it.href}><Link href={it.href} onClick={() => setMobileOpen(false)} className={itemCls(isActive(it.href))}>{t(it.labelKey, lang)}</Link></li>)}</ul>)}
+          <SectionTab label={t("portal.sidebar.communication", lang)} open={openGroups.comm} onToggle={() => toggleGroup("comm")} />
+          {openGroups.comm && (<ul className="space-y-0.5">{COMM_ITEMS.map((it) => <li key={it.href}><Link href={it.href} onClick={() => setMobileOpen(false)} className={itemCls(isActive(it.href))}><span>{it.icon}</span><span>{t(it.labelKey, lang)}</span></Link></li>)}</ul>)}
+        </div>
+        <div className="border-t border-[color:var(--tts-border)] p-3">
+          <div className="mb-2 flex items-center gap-1">
+            {(["VI","EN","KO"] as const).map((l) => {
+              const active = lang === l;
+              const flagSrc = l === "VI" ? "/flags/vn.svg" : l === "EN" ? "/flags/us.svg" : "/flags/kr.svg";
+              return <button key={l} onClick={() => changeLang(l)} className={`flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border-2 ${active ? "border-[color:var(--tts-accent)]" : "border-[color:var(--tts-border)] opacity-60"}`}><img src={flagSrc} alt={l} className="h-full w-full rounded-full object-cover"/></button>;
+            })}
+            <button onClick={toggleTheme} className="ml-auto rounded border border-[color:var(--tts-border)] px-2 py-1 text-[11px]">{theme === "dark" ? "☀" : "🌙"}</button>
+          </div>
+          <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); router.replace("/login"); }} className="w-full rounded border border-[color:var(--tts-border)] px-3 py-1.5 text-[12px]">{t("nav.logout", lang)}</button>
+          <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-center text-[11px] text-[color:var(--tts-accent)]">🏢 사내 직원 로그인</Link>
+        </div>
+      </aside>
+    </div>
+  ) : null;
+
   // 접힌 상태 — 아이콘만
   if (collapsed) {
     const all: Array<{ href: string; emoji: string; label: string }> = [
@@ -107,6 +153,9 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
       ...COMM_ITEMS.map((it) => ({ href: it.href, emoji: it.icon ?? "•", label: t(it.labelKey, lang) })),
     ];
     return (
+      <>
+      {mobileHeader}
+      {mobileDrawer}
       <aside className="hidden w-[64px] shrink-0 flex-col border-r border-[color:var(--tts-border)] bg-[color:var(--tts-card)] md:flex">
         <button onClick={toggleCollapse} className="m-2 rounded border border-[color:var(--tts-border)] py-1.5 text-[14px] hover:bg-[color:var(--tts-card-hover)]" title="펼치기">▶</button>
         <Link href="/portal" className="mx-2 mb-2 block rounded text-center text-[10px] font-bold text-[color:var(--tts-accent)]">TTS</Link>
@@ -122,11 +171,15 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
           <button onClick={toggleTheme} className="w-full rounded border border-[color:var(--tts-border)] py-1 text-[12px]">{theme === "dark" ? "☀" : "🌙"}</button>
         </div>
       </aside>
+      </>
     );
   }
 
   // 펼친 상태
   return (
+    <>
+    {mobileHeader}
+    {mobileDrawer}
     <aside className="hidden w-[260px] shrink-0 flex-col border-r border-[color:var(--tts-border)] bg-[color:var(--tts-card)] md:flex">
       <div className="flex items-start justify-between px-4 py-4">
         <div className="min-w-0 flex-1">
@@ -199,8 +252,10 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
         <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); router.replace("/login?portal=1"); }} className="mt-2 w-full rounded border border-[color:var(--tts-border)] px-3 py-1.5 text-[12px] hover:bg-[color:var(--tts-card-hover)]">
           {t("nav.logout", lang)}
         </button>
+        <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-center text-[11px] text-[color:var(--tts-accent)]">🏢 사내 직원 로그인</Link>
       </div>
     </aside>
+    </>
   );
 }
 

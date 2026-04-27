@@ -50,6 +50,7 @@ export async function POST(request: Request) {
           return prisma.asTicket.create({
             data: {
               ticketNumber: finalNum,
+              kind: "AS_REQUEST",
               clientId: user.clientAccount!.id,
               serialNumber: trimNonEmpty(p.serialNumber),
               symptomVi: filled.vi, symptomEn: filled.en, symptomKo: filled.ko, originalLang,

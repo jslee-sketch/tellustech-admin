@@ -143,11 +143,18 @@ enum DepreciationMethod {
 }
 
 enum ASStatus {
-  RECEIVED
-  IN_PROGRESS
-  DISPATCHED
-  COMPLETED
+  RECEIVED        // 요청 (고객이 portal 에서 등록)
+  IN_PROGRESS    // 진행중 (담당자 배정 또는 출동)
+  DISPATCHED     // 출동중 (별칭 — IN_PROGRESS 의 세분)
+  COMPLETED      // 완료 (담당자가 마감)
+  CONFIRMED      // 확인 (고객이 portal 에서 컨펌)
   CANCELED
+}
+
+// AS 티켓 종류 — AS 요청 vs 소모품 요청 구분
+enum AsTicketKind {
+  AS_REQUEST
+  SUPPLIES_REQUEST
 }
 
 enum IncidentType {
@@ -483,8 +490,29 @@ model Item {
   itContractEquipment   ItContractEquipment[]
   dispatchParts         AsDispatchPart[]
   inventoryItems        InventoryItem[]
+  // M:N 호환 매핑 — 본체 장비 ↔ 호환 소모품
+  compatProducts        ItemCompatibility[] @relation("CompatProductItem")
+  compatConsumables     ItemCompatibility[] @relation("CompatConsumableItem")
 
   @@map("items")
+}
+
+// 본체 장비(productItem) ↔ 호환 소모품(consumableItem) 매핑.
+// portal 소모품 요청 시 본인 IT 계약 장비의 itemId 들로 호환 소모품 조회.
+model ItemCompatibility {
+  id              String   @id @default(cuid())
+  productItemId   String   // 본체 장비 (예: ItemType=PRODUCT)
+  consumableItemId String  // 소모품 (예: ItemType=CONSUMABLE)
+  note            String?
+  createdAt       DateTime @default(now())
+
+  product    Item @relation("CompatProductItem", fields: [productItemId], references: [id], onDelete: Cascade)
+  consumable Item @relation("CompatConsumableItem", fields: [consumableItemId], references: [id], onDelete: Cascade)
+
+  @@unique([productItemId, consumableItemId])
+  @@index([productItemId])
+  @@index([consumableItemId])
+  @@map("item_compatibilities")
 }
 
 /// S/N 단위 재고 마스터 — 상태/QR/이력 관리
@@ -854,6 +882,7 @@ model AssetDepreciation {
 model AsTicket {
   id                String    @id @default(cuid())
   ticketNumber      String    @unique // YY/MM/DD-##
+  kind              AsTicketKind @default(AS_REQUEST)
   clientId          String
   assignedToId      String?
   itemId            String?
@@ -861,6 +890,9 @@ model AsTicket {
   status            ASStatus  @default(RECEIVED)
   receivedAt        DateTime  @default(now())
   completedAt       DateTime?
+  confirmedAt       DateTime? // 고객 confirm 시점
+  // 소모품 요청 multi-item (AS 요청은 빈 배열)
+  suppliesItems     Json?     // [{itemId, quantity, note?}]
   // 증상(자유서술 AI 번역)
   symptomVi         String?
   symptomEn         String?

@@ -1,29 +1,36 @@
 "use client";
 
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { Button, Field, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
+import { Button, Card, Field, Note, SectionTitle, Select, Textarea } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
-export function PortalAsRequestForm({ clientId, defaultLang, lang }: { clientId: string; defaultLang: string; lang: Lang }) {
+type Equipment = { sn: string; itemCode: string; itemName: string; contractCode: string; contractKind: "IT"|"TM" };
+
+export function PortalAsRequestForm({ lang }: { clientId?: string; lang: Lang }) {
   const router = useRouter();
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [serialNumber, setSerialNumber] = useState("");
-  const [originalLang, setOriginalLang] = useState(defaultLang);
+  const [originalLang, setOriginalLang] = useState<"VI"|"KO"|"EN">(lang);
   const [symptomVi, setSymptomVi] = useState("");
   const [symptomEn, setSymptomEn] = useState("");
   const [symptomKo, setSymptomKo] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string|null>(null);
+  const [error, setError] = useState<string|null>(null);
+
+  useEffect(() => {
+    fetch("/api/portal/my-equipment").then(r => r.json()).then(j => {
+      setEquipment(j?.equipment ?? []);
+    });
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
+    setSubmitting(true); setError(null);
     try {
       const res = await fetch("/api/portal/as-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
           serialNumber: serialNumber || null,
           originalLang,
@@ -33,60 +40,42 @@ export function PortalAsRequestForm({ clientId, defaultLang, lang }: { clientId:
         }),
       });
       const body = await res.json();
-      if (!res.ok) {
-        setError(t("msg.asReqFailed", lang));
-        return;
-      }
+      if (!res.ok) { setError(t("msg.asReqFailed", lang)); return; }
       setDone(body.ticket?.ticketNumber ?? "OK");
       setSerialNumber(""); setSymptomVi(""); setSymptomEn(""); setSymptomKo("");
       router.refresh();
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Note tone="info">{t("note.asPortalNote", lang)}</Note>
-      {done && (
-        <div className="my-3 rounded-md bg-[color:var(--tts-success-dim)] px-3 py-2 text-[color:var(--tts-success)]">
-          {t("msg.asReceived", lang).replace("{num}", done)}
-        </div>
-      )}
-      <Row>
-        <Field label={t("field.equipSnOpt", lang)}>
-          <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder="SN-..." />
-        </Field>
-        <Field label={t("field.defaultLang", lang)} required width="160px">
-          <Select
-            required
-            value={originalLang}
-            onChange={(e) => setOriginalLang(e.target.value)}
+    <Card title={t("page.portal.asRequest", lang)}>
+      <Note tone="info">{t("portal.asGuideShort", lang)}</Note>
+      <form onSubmit={handleSubmit} className="mt-3 space-y-3">
+        <Field label={t("portal.equipmentSn", lang)} required>
+          <Select required value={serialNumber} onChange={(e)=>setSerialNumber(e.target.value)}
             options={[
-              { value: "VI", label: "Tiếng Việt" },
-              { value: "KO", label: "한국어" },
-              { value: "EN", label: "English" },
+              { value:"", label: t("placeholder.select", lang) },
+              ...equipment.map(eq => ({ value: eq.sn, label: `${eq.sn} · ${eq.itemCode} ${eq.itemName} (${eq.contractCode})` })),
             ]}
           />
+          <div className="mt-1 text-[11px] text-[color:var(--tts-muted)]">
+            {equipment.length === 0 ? "활성 장비가 없습니다 / Không có thiết bị hoạt động" : `${equipment.length} 대 활성 / ${equipment.length} active`}
+          </div>
         </Field>
-      </Row>
-      <Row>
-        <Field label={t("field.symptomVi", lang)}>
-          <Textarea rows={3} value={symptomVi} onChange={(e) => setSymptomVi(e.target.value)} />
+
+        <SectionTitle title={t("portal.symptom", lang)} />
+        <Field label={t("field.originalLang", lang)} required>
+          <Select required value={originalLang} onChange={(e)=>setOriginalLang(e.target.value as "VI"|"KO"|"EN")}
+            options={[{value:"VI",label:"Tiếng Việt"},{value:"KO",label:"한국어"},{value:"EN",label:"English"}]} />
         </Field>
-      </Row>
-      <Row>
-        <Field label={t("field.symptomKo", lang)}>
-          <Textarea rows={3} value={symptomKo} onChange={(e) => setSymptomKo(e.target.value)} />
-        </Field>
-        <Field label={t("field.symptomEn", lang)}>
-          <Textarea rows={3} value={symptomEn} onChange={(e) => setSymptomEn(e.target.value)} />
-        </Field>
-      </Row>
-      {error && <div className="mt-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
-      <div className="mt-3">
-        <Button type="submit" disabled={submitting}>{submitting ? t("btn.asReceiving", lang) : t("btn.asReceive", lang)}</Button>
-      </div>
-    </form>
+        <Field label="Triệu chứng (VI)"><Textarea rows={2} value={symptomVi} onChange={(e)=>setSymptomVi(e.target.value)} /></Field>
+        <Field label="증상 (KO)"><Textarea rows={2} value={symptomKo} onChange={(e)=>setSymptomKo(e.target.value)} /></Field>
+        <Field label="Symptom (EN)"><Textarea rows={2} value={symptomEn} onChange={(e)=>setSymptomEn(e.target.value)} /></Field>
+
+        {error && <div className="rounded bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
+        {done && <div className="rounded bg-[color:var(--tts-success-dim,rgba(34,197,94,.12))] px-3 py-2 text-[12px] text-[color:var(--tts-success)]">완료 / Hoàn tất — 접수번호 {done}</div>}
+        <Button type="submit" disabled={submitting}>{submitting ? "전송 중… / Đang gửi…" : "AS 접수 / Tiếp nhận BH"}</Button>
+      </form>
+    </Card>
   );
 }

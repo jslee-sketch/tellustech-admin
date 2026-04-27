@@ -127,6 +127,7 @@ const DICT: Dict = {
   "nav.chat":        { vi: "Trò chuyện",      en: "Chat",            ko: "채팅" },
   "nav.audit":       { vi: "Nhật ký kiểm toán", en: "Audit Logs",    ko: "감사로그" },
   "nav.permissions": { vi: "Phân quyền",       en: "Permissions",   ko: "권한관리" },
+  "nav.itemCompat":  { vi: "Tương thích vật tư", en: "Item Compat",  ko: "호환매핑" },
   "nav.stats":       { vi: "Thống kê",         en: "Statistics",    ko: "통계" },
   "nav.closings":    { vi: "Đóng kỳ",          en: "Closings",      ko: "회계마감" },
   "nav.trash":       { vi: "Thùng rác",        en: "Trash",         ko: "휴지통" },

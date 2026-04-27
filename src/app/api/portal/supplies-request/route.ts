@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
-import { badRequest, ok, requireString, serverError, trimNonEmpty } from "@/lib/api-utils";
+import { badRequest, ok, serverError, trimNonEmpty } from "@/lib/api-utils";
+import { Prisma } from "@/generated/prisma/client";
 
-// POST /api/portal/supplies-request — CLIENT 가 소모품 추가 요청.
-// 사내에서는 별도 워크플로 없으므로 AsTicket 의 SUPPLIES 변형으로 만들거나
-// — 단순화: AsTicket(reason="SUPPLIES_REQUEST" 가 enum 에 없으니) 일반 티켓으로
-//   증상 필드에 "[소모품 요청] item × qty" 텍스트 박아 넣음. 후속 정식화 가능.
-
+// POST /api/portal/supplies-request
+//   body: { items: [{ itemId, quantity, note? }] }  — multi-item
+//   호환성 검증: 각 itemId 가 본인 활성 장비의 호환 매핑(ItemCompatibility)에 존재해야 함.
+//   AsTicket(kind=SUPPLIES_REQUEST) 생성 + suppliesItems JSON 저장.
 export async function POST(request: Request) {
   return withSessionContext(async (session) => {
     if (session.role !== "CLIENT") return badRequest("client_only");
@@ -16,15 +16,32 @@ export async function POST(request: Request) {
     let body: unknown;
     try { body = await request.json(); } catch { return badRequest("invalid_body"); }
     const p = body as Record<string, unknown>;
+    const rawItems = Array.isArray(p.items) ? (p.items as Array<{ itemId?: string; quantity?: number; note?: string }>) : [];
+    if (rawItems.length === 0) return badRequest("invalid_input", { field: "items" });
+
+    // 호환성 화이트리스트 — 본인 활성 장비의 호환 소모품 itemId 집합
+    const clientId = user.clientAccount.id;
+    const [itEq, tmItems] = await Promise.all([
+      prisma.itContractEquipment.findMany({ where: { itContract: { clientId }, removedAt: null }, select: { itemId: true } }),
+      prisma.tmRentalItem.findMany({ where: { tmRental: { clientId }, endDate: { gte: new Date() } }, select: { itemId: true } }),
+    ]);
+    const productIds = [...new Set([...itEq, ...tmItems].map(x => x.itemId))];
+    const compats = await prisma.itemCompatibility.findMany({
+      where: { productItemId: { in: productIds } },
+      select: { consumableItemId: true },
+    });
+    const allowed = new Set(compats.map(c => c.consumableItemId));
+
+    const itemsParsed: Array<{ itemId: string; quantity: number; note: string | null }> = [];
+    for (const it of rawItems) {
+      const itemId = trimNonEmpty(it.itemId);
+      const quantity = Number(it.quantity ?? 0);
+      if (!itemId || !Number.isFinite(quantity) || quantity <= 0) return badRequest("invalid_input", { field: "items.itemId/quantity" });
+      if (!allowed.has(itemId)) return badRequest("not_compatible", { itemId });
+      itemsParsed.push({ itemId, quantity, note: trimNonEmpty(it.note) });
+    }
+
     try {
-      const itemId = requireString(p.itemId, "itemId");
-      const quantity = Number(p.quantity ?? 0);
-      if (!Number.isFinite(quantity) || quantity <= 0) return badRequest("invalid_input", { field: "quantity" });
-      const note = trimNonEmpty(p.note) ?? "";
-
-      const item = await prisma.item.findUnique({ where: { id: itemId } });
-      if (!item) return badRequest("invalid_item");
-
       const ymd = new Date();
       const yy = String(ymd.getFullYear()).slice(-2);
       const mm = String(ymd.getMonth()+1).padStart(2,'0');
@@ -38,15 +55,25 @@ export async function POST(request: Request) {
       if (last) { const n = Number(last.ticketNumber.slice(fp.length)); if (Number.isInteger(n)) next = n + 1; }
       const finalNum = `${fp}${String(next).padStart(2,'0')}`;
 
-      const symptom = `[소모품 요청 / Yêu cầu vật tư] ${item.itemCode} · ${item.name} × ${quantity}${note ? ` — ${note}` : ""}`;
+      // 한 줄 요약 — 첫 품목 + N건
+      const itemNames = await prisma.item.findMany({
+        where: { id: { in: itemsParsed.map(x => x.itemId) } },
+        select: { id: true, itemCode: true, name: true },
+      });
+      const nameById = new Map(itemNames.map(i => [i.id, `${i.itemCode} · ${i.name}`]));
+      const summary = itemsParsed.map(x => `${nameById.get(x.itemId) ?? x.itemId} × ${x.quantity}`).join(", ");
+      const symptom = `[소모품 요청 / Yêu cầu vật tư] ${summary}`;
+
       const created = await prisma.asTicket.create({
         data: {
           ticketNumber: finalNum,
-          clientId: user.clientAccount!.id,
+          kind: "SUPPLIES_REQUEST",
+          clientId,
           symptomVi: symptom, symptomKo: symptom, symptomEn: symptom,
-          originalLang: "VI",
+          originalLang: "KO",
           status: "RECEIVED",
           receivedAt: new Date(),
+          suppliesItems: itemsParsed as unknown as Prisma.InputJsonValue,
         },
       });
       return ok({ ticket: { id: created.id, ticketNumber: created.ticketNumber } }, { status: 201 });

@@ -23,7 +23,7 @@ import type { ASStatus, Language } from "@/generated/prisma/client";
 // - 증상 필드는 vi/en/ko 3컬럼. AI 번역 미연동(Phase 1-5 deferred).
 //   사용자가 최소 1개 언어 입력 + originalLang 선택.
 
-const STATUSES: readonly ASStatus[] = ["RECEIVED", "IN_PROGRESS", "DISPATCHED", "COMPLETED", "CANCELED"] as const;
+const STATUSES: readonly ASStatus[] = ["RECEIVED", "IN_PROGRESS", "DISPATCHED", "COMPLETED", "CONFIRMED", "CANCELED"] as const;
 const LANGUAGES: readonly Language[] = ["VI", "EN", "KO"] as const;
 
 function todayYyMmDd(): string {

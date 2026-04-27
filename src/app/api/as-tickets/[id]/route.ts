@@ -5,7 +5,7 @@ import { badRequest, handleFieldError, isForeignKeyError, isRecordNotFoundError,
 import { fillTranslations } from "@/lib/translate";
 import type { ASStatus, Language } from "@/generated/prisma/client";
 
-const STATUSES: readonly ASStatus[] = ["RECEIVED", "IN_PROGRESS", "DISPATCHED", "COMPLETED", "CANCELED"] as const;
+const STATUSES: readonly ASStatus[] = ["RECEIVED", "IN_PROGRESS", "DISPATCHED", "COMPLETED", "CONFIRMED", "CANCELED"] as const;
 const LANGUAGES: readonly Language[] = ["VI", "EN", "KO"] as const;
 
 type RouteContext = { params: Promise<{ id: string }> };

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Note } from "@/components/ui";
+import { Button, Note, SignatureModal } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type Billing = {
@@ -19,16 +19,7 @@ export function PortalUsageConfirmForm({ billings, lang }: { billings: Billing[]
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<Record<string, string>>({});
-
-  function captureSignature(billingId: string) {
-    // 간이 전자서명 — 사용자가 이름을 입력하면 그것을 base64 텍스트로 저장.
-    // 본격 캔버스 서명은 components/signature-canvas.tsx 로 추후 통합.
-    const name = prompt(t("msg.signaturePromptName", lang));
-    if (!name) return;
-    const stamp = `signed:${name}@${new Date().toISOString()}`;
-    const b64 = typeof window !== "undefined" ? window.btoa(unescape(encodeURIComponent(stamp))) : stamp;
-    setSignaturePreview((prev) => ({ ...prev, [billingId]: b64 }));
-  }
+  const [signOpenFor, setSignOpenFor] = useState<string | null>(null);
 
   async function confirm(billingId: string) {
     const sig = signaturePreview[billingId];
@@ -78,13 +69,9 @@ export function PortalUsageConfirmForm({ billings, lang }: { billings: Billing[]
               <td className="text-right">{b.counterColor ?? "-"}</td>
               <td className="text-right">{b.computedAmount ? Number(b.computedAmount).toLocaleString() : "-"}</td>
               <td className="space-x-2">
-                <button
-                  type="button"
-                  onClick={() => captureSignature(b.id)}
-                  className="text-[color:var(--tts-primary)] hover:underline"
-                >
-                  {t("label.signature", lang)} {signaturePreview[b.id] ? "✓" : ""}
-                </button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setSignOpenFor(b.id)}>
+                  ✍️ {t("label.signature", lang)} {signaturePreview[b.id] ? "✓" : ""}
+                </Button>
                 <Button onClick={() => confirm(b.id)} disabled={busy === b.id || !signaturePreview[b.id]}>
                   {busy === b.id ? "..." : t("btn.confirmShort", lang)}
                 </Button>
@@ -93,6 +80,14 @@ export function PortalUsageConfirmForm({ billings, lang }: { billings: Billing[]
           ))}
         </tbody>
       </table>
+      <SignatureModal
+        open={!!signOpenFor}
+        onClose={() => setSignOpenFor(null)}
+        onSubmit={(dataUrl) => {
+          if (signOpenFor) setSignaturePreview((prev) => ({ ...prev, [signOpenFor]: dataUrl }));
+        }}
+        title={`서명 / Ký tên — ${signOpenFor ? billings.find(b => b.id === signOpenFor)?.serialNumber : ""}`}
+      />
     </div>
   );
 }

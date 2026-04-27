@@ -11,6 +11,7 @@ export { Tabs } from "./tabs";
 export type { TabDef } from "./tabs";
 export { SearchBar } from "./search-bar";
 export { SignatureCanvas } from "./signature-canvas";
+export { SignatureModal } from "./signature-modal";
 export { ExcelUpload } from "./excel-upload";
 export type { ExcelColumn } from "./excel-upload";
 export { ExcelDownload } from "./excel-download";

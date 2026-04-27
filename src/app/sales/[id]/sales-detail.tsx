@@ -12,6 +12,7 @@ import {
   Row,
   SectionTitle,
   Select,
+  SerialCombobox,
   Tabs,
   TextInput,
   Textarea,
@@ -486,9 +487,11 @@ function ItemsTab({
               />
             </Field>
             <Field label={t("field.serial", lang)} width="200px">
-              <TextInput
+              <SerialCombobox
                 value={draft.serialNumber}
-                onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))}
+                onChange={(v) => setDraft((p) => ({ ...p, serialNumber: v }))}
+                itemId={draft.itemId || undefined}
+                lang={lang}
               />
             </Field>
             <Field label={t("field.qty", lang)} required width="100px">

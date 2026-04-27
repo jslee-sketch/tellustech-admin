@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, Field, ItemCombobox, Note, Row, Select, TextInput } from "@/components/ui";
+import { Button, Card, Field, ItemCombobox, Note, Row, Select, SerialCombobox, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type Part = {
@@ -124,7 +124,7 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
       <div className="mt-3">
         <Row>
           <Field label={t("field.targetEquipSN", lang)} required width="240px">
-            <TextInput value={equipmentSN} onChange={(e) => setEquipmentSN(e.target.value)} placeholder="SN-..." />
+            <SerialCombobox value={equipmentSN} onChange={setEquipmentSN} lang={lang} />
           </Field>
           <Field label={t("field.warehouseShip", lang)} required width="240px">
             <Select required value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} options={warehouses.map((w) => ({ value: w.id, label: `${w.code} · ${w.name}` }))} />
@@ -135,7 +135,7 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
             <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
           </Field>
           <Field label={t("field.partSerial", lang)} width="180px">
-            <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder={t("placeholder.partOptional", lang)} />
+            <SerialCombobox value={serialNumber} onChange={setSerialNumber} itemId={itemId || undefined} lang={lang} />
           </Field>
           <Field label={t("field.qty", lang)} width="80px">
             <TextInput type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />

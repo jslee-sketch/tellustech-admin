@@ -13,6 +13,7 @@ import {
   Row,
   SectionTitle,
   Select,
+  SerialCombobox,
   SignatureCanvas,
   Tabs,
   TextInput,
@@ -676,11 +677,12 @@ function EquipmentTab({
         >
           <Row>
             <Field label={t("field.serial", lang)} required width="220px">
-              <TextInput
+              <SerialCombobox
                 required
                 value={draft.serialNumber}
-                onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))}
-                placeholder="SL-X7500-ABC-123"
+                onChange={(v) => setDraft((p) => ({ ...p, serialNumber: v }))}
+                itemId={draft.itemId || undefined}
+                lang={lang}
               />
             </Field>
             <Field label={t("field.item", lang)} required>

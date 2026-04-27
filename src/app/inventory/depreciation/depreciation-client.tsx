@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { Badge, Button, DataTable, Field, ItemCombobox, Note, Row, SectionTitle, Select, TextInput } from "@/components/ui";
+import { Badge, Button, DataTable, Field, ItemCombobox, Note, Row, SectionTitle, Select, SerialCombobox, TextInput } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -162,7 +162,7 @@ export function DepreciationClient({
               <ItemCombobox value={draft.itemId} onChange={(v) => setDraft((p) => ({ ...p, itemId: v }))} required lang={lang} />
             </Field>
             <Field label={t("col.serial", lang)} required width="200px">
-              <TextInput required value={draft.serialNumber} onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))} />
+              <SerialCombobox required value={draft.serialNumber} onChange={(v) => setDraft((p) => ({ ...p, serialNumber: v }))} itemId={draft.itemId || undefined} lang={lang} />
             </Field>
           </Row>
           <Row>

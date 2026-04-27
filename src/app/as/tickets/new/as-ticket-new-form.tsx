@@ -12,6 +12,7 @@ import {
   Row,
   SectionTitle,
   Select,
+  SerialCombobox,
   TextInput,
   Textarea,
 } from "@/components/ui";
@@ -142,11 +143,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
           <ItemCombobox value={itemId} onChange={setItemId} lang={lang} />
         </Field>
         <Field label={t("field.serial", lang)} hint={t("hint.snLoose", lang)}>
-          <TextInput
-            value={serialNumber}
-            onChange={(e) => setSerialNumber(e.target.value)}
-            placeholder="예: SL-X7500-ABC123"
-          />
+          <SerialCombobox value={serialNumber} onChange={setSerialNumber} itemId={itemId || undefined} lang={lang} />
         </Field>
       </Row>
 

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
+import { Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, SerialCombobox, TextInput, Textarea } from "@/components/ui";
 import { pickName, t, type Lang } from "@/lib/i18n";
 
 type Scope = "INTERNAL" | "EXTERNAL";
@@ -334,11 +334,12 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
           <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
         </Field>
         <Field label={t("field.serial", lang)}>
-          <TextInput
+          <SerialCombobox
             value={serialNumber}
-            onChange={(e) => setSerialNumber(e.target.value)}
+            onChange={setSerialNumber}
             onBlur={handleSerialBlur}
-            placeholder="SN-XXX"
+            itemId={itemId || undefined}
+            lang={lang}
           />
         </Field>
       </Row>
@@ -434,7 +435,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
       {showTargetEquipment && (
         <Row>
           <Field label={t("field.targetEquipSN", lang)} required>
-            <TextInput required value={targetEquipmentSN} onChange={(e) => setTargetEquipmentSN(e.target.value)} placeholder={t("placeholder.targetEquipSN", lang)} />
+            <SerialCombobox required value={targetEquipmentSN} onChange={setTargetEquipmentSN} lang={lang} />
           </Field>
         </Row>
       )}

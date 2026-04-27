@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, TextInput } from "@/components/ui";
+import { Badge, Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, SerialCombobox, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type ItemOpt = { value: string; label: string; itemCode: string; itemName: string };
@@ -243,7 +243,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
           <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
         </Field>
         <Field label={t("field.serial", lang)}>
-          <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder={t("placeholder.qrAuto", lang)} />
+          <SerialCombobox value={serialNumber} onChange={setSerialNumber} itemId={itemId || undefined} lang={lang} />
         </Field>
       </Row>
 
@@ -271,7 +271,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
       {showTargetEquip && (
         <Row>
           <Field label={t("field.targetEquipSN", lang)} required>
-            <TextInput required value={targetEquipmentSN} onChange={(e) => setTargetEquipmentSN(e.target.value)} placeholder={t("placeholder.targetEquipSN", lang)} />
+            <SerialCombobox required value={targetEquipmentSN} onChange={setTargetEquipmentSN} lang={lang} />
           </Field>
         </Row>
       )}

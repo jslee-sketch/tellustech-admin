@@ -12,6 +12,7 @@ import {
   Note,
   Row,
   SectionTitle,
+  SerialCombobox,
   Tabs,
   TextInput,
 } from "@/components/ui";
@@ -608,7 +609,7 @@ function ItemsTab({
               <TextInput value={draft.options} onChange={(e) => setDraft((p) => ({ ...p, options: e.target.value }))} />
             </Field>
             <Field label={t("field.serial", lang)} required width="180px">
-              <TextInput required value={draft.serialNumber} onChange={(e) => setDraft((p) => ({ ...p, serialNumber: e.target.value }))} />
+              <SerialCombobox required value={draft.serialNumber} onChange={(v) => setDraft((p) => ({ ...p, serialNumber: v }))} itemId={draft.itemId || undefined} lang={lang} />
             </Field>
           </Row>
           <Row>

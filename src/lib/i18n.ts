@@ -2066,6 +2066,13 @@ const DICT: Dict = {
   "item.noMatch":            { vi: "Không có mặt hàng phù hợp.", en: "No matching items.", ko: "일치하는 품목이 없습니다." },
   "item.registerItem":       { vi: "+ Đăng ký mặt hàng",  en: "+ Register Item",    ko: "+ 품목 등록" },
 
+  // Serial number combobox
+  "sn.searchPlaceholder":    { vi: "Nhập S/N (toàn bộ hoặc một phần)", en: "Enter S/N (full or partial)", ko: "S/N 입력 (전체 또는 일부)" },
+  "sn.enterQuery":           { vi: "Nhập S/N để tìm.",     en: "Type a serial number.", ko: "S/N 을 입력하세요." },
+  "sn.searching":            { vi: "Đang tìm...",          en: "Searching...",       ko: "검색 중..." },
+  "sn.noMatch":              { vi: "Không có S/N phù hợp trong kho.", en: "No matching S/N in inventory.", ko: "재고에 일치하는 S/N 이 없습니다." },
+  "sn.freeInputAllowed":     { vi: "Có thể nhập tự do.",   en: "Free input allowed.", ko: "자유 입력도 가능합니다." },
+
   // Field
   "field.fileSelect":        { vi: "Chọn tệp",            en: "Choose file",        ko: "파일 선택" },
 

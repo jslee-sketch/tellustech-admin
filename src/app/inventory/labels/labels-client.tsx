@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Button, Field, ItemCombobox, Row, Select, TextInput } from "@/components/ui";
+import { Button, Field, ItemCombobox, Row, Select, SerialCombobox, TextInput } from "@/components/ui";
 import { LABEL_SPECS, type LabelSize } from "@/lib/qr-label";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -94,7 +94,7 @@ export function LabelsClient({ items, prefill, lang }: Props) {
               <ItemCombobox value={selectedItemId} onChange={setSelectedItemId} lang={lang} />
             </Field>
             <Field label={t("field.snOpt", lang)} width="200px">
-              <TextInput value={sn} onChange={(e) => setSn(e.target.value)} placeholder={t("placeholder.snOptional", lang)} />
+              <SerialCombobox value={sn} onChange={setSn} itemId={selectedItemId || undefined} lang={lang} />
             </Field>
             <Field label={t("field.copies", lang)} width="100px">
               <TextInput type="number" value={copies} onChange={(e) => setCopies(e.target.value)} />

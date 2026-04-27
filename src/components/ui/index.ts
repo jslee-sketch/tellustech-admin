@@ -22,5 +22,7 @@ export { ItemCombobox } from "./item-combobox";
 export type { ItemOption } from "./item-combobox";
 export { ClientCombobox } from "./client-combobox";
 export type { ClientOption } from "./client-combobox";
+export { SerialCombobox } from "./serial-combobox";
+export type { SerialOption } from "./serial-combobox";
 export { Sidebar } from "./sidebar";
 export { Multilingual } from "./multilingual";

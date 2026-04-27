@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Card, ExcelDownload } from "@/components/ui";
+import { LeaveListClient } from "./leave-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -48,19 +49,17 @@ export default async function LeavePage() {
           </div>
         </div>
         <Card title={t("title.leaveList", L)} count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "leaveCode", label: t("col.leaveCode", L), width: "160px", render: (v, row) => <Link href={`/hr/leave/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
-              { key: "employee", label: t("col.employeeHr", L), render: (_, r) => <span>{r.employee?.employeeCode} · {r.employee?.nameVi}</span> },
-              { key: "leaveType", label: t("col.leaveType", L), width: "80px", render: (v) => <Badge tone="primary">{v as string}</Badge> },
-              { key: "startDate", label: t("col.leaveStart", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "endDate", label: t("col.leaveEnd", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "days", label: t("col.leaveDays", L), width: "70px", align: "right", render: (v) => <span className="font-mono text-[11px]">{Number(v).toFixed(1)}</span> },
-              { key: "status", label: t("col.leaveStatus", L), width: "90px", render: (v) => <Badge tone={v === "APPROVED" ? "success" : v === "REJECTED" ? "danger" : "warn"}>{v as string}</Badge> },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.leave", L)}
+          <LeaveListClient
+            rows={rows.map(r => ({
+              id: r.id, leaveCode: r.leaveCode,
+              employee: r.employee,
+              leaveType: r.leaveType,
+              startDate: r.startDate.toISOString(),
+              endDate: r.endDate.toISOString(),
+              days: r.days.toString(),
+              status: r.status,
+            }))}
+            lang={L}
           />
         </Card>
       </div>

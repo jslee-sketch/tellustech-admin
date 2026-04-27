@@ -49,7 +49,7 @@ export default async function PayablesPage() {
 
   return (
     <main className="flex-1 p-8">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         <div className="mb-6">
           <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">TELLUSTECH ERP</Link>
           <h1 className="mt-1 text-2xl font-extrabold">{t("page.payables.title", L)}</h1>

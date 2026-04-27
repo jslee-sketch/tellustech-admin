@@ -240,7 +240,7 @@ export function PrDetailClient(props: Props) {
           <Field label="고객 답변 (KO) / Phản hồi"><Textarea rows={2} value={respKo} onChange={(e)=>setRespKo(e.target.value)} /></Field>
           <Field label="Phản hồi (VI)"><Textarea rows={2} value={respVi} onChange={(e)=>setRespVi(e.target.value)} /></Field>
           <Field label="예상 입금액 / Dự kiến"><TextInput type="number" value={expectedAmt} onChange={(e)=>setExpectedAmt(e.target.value)} placeholder="VND"/></Field>
-          <Field label="예상일 / Ngày dự kiến"><TextInput type="date" value={expectedDate} onChange={(e)=>setExpectedDate(e.target.value)} /></Field>
+          <Field label={t("field.revisedDueDate", lang)}><TextInput type="date" value={expectedDate} onChange={(e)=>setExpectedDate(e.target.value)} /></Field>
         </div>
         {logErr && <div className="mt-2 text-[12px] text-[color:var(--tts-danger)]">{logErr}</div>}
         <div className="mt-2"><Button onClick={addLog} disabled={savingLog}>+ 연락 기록 / Ghi liên hệ</Button></div>

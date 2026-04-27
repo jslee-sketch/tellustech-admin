@@ -138,13 +138,18 @@ export function PayablesListClient({ initialRows, lang }: { initialRows: Payable
       render: (v) => <Badge tone={v === "PAID" ? "success" : v === "PARTIAL" ? "accent" : v === "WRITTEN_OFF" ? "neutral" : "warn"}>{String(v)}</Badge> },
     { key: "ref", label: t("col.refReceipt", lang), width: "160px",
       render: (v, r) => <Link href={`/finance/payables/${r.id}`} className="font-mono text-[11px] text-[color:var(--tts-accent)] hover:underline">{String(v)}</Link> },
-    { key: "clientLabel", label: t("col.client", lang),
-      render: (_, r) => <span>{r.clientLabel}{r.clientBlocked && <span className="ml-2"><Badge tone="danger">{t("label.AR_blocked", lang)}</Badge></span>}</span> },
-    { key: "amount", label: t("field.amount", lang), width: "130px", align: "right", sortable: true,
+    { key: "clientLabel", label: t("col.client", lang), width: "240px",
+      render: (_, r) => (
+        <span className="block max-w-[230px] truncate" title={r.clientLabel}>
+          {r.clientLabel}
+          {r.clientBlocked && <span className="ml-2"><Badge tone="danger">{t("label.AR_blocked", lang)}</Badge></span>}
+        </span>
+      ) },
+    { key: "amount", label: t("field.amount", lang), width: "115px", align: "right", sortable: true,
       render: (v) => <span className="font-mono text-[12px]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-    { key: "paidAmount", label: t("col.paidVnd", lang), width: "130px", align: "right",
+    { key: "paidAmount", label: t("col.paidVnd", lang), width: "115px", align: "right",
       render: (v) => <span className="font-mono text-[12px] text-[color:var(--tts-success)]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-    { key: "outstanding", label: t("field.outstanding", lang), width: "130px", align: "right", sortable: true,
+    { key: "outstanding", label: t("field.outstanding", lang), width: "115px", align: "right", sortable: true,
       render: (v) => {
         const n = Number(v);
         return <span className={`font-mono text-[13px] font-bold ${n > 0 ? "text-[color:var(--tts-danger)]" : ""}`}>{new Intl.NumberFormat("vi-VN").format(n)}</span>;

@@ -100,6 +100,8 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/item-compatibility", labelKey: "nav.itemCompat", icon: "🔗", match: (p) => p.startsWith("/admin/item-compatibility") },
       { href: "/admin/closings", labelKey: "nav.closings", icon: "🔒", match: (p) => p.startsWith("/admin/closings") },
       { href: "/admin/trash", labelKey: "nav.trash", icon: "🗑", match: (p) => p.startsWith("/admin/trash") },
+      { href: "/admin/portal-points", labelKey: "nav.portalPoints", icon: "🏆", match: (p) => p.startsWith("/admin/portal-points") },
+      { href: "/admin/portal-banners", labelKey: "nav.portalBanners", icon: "📣", match: (p) => p.startsWith("/admin/portal-banners") },
       { href: "/stats", labelKey: "nav.stats", icon: "📈", match: (p) => p.startsWith("/stats") },
     ],
   },

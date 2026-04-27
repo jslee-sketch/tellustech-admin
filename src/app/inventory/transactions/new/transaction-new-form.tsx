@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { Button, ClientCombobox, Field, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 type Scope = "INTERNAL" | "EXTERNAL";
 
@@ -454,7 +454,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
           <ul className="mt-1 list-disc pl-4 text-[12px]">
             {snContracts.map((c, i) => (
               <li key={i}>
-                {c.kind === "IT" ? c.contractNumber : c.rentalCode} · {c.client.companyNameVi} · {c.item.name}
+                {c.kind === "IT" ? c.contractNumber : c.rentalCode} · {pickName(c.client, lang, "companyName")} · {c.item.name}
               </li>
             ))}
           </ul>
@@ -490,7 +490,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
                     <span className="font-mono font-bold">
                       {c.kind === "IT" ? c.contractNumber : c.rentalCode}
                     </span>{" "}
-                    · {c.client.companyNameVi} · {c.item.name}
+                    · {pickName(c.client, lang, "companyName")} · {c.item.name}
                   </li>
                 ))}
               </ul>

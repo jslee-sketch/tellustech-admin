@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { Button, Field, Note, Row, SectionTitle, Select, TextInput } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 export type EmployeeFormValue = {
   id?: string;

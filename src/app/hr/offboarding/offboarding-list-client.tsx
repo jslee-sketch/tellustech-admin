@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Badge, DataTable } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 export type OffRow = {
   id: string; offboardingCode: string;
@@ -15,7 +15,7 @@ export function OffboardingListClient({ rows, lang }: { rows: OffRow[]; lang: La
     { key: "offboardingCode", label: t("col.codeHr", lang), width: "170px",
       render: (v, r) => <Link href={`/hr/offboarding/${r.id}`} className="font-mono text-[11px] font-bold hover:underline">{String(v)}</Link> },
     { key: "employee", label: t("col.employeeHr", lang),
-      render: (_, r) => r.employee ? <span>{r.employee.employeeCode} · {r.employee.nameVi}</span> : <span>—</span> },
+      render: (_, r) => r.employee ? <span>{r.employee.employeeCode} · {pickName(r.employee, lang)}</span> : <span>—</span> },
     { key: "status", label: t("col.statusHr", lang), width: "110px",
       render: (v) => <Badge tone={v === "COMPLETED" ? "success" : v === "SUBMITTED" ? "warn" : "neutral"}>{String(v)}</Badge> },
     { key: "createdAt", label: t("col.createdAtHr", lang), width: "110px",

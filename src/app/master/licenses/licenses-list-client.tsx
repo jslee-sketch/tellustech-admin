@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { Badge, DataTable } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 export type LicenseRow = {
   id: string; licenseCode: string; name: string;
@@ -16,7 +16,7 @@ export function LicensesListClient({ rows, lang }: { rows: LicenseRow[]; lang: L
       render: (v, r) => <Link href={`/master/licenses/${r.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{String(v)}</Link> },
     { key: "name", label: t("col.licenseName", lang) },
     { key: "owner", label: t("col.licenseOwner", lang),
-      render: (_, r) => r.owner ? <span>{r.owner.employeeCode} · {r.owner.nameVi}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
+      render: (_, r) => r.owner ? <span>{r.owner.employeeCode} · {pickName(r.owner, lang)}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
     { key: "acquiredAt", label: t("col.acquiredAtCol", lang), width: "110px",
       render: (v) => <span className="font-mono text-[11px]">{String(v).slice(0,10)}</span> },
     { key: "expiresAt", label: t("col.expiresAtCol", lang), width: "140px",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { t } from "@/lib/i18n";
+import { t, pickName } from "@/lib/i18n";
 import { Badge, Card } from "@/components/ui";
 import LogoutButton from "../logout-button";
 import { ConfirmButton } from "./confirm-button";
@@ -64,7 +64,7 @@ export default async function PortalHome() {
           <div>
             <div className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)]">{t("portal.title", L)}</div>
             <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-              {client.companyNameVi}
+              {pickName(client, L, "companyName")}
               <span className="ml-3 font-mono text-[13px] text-[color:var(--tts-primary)]">{client.clientCode}</span>
               {blocked && <span className="ml-2"><Badge tone="danger">{t("portal.arBlocked", L)}</Badge></span>}
             </h1>

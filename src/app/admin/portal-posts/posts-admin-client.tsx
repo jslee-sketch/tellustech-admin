@@ -23,10 +23,22 @@ export function PostsAdminClient({ lang }: { lang: Lang }) {
     const r = await fetch("/api/admin/portal-posts", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(form) });
     if (r.ok) { setOpen(false); setForm({ category: "MARKETING", titleKo: "", bodyKo: "", isPublished: true, bonusPoints: 0, isPinned: false }); refetch(); }
   }
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMsg, setAiMsg] = useState<string | null>(null);
   async function aiGenerate() {
     if (!aiTopic) return;
-    const r = await fetch("/api/admin/portal-posts/ai-generate", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ category: form.category, topic: aiTopic }) });
-    if (r.ok) { setAiTopic(""); refetch(); }
+    setAiBusy(true); setAiMsg(null);
+    try {
+      const r = await fetch("/api/admin/portal-posts/ai-generate", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ category: form.category, topic: aiTopic }) });
+      const j = await r.json();
+      if (!r.ok) {
+        setAiMsg(`❌ ${j?.error ?? "fail"}${j?.details?.hint ? " — " + j.details.hint : ""}`);
+        return;
+      }
+      setAiMsg(`✓ AI 초안 생성됨: "${j?.generated?.titleKo ?? ""}" — 아래 목록에서 검토 후 발행하세요`);
+      setAiTopic("");
+      refetch();
+    } finally { setAiBusy(false); }
   }
   async function togglePublish(id: string, current: boolean) {
     await fetch(`/api/admin/portal-posts/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ isPublished: !current }) });
@@ -44,11 +56,15 @@ export function PostsAdminClient({ lang }: { lang: Lang }) {
         <h1 className="mb-4 text-2xl font-extrabold">📰 {t("admin.posts.title", lang)}</h1>
 
         <Card>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button onClick={() => setOpen(!open)} className="rounded bg-[color:var(--tts-accent)] px-3 py-1.5 text-[12px] font-bold text-white">+ {t("admin.posts.newPost", lang)}</button>
-            <input type="text" placeholder={t("admin.posts.aiGenerate", lang)} value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px]" />
-            <button onClick={aiGenerate} disabled={!aiTopic} className="rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-[12px] font-bold text-[color:var(--tts-accent)] disabled:opacity-50">🤖 AI</button>
+            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as any })} className="rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px]">
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <input type="text" placeholder="주제 입력 (예: 2026년 5월 베트남 공휴일)" value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px]" />
+            <button onClick={aiGenerate} disabled={!aiTopic || aiBusy} className="rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-[12px] font-bold text-[color:var(--tts-accent)] disabled:opacity-50">{aiBusy ? "..." : "🤖 AI 초안 생성"}</button>
           </div>
+          {aiMsg && <div className={`mt-2 rounded px-2 py-1 text-[11px] ${aiMsg.startsWith("❌") ? "bg-[color:var(--tts-danger-dim)] text-[color:var(--tts-danger)]" : "bg-[color:var(--tts-success-dim)] text-[color:var(--tts-success)]"}`}>{aiMsg}</div>}
           {open && (
             <div className="mt-3 space-y-2 border-t border-[color:var(--tts-border)] pt-3">
               <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as any })} className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]">

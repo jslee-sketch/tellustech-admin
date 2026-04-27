@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, ExcelDownload, Field, Note, Select, TextInput } from "@/components/ui";
+import { Badge, Button, ClientCombobox, ExcelDownload, Field, Note, Select, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 export type BacklogRow = {
@@ -150,12 +150,9 @@ export function BacklogPanel({
             onChange={(e) => setSalesType(e.target.value as "SALES" | "PURCHASE")}
             options={[{ value: "SALES", label: t("field.salesTypeSale", lang) }, { value: "PURCHASE", label: t("field.salesTypePurchase", lang) }]}
           /></Field>
-          <Field label={t("field.client", lang)}><Select
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            placeholder={t("placeholder.select", lang)}
-            options={clients.map((c) => ({ value: c.id, label: c.label }))}
-          /></Field>
+          <Field label={t("field.client", lang)}>
+            <ClientCombobox value={clientId} onChange={setClientId} lang={lang} />
+          </Field>
           <Field label={t("field.salesEmpShort", lang)}><Select
             value={salesEmployeeId}
             onChange={(e) => setSalesEmployeeId(e.target.value)}

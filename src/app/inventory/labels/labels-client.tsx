@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
-import { Button, Field, Row, Select, TextInput } from "@/components/ui";
+import { Button, Field, ItemCombobox, Row, Select, TextInput } from "@/components/ui";
 import { LABEL_SPECS, type LabelSize } from "@/lib/qr-label";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -25,10 +25,22 @@ export function LabelsClient({ items, prefill, lang }: Props) {
   const [sn, setSn] = useState("");
   const [copies, setCopies] = useState("1");
 
-  function addRow() {
-    const item = items.find((i) => i.value === selectedItemId);
+  async function addRow() {
+    if (!selectedItemId) return;
+    let item = items.find((i) => i.value === selectedItemId);
+    if (!item) {
+      // ItemCombobox 가 prefill 외 항목을 선택했을 때 — API 로 1건만 다시 조회
+      try {
+        const res = await fetch(`/api/master/items?q=${encodeURIComponent(selectedItemId)}`).then((r) => r.json());
+        const found = (res.items ?? []).find((x: { id: string; itemCode: string; name: string }) => x.id === selectedItemId);
+        if (found) item = { value: found.id, label: `${found.itemCode} · ${found.name}`, itemCode: found.itemCode, itemName: found.name };
+      } catch {
+        return;
+      }
+    }
     if (!item) return;
-    setRows((r) => [...r, { itemCode: item.itemCode, itemName: item.itemName, serialNumber: sn, copies: Math.max(1, Number(copies) || 1) }]);
+    setRows((r) => [...r, { itemCode: item!.itemCode, itemName: item!.itemName, serialNumber: sn, copies: Math.max(1, Number(copies) || 1) }]);
+    setSelectedItemId("");
     setSn("");
     setCopies("1");
   }
@@ -79,7 +91,7 @@ export function LabelsClient({ items, prefill, lang }: Props) {
           <div className="mb-2 text-[12px] font-bold text-[color:var(--tts-sub)]">{t("label.addLabel", lang)}</div>
           <Row>
             <Field label={t("field.item", lang)} required>
-              <Select value={selectedItemId} onChange={(e) => setSelectedItemId(e.target.value)} placeholder={t("placeholder.select", lang)} options={items.map((i) => ({ value: i.value, label: i.label }))} />
+              <ItemCombobox value={selectedItemId} onChange={setSelectedItemId} lang={lang} />
             </Field>
             <Field label={t("field.snOpt", lang)} width="200px">
               <TextInput value={sn} onChange={(e) => setSn(e.target.value)} placeholder={t("placeholder.snOptional", lang)} />

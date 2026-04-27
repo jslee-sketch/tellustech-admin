@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Button, Field, ItemCombobox, Note, Row, SectionTitle, Select, TextInput, Textarea } from "@/components/ui";
+import { Button, ClientCombobox, Field, ItemCombobox, Note, Row, SectionTitle, Select, TextInput, Textarea } from "@/components/ui";
 import { CURRENCY_OPTIONS, formatCurrency } from "@/lib/currency";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -150,13 +150,7 @@ export function PurchaseNewForm({ suppliers, projects, employeeOptions, warehous
       <SectionTitle icon="📋" title={t("section.basicInfo", lang)} />
       <Row>
         <Field label={t("field.supplierField", lang)} required>
-          <Select
-            required
-            value={supplierId}
-            onChange={(e) => setSupplierId(e.target.value)}
-            placeholder={t("placeholder.select", lang)}
-            options={suppliers.map((c) => ({ value: c.id, label: c.label }))}
-          />
+          <ClientCombobox value={supplierId} onChange={setSupplierId} required lang={lang} />
         </Field>
         <Field label={t("field.project", lang)} required>
           <Select

@@ -5,7 +5,9 @@ import { FormEvent, useState } from "react";
 import {
   Badge,
   Button,
+  ClientCombobox,
   Field,
+  ItemCombobox,
   Note,
   Row,
   SectionTitle,
@@ -112,13 +114,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
       <SectionTitle icon="🏢" title={t("section.clientEquipment", lang)} />
       <Row>
         <Field label={t("field.client", lang)} required>
-          <Select
-            required
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            placeholder={t("placeholder.select", lang)}
-            options={clients.map((c) => ({ value: c.id, label: c.label }))}
-          />
+          <ClientCombobox value={clientId} onChange={setClientId} required lang={lang} />
         </Field>
         <Field label={t("field.asAssignee", lang)}>
           <Select
@@ -143,12 +139,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
 
       <Row>
         <Field label={t("field.equipmentItem", lang)}>
-          <Select
-            value={itemId}
-            onChange={(e) => setItemId(e.target.value)}
-            placeholder={t("placeholder.notSelected", lang)}
-            options={itemOptions}
-          />
+          <ItemCombobox value={itemId} onChange={setItemId} lang={lang} />
         </Field>
         <Field label={t("field.serial", lang)} hint={t("hint.snLoose", lang)}>
           <TextInput

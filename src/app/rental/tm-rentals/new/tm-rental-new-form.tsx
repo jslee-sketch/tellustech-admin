@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { Button, Field, Note, Row, SectionTitle, Select, TextInput } from "@/components/ui";
+import { Button, ClientCombobox, Field, Note, Row, SectionTitle, Select, TextInput } from "@/components/ui";
 import { CURRENCY_OPTIONS } from "@/lib/currency";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -106,13 +106,7 @@ export function TmRentalNewForm({ clients, lang }: Props) {
       <SectionTitle icon="🏢" title={t("section.basicInfo", lang)} />
       <Row>
         <Field label={t("field.client", lang)} required>
-          <Select
-            required
-            value={value.clientId}
-            onChange={(e) => onClientChange(e.target.value)}
-            placeholder={t("placeholder.select", lang)}
-            options={clients.map((c) => ({ value: c.id, label: c.label }))}
-          />
+          <ClientCombobox value={value.clientId} onChange={onClientChange} required lang={lang} />
         </Field>
         <Field label={t("field.contractNumberOpt", lang)} width="220px">
           <TextInput

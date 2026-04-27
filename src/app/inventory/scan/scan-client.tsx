@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Field, Note, Row, Select, TextInput } from "@/components/ui";
+import { Badge, Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type ItemOpt = { value: string; label: string; itemCode: string; itemName: string };
@@ -240,7 +240,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
 
       <Row>
         <Field label={t("field.itemAuto", lang)} required>
-          <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder={t("placeholder.scannerHint", lang)} options={items.map((i) => ({ value: i.value, label: i.label }))} />
+          <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
         </Field>
         <Field label={t("field.serial", lang)}>
           <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder={t("placeholder.qrAuto", lang)} />
@@ -263,7 +263,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
       {showClient && (
         <Row>
           <Field label={txnType === "OUT" ? t("field.clientCustomer", lang) : t("field.clientExternal", lang)}>
-            <Select value={clientId} onChange={(e) => setClientId(e.target.value)} placeholder={t("placeholder.select", lang)} options={clients} />
+            <ClientCombobox value={clientId} onChange={setClientId} lang={lang} />
           </Field>
         </Row>
       )}

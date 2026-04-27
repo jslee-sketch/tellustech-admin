@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Button,
+  ClientCombobox,
   Field,
   ItemCombobox,
   Note,
@@ -170,13 +171,7 @@ export function SalesNewForm({ clients, projects, employeeOptions, warehouseOpti
       <SectionTitle icon="📋" title={t("section.basicInfo", lang)} />
       <Row>
         <Field label={t("field.client", lang)} required>
-          <Select
-            required
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            placeholder={t("placeholder.select", lang)}
-            options={clients.map((c) => ({ value: c.id, label: c.label }))}
-          />
+          <ClientCombobox value={clientId} onChange={setClientId} required lang={lang} />
         </Field>
         <Field label={t("field.project", lang)} required>
           <Select

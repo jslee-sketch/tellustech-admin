@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, Field, Note, Row, Select, TextInput } from "@/components/ui";
+import { Button, Card, Field, ItemCombobox, Note, Row, Select, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type Part = {
@@ -132,7 +132,7 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
         </Row>
         <Row>
           <Field label={t("field.item", lang)} required>
-            <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder={t("placeholder.select", lang)} options={itemOptions} />
+            <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
           </Field>
           <Field label={t("field.partSerial", lang)} width="180px">
             <TextInput value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} placeholder={t("placeholder.partOptional", lang)} />

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { Button, ClientCombobox, Field, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
+import { Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, TextInput, Textarea } from "@/components/ui";
 import { pickName, t, type Lang } from "@/lib/i18n";
 
 type Scope = "INTERNAL" | "EXTERNAL";
@@ -331,7 +331,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
 
       <Row>
         <Field label={t("field.item", lang)} required>
-          <Select required value={itemId} onChange={(e) => setItemId(e.target.value)} placeholder={t("placeholder.select", lang)} options={items} />
+          <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
         </Field>
         <Field label={t("field.serial", lang)}>
           <TextInput

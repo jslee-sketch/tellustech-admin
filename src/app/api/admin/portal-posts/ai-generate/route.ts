@@ -93,22 +93,42 @@ async function generateNews(category: PostCategory, topic: string): Promise<{ ti
       console.error("[ai-generate] API error", res.status, errBody);
       return null;
     }
-    const data = (await res.json()) as { content?: Array<{ type?: string; text?: string }> };
-    // 마지막 text 블록을 본문으로 (web_search 결과 블록 등은 건너뜀)
-    const textBlocks = (data.content ?? []).filter((c) => c.type === "text" && typeof c.text === "string");
-    const raw = textBlocks.map((c) => c.text!).join("\n").trim();
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-    try {
-      const parsed = JSON.parse(cleaned) as { title?: string; body?: string; sources?: string[] };
-      if (parsed.title && parsed.body) {
-        const sources = Array.isArray(parsed.sources) ? parsed.sources.filter((s) => typeof s === "string" && s.startsWith("http")) : [];
-        return { titleKo: parsed.title.trim(), bodyKo: parsed.body.trim(), sources };
+    const data = (await res.json()) as { content?: Array<{ type?: string; text?: string; url?: string }> };
+    const blocks = data.content ?? [];
+    // web_search 결과 블록(type=server_tool_use, web_search_tool_result 등)에서 URL 추출
+    const searchUrls: string[] = [];
+    for (const b of blocks) {
+      if (b.url && typeof b.url === "string" && b.url.startsWith("http")) searchUrls.push(b.url);
+    }
+    // 텍스트 블록 전체 합치기
+    const allText = blocks.filter((c) => c.type === "text" && typeof c.text === "string").map((c) => c.text!).join("\n");
+    // JSON 객체를 텍스트 어디에서든 추출 (모델이 markdown ```json … ``` 또는 reasoning + JSON 형태 가능)
+    const tryParseJson = (txt: string): { title?: string; body?: string; sources?: string[] } | null => {
+      // 1) 우선 markdown 코드블록 안의 JSON
+      const mdMatch = txt.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      const candidates: string[] = [];
+      if (mdMatch) candidates.push(mdMatch[1]);
+      // 2) 첫 { ... 마지막 } 까지 (greedy)
+      const lastOpen = txt.indexOf("{");
+      const lastClose = txt.lastIndexOf("}");
+      if (lastOpen !== -1 && lastClose > lastOpen) candidates.push(txt.slice(lastOpen, lastClose + 1));
+      for (const c of candidates) {
+        try { return JSON.parse(c); } catch { /* try next */ }
       }
-    } catch { /* fallthrough */ }
-    const lines = cleaned.split(/\r?\n/);
+      return null;
+    };
+    const parsed = tryParseJson(allText);
+    if (parsed?.title && parsed?.body) {
+      const modelSources = Array.isArray(parsed.sources) ? parsed.sources.filter((s) => typeof s === "string" && s.startsWith("http")) : [];
+      const sources = [...new Set([...searchUrls, ...modelSources])];
+      return { titleKo: String(parsed.title).trim(), bodyKo: String(parsed.body).trim(), sources };
+    }
+    // 폴백: 첫 줄=제목, 나머지=본문
+    const cleaned = allText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const lines = cleaned.split(/\r?\n/).filter((l) => l.trim());
     const title = lines[0]?.replace(/^[#\-*\s"]+|["#\-*\s]+$/g, "").trim() || topic;
     const body = lines.slice(1).join("\n").trim() || cleaned;
-    return { titleKo: title, bodyKo: body, sources: [] };
+    return { titleKo: title, bodyKo: body, sources: [...new Set(searchUrls)] };
   } catch (err) {
     console.error("[ai-generate] failed:", err);
     return null;

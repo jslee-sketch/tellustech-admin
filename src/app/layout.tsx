@@ -56,8 +56,21 @@ export default async function RootLayout({
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
           if ("serviceWorker" in navigator && location.pathname.startsWith("/portal")) {
-            navigator.serviceWorker.register("/sw.js", { scope: "/portal" }).catch(() => undefined);
+            navigator.serviceWorker.register("/sw.js", { scope: "/portal", updateViaCache: "none" }).then((reg) => {
+              // 등록 시점에 즉시 업데이트 체크 — 새 SW 가 있으면 다운로드/활성화 유도
+              try { reg.update(); } catch (_) {}
+            }).catch(() => undefined);
+            // 새 SW 가 active 되면 즉시 새로고침해서 새 manifest/리소스 적용
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+              if (!window.__tts_reloaded) { window.__tts_reloaded = true; location.reload(); }
+            });
           }
+          // 화면 회전 잠금 해제 (가능한 브라우저에서) — manifest 가 portrait 였던 경우 잔여 잠금 해제
+          try {
+            if (screen.orientation && typeof screen.orientation.unlock === "function") {
+              screen.orientation.unlock();
+            }
+          } catch (_) {}
         `}} />
       </body>
     </html>

@@ -10,9 +10,15 @@ export default async function PayablesPage() {
   const session = await getSession();
   const L = session.language;
   const rows = await prisma.payableReceivable.findMany({
-    orderBy: [{ status: "asc" }, { dueDate: "asc" }],
+    orderBy: [{ status: "asc" }, { dueDate: { sort: "asc", nulls: "last" } }],
     take: 500,
-    include: {
+    select: {
+      id: true,
+      kind: true,
+      status: true,
+      amount: true,
+      paidAmount: true,
+      dueDate: true,
       sales: { select: { salesNumber: true, client: { select: { clientCode: true, companyNameVi: true, receivableStatus: true } } } },
       purchase: { select: { purchaseNumber: true, supplier: { select: { clientCode: true, companyNameVi: true, receivableStatus: true } } } },
     },

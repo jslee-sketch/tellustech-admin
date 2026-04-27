@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Card, ExcelDownload } from "@/components/ui";
+import { SchedulesListClient } from "./schedules-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -42,22 +43,11 @@ export default async function SchedulesPage() {
           </div>
         </div>
         <Card title={t("title.schedules", L)} count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "scheduleCode", label: t("col.scheduleCode", L), width: "160px", render: (v, row) => <Link href={`/master/schedules/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "title", label: t("col.scheduleTitle", L) },
-              { key: "dueAt", label: t("col.scheduleDeadline", L), width: "170px", render: (v) => {
-                const d = v as Date;
-                const left = Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                return <span className="font-mono text-[11px]">{d.toISOString().slice(0, 10)} {left >= 0 ? `(D-${left})` : <Badge tone="danger">{t("label.expiredBadge", L)}</Badge>}</span>;
-              } },
-              { key: "repeatCron", label: t("col.scheduleRepeat", L), width: "100px", render: (v) => (v as string | null) ?? "—" },
-              { key: "_count", label: t("col.scheduleTrc", L), width: "140px", render: (_, r) => <span className="font-mono text-[11px]">{r._count.targets}/{r._count.reporters}/{r._count.confirmations}</span> },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.schedules", L)}
-          />
+          <SchedulesListClient rows={rows.map(r => ({
+            id: r.id, scheduleCode: r.scheduleCode, title: r.title,
+            dueAt: r.dueAt.toISOString(), repeatCron: r.repeatCron,
+            _count: r._count,
+          }))} lang={L} />
         </Card>
       </div>
     </main>

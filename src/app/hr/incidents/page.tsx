@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Card, ExcelDownload } from "@/components/ui";
+import { IncidentsListClient } from "./incidents-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -50,22 +51,12 @@ export default async function IncidentsPage() {
           </div>
         </div>
         <Card title={t("title.incidentsList", L)} count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "incidentCode", label: t("col.incidentCode", L), width: "160px", render: (v, row) => <Link href={`/hr/incidents/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "type", label: t("col.incidentType", L), width: "90px", render: (v) => <Badge tone={v === "PRAISE" ? "success" : "warn"}>{v === "PRAISE" ? t("incidentType.PRAISE", L) : t("incidentType.IMPROVEMENT", L)}</Badge> },
-              { key: "author", label: t("col.author", L), render: (_, row) => <span>{row.author?.employeeCode} · {row.author?.nameVi}</span> },
-              { key: "subject", label: t("col.subjectCol", L), render: (_, row) => <span>{row.subject?.employeeCode} · {row.subject?.nameVi}</span> },
-              { key: "contentVi", label: t("col.contentSummary", L), render: (_, row) => {
-                const text = row.contentVi ?? row.contentKo ?? row.contentEn ?? "";
-                return <span className="text-[12px] text-[color:var(--tts-sub)]">{text.slice(0, 60)}{text.length > 60 ? "..." : ""}</span>;
-              } },
-              { key: "createdAt", label: t("col.writtenAt", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.incidents", L)}
-          />
+          <IncidentsListClient rows={rows.map(r => ({
+            id: r.id, incidentCode: r.incidentCode, type: r.type,
+            author: r.author, subject: r.subject,
+            contentVi: r.contentVi, contentKo: r.contentKo, contentEn: r.contentEn,
+            createdAt: r.createdAt.toISOString(),
+          }))} lang={L} />
         </Card>
       </div>
     </main>

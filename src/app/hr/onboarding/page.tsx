@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Button, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Button, Card, ExcelDownload } from "@/components/ui";
+import { OnboardingListClient } from "./onboarding-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -37,17 +38,11 @@ export default async function OnboardingPage() {
           </div>
         </div>
         <Card title={t("title.onboardingCard", L)} count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "onboardingCode", label: t("col.codeHr", L), width: "170px", render: (v, row) => <Link href={`/hr/onboarding/${row.id}`} className="font-mono text-[11px] font-bold hover:underline">{v as string}</Link> },
-              { key: "employee", label: t("col.employeeHr", L), render: (_, r) => r.employee ? <span>{r.employee.employeeCode} · {r.employee.nameVi}</span> : "—" },
-              { key: "status", label: t("col.statusHr", L), width: "110px", render: (v) => <Badge tone={v === "COMPLETED" ? "success" : v === "SUBMITTED" ? "warn" : "neutral"}>{v as string}</Badge> },
-              { key: "createdAt", label: t("col.createdAtHr", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.onboardingCards", L)}
-          />
+          <OnboardingListClient rows={rows.map(r => ({
+            id: r.id, onboardingCode: r.onboardingCode,
+            employee: r.employee, status: r.status,
+            createdAt: r.createdAt.toISOString(),
+          }))} lang={L} />
         </Card>
       </div>
     </main>

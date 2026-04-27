@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Card, ExcelDownload } from "@/components/ui";
+import { EvaluationsListClient } from "./evaluations-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -51,19 +52,13 @@ export default async function EvaluationsPage() {
           </div>
         </div>
         <Card title={t("title.evaluationsList", L)} count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "evaluationCode", label: t("col.evalCode", L), width: "170px", render: (v, row) => <Link href={`/hr/evaluations/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "reviewer", label: t("col.reviewer", L), render: (_, row) => <span>{row.reviewer?.employeeCode} · {row.reviewer?.nameVi}</span> },
-              { key: "subject", label: t("col.subjectEval", L), render: (_, row) => <span>{row.subject?.employeeCode} · {row.subject?.nameVi}</span> },
-              { key: "deadline", label: t("col.deadlineCol", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "submittedAt", label: t("col.submittedCol", L), width: "110px", render: (v) => v ? <Badge tone="success">{(v as Date).toISOString().slice(0, 10)}</Badge> : <Badge tone="warn">{t("label.notSubmitted", L)}</Badge> },
-              { key: "normalizedScore", label: t("col.score100Col", L), width: "100px", align: "right", render: (v) => <span className="font-mono font-bold">{Number(v).toFixed(1)}</span> },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.evaluations", L)}
-          />
+          <EvaluationsListClient rows={rows.map(r => ({
+            id: r.id, evaluationCode: r.evaluationCode,
+            reviewer: r.reviewer, subject: r.subject,
+            deadline: r.deadline.toISOString(),
+            submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
+            normalizedScore: r.normalizedScore.toString(),
+          }))} lang={L} />
         </Card>
       </div>
     </main>

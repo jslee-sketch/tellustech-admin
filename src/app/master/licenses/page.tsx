@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Card, ExcelDownload } from "@/components/ui";
+import { LicensesListClient } from "./licenses-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -47,28 +48,13 @@ export default async function LicensesPage() {
           </div>
         </div>
         <Card title={t("title.licenses", L)} count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "licenseCode", label: t("col.licenseCode", L), width: "160px", render: (v, row) => <Link href={`/master/licenses/${row.id}`} className="font-mono text-[11px] text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "name", label: t("col.licenseName", L) },
-              { key: "owner", label: t("col.licenseOwner", L), render: (_, r) => r.owner ? <span>{r.owner.employeeCode} · {r.owner.nameVi}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
-              { key: "acquiredAt", label: t("col.acquiredAtCol", L), width: "110px", render: (v) => (v as Date).toISOString().slice(0, 10) },
-              { key: "expiresAt", label: t("col.expiresAtCol", L), width: "140px", render: (v) => {
-                const d = v as Date;
-                const left = Math.floor((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                return (
-                  <span>
-                    <span className="font-mono text-[11px]">{d.toISOString().slice(0, 10)}</span>{" "}
-                    {left < 0 ? <Badge tone="danger">{t("label.expired", L)}</Badge> : left < 30 ? <Badge tone="warn">D-{left}</Badge> : null}
-                  </span>
-                );
-              } },
-              { key: "renewalCost", label: t("col.renewalCost", L), width: "140px", align: "right", render: (v) => v ? <span className="font-mono text-[12px]">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> : <span className="text-[color:var(--tts-muted)]">—</span> },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.licenses", L)}
-          />
+          <LicensesListClient rows={rows.map(r => ({
+            id: r.id, licenseCode: r.licenseCode, name: r.name,
+            owner: r.owner,
+            acquiredAt: r.acquiredAt.toISOString(),
+            expiresAt: r.expiresAt.toISOString(),
+            renewalCost: r.renewalCost ? r.renewalCost.toString() : null,
+          }))} lang={L} />
         </Card>
       </div>
     </main>

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t, type Lang } from "@/lib/i18n";
-import { Badge, Card, DataTable } from "@/components/ui";
+import { Card } from "@/components/ui";
+import { AuditLogsListClient } from "./audit-logs-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -45,35 +46,7 @@ export default async function AuditLogsPage() {
           <div className="mt-1 text-[12px] text-[color:var(--tts-muted)]">{t("label.auditNote", L)}</div>
         </div>
         <Card count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "occurredAt", label: t("col.auditTime", L), width: "170px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
-              { key: "companyCode", label: t("col.auditCompany", L), width: "60px" },
-              { key: "username", label: t("col.auditUser", L), width: "120px" },
-              {
-                key: "action",
-                label: t("col.auditAction", L),
-                width: "80px",
-                render: (v) => {
-                  const s = v as string;
-                  const tone = s === "INSERT" ? "success" : s === "UPDATE" ? "warn" : s === "DELETE" ? "danger" : "neutral";
-                  return <Badge tone={tone}>{s}</Badge>;
-                },
-              },
-              { key: "tableName", label: t("col.auditTable", L), width: "160px", render: (v) => <span className="font-mono text-[11px]">{v as string}</span> },
-              { key: "recordId", label: t("col.auditRecordId", L), width: "220px", render: (v) => <span className="font-mono text-[10px] text-[color:var(--tts-muted)]">{v as string}</span> },
-              {
-                key: "beforeAfter",
-                label: t("col.auditChange", L),
-                render: (_, r) => (
-                  <pre className="whitespace-pre-wrap text-[10px] text-[color:var(--tts-sub)]">{r.beforeAfter}</pre>
-                ),
-              },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.auditLogs", L)}
-          />
+          <AuditLogsListClient rows={rows} lang={L} />
         </Card>
       </div>
     </main>

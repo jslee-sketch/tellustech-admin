@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
-import { Badge, Button, Card, DataTable, ExcelDownload } from "@/components/ui";
+import { Button, Card, ExcelDownload } from "@/components/ui";
+import { ExpensesListClient } from "./expenses-list-client";
 
 export const dynamic = "force-dynamic";
 
@@ -49,19 +50,14 @@ export default async function ExpensesPage() {
           </div>
         </div>
         <Card title={t("title.expenses", L)} count={rows.length}>
-          <DataTable
-            columns={[
-              { key: "expenseCode", label: t("col.expenseCode", L), width: "170px", render: (v, row) => <Link href={`/finance/expenses/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link> },
-              { key: "incurredAt", label: t("col.incurredAt", L), width: "110px", render: (v) => <span className="font-mono text-[11px]">{(v as Date).toISOString().slice(0, 10)}</span> },
-              { key: "expenseType", label: t("col.expenseType", L), width: "100px", render: (v) => <Badge tone={v === "SALES" ? "accent" : v === "PURCHASE" ? "primary" : "neutral"}>{v === "SALES" ? t("expenseTypeShort.SALES", L) : v === "PURCHASE" ? t("expenseTypeShort.PURCHASE", L) : t("expenseTypeShort.GENERAL", L)}</Badge> },
-              { key: "amount", label: t("field.amount", L), width: "150px", align: "right", render: (v) => <span className="font-mono text-[13px] font-bold">{new Intl.NumberFormat("vi-VN").format(Number(v))}</span> },
-              { key: "_count", label: t("col.allocCount", L), width: "100px", align: "right", render: (_, r) => <span className="font-mono text-[11px]">{t("col.cases", L).replace("{count}", String(r._count.allocations))}</span> },
-              { key: "note", label: t("col.note", L), render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span> },
-            ]}
-            data={rows}
-            rowKey={(r) => r.id}
-            emptyMessage={t("empty.expenses", L)}
-          />
+          <ExpensesListClient rows={rows.map(r => ({
+            id: r.id, expenseCode: r.expenseCode,
+            incurredAt: r.incurredAt.toISOString(),
+            expenseType: r.expenseType,
+            amount: r.amount.toString(),
+            note: r.note,
+            _count: { allocations: r._count.allocations },
+          }))} lang={L} />
         </Card>
       </div>
     </main>

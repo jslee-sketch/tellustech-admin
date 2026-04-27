@@ -60,8 +60,28 @@ export async function POST(_r: Request, ctx: { params: Promise<{ id: string }> }
     if (!parsed?.title || !parsed?.body) {
       parsed = tryParseAny(fields.filter(Boolean).join("\n"));
     }
+    // 폴백: JSON 없음 → reasoning 프리앰블 제거 후 그대로 사용
     if (!parsed?.title || !parsed?.body) {
-      return badRequest("no_json_found", { hint: "본문에서 유효한 JSON 객체를 찾지 못했습니다. 모달에서 직접 편집하세요." });
+      const stripReasoning = (txt: string): string =>
+        txt
+          .replace(/^[^.]*요청사항을 확인[^.]*\.\s*/gm, "")
+          .replace(/^[^.]*웹 검색 결과[^.]*\.\s*/gm, "")
+          .replace(/^[^.]*먼저 관련 정보를 확인[^.]*\.\s*/gm, "")
+          .replace(/^[^.]*뉴스를 작성하겠습니다\.\s*/gm, "")
+          .replace(/^[^.]*정보를 확인하겠습니다\.\s*/gm, "")
+          .replace(/^[^.]*설정을 바탕으로[^.]*\.\s*/gm, "")
+          .replace(/^[^.]*에 대한 마케팅 뉴스를 작성[^.]*\.\s*/gm, "")
+          .replace(/^[^.]*신뢰할 수 있는 정보를 바탕으로[^.]*\.\s*/gm, "")
+          .replace(/```(?:json)?[\s\S]*?```/g, "")
+          .trim();
+      const fallbackTitleSrc = post.titleKo || post.titleVi || post.titleEn || "";
+      const fallbackBodySrc = post.bodyKo || post.bodyVi || post.bodyEn || "";
+      const cleanedBody = stripReasoning(fallbackBodySrc);
+      const cleanedTitle = stripReasoning(fallbackTitleSrc).split(/[\n.!?]/)[0]?.trim().slice(0, 60) || "제목 미정";
+      if (!cleanedBody) {
+        return badRequest("empty_after_cleanup", { hint: "본문이 reasoning 텍스트로만 구성되어 있어 추출 불가. [삭제] 후 재생성을 권장합니다." });
+      }
+      parsed = { title: cleanedTitle, body: cleanedBody, sources: [] };
     }
 
     const titleKo = String(parsed.title).trim();

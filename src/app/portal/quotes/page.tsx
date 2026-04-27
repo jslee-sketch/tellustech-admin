@@ -1,10 +1,9 @@
 import { getSession } from "@/lib/session";
-import { t } from "@/lib/i18n";
-import { ComingSoonView } from "../coming-soon-view";
+import { QuotesClient } from "./quotes-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function QuotesPage() {
   const s = await getSession();
-  return <ComingSoonView lang={s.language} title={`💬 ${t("portal.sidebar.quoteRequest", s.language)}`} />;
+  return <QuotesClient lang={s.language} />;
 }

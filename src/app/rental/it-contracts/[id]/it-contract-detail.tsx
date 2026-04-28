@@ -64,6 +64,11 @@ type Equipment = {
   colorIncludedPages: string;
   colorOverageRate: string;
   note: string;
+  // 소모품 적정율
+  actualCoverage: number | null;
+  lastYieldRateBw: string | null;
+  lastYieldRateColor: string | null;
+  lastYieldCalcAt: string | null;
 };
 
 type RentalOrder = {
@@ -449,6 +454,10 @@ const EMPTY_EQ: Omit<Equipment, "id"> = {
   colorIncludedPages: "",
   colorOverageRate: "",
   note: "",
+  actualCoverage: 5,
+  lastYieldRateBw: null,
+  lastYieldRateColor: null,
+  lastYieldCalcAt: null,
 };
 
 function EquipmentTab({
@@ -493,6 +502,10 @@ function EquipmentTab({
       colorIncludedPages: eq.colorIncludedPages,
       colorOverageRate: eq.colorOverageRate,
       note: eq.note,
+      actualCoverage: eq.actualCoverage,
+      lastYieldRateBw: eq.lastYieldRateBw,
+      lastYieldRateColor: eq.lastYieldRateColor,
+      lastYieldCalcAt: eq.lastYieldCalcAt,
     });
   }
 
@@ -637,12 +650,39 @@ function EquipmentTab({
       render: (v) => (v as string) || <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
+      key: "actualCoverage",
+      label: t("yield.actualCoverage", lang),
+      width: "100px",
+      align: "right",
+      render: (_, row) => (
+        <CoverageInlineEdit
+          contractId={contractId}
+          eqId={row.id}
+          value={row.actualCoverage}
+          onSaved={(n) => onChange(equipment.map((x) => (x.id === row.id ? { ...x, actualCoverage: n } : x)))}
+        />
+      ),
+    },
+    {
+      key: "lastYieldRateBw",
+      label: t("yield.adequacyRate", lang),
+      width: "150px",
+      align: "right",
+      render: (_, row) => <YieldBadgeCell bw={row.lastYieldRateBw} color={row.lastYieldRateColor} lang={lang} />,
+    },
+    {
       key: "id",
       label: "",
-      width: "140px",
+      width: "180px",
       align: "right",
       render: (_, row) => (
         <div className="flex justify-end gap-1">
+          <CalcYieldButton
+            contractId={contractId}
+            eqId={row.id}
+            onCalculated={(bw, color) => onChange(equipment.map((x) => (x.id === row.id ? { ...x, lastYieldRateBw: bw === null ? null : String(bw), lastYieldRateColor: color === null ? null : String(color), lastYieldCalcAt: new Date().toISOString() } : x)))}
+            lang={lang}
+          />
           <Button size="sm" variant="ghost" onClick={() => startEdit(row)}>
             {t("action.edit", lang)}
           </Button>
@@ -819,6 +859,10 @@ type RawEquipment = {
   colorIncludedPages: number | null;
   colorOverageRate: string | null;
   note: string | null;
+  actualCoverage?: number | null;
+  lastYieldRateBw?: string | number | null;
+  lastYieldRateColor?: string | number | null;
+  lastYieldCalcAt?: string | null;
 };
 
 function normalizeEquipment(r: RawEquipment): Equipment {
@@ -837,6 +881,10 @@ function normalizeEquipment(r: RawEquipment): Equipment {
     colorIncludedPages: r.colorIncludedPages?.toString() ?? "",
     colorOverageRate: r.colorOverageRate ?? "",
     note: r.note ?? "",
+    actualCoverage: r.actualCoverage ?? null,
+    lastYieldRateBw: r.lastYieldRateBw !== null && r.lastYieldRateBw !== undefined ? String(r.lastYieldRateBw) : null,
+    lastYieldRateColor: r.lastYieldRateColor !== null && r.lastYieldRateColor !== undefined ? String(r.lastYieldRateColor) : null,
+    lastYieldCalcAt: r.lastYieldCalcAt ?? null,
   };
 }
 
@@ -1418,5 +1466,121 @@ function BillingsTab({
         })
       )}
     </div>
+  );
+}
+
+// ─── 적정율 인라인 편집 / 뱃지 / 계산 버튼 ─────────────────────────────
+
+function CoverageInlineEdit({
+  contractId,
+  eqId,
+  value,
+  onSaved,
+}: {
+  contractId: string;
+  eqId: string;
+  value: number | null;
+  onSaved: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value ?? 5));
+  const [saving, setSaving] = useState(false);
+  async function commit() {
+    const n = Number(draft);
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      setDraft(String(value ?? 5));
+      return;
+    }
+    if (n === (value ?? 5)) return;
+    setSaving(true);
+    try {
+      const r = await fetch(`/api/rental/it-contracts/${contractId}/equipment/${eqId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actualCoverage: n }),
+      });
+      if (r.ok) onSaved(n);
+      else setDraft(String(value ?? 5));
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input
+        type="number"
+        min={1}
+        max={100}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+        disabled={saving}
+        className="w-12 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-1 py-0.5 text-right text-[11px] font-mono"
+      />
+      <span className="text-[10px] text-[color:var(--tts-muted)]">%</span>
+    </span>
+  );
+}
+
+function YieldBadgeCell({ bw, color, lang }: { bw: string | null; color: string | null; lang: Lang }) {
+  if (bw === null) return <span className="text-[10px] text-[color:var(--tts-muted)]">{t("yield.recalculate", lang)}</span>;
+  const bwNum = Number(bw);
+  const colorNum = color === null ? null : Number(color);
+  function pickEmoji(rate: number): { emoji: string; cls: string } {
+    if (rate >= 120) return { emoji: "🔵", cls: "text-[color:var(--tts-primary)]" };
+    if (rate >= 80)  return { emoji: "🟢", cls: "text-[color:var(--tts-success)]" };
+    if (rate >= 50)  return { emoji: "🟡", cls: "text-[color:var(--tts-warn)]" };
+    if (rate >= 30)  return { emoji: "🟠", cls: "text-[color:var(--tts-accent)]" };
+    return { emoji: "🔴", cls: "text-[color:var(--tts-danger)]" };
+  }
+  const bwInfo = pickEmoji(bwNum);
+  const colorInfo = colorNum !== null ? pickEmoji(colorNum) : null;
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-mono">
+      <span className={bwInfo.cls}>{bwInfo.emoji} {bwNum}%</span>
+      {colorInfo && <span className={colorInfo.cls}>· {colorInfo.emoji} {colorNum}%</span>}
+    </span>
+  );
+}
+
+function CalcYieldButton({
+  contractId,
+  eqId,
+  onCalculated,
+  lang,
+}: {
+  contractId: string;
+  eqId: string;
+  onCalculated: (bw: number | null, color: number | null) => void;
+  lang: Lang;
+}) {
+  const [busy, setBusy] = useState(false);
+  async function go() {
+    if (!window.confirm(t("yield.recentMonths", lang).replace("{n}", "6") + " — 재계산하시겠습니까?")) return;
+    setBusy(true);
+    try {
+      const end = new Date();
+      const start = new Date();
+      start.setMonth(start.getMonth() - 6);
+      const r = await fetch("/api/yield-analysis/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ equipmentId: eqId, periodStart: start.toISOString(), periodEnd: end.toISOString() }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        alert("계산 실패: " + (j?.error ?? "unknown"));
+        return;
+      }
+      const first = j?.results?.[0];
+      if (first) onCalculated(first.yieldRateBw, first.yieldRateColor);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Button size="sm" variant="accent" onClick={go} disabled={busy}>
+      {busy ? "..." : "📊"}
+    </Button>
   );
 }

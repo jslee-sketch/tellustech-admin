@@ -71,6 +71,16 @@ export async function PATCH(request: Request, context: RouteContext) {
       if (p.colorIncludedPages !== undefined) data.colorIncludedPages = parseIntOrUndefined(p.colorIncludedPages);
       if (p.colorOverageRate !== undefined) data.colorOverageRate = parseDecimalOrUndefined(p.colorOverageRate);
       if (p.note !== undefined) data.note = trimNonEmpty(p.note);
+      // 소모품 적정율 — 고객별 실제 상밀도 (1~100, 기본 5)
+      if (p.actualCoverage !== undefined) {
+        if (p.actualCoverage === null || p.actualCoverage === "") {
+          data.actualCoverage = null;
+        } else {
+          const n = Number(p.actualCoverage);
+          if (!Number.isInteger(n) || n < 1 || n > 100) return badRequest("invalid_input", { field: "actualCoverage" });
+          data.actualCoverage = n;
+        }
+      }
 
       if (Object.keys(data).length === 0) return ok({ equipment: existing });
 

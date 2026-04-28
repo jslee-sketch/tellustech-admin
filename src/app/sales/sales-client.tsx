@@ -20,7 +20,19 @@ export type SalesRow = {
   receivableStatus: string | null;
   dueDate: string | null;
   createdAt: string;
+  // 소모품 적정율 — RENTAL 매출 + 거래처에 IT 계약이 있을 때만 채워짐
+  yieldRateBw: number | null;
+  yieldRateColor: number | null;
+  yieldIsFraud: boolean;
 };
+
+function pickYieldEmoji(rate: number): { emoji: string; cls: string } {
+  if (rate >= 120) return { emoji: "🔵", cls: "text-[color:var(--tts-primary)]" };
+  if (rate >= 80)  return { emoji: "🟢", cls: "text-[color:var(--tts-success)]" };
+  if (rate >= 50)  return { emoji: "🟡", cls: "text-[color:var(--tts-warn)]" };
+  if (rate >= 30)  return { emoji: "🟠", cls: "text-[color:var(--tts-accent)]" };
+  return { emoji: "🔴", cls: "text-[color:var(--tts-danger)]" };
+}
 
 const projectTypeTone: Record<string, BadgeTone> = {
   TRADE: "purple",
@@ -166,6 +178,23 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
       label: t("col.dueDate", lang),
       width: "110px",
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
+    },
+    {
+      key: "yieldRateBw",
+      label: t("yield.adequacyRate", lang),
+      width: "140px",
+      align: "right",
+      render: (_v, row) => {
+        if (row.yieldRateBw === null) return <span className="text-[color:var(--tts-muted)]">—</span>;
+        const bw = pickYieldEmoji(row.yieldRateBw);
+        const col = row.yieldRateColor !== null ? pickYieldEmoji(row.yieldRateColor) : null;
+        return (
+          <Link href="/admin/yield-analysis" className="inline-flex items-center gap-1 font-mono text-[11px] hover:underline">
+            <span className={bw.cls}>{bw.emoji} {row.yieldRateBw}%</span>
+            {col && <span className={col.cls}>· {col.emoji} {row.yieldRateColor}%</span>}
+          </Link>
+        );
+      },
     },
   ];
 

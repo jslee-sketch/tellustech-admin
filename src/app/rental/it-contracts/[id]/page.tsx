@@ -155,6 +155,10 @@ export default async function ItContractDetailPage({ params }: PageProps) {
               colorIncludedPages: e.colorIncludedPages?.toString() ?? "",
               colorOverageRate: decimalToInput(e.colorOverageRate),
               note: e.note ?? "",
+              actualCoverage: e.actualCoverage ?? null,
+              lastYieldRateBw: e.lastYieldRateBw !== null && e.lastYieldRateBw !== undefined ? e.lastYieldRateBw.toString() : null,
+              lastYieldRateColor: e.lastYieldRateColor !== null && e.lastYieldRateColor !== undefined ? e.lastYieldRateColor.toString() : null,
+              lastYieldCalcAt: e.lastYieldCalcAt ? e.lastYieldCalcAt.toISOString() : null,
             }))}
             orders={contract.rentalOrders.map((o) => ({
               id: o.id,

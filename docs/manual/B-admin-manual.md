@@ -753,3 +753,114 @@ iOS Safari 의 경우 manifest 가 OS 레벨에서 install 시점에 캐시됨. 
 ## 11.3 화면 회전 잠금 해제
 
 `screen.orientation.unlock()` 호출 — Chrome/Edge 에서 잔여 잠금 해제. iOS Safari 는 미지원이지만 manifest 만 올바르면 OS 가 알아서 회전 허용.
+
+---
+
+# 12부. SNMP 카운터 자동수집 + 사용량 확인서 (NEW)
+
+복합기/프린터 카운터를 자동으로 수집해 월별 사용량 확인서로 변환하는 통합 워크플로.
+
+## 12.1 SNMP 관리 (`/admin/snmp`)
+
+### 탭 1: 모델 OID 관리
+
+신규 복합기 모델을 ERP에 등록. 시드 6종 (SAMSUNG_SCX8123/X7500, SINDOH_D330/D410/D320, GENERIC_PRINTER) 외 추가 모델은 [+ 모델 추가] 버튼으로.
+
+| 필드 | 의미 |
+|---|---|
+| deviceModel | 고유 식별자 (예: `BROTHER_HL5470`) |
+| brand / modelName | 표시용 |
+| oidTotal | 총 페이지 OID. 표준은 `1.3.6.1.2.1.43.10.2.1.4.1.1` (RFC 3805) |
+| oidBw / oidColor | 흑백/컬러 분리 OID (선택, 사설 OID) |
+| oidSerial | S/N 자동감지 OID |
+| isMonoOnly | 흑백 전용 체크 |
+
+### 탭 2: 수집 현황
+
+최근 500건 SnmpReading 표 — 수집일시 / 계약 / S/N / 모델 / 총·흑백·컬러 / 방식 (AGENT vs MANUAL).
+**⚠ 리셋** 뱃지 = isCounterReset=true (음수 감지). 관리자가 카운터 리셋 의심 검토 후 ItContractEquipment.resetAt 수동 입력 가능.
+
+### 탭 3: 장비 토큰
+
+계약별 그룹 — 장비 + 토큰 상태 + 마지막 수집일 + [🔑 발급] / [폐기] / [📦 에이전트 패키지 다운로드].
+
+#### 토큰 정책
+- 신규 발급: UUID `tok_*` (장비) / `ctr_*` (계약). 60일 만료, 매 접속 시 슬라이딩 갱신.
+- 폐기: 즉시 무효화 → 해당 에이전트는 다음 전송부터 401.
+- 60일 미접속 자동 만료.
+
+#### 에이전트 패키지 다운로드
+[📦 에이전트 패키지 다운로드] → `config-{contractCode}.json` 다운로드:
+- erpUrl + 계약 토큰 + 장비별 토큰 모두 포함
+- 관리자가 ZIP 으로 묶어 USB 로 고객사 PC 에 전달
+
+## 12.2 사용량 확인서 (`/admin/usage-confirmations`)
+
+6단계 워크플로:
+
+```
+COLLECTED → CUSTOMER_NOTIFIED → CUSTOMER_CONFIRMED → ADMIN_CONFIRMED → PDF_GENERATED → BILLED
+```
+
+### 자동 생성
+
+매일 03:00 KST `POST /api/jobs/snmp-usage-check` Cron 이 모든 ACTIVE 계약의 `snmpCollectDay==어제` 인 경우:
+- 이번 달 SnmpReading 도착 → UsageConfirmation 자동 생성 (status=COLLECTED)
+- 모든 장비 미수집 → no_readings 결과로 관리자 검토 대기 (수동 입력 필요)
+
+### 사용량 계산 (`src/lib/usage-calc.ts`)
+
+```
+usage = curr - prev
+extra = max(0, usage - baseIncluded)
+charge = extra × extraRate
+subtotal = baseFee + chargeBw + chargeColor
+```
+
+#### 음수/리셋 처리
+- usage < 0 → 0 으로 클립 + isCounterReset=true 플래그 (PDF 에 ⚠ 표시)
+- ItContractEquipment.resetAt 이 prev~curr 사이면 prev 무시 (장비 메인보드 교체 등)
+- 첫 달 (prev 없음) → installCounterBw/Color 사용
+
+### 상태별 액션
+
+| 상태 | 액션 |
+|---|---|
+| COLLECTED | [고객 알림] (Notification 생성 + status=CUSTOMER_NOTIFIED) |
+| CUSTOMER_NOTIFIED | [재알림] / [수동CFM] (메모 필수, 전화·이메일 확인 시) |
+| CUSTOMER_CONFIRMED | [관리자CFM] |
+| ADMIN_CONFIRMED | [PDF생성] (pdf-lib + Noto CJK + 서명 임베드) |
+| PDF_GENERATED | [📄 PDF 다운로드] / [매출 전표 생성] (Sales 자동 발행 + 미수금 자동 발생) |
+| BILLED | [📄 PDF] (확인서 잠금) |
+
+## 12.3 IT계약 상세 — 장비 SNMP 필드
+
+ItContractEquipment 추가 필드 (장비 등록·수정 시):
+- `deviceIp` — 자동 스캔으로 채워짐 (DHCP 변경 시 매번 갱신)
+- `deviceModel` — SnmpModelOid.deviceModel 키 (드롭다운)
+- `snmpCommunity` — 기본 "public"
+- `installCounterBw / installCounterColor` — 첫 달 prev 기준
+- `baseIncludedBw / baseIncludedColor` — 기본 포함 매수
+- `extraRateBw / extraRateColor` — 추가 단가 (₫/매)
+- `resetAt` — 카운터 리셋 시점 (수동 입력 — usage 계산 시 prev 무시)
+
+## 12.4 에이전트 운영 안내
+
+### 설치 패키지 만들기
+1. 관리자 → SNMP 관리 → 장비 토큰 → [📦 에이전트 패키지 다운로드]
+2. 받은 `config-*.json` + `tellustech-agent.exe` (Phase 2 빌드 산출물) + `install.bat` + `uninstall.bat` + `README.txt` 를 ZIP 으로
+3. USB 에 복사 → 고객사 PC 에서 install.bat 실행
+
+### 에이전트 자동 업데이트
+1. 새 버전 빌드 (`agent/build.cmd`)
+2. `tellustech-agent.exe` 를 공개 URL 에 업로드 (S3 등)
+3. Railway 환경변수에 `AGENT_LATEST_VERSION` + `AGENT_DOWNLOAD_URL` 설정
+4. 모든 에이전트가 매일 12:00 자동 체크 → 다운로드 → 다음 부팅 시 적용
+
+### Heartbeat 모니터링
+`AgentHeartbeat` 테이블에 매번 보고 — 30일 이상 heartbeat 없으면 관리자 알림 (Phase 후속).
+
+### 미등록 장비 큐
+에이전트가 발견했지만 ItContractEquipment 에 매칭 안 된 장비는 `SnmpUnregisteredDevice(PENDING)` 큐에 적재. 관리자가 검토 후:
+- 신규 장비로 등록 → ItContractEquipment 추가 후 토큰 발급
+- 무시 → IGNORED 로 변경

@@ -64,6 +64,50 @@ function PoliciesTab({ lang }: { lang: Lang }) {
     } finally { setSavingId(null); }
   }
 
+  async function issueAccount(clientId: string) {
+    const username = prompt("포탈 ID (비워두면 자동 생성: clientCode_portal)") ?? "";
+    const password = prompt("초기 비밀번호 (비워두면 10자리 자동 생성)") ?? "";
+    setSavingId(clientId);
+    try {
+      const r = await fetch(`/api/admin/clients/${clientId}/portal-account`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ username, password }),
+      });
+      const j = await r.json();
+      if (!r.ok) { alert("발급 실패: " + (j?.error ?? j?.details?.hint ?? "")); return; }
+      const tempPw = j.temporaryPassword ? `\n초기 비밀번호: ${j.temporaryPassword}\n\n⚠️ 이 비밀번호는 다시 표시되지 않습니다. 고객에게 즉시 전달하세요.` : "\n비밀번호: 입력하신 값으로 설정됨";
+      alert(`✅ 포탈 ID 발급 완료\n\nID: ${j.user.username}${tempPw}`);
+      await refetch();
+    } finally { setSavingId(null); }
+  }
+
+  async function resetPassword(clientId: string) {
+    if (!confirm("비밀번호를 재설정합니다. 기존 비밀번호는 즉시 무효화됩니다. 계속하시겠습니까?")) return;
+    const password = prompt("새 비밀번호 (비워두면 10자리 자동 생성)") ?? "";
+    setSavingId(clientId);
+    try {
+      const r = await fetch(`/api/admin/clients/${clientId}/portal-account`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "reset_password", password }),
+      });
+      const j = await r.json();
+      if (!r.ok) { alert("재설정 실패: " + (j?.error ?? "")); return; }
+      const tempPw = j.temporaryPassword ? `\n새 임시 비밀번호: ${j.temporaryPassword}\n\n⚠️ 이 비밀번호는 다시 표시되지 않습니다. 고객에게 즉시 전달하세요.` : "\n비밀번호: 입력하신 값으로 설정됨";
+      alert(`✅ 비밀번호 재설정 완료${tempPw}`);
+    } finally { setSavingId(null); }
+  }
+
+  async function toggleActive(clientId: string) {
+    setSavingId(clientId);
+    try {
+      await fetch(`/api/admin/clients/${clientId}/portal-account`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ action: "toggle_active" }),
+      });
+      await refetch();
+    } finally { setSavingId(null); }
+  }
+
   const filtered = filter
     ? items.filter((c) => `${c.clientCode} ${c.companyNameVi} ${c.companyNameKo ?? ""}`.toLowerCase().includes(filter.toLowerCase()))
     : items;
@@ -90,6 +134,7 @@ function PoliciesTab({ lang }: { lang: Lang }) {
             <th className="px-2 py-1 text-left">포탈 ID</th>
             <th className="px-2 py-1 text-right">포인트 잔액</th>
             <th className="px-2 py-1 text-left">사용 정책</th>
+            <th className="px-2 py-1 text-right">계정 액션</th>
           </tr>
         </thead>
         <tbody>
@@ -97,7 +142,15 @@ function PoliciesTab({ lang }: { lang: Lang }) {
             <tr key={c.id} className="border-b border-[color:var(--tts-border)]/50">
               <td className="px-2 py-1.5 font-mono">{c.clientCode}</td>
               <td className="px-2 py-1.5">{c.companyNameKo ?? c.companyNameVi}</td>
-              <td className="px-2 py-1.5 text-[11px]">{c.portalUsername ? <span className={c.portalActive ? "" : "text-[color:var(--tts-muted)] line-through"}>{c.portalUsername}</span> : <span className="text-[color:var(--tts-muted)]">미발급</span>}</td>
+              <td className="px-2 py-1.5 text-[11px]">
+                {c.portalUsername ? (
+                  <span className={c.portalActive ? "font-mono" : "font-mono text-[color:var(--tts-muted)] line-through"}>
+                    {c.portalUsername} {!c.portalActive && "(비활성)"}
+                  </span>
+                ) : (
+                  <span className="text-[color:var(--tts-danger)] font-bold">⚠ 미발급</span>
+                )}
+              </td>
               <td className="px-2 py-1.5 text-right font-mono font-bold text-[color:var(--tts-warn)]">{new Intl.NumberFormat("vi-VN").format(c.balance)}d</td>
               <td className="px-2 py-1.5">
                 <select
@@ -108,6 +161,16 @@ function PoliciesTab({ lang }: { lang: Lang }) {
                 >
                   {Object.entries(POLICY_LABEL).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
                 </select>
+              </td>
+              <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                {c.portalUsername ? (
+                  <>
+                    <button onClick={() => resetPassword(c.id)} disabled={savingId === c.id} className="mr-1 rounded bg-[color:var(--tts-warn)] px-2 py-0.5 text-[10px] font-bold text-white" title="비밀번호 재설정">🔑 비번재설정</button>
+                    <button onClick={() => toggleActive(c.id)} disabled={savingId === c.id} className="rounded border border-[color:var(--tts-border)] px-2 py-0.5 text-[10px]">{c.portalActive ? "비활성화" : "활성화"}</button>
+                  </>
+                ) : (
+                  <button onClick={() => issueAccount(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-[10px] font-bold text-white">+ ID 발급</button>
+                )}
               </td>
             </tr>
           ))}

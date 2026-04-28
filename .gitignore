@@ -52,3 +52,8 @@ next-env.d.ts
 # Manual build outputs
 dist/
 
+# SNMP agent build outputs (single exe, hosted on GitHub Releases)
+agent/build/
+agent/dist/
+agent/node_modules/
+

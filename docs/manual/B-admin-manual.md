@@ -852,10 +852,20 @@ ItContractEquipment 추가 필드 (장비 등록·수정 시):
 3. USB 에 복사 → 고객사 PC 에서 install.bat 실행
 
 ### 에이전트 자동 업데이트
-1. 새 버전 빌드 (`agent/build.cmd`)
-2. `tellustech-agent.exe` 를 공개 URL 에 업로드 (S3 등)
-3. Railway 환경변수에 `AGENT_LATEST_VERSION` + `AGENT_DOWNLOAD_URL` 설정
-4. 모든 에이전트가 매일 12:00 자동 체크 → 다운로드 → 다음 부팅 시 적용
+1. 새 버전 빌드 (`agent/build.cmd`) → `agent/build/tellustech-agent.exe`
+2. GitHub Releases 에 업로드:
+   ```
+   gh release create v1.0.0-agent agent/build/tellustech-agent.exe \
+     --title "SNMP Agent v1.0.0" \
+     --notes "Windows SNMP counter collection agent"
+   ```
+   업로드 후 다운로드 URL 형식: `https://github.com/jslee-sketch/tellustech-admin/releases/download/v1.0.0-agent/tellustech-agent.exe`
+3. Railway 환경변수에 등록:
+   - `AGENT_LATEST_VERSION=1.0.0`
+   - `AGENT_DOWNLOAD_URL=https://github.com/jslee-sketch/tellustech-admin/releases/download/v1.0.0-agent/tellustech-agent.exe`
+4. 모든 에이전트가 매일 12:00 자동 체크 (`/api/snmp/agent-version`) → 새 버전이면 `.pending` 으로 다운로드 → 다음 부팅 또는 install.bat 재실행 시 자동 교체
+
+> 주의: `agent/build/` 는 `.gitignore` 처리됨 (54MB exe 가 Git 저장소로 들어가지 않도록). 빌드 산출물은 GitHub Releases 로만 배포.
 
 ### Heartbeat 모니터링
 `AgentHeartbeat` 테이블에 매번 보고 — 30일 이상 heartbeat 없으면 관리자 알림 (Phase 후속).

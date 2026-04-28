@@ -10,15 +10,14 @@ type WhOpt = { value: string; label: string; warehouseType: string };
 type ClOpt = { value: string; label: string };
 type Props = { items: ItemOpt[]; warehouses: WhOpt[]; clients: ClOpt[]; lang: Lang };
 
+// QR 스캔 화면은 매입/매출/매입반품 사유 차단 — 이들은 매입/매출 모듈에서만 생성 가능 (감사·전표 일관성).
+// API 가 동일 정책으로 invalid_input 반환 (use_purchase_or_sales_module).
 function buildReasonsByType(lang: Lang): Record<string, { value: string; label: string }[]> {
   return {
     IN: [
-      { value: "PURCHASE", label: t("reason.purchase", lang) },
-      { value: "RETURN_IN", label: t("reason.returnIn", lang) },
       { value: "OTHER_IN", label: t("reason.otherIn", lang) },
     ],
     OUT: [
-      { value: "SALE", label: t("reason.sale", lang) },
       { value: "CONSUMABLE_OUT", label: t("reason.consumableOut", lang) },
     ],
     TRANSFER: [
@@ -43,7 +42,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
   const [itemId, setItemId] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [txnType, setTxnType] = useState<"IN" | "OUT" | "TRANSFER">("IN");
-  const [reason, setReason] = useState("PURCHASE");
+  const [reason, setReason] = useState("OTHER_IN");
   const [fromWarehouseId, setFromWarehouseId] = useState("");
   const [toWarehouseId, setToWarehouseId] = useState("");
   const [clientId, setClientId] = useState("");
@@ -73,11 +72,30 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
     setError(null);
     setLastResult(null);
     try {
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID, {
+        // 모바일 디코드 속도/안정성 — QR 만 검사 (1D 바코드 무시).
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        verbose: false,
+      });
+      // qrbox 를 viewport 비례로 — 모바일에서 카메라 영상이 작아도 QR 박스가 화면을 거의 덮도록.
+      const qrboxFn = (vw: number, vh: number) => {
+        const minEdge = Math.min(vw, vh);
+        const size = Math.floor(minEdge * 0.78);
+        return { width: size, height: size };
+      };
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
+        {
+          fps: 15,
+          qrbox: qrboxFn,
+          aspectRatio: 1.0,
+          // 모바일 카메라 자동 초점 힌트 (브라우저 지원 시).
+          videoConstraints: {
+            facingMode: { ideal: "environment" },
+            focusMode: "continuous",
+          } as MediaTrackConstraints,
+        },
         (decodedText) => {
           handleDecoded(decodedText);
           scanner.stop().then(() => scanner.clear()).catch(() => undefined);
@@ -107,10 +125,15 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
     setScanning(false);
   }
 
-  // 디코딩된 텍스트 처리 — JSON 이면 자동 채움, 아니면 S/N 필드에 raw 입력
+  // 디코딩된 텍스트 처리.
+  // QR 형식 (qr-label.ts) — S/N 또는 itemCode 1개 plain string. 구버전은 JSON.
+  // 1) JSON → itemCode/serialNumber 자동 채움
+  // 2) plain text 가 itemCode 패턴(ITM-YYMMDD-###) → items prop 에서 직접 매핑
+  // 3) 그 외 → S/N 으로 간주 → /api/inventory/sn/search 로 itemId 자동 매핑
   function handleDecoded(text: string) {
+    const trimmed = text.trim();
     try {
-      const parsed = JSON.parse(text) as { itemCode?: string; serialNumber?: string; contractNumber?: string };
+      const parsed = JSON.parse(trimmed) as { itemCode?: string; serialNumber?: string; contractNumber?: string };
       if (parsed.itemCode) {
         const matched = items.find((i) => i.itemCode === parsed.itemCode);
         if (matched) setItemId(matched.value);
@@ -123,10 +146,33 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
         return;
       }
     } catch {
-      // not JSON — raw barcode/text 로 간주
+      // not JSON — fall through
     }
-    setSerialNumber(text);
-    setDecoded({ itemCode: "", serialNumber: text, contractNumber: null });
+
+    // itemCode 패턴 (ITM-YYMMDD-###)
+    if (/^ITM-\d{6}-\d{3}$/.test(trimmed)) {
+      const matched = items.find((i) => i.itemCode === trimmed);
+      if (matched) {
+        setItemId(matched.value);
+        setSerialNumber(""); // itemCode QR 은 S/N 없음
+        setDecoded({ itemCode: trimmed, serialNumber: null, contractNumber: null });
+        return;
+      }
+    }
+
+    // S/N 으로 간주 — 일단 입력하고 서버로 itemId 매핑 시도
+    setSerialNumber(trimmed);
+    setDecoded({ itemCode: "", serialNumber: trimmed, contractNumber: null });
+    fetch(`/api/inventory/sn/search?q=${encodeURIComponent(trimmed)}`, { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const found = j?.items?.find((it: { serialNumber: string }) => it.serialNumber === trimmed) ?? j?.items?.[0];
+        if (found?.itemId) {
+          setItemId(found.itemId);
+          setDecoded({ itemCode: found.itemCode ?? "", serialNumber: trimmed, contractNumber: null });
+        }
+      })
+      .catch(() => undefined);
   }
 
   useEffect(() => {
@@ -200,6 +246,9 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
       <Note tone="info">
         {t("scan.guide.full", lang)}
         {" "}{t("scan.guide.consum", lang)}
+      </Note>
+      <Note tone="warn">
+        💡 매입/매출/매입반품은 매입·매출 모듈에서 처리. 이 화면은 기타입고·소모품출고·이동(교정/수리/렌탈/시연) 전용.
       </Note>
 
       <div

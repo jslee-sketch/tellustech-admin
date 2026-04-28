@@ -39,6 +39,22 @@ build.cmd
 
 매일 12:00 → ERP `/api/snmp/agent-version` 호출. 새 버전 있으면 다운로드 → `.pending` 파일로 저장. 다음 PC 재부팅 또는 `install.bat` 재실행 시 자동 교체.
 
+### 배포 절차 (관리자)
+
+1. 빌드: `cd agent && build.cmd` → `build/tellustech-agent.exe`
+2. GitHub Releases 업로드 (gh CLI):
+   ```
+   gh release create v<버전>-agent agent/build/tellustech-agent.exe \
+     --title "SNMP Agent v<버전>" \
+     --notes "Windows SNMP counter collection agent"
+   ```
+3. Railway 환경변수 갱신:
+   - `AGENT_LATEST_VERSION=<버전>` (예: `1.0.0`)
+   - `AGENT_DOWNLOAD_URL=https://github.com/jslee-sketch/tellustech-admin/releases/download/v<버전>-agent/tellustech-agent.exe`
+4. 약 1분 후 Railway 재배포 → 다음날 12:00 부터 모든 에이전트가 자동 다운로드.
+
+> `agent/build/` 는 `.gitignore` 처리됨. exe 는 GitHub Releases 로만 배포 (Git LFS 미사용).
+
 ## 보안
 
 - `config.json` 의 토큰은 Windows 사용자 권한으로만 접근 가능 (`C:\Tellustech`).

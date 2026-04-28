@@ -40,6 +40,8 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
 
   // Form state
   const [itemId, setItemId] = useState("");
+  // ItemCombobox 가 value(=itemId) 만으로는 input 에 표시 못함 — initialCode/Name 같이 넘겨야 보임.
+  const [itemDisplay, setItemDisplay] = useState<{ code: string; name: string } | null>(null);
   const [serialNumber, setSerialNumber] = useState("");
   const [txnType, setTxnType] = useState<"IN" | "OUT" | "TRANSFER">("IN");
   const [reason, setReason] = useState("OTHER_IN");
@@ -157,6 +159,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
         const found = j?.items?.find((it: { serialNumber: string }) => it.serialNumber === trimmed) ?? j?.items?.[0];
         if (found?.itemId) {
           setItemId(found.itemId);
+          setItemDisplay({ code: found.itemCode ?? "", name: found.itemName ?? "" });
           setDecoded({ itemCode: found.itemCode ?? "", serialNumber: trimmed, contractNumber: null });
         }
       })
@@ -168,6 +171,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
     const matched = items.find((i) => i.itemCode === itemCode);
     if (matched) {
       setItemId(matched.value);
+      setItemDisplay({ code: matched.itemCode, name: matched.itemName });
       if (sn) setSerialNumber(sn); else setSerialNumber("");
       setDecoded({ itemCode, serialNumber: sn, contractNumber });
       return;
@@ -179,7 +183,10 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         const found = (j?.items ?? []).find((it: { itemCode: string; id: string }) => it.itemCode === itemCode);
-        if (found?.id) setItemId(found.id);
+        if (found?.id) {
+          setItemId(found.id);
+          setItemDisplay({ code: found.itemCode, name: found.name ?? "" });
+        }
       })
       .catch(() => undefined);
   }
@@ -241,6 +248,7 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
       setLastResult({ ok: true, msg: t("msg.completedTxn", lang).replace("{action}", action).replace("{sn}", serialNumber || itemId) });
       // 폼 리셋 (타입/사유는 유지 — 연속 스캔 편의)
       setItemId("");
+      setItemDisplay(null);
       setSerialNumber("");
       setTargetEquipmentSN("");
       setDecoded(null);
@@ -298,7 +306,14 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
 
       <Row>
         <Field label={t("field.itemAuto", lang)} required>
-          <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
+          <ItemCombobox
+            value={itemId}
+            onChange={(id) => { setItemId(id); if (!id) setItemDisplay(null); }}
+            initialCode={itemDisplay?.code}
+            initialName={itemDisplay?.name}
+            required
+            lang={lang}
+          />
         </Field>
         <Field label={t("field.serial", lang)}>
           <SerialCombobox value={serialNumber} onChange={setSerialNumber} itemId={itemId || undefined} lang={lang} />

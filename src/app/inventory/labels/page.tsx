@@ -14,12 +14,16 @@ export default async function LabelsPage({ searchParams }: PageProps) {
   const L = session.language;
   const { purchaseId } = await searchParams;
 
-  // 매입 ID 가 오면 해당 매입의 품목+S/N 자동 프리필
+  // 매입 ID 가 오면 해당 매입의 품목+S/N 자동 프리필 + 인쇄 헤더용 매입 정보
   let prefill: { itemCode: string; itemName: string; serialNumber: string | null }[] = [];
+  let printHeader: { supplierName: string; purchaseDate: string; purchaseNumber: string } | null = null;
   if (purchaseId) {
     const pur = await prisma.purchase.findUnique({
       where: { id: purchaseId },
-      include: { items: { include: { item: { select: { itemCode: true, name: true } } } } },
+      include: {
+        supplier: { select: { companyNameVi: true, clientCode: true } },
+        items: { include: { item: { select: { itemCode: true, name: true } } } },
+      },
     });
     if (pur) {
       prefill = pur.items.map((i) => ({
@@ -27,6 +31,11 @@ export default async function LabelsPage({ searchParams }: PageProps) {
         itemName: i.item.name,
         serialNumber: i.serialNumber,
       }));
+      printHeader = {
+        supplierName: pur.supplier?.companyNameVi ?? pur.supplier?.clientCode ?? "-",
+        purchaseDate: pur.createdAt ? new Date(pur.createdAt).toISOString().slice(0, 10) : "-",
+        purchaseNumber: pur.purchaseNumber ?? "-",
+      };
     }
   }
 
@@ -51,6 +60,7 @@ export default async function LabelsPage({ searchParams }: PageProps) {
             lang={L}
             items={items.map((i) => ({ value: i.id, label: `${i.itemCode} · ${i.name}`, itemCode: i.itemCode, itemName: i.name }))}
             prefill={prefill}
+            printHeader={printHeader}
           />
         </Card>
       </div>

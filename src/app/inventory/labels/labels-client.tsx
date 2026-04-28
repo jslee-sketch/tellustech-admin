@@ -8,13 +8,15 @@ import { t, type Lang } from "@/lib/i18n";
 
 type ItemOpt = { value: string; label: string; itemCode: string; itemName: string };
 type LabelRow = { itemCode: string; itemName: string; serialNumber: string; copies: number; qrUrl?: string };
+type PrintHeader = { supplierName: string; purchaseDate: string; purchaseNumber: string };
 type Props = {
   items: ItemOpt[];
   prefill: { itemCode: string; itemName: string; serialNumber: string | null }[];
+  printHeader?: PrintHeader | null;
   lang: Lang;
 };
 
-export function LabelsClient({ items, prefill, lang }: Props) {
+export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
   const [rows, setRows] = useState<LabelRow[]>(
     prefill.length > 0
       ? prefill.map((p) => ({ itemCode: p.itemCode, itemName: p.itemName, serialNumber: p.serialNumber ?? "", copies: 1 }))
@@ -130,14 +132,38 @@ export function LabelsClient({ items, prefill, lang }: Props) {
       <div className="print:block hidden" id="print-area">
         <style>{`
           @media print {
-            @page { size: A4; margin: 5mm; }
-            body { background: white !important; }
+            @page { size: A4; margin: 8mm; }
+            html, body { background: white !important; color: #000 !important; }
             #print-area { display: block !important; }
             .print\\:hidden { display: none !important; }
             .label-sheet { page-break-after: always; }
             .label-sheet:last-child { page-break-after: auto; }
+            .print-header { margin-bottom: 4mm; }
           }
         `}</style>
+
+        {/* 인쇄 헤더 — 매입처/매입일자/출력일자/매입번호 */}
+        <div className="print-header" style={{ fontFamily: "system-ui, sans-serif", color: "#000", borderBottom: "1.5pt solid #000", paddingBottom: "3mm", marginBottom: "4mm" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2mm" }}>
+            <div style={{ fontSize: "14pt", fontWeight: 800, letterSpacing: "0.05em" }}>TELLUSTECH VINA</div>
+            <div style={{ fontSize: "9pt" }}>QR 자산 라벨 시트</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto 1fr", gap: "1mm 4mm", fontSize: "9pt" }}>
+            <div style={{ fontWeight: 700 }}>매입처</div>
+            <div>{printHeader?.supplierName ?? "-"}</div>
+            <div style={{ fontWeight: 700 }}>매입번호</div>
+            <div style={{ fontFamily: "monospace" }}>{printHeader?.purchaseNumber ?? "-"}</div>
+            <div style={{ fontWeight: 700 }}>매입일자</div>
+            <div>{printHeader?.purchaseDate ?? "-"}</div>
+            <div style={{ fontWeight: 700 }}>출력일자</div>
+            <div>{new Date().toISOString().slice(0, 10)}</div>
+            <div style={{ fontWeight: 700 }}>총 라벨</div>
+            <div>{allLabels.length} 매</div>
+            <div style={{ fontWeight: 700 }}>라벨 사이즈</div>
+            <div>{spec.label}</div>
+          </div>
+        </div>
+
         {Array.from({ length: Math.ceil(allLabels.length / (spec.perRow * spec.perCol)) }, (_, pIdx) => {
           const pageItems = allLabels.slice(pIdx * spec.perRow * spec.perCol, (pIdx + 1) * spec.perRow * spec.perCol);
           return (
@@ -152,6 +178,8 @@ export function LabelsClient({ items, prefill, lang }: Props) {
                   gap: "1mm",
                   fontSize: `${spec.fontSize}pt`,
                   fontFamily: "monospace",
+                  color: "#000",
+                  background: "#fff",
                   overflow: "hidden",
                 }}>
                   {l.qrUrl && <img src={l.qrUrl} alt="QR" style={{ width: `${spec.qrMm}mm`, height: `${spec.qrMm}mm` }} />}

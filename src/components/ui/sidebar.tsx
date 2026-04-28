@@ -212,7 +212,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
 
   return (
     <aside
-      className={`${width} sticky top-0 flex h-screen flex-col border-r border-[color:var(--tts-border)] bg-[color:var(--tts-card)] transition-[width] duration-150`}
+      className={`${width} sticky top-0 flex h-screen flex-col border-r border-[color:var(--tts-border)] bg-[color:var(--tts-card)] transition-[width] duration-150 print:hidden`}
     >
       {/* 헤더 */}
       <div className="flex items-center justify-between border-b border-[color:var(--tts-border)] px-3 py-3">

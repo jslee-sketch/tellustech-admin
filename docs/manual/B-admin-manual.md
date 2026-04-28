@@ -756,124 +756,586 @@ iOS Safari 의 경우 manifest 가 OS 레벨에서 install 시점에 캐시됨. 
 
 ---
 
-# 12부. SNMP 카운터 자동수집 + 사용량 확인서 (NEW)
+# 12부. SNMP 카운터 자동수집 + 사용량 확인서
 
-복합기/프린터 카운터를 자동으로 수집해 월별 사용량 확인서로 변환하는 통합 워크플로.
+복합기·프린터의 인쇄 카운터를 고객사 PC 에 설치한 작은 프로그램(=에이전트)이 자동으로 읽어 ERP 로 전송하고, 매월 그 값으로 **사용량 확인서**(고객 서명용 PDF) → 매출 전표까지 한 흐름으로 처리합니다. 이 부는 **현장에서 누구든 따라 할 수 있는 절차서**입니다.
 
-## 12.1 SNMP 관리 (`/admin/snmp`)
+## 12.0 한 장 요약 — 처음 도입하는 거래처에 무엇을 해야 하나
 
-### 탭 1: 모델 OID 관리
+```
+[관리자]                    [관리자/영업]                  [고객사 PC]
+1) 모델 OID 등록 ─────┐
+                      └──→ 2) 계약·장비 등록·과금 입력 ──→ 3) 토큰 발급
+                                                          ↓
+                                              4) 에이전트 패키지 다운로드 (ZIP)
+                                                          ↓
+                                                    5) USB 로 전달 → install.bat
+                                                          ↓
+                                              6) 첫 수집 확인 (수집 현황)
+                                                          ↓
+[관리자]
+7) 매월: 사용량 확인서 자동 생성 → 고객 알림 → 서명 → PDF → 매출 전표
+```
 
-신규 복합기 모델을 ERP에 등록. 시드 6종 (SAMSUNG_SCX8123/X7500, SINDOH_D330/D410/D320, GENERIC_PRINTER) 외 추가 모델은 [+ 모델 추가] 버튼으로.
+## 12.1 SNMP 관리 화면 (`/admin/snmp`)
 
-| 필드 | 의미 |
+화면 진입: 사이드바 → **렌탈** 그룹 → **SNMP 관리**.
+
+세 개의 탭으로 구성됩니다.
+
+### 탭 1 — 모델 OID 관리
+
+복합기·프린터 모델별로 **카운터를 어떤 OID 로 읽을지** 정의합니다. 같은 모델 여러 대는 한 번만 등록.
+
+이미 시드된 6종 (사용 시 그대로 활용):
+
+| deviceModel | 비고 |
 |---|---|
-| deviceModel | 고유 식별자 (예: `BROTHER_HL5470`) |
-| brand / modelName | 표시용 |
-| oidTotal | 총 페이지 OID. 표준은 `1.3.6.1.2.1.43.10.2.1.4.1.1` (RFC 3805) |
-| oidBw / oidColor | 흑백/컬러 분리 OID (선택, 사설 OID) |
-| oidSerial | S/N 자동감지 OID |
-| isMonoOnly | 흑백 전용 체크 |
+| `SAMSUNG_SCX8123` · `SAMSUNG_X7500` | 삼성 컬러 복합기 표준 OID |
+| `SINDOH_D330` · `SINDOH_D410` · `SINDOH_D320` | 신도리코 흑백/컬러 |
+| `GENERIC_PRINTER` | RFC 3805 표준 OID 만 사용 (브랜드 미상 시 fallback) |
 
-### 탭 2: 수집 현황
+#### 신규 모델 추가 — 단계별
 
-최근 500건 SnmpReading 표 — 수집일시 / 계약 / S/N / 모델 / 총·흑백·컬러 / 방식 (AGENT vs MANUAL).
-**⚠ 리셋** 뱃지 = isCounterReset=true (음수 감지). 관리자가 카운터 리셋 의심 검토 후 ItContractEquipment.resetAt 수동 입력 가능.
+1. **[+ 모델 추가]** 버튼 클릭.
+2. 다음 표대로 입력:
 
-### 탭 3: 장비 토큰
+| 필드 | 예시 | 어떻게 알아내나 |
+|---|---|---|
+| `deviceModel` | `BROTHER_HL5470` | 영문 대문자 + 언더바. 같은 모델 여러 대를 한 키로 묶음 |
+| `brand` | `BROTHER` | 표시용 |
+| `modelName` | `HL-5470DW` | 표시용 |
+| `oidTotal` | `1.3.6.1.2.1.43.10.2.1.4.1.1` | **RFC 3805 표준** — 90% 의 프린터가 이 OID 로 총 카운터 응답. 처음엔 이 값 그대로. |
+| `oidBw` | (선택) | 흑백 분리 카운터. 사설 OID — 제조사 매뉴얼 / 웹 검색 (예: "Samsung X7500 SNMP OID BW counter") |
+| `oidColor` | (선택) | 컬러 카운터. 컬러 모델만 |
+| `oidSerial` | `1.3.6.1.2.1.43.5.1.1.17.1` | 표준 S/N OID. 자동 감지 시 사용 |
+| `isMonoOnly` | ☑ / ☐ | 흑백 전용이면 체크 → 컬러 OID 무시 |
 
-계약별 그룹 — 장비 + 토큰 상태 + 마지막 수집일 + [🔑 발급] / [폐기] / [📦 에이전트 패키지 다운로드].
+3. **[저장]**. 즉시 적용 — 신규 장비 등록 시 드롭다운에 노출.
+
+#### 새 모델 OID 검증 방법 (선택, IT 팀)
+
+> 처음 한 대만 검증하면 됨.
+
+1. 그 모델 1대를 임의 IP 로 LAN 에 연결.
+2. 어떤 PC 에서 PowerShell:
+   ```
+   snmpwalk -v2c -c public <프린터IP> 1.3.6.1.2.1.43.10.2.1.4.1.1
+   ```
+   숫자 응답이 오면 OID 정상. 응답 없으면 SNMP 가 꺼져 있거나 community 가 다름 — 프린터 웹UI 에서 SNMP v2c, community=`public` 활성화.
+3. 응답 OID 를 그대로 위 표 `oidTotal` 에 입력.
+
+### 탭 2 — 수집 현황
+
+최근 500건 `SnmpReading` 가 시간 역순으로 표시됩니다.
+
+| 컬럼 | 의미 |
+|---|---|
+| 수집일시 | 에이전트가 ERP 로 전송 받은 시각 (UTC → KST 표시) |
+| 계약 / S/N / 모델 | 어느 장비의 데이터인지 |
+| 총 / 흑백 / 컬러 | 누적 카운터 (delta 가 아닌 raw) |
+| 방식 | `AGENT` (자동) / `MANUAL` (관리자 수동 입력) |
+| 뱃지 | 정상 / **⚠ 리셋** (음수 delta 감지) |
+
+#### "⚠ 리셋" 뱃지가 뜨면 무엇을 하나
+
+1. 해당 장비 IT 계약 상세 → 장비 탭 → **[수정]**.
+2. **`resetAt`** 필드에 리셋이 일어난 일자 입력 (예: 메인보드 교체일, 또는 수집된 일자 그대로).
+3. 저장 → 다음 사용량 계산부터 그 시점 이후의 카운터만 사용 (이전 값 무시).
+4. 메인보드 교체가 아니라 단순 카운터 오류라면 **수동 SnmpReading 입력**으로 보정값을 추가 입력.
+
+### 탭 3 — 장비 토큰
+
+ACTIVE IT 계약별로 그룹핑된 표 — 각 장비당 한 행.
+
+| 컬럼 | 의미 / 액션 |
+|---|---|
+| 장비 (S/N · 모델) | ItContractEquipment 정보 |
+| 토큰 상태 | `없음` / `유효 (만료 D-N)` / `만료` / `폐기됨` |
+| 마지막 수집 | `lastReadingAt` (없으면 "—") |
+| 액션 | **[🔑 발급]** / **[폐기]** / **[📦 에이전트 패키지 다운로드]** |
 
 #### 토큰 정책
-- 신규 발급: UUID `tok_*` (장비) / `ctr_*` (계약). 60일 만료, 매 접속 시 슬라이딩 갱신.
-- 폐기: 즉시 무효화 → 해당 에이전트는 다음 전송부터 401.
-- 60일 미접속 자동 만료.
 
-#### 에이전트 패키지 다운로드
-[📦 에이전트 패키지 다운로드] → `config-{contractCode}.json` 다운로드:
-- erpUrl + 계약 토큰 + 장비별 토큰 모두 포함
-- 관리자가 ZIP 으로 묶어 USB 로 고객사 PC 에 전달
+- **장비 토큰** (`tok_*`) — 한 대당 한 토큰. 에이전트가 SNMP 카운터 전송 시 사용.
+- **계약 토큰** (`ctr_*`) — 계약당 1개. 에이전트가 새 장비 발견 시 등록 신청에 사용.
+- **TTL 60일** — 매 접속 시 슬라이딩 갱신 (자동 연장). 60일 미접속 자동 만료.
+- **폐기** — 즉시 무효 (DB `revokedAt` 기록). 해당 에이전트는 다음 전송부터 `401` 거절. **분실/퇴사/계약 종료 시** 사용.
 
-## 12.2 사용량 확인서 (`/admin/usage-confirmations`)
+#### [🔑 발급] 버튼
 
-6단계 워크플로:
+- 미발급 또는 만료 상태 → 즉시 새 UUID 발급. 화면에 1회 노출 후 다시 안 보임 (DB 만 보관).
+- 이미 유효 토큰이 있으면 버튼이 [재발급] 으로 바뀌고, 기존 토큰은 폐기됨 + 새 토큰 발급.
+
+### [📦 에이전트 패키지 다운로드]
+
+이 버튼이 **현장 설치의 시작점**입니다. 클릭 시 다음 흐름:
+
+1. ERP 가 `config-{contractCode}.json` 파일 생성 — 계약 토큰 + 장비 토큰 N개 + ERP URL 모두 포함.
+2. 브라우저 다운로드.
+3. 관리자가 받은 파일 + (별도 보관 중인) `tellustech-agent.exe` + `install.bat` + `uninstall.bat` + `README.txt` 를 **ZIP 으로 묶어** USB 에 복사.
+
+> 보안: `config-*.json` 토큰이 평문 — USB 분실 시 즉시 사이드바 → SNMP → 해당 계약 [폐기] 후 [재발급].
+
+---
+
+## 12.2 신규 거래처 도입 절차 — 단계별 워크 스루
+
+### Step 1. 계약·장비 등록 (영업 / 관리자)
+
+1. 사이드바 → **렌탈** → **IT 계약** → **[+ 신규]** → 계약 등록 (TLS-/VRT-YYMMDD-### 자동발급).
+2. 계약 상세 → **장비 목록** 탭 → **[+ 장비 추가]**.
+3. 다음 필드는 **SNMP 자동수집을 위해 필수**:
+
+| 필드 | 의미 | 입력 예 |
+|---|---|---|
+| 품목 (ItemCombobox) | 자사 재고에 등록된 본체 | "Samsung X7500" |
+| **S/N** | 자사 재고의 정확한 S/N | `SN-X7500-001` |
+| 제조사 | 자유 텍스트 | "SAMSUNG" |
+| **deviceModel** (드롭다운) | 12.1 의 모델 OID 키 | `SAMSUNG_X7500` |
+| **deviceIp** | 자동 스캔으로 채워짐 — **공란 가능** | (DHCP) |
+| **snmpCommunity** | 기본 `public` | 회사 정책 시 변경 |
+| **installCounterBw / installCounterColor** | 설치 시점 카운터 | 0 (신품) / 12,345 (중고) |
+| **baseIncludedBw / Color** | 월 기본 포함 매수 | 5,000 / 1,000 |
+| **extraRateBw / Color** | 추가 단가 (₫/매) | 30 / 200 |
+
+> `deviceIp` 가 비어 있으면 에이전트가 **첫 실행 시 LAN 스캔**으로 자동 감지·DB 갱신.
+
+### Step 2. 토큰 발급 (관리자)
+
+1. 사이드바 → **렌탈** → **SNMP 관리** → 탭 3.
+2. 등록한 계약을 펼쳐 각 장비 행 **[🔑 발급]** 클릭.
+3. 모든 장비 토큰 발급 완료 확인.
+
+### Step 3. 에이전트 패키지 만들기 (관리자, 본사 PC)
+
+1. 같은 화면 [📦 **에이전트 패키지 다운로드**] → `config-{contractCode}.json` 저장.
+2. 본사 PC 에 보관된 마스터 파일 모음을 USB 또는 임시 폴더에 모음:
+   - `tellustech-agent.exe` ([GitHub Releases](https://github.com/jslee-sketch/tellustech-admin/releases) 에서 최신 다운로드)
+   - 방금 받은 `config-{contractCode}.json` → 파일명을 **`config.json`** 으로 변경
+   - `installer/install.bat`
+   - `installer/uninstall.bat`
+   - `installer/README.txt`
+3. 위 5개 파일을 **ZIP 1개로 묶기** → 파일명: `tellustech-agent-{고객사명}.zip`.
+
+### Step 4. 고객사 PC 설치 (현장 방문 / 원격 안내)
+
+#### 사전 확인
+
+- **OS**: Windows 10 / 11 (64bit). Windows Server 도 가능.
+- **네트워크**: 그 PC 가 프린터들과 같은 LAN. 인터넷 (ERP 도메인 HTTPS) 접근 가능.
+- **권한**: PC 에 관리자 비밀번호 가능한 계정 (UAC 승인 필요).
+- **방화벽**: SNMP 송신 (UDP 161) 허용. 사내 방화벽 정책 확인.
+
+#### 설치 흐름
+
+1. ZIP 을 USB 로 PC 로 복사 → 임의 폴더에 압축 해제.
+2. **`install.bat` 우클릭 → 관리자 권한으로 실행**.
+3. UAC 대화 → "예".
+4. 콘솔 화면 (TUI):
+   ```
+   ╔════════════════════════════════════╗
+   ║  TELLUSTECH SNMP AGENT — Setup     ║
+   ╚════════════════════════════════════╝
+   1. 네트워크 스캔 중... (192.168.1.0/24)
+      → 발견된 SNMP 장비 5대
+   2. 어떤 장비를 등록할까요? (이 PC 가 담당)
+      [1] 192.168.1.10  Samsung X7500  SN: K0123456
+      [2] 192.168.1.11  Sindoh D330    SN: D0234567
+      ...
+      선택 (콤마 구분, all=전체): _
+   ```
+5. 번호 선택 → ERP 로 등록 신청 → 화면에 등록 결과 표시.
+6. 마지막에 자동 silent 모드 진입 → 트레이로 잠적.
+7. **`install.bat` 끝에서 `config.json` 자동 삭제** (USB 분실 시 토큰 노출 방지).
+
+#### 설치 위치 / 자동 시작
+
+- 설치 폴더: `C:\Tellustech\` (사용자 권한만 접근 가능)
+- 시작프로그램 등록: 부팅 시 `tellustech-agent.exe --silent` 자동 실행
+- 로컬 큐 DB: `C:\Tellustech\agent.db` (SQLite — 전송 실패 시 보관, 재시도)
+
+### Step 5. 첫 수집 확인 (관리자, 본사)
+
+1. 설치 완료 5분 이내에 본사 ERP → 사이드바 → SNMP → **탭 2 수집 현황**.
+2. 등록한 S/N 들이 **방식=AGENT** 로 행에 추가되어 있는지 확인.
+3. **누락된 S/N 이 있으면**:
+   - **탭 1 (모델 OID)**: 해당 모델의 OID 가 이 프린터에서 응답하는지 확인 (Step 12.1 의 snmpwalk).
+   - **고객사 PC**: 트레이의 에이전트 우클릭 → "상태 보기" (또는 cmd 에서 `tellustech-agent.exe --status`) → 최근 시도 로그 + pending 큐 확인.
+   - **방화벽**: 그 PC 에서 `Test-NetConnection <프린터IP> -Port 161 -Information Detailed` (UDP 는 직접 테스트 어려움 → snmpwalk 가 더 확실).
+
+### Step 6. 자동 수집 흐름 (이후 자동)
+
+| 시각 | 동작 | 어디서 |
+|---|---|---|
+| 매일 00:00 (PC 시간) | `snmpCollectDay` 와 일치하는 장비 만 폴링 | 에이전트 |
+| 폴링 성공 | ERP `POST /api/snmp/readings` 전송 → SnmpReading 행 생성 | 에이전트 → ERP |
+| 폴링 실패 | 매시간 재시도 5회. 5회 후 heartbeat 에러 보고 | 에이전트 |
+| 매시간 | heartbeat (`POST /api/snmp/heartbeat`) — agentVersion / online 시간 | 에이전트 |
+| 매일 12:00 (PC 시간) | 자동 업데이트 체크 (`/api/snmp/agent-version`) | 에이전트 |
+| 매월 1일 03:00 KST | UsageConfirmation 자동 생성 (`/api/jobs/snmp-usage-check`) | ERP cron |
+
+### Step 7. 매월 사용량 확인서 처리 (12.3 항)
+
+→ 12.3 으로 이동.
+
+---
+
+## 12.3 사용량 확인서 (`/admin/usage-confirmations`)
+
+수집된 카운터로 매월 자동 생성되는 **고객 서명용 확인서** + **매출 전표** 를 만드는 흐름입니다.
+
+### 6단계 워크플로
 
 ```
 COLLECTED → CUSTOMER_NOTIFIED → CUSTOMER_CONFIRMED → ADMIN_CONFIRMED → PDF_GENERATED → BILLED
+   ⬜            🟡                    🟢                  🔵              📄          ✅
+   수집완료      고객알림됨            고객CFM완료         관리자CFM        PDF생성       매출연결
 ```
 
-### 자동 생성
+각 행의 우측 [액션] 버튼은 현재 상태에 맞는 다음 단계만 노출됩니다.
 
-매일 03:00 KST `POST /api/jobs/snmp-usage-check` Cron 이 모든 ACTIVE 계약의 `snmpCollectDay==어제` 인 경우:
-- 이번 달 SnmpReading 도착 → UsageConfirmation 자동 생성 (status=COLLECTED)
-- 모든 장비 미수집 → no_readings 결과로 관리자 검토 대기 (수동 입력 필요)
+### 자동 생성 (관리자가 손대지 않아도 됨)
 
-### 사용량 계산 (`src/lib/usage-calc.ts`)
+매월 ACTIVE IT 계약의 `snmpCollectDay` (기본 25일) **다음 날** 03:00 KST 에 cron 이 동작:
+- 그 계약의 모든 장비 SnmpReading 이 도착했나?
+  - **모두 도착** → `UsageConfirmation` 자동 생성 (status=COLLECTED).
+  - **일부만 도착** → 관리자 검토 큐로 이동 (수동 입력 필요).
+  - **전혀 안 옴** → 알림 없음. 다음 날 다시 시도.
+
+### 수기 카운터 입력 (에이전트 미설치 / 일시 장애)
+
+1. 사이드바 → SNMP → 탭 2 → **[+ 수동 입력]**.
+2. 계약 / S/N / 흑백·컬러 카운터 입력 → 저장.
+3. UsageConfirmation cron 이 그 다음 정해진 시간에 그 데이터로 자동 처리.
+
+### 사용량 계산 공식 (자동)
 
 ```
-usage = curr - prev
-extra = max(0, usage - baseIncluded)
-charge = extra × extraRate
-subtotal = baseFee + chargeBw + chargeColor
+월 사용량(매수)        = 이번 달 카운터 - 지난 달 카운터
+초과 사용(매수)        = max(0, 월 사용량 - 기본 포함 매수)
+초과 과금(₫)           = 초과 사용 × 추가 단가
+청구 합계(₫)           = 월 기본료 + 흑백 초과 과금 + 컬러 초과 과금
 ```
 
-#### 음수/리셋 처리
-- usage < 0 → 0 으로 클립 + isCounterReset=true 플래그 (PDF 에 ⚠ 표시)
-- ItContractEquipment.resetAt 이 prev~curr 사이면 prev 무시 (장비 메인보드 교체 등)
-- 첫 달 (prev 없음) → installCounterBw/Color 사용
+#### 음수 / 카운터 리셋 처리 (자동)
 
-### 상태별 액션
+- 음수가 나오면 (이번 < 지난) → 사용량 0 으로 클립 + `isCounterReset=true` 플래그.
+- PDF 에 ⚠ 표시 + 그 줄은 청구 대상에서 자동 제외.
+- ItContractEquipment 의 `resetAt` 이 prev~curr 기간 사이라면 prev 무시 (메인보드 교체 등).
 
-| 상태 | 액션 |
+#### 첫 달 처리
+
+- prev = 없음 → `installCounterBw / installCounterColor` 를 prev 로 사용.
+- 첫 달 청구 = 설치 시점 ~ 첫 검침 사이 사용량.
+
+### 상태별 액션 (각 줄의 우측 버튼)
+
+| 상태 | 노출 버튼 | 클릭 시 일어나는 일 |
+|---|---|---|
+| ⬜ COLLECTED | **[고객 알림]** | 거래처의 포탈 사용자에게 Notification 생성 + 이메일(설정 시). status → CUSTOMER_NOTIFIED |
+| 🟡 CUSTOMER_NOTIFIED | **[재알림]** / **[수동CFM]** | 재알림: 같은 알림 다시 발송. 수동CFM: 메모 필수 (예: "04-26 전화 확인") |
+| 🟢 CUSTOMER_CONFIRMED | **[관리자CFM]** | 한 번 더 관리자 검토 후 승인 |
+| 🔵 ADMIN_CONFIRMED | **[PDF생성]** | pdf-lib + Noto Sans CJK + 거래처 서명 임베드. status → PDF_GENERATED |
+| 📄 PDF_GENERATED | **[📄 PDF]** / **[매출 전표]** | PDF: 다운로드. **매출 전표**: 확인 모달 → Sales 신규 발행 + PayableReceivable(미수금) 자동 생성. status → BILLED |
+| ✅ BILLED | **[📄 PDF]** | 잠금 — 더 이상 수정 불가. PDF 만 다시 다운로드 가능 |
+
+### 매월 운영 권장 시나리오
+
+```
+1일 03:00  → cron 자동 처리 → 고객사별 1건 COLLECTED 행 생성 (관리자 손 안 댐)
+1일 09:00  → 관리자: 모든 COLLECTED 행 [고객 알림] 일괄 클릭
+1~5일      → 고객사 포탈 로그인 → 카운터 확인 → 서명 → CUSTOMER_CONFIRMED
+6일        → 관리자: 미컨펌 거래처에 [재알림] 또는 [수동CFM] (전화 확인 후)
+6일 오후   → 관리자: 모든 CUSTOMER_CONFIRMED 행 [관리자CFM] → [PDF생성] → [매출 전표]
+8일        → 청구서 발송 (재경 미수금 모듈에서 PDF 첨부)
+```
+
+---
+
+## 12.4 IT 계약 상세 — SNMP 관련 필드 (장비 등록·수정)
+
+ItContractEquipment 의 SNMP 관련 필드 한눈에:
+
+| 필드 | 카테고리 | 비고 |
+|---|---|---|
+| `deviceIp` | 자동 | 에이전트 첫 실행 시 LAN 스캔으로 갱신. DHCP 변경 시 매번 갱신. |
+| `deviceModel` | 등록 시 입력 | SnmpModelOid 의 키 (드롭다운) |
+| `snmpCommunity` | 기본 `public` | 회사 정책 시 변경 |
+| `deviceToken` / `contractToken` | 시스템 | UUID, DB 만 보관 |
+| `deviceTokenExpiresAt` / `RevokedAt` | 시스템 | 60일 슬라이딩 + 폐기 시각 |
+| `snmpCollectDay` (계약) | 기본 25 | 1~28 사이만 (31일 없는 달 회피) |
+| `installCounterBw` / `Color` | 등록 시 | 첫 달 prev 기준 |
+| `baseIncludedBw` / `Color` | 등록 시 | 월 포함 매수 |
+| `extraRateBw` / `Color` | 등록 시 | 초과 단가 (₫/매) |
+| `resetAt` | 운영 중 입력 | 카운터 리셋 시점. 그 이후 카운터만 사용 |
+| `lastReadingAt` | 자동 | 마지막 SNMP 수집 시각 (에이전트 health 모니터) |
+
+---
+
+## 12.5 에이전트 운영 — 일상 / 트러블슈팅 / 업그레이드
+
+### 정상 동작 점검 (월 1회)
+
+1. 사이드바 → SNMP → 탭 3 (장비 토큰).
+2. 모든 ACTIVE 장비의 **마지막 수집** 컬럼이 그 달 안에 있는지 확인.
+3. 30일 이상 미수집 장비 → 12.5.1 의 트러블슈팅.
+
+### 12.5.1 자주 만나는 문제 — 빠른 진단
+
+| 증상 | 원인 후보 | 조치 |
+|---|---|---|
+| 마지막 수집 = 한 달 이상 전 | PC 가 꺼져 있음 / 네트워크 단절 | 고객사에 재부팅 안내. 트레이 아이콘 확인 |
+| `방식=AGENT` 행이 한 번도 없음 | 토큰 미발급 / config.json 누락 / 폴링 실패 | 탭 3 에서 토큰 상태 확인 → 재발급 → 새 패키지 재배포 |
+| 음수/리셋 뱃지 자주 발생 | 장비 카운터가 진짜로 리셋됨 (메인보드 교체 / 점검) | 장비 수정 → resetAt 입력 |
+| `SnmpUnregisteredDevice(PENDING)` 에 새 행 등장 | 에이전트가 LAN 에서 새 프린터 발견 | 12.5.2 미등록 장비 큐 처리 |
+| 에이전트 자동 업데이트 실패 | AGENT_DOWNLOAD_URL 잘못됨 / GitHub 다운로드 차단 | Railway 환경변수 확인. 사내 방화벽이 github.com 차단 시 사내 미러로 변경 |
+| heartbeat 에러: "snmp_timeout" | 프린터 SNMP 꺼짐 / community 다름 | 프린터 웹UI 에서 SNMP v2c · public 활성화 |
+
+### 12.5.2 미등록 장비 큐 (`SnmpUnregisteredDevice`)
+
+에이전트가 LAN 스캔 중 발견했지만 ERP 의 `ItContractEquipment` 에 매칭되지 않은 장비는 PENDING 상태로 큐에 쌓입니다.
+
+처리 방법:
+1. 사이드바 → SNMP → (향후) 미등록 큐 탭 — 현재는 DB 직접 조회 (P2.B 후속).
+2. 검토 후 둘 중 하나:
+   - **신규 장비로 등록** → IT 계약 → 장비 추가 → S/N · IP 입력 → 토큰 발급. 큐 행 status `REGISTERED` 자동 변경.
+   - **무시** → status `IGNORED` (예: 사내 사용 프린터)
+
+### 12.5.3 토큰 폐기 시나리오
+
+| 상황 | 조치 |
 |---|---|
-| COLLECTED | [고객 알림] (Notification 생성 + status=CUSTOMER_NOTIFIED) |
-| CUSTOMER_NOTIFIED | [재알림] / [수동CFM] (메모 필수, 전화·이메일 확인 시) |
-| CUSTOMER_CONFIRMED | [관리자CFM] |
-| ADMIN_CONFIRMED | [PDF생성] (pdf-lib + Noto CJK + 서명 임베드) |
-| PDF_GENERATED | [📄 PDF 다운로드] / [매출 전표 생성] (Sales 자동 발행 + 미수금 자동 발생) |
-| BILLED | [📄 PDF] (확인서 잠금) |
+| 고객사 PC 분실 / 도난 | 즉시 사이드바 → SNMP → 해당 계약 → 모든 장비 토큰 [폐기]. 새 PC 준비 후 [재발급] + 새 패키지 |
+| 직원 퇴사 (그 PC 가 그 직원 자리) | [폐기] → 후임 PC 에 [재발급] + 패키지 재배포 |
+| 계약 종료 | [폐기] (자동 60일 후 만료되지만 즉시 차단 권장) |
 
-## 12.3 IT계약 상세 — 장비 SNMP 필드
+### 12.5.4 에이전트 업그레이드 (관리자, 본사)
 
-ItContractEquipment 추가 필드 (장비 등록·수정 시):
-- `deviceIp` — 자동 스캔으로 채워짐 (DHCP 변경 시 매번 갱신)
-- `deviceModel` — SnmpModelOid.deviceModel 키 (드롭다운)
-- `snmpCommunity` — 기본 "public"
-- `installCounterBw / installCounterColor` — 첫 달 prev 기준
-- `baseIncludedBw / baseIncludedColor` — 기본 포함 매수
-- `extraRateBw / extraRateColor` — 추가 단가 (₫/매)
-- `resetAt` — 카운터 리셋 시점 (수동 입력 — usage 계산 시 prev 무시)
+#### 새 버전 준비
 
-## 12.4 에이전트 운영 안내
-
-### 설치 패키지 만들기
-1. 관리자 → SNMP 관리 → 장비 토큰 → [📦 에이전트 패키지 다운로드]
-2. 받은 `config-*.json` + `tellustech-agent.exe` (Phase 2 빌드 산출물) + `install.bat` + `uninstall.bat` + `README.txt` 를 ZIP 으로
-3. USB 에 복사 → 고객사 PC 에서 install.bat 실행
-
-### 에이전트 자동 업데이트
-1. 새 버전 빌드 (`agent/build.cmd`) → `agent/build/tellustech-agent.exe`
-2. GitHub Releases 에 업로드:
+1. 개발자가 `agent/` 코드 수정 → version bump.
+2. 빌드:
    ```
-   gh release create v1.0.0-agent agent/build/tellustech-agent.exe \
-     --title "SNMP Agent v1.0.0" \
-     --notes "Windows SNMP counter collection agent"
+   cd agent
+   build.cmd
    ```
-   업로드 후 다운로드 URL 형식: `https://github.com/jslee-sketch/tellustech-admin/releases/download/v1.0.0-agent/tellustech-agent.exe`
-3. Railway 환경변수에 등록:
-   - `AGENT_LATEST_VERSION=1.0.0`
-   - `AGENT_DOWNLOAD_URL=https://github.com/jslee-sketch/tellustech-admin/releases/download/v1.0.0-agent/tellustech-agent.exe`
-4. 모든 에이전트가 매일 12:00 자동 체크 (`/api/snmp/agent-version`) → 새 버전이면 `.pending` 으로 다운로드 → 다음 부팅 또는 install.bat 재실행 시 자동 교체
+   → `agent/build/tellustech-agent.exe` (단일 exe, ~57MB)
 
-> 주의: `agent/build/` 는 `.gitignore` 처리됨 (54MB exe 가 Git 저장소로 들어가지 않도록). 빌드 산출물은 GitHub Releases 로만 배포.
+#### 배포
 
-### Heartbeat 모니터링
-`AgentHeartbeat` 테이블에 매번 보고 — 30일 이상 heartbeat 없으면 관리자 알림 (Phase 후속).
+```
+gh release create v1.0.1-agent agent/build/tellustech-agent.exe \
+  --title "SNMP Agent v1.0.1" \
+  --notes "버그 수정 / 기능 추가 요약"
+```
 
-### 미등록 장비 큐
-에이전트가 발견했지만 ItContractEquipment 에 매칭 안 된 장비는 `SnmpUnregisteredDevice(PENDING)` 큐에 적재. 관리자가 검토 후:
-- 신규 장비로 등록 → ItContractEquipment 추가 후 토큰 발급
-- 무시 → IGNORED 로 변경
+#### 환경변수 갱신 (Railway 또는 호스팅 콘솔)
+
+| 변수 | 값 |
+|---|---|
+| `AGENT_LATEST_VERSION` | `1.0.1` (semver) |
+| `AGENT_DOWNLOAD_URL` | `https://github.com/jslee-sketch/tellustech-admin/releases/download/v1.0.1-agent/tellustech-agent.exe` |
+
+#### 자동 배포 흐름
+
+- 매일 12:00 (각 PC 시간) 에이전트가 `/api/snmp/agent-version` 호출.
+- 응답의 `latestVersion` 이 본인 버전보다 높으면 → exe 다운로드 → `tellustech-agent.exe.pending` 으로 저장.
+- 다음 PC 재부팅 또는 install.bat 재실행 시 `.pending` 을 정상 파일로 교체 후 새 버전 실행.
+
+> 강제 즉시 적용이 필요하면 고객사에 PC 재부팅 안내. 재부팅이 어려운 환경은 cmd 에서 `tellustech-agent.exe --restart` 도 가능 (P2.B 후속).
+
+### 12.5.5 Heartbeat 모니터링
+
+- 에이전트가 매시간 `POST /api/snmp/heartbeat` → AgentHeartbeat 테이블에 기록.
+- 30일 이상 heartbeat 없음 → 관리자 알림 (P2.B 후속, 현재는 SQL 직접 조회).
+- SQL:
+  ```sql
+  SELECT contract_id, agent_machine_id, MAX(reported_at)
+  FROM agent_heartbeats
+  GROUP BY contract_id, agent_machine_id
+  HAVING MAX(reported_at) < NOW() - INTERVAL '30 days';
+  ```
+
+---
+
+## 12.6 보안·정책 요약
+
+- 토큰 평문 저장은 `config.json` 안에서만. ERP DB 에는 평문 보관 (해시 X) — 매번 verify 가 필요해서. 대신 폐기·만료·슬라이딩 갱신으로 risk 관리.
+- `config.json` 파일은 install.bat 끝에서 자동 삭제 (USB 분실 시 노출 방지).
+- 에이전트 설치 폴더 `C:\Tellustech` 는 그 사용자 권한으로만 접근.
+- 토큰 분실 의심 → 관리자가 즉시 폐기 → 재발급 + 새 패키지.
+- ERP 측에서 모든 토큰 사용 이력은 `audit_log` 에 기록 (Prisma middleware).
+
+---
+
+## 12.7 기술자 부록 — 명령어·로그·SNMP 패킷 검증
+
+> 이 절은 **현장 IT 기술자 / 사내 IT 팀** 이 사용하는 명령·경로·디버그 절차 모음입니다.
+
+### 12.7.1 에이전트 명령줄 옵션
+
+| 옵션 | 동작 | 사용처 |
+|---|---|---|
+| `tellustech-agent.exe --setup` | 첫 실행 — 네트워크 스캔 + 사용자 선택 + ERP 등록 | install.bat 가 자동 호출 |
+| `tellustech-agent.exe --silent` | 백그라운드 — cron 스케줄러 실행 | 부팅 시 자동 실행 |
+| `tellustech-agent.exe --collect` | 즉시 1회 수집 (디버그) | 트레이 미반응 시 직접 실행 |
+| `tellustech-agent.exe --status` | 최근 로그 + pending 큐 출력 | 진단 |
+| `tellustech-agent.exe --version` | exe 자체 버전 출력 | 업데이트 확인 |
+
+### 12.7.2 파일·폴더 경로
+
+| 경로 | 내용 | 권한 |
+|---|---|---|
+| `C:\Tellustech\tellustech-agent.exe` | 본체 exe (~57MB, Node18 + pkg) | 사용자 RX |
+| `C:\Tellustech\config.json` | erpUrl + contract/device 토큰 (install 후 자동 삭제 → 첫 setup 시 메모리만, 이후 빈 파일 또는 미존재) | 사용자 RW |
+| `C:\Tellustech\agent.db` | SQLite — pending 큐 (전송 실패 보관, 재시도 큐) | 사용자 RW |
+| `C:\Tellustech\agent.log` | 일별 회전 로그 (info/warn/error) | 사용자 RW |
+| `C:\Tellustech\tellustech-agent.exe.pending` | 자동 업데이트 다운로드 임시 파일. 재부팅·재실행 시 본체 교체 후 삭제 | 사용자 RW |
+| `C:\Users\<user>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\TellustechAgent.lnk` | 부팅 자동 실행 바로가기 (`--silent`) | 사용자 RW |
+
+### 12.7.3 로그 보기·진단
+
+```cmd
+:: 최근 100줄
+type C:\Tellustech\agent.log | more
+
+:: 에러만
+findstr /I "ERROR WARN" C:\Tellustech\agent.log | more
+
+:: 실시간
+powershell -c "Get-Content C:\Tellustech\agent.log -Wait -Tail 50"
+```
+
+로그 행 형식:
+```
+2026-04-28T10:15:32+09:00 [INFO]  poll  192.168.1.10  total=12345 bw=10000 color=2345
+2026-04-28T10:15:33+09:00 [INFO]  send  contract=TLS-260101-001  rows=1  ok=200
+2026-04-28T10:15:34+09:00 [WARN]  poll  192.168.1.11  snmp_timeout (3s)
+2026-04-28T10:15:35+09:00 [ERROR] send  401 unauthorized — token revoked or expired
+```
+
+### 12.7.4 pending 큐 직접 조회
+
+전송 실패한 reading 들은 SQLite 큐에 보관됩니다. 시스템 sqlite3 가 있다면:
+
+```cmd
+sqlite3 C:\Tellustech\agent.db "SELECT id, equipment_sn, total_pages, attempts, last_error FROM pending ORDER BY id DESC LIMIT 20;"
+```
+
+그 후 강제 재전송:
+```cmd
+tellustech-agent.exe --flush-pending
+```
+
+### 12.7.5 SNMP 응답 직접 확인
+
+#### Windows + snmpwalk (Net-SNMP 윈도우 버전 또는 PowerShell)
+
+PowerShell (`SNMP-Tools` 모듈 또는 `Olive.SnmpSharpNet`):
+```powershell
+# 표준 RFC 3805 총 카운터
+$ip = "192.168.1.10"
+snmpwalk -v2c -c public $ip 1.3.6.1.2.1.43.10.2.1.4.1.1
+# 예상: HOST-RESOURCES-MIB::hrPrinterDetectedErrorState.1 = INTEGER: 12345
+
+# S/N
+snmpwalk -v2c -c public $ip 1.3.6.1.2.1.43.5.1.1.17.1
+```
+
+#### Linux / WSL (snmpwalk)
+```bash
+sudo apt install snmp -y
+snmpwalk -v2c -c public 192.168.1.10 1.3.6.1.2.1.43.10.2.1.4.1.1
+snmpwalk -v2c -c public 192.168.1.10 1.3.6.1.2.1.43.5.1.1.17.1
+```
+
+#### 응답 없을 때 체크리스트
+
+1. PC 와 프린터가 **같은 서브넷** 인가? (`route print` 또는 `ip route`)
+2. 프린터 SNMP 가 켜져 있나? 프린터 웹UI → Network → SNMP → **v2c, public, Read 활성화**.
+3. 사내 방화벽이 UDP 161 차단? (`Test-NetConnection -ComputerName 192.168.1.10 -Port 161` — UDP 는 직접 안 되니 위 snmpwalk 가 가장 확실)
+4. community 가 `public` 이 아니라 회사 정책 (`tellustech` 등)? → 12.1 모델 OID 화면에서 `snmpCommunity` 변경 + 장비 PATCH.
+5. 어떤 프린터는 SNMPv1 만 → `-v1` 로 시도. 일부는 v3 만 — 그건 별도 모델 추가 필요.
+
+### 12.7.6 패킷 캡처로 끝까지 검증 (최후 수단)
+
+```
+1. 그 PC 에서 Wireshark 또는 tcpdump (WSL) 설치
+2. 필터: udp.port == 161 and ip.addr == <프린터IP>
+3. snmpwalk 실행
+4. SNMP GetRequest / GetResponse 가 둘 다 보이는가?
+   - GetRequest 만 보임 → 프린터가 응답 안 함 (방화벽 / SNMP off / community 다름)
+   - 둘 다 보이지만 응답이 noSuchObject → OID 다름 (모델 OID 검증)
+   - 응답이 정상 INTEGER → 모든 게 OK. 에이전트 측 문제 (config.json / 토큰)
+```
+
+### 12.7.7 트레이/서비스 모드 (현재 vs 후속)
+
+현재 (v1.0.x):
+- **사용자 세션** 기반. 부팅 후 그 사용자가 로그인해야 자동 실행 (Startup 바로가기).
+- 한 PC 의 한 사용자 계정에만 동작. 그 PC 가 로그아웃 상태면 수집 중단.
+
+향후 (v2.0 예정):
+- **Windows Service** 모드. 사용자 로그인 무관 항상 동작.
+- `nssm install TellustechAgent C:\Tellustech\tellustech-agent.exe --silent` 로 등록 가능 (NSSM 사용 시).
+
+> 현재는 PC 가 항상 켜져 있고 그 자리 사용자가 거의 로그인 상태인 환경에 최적화. 24/7 무인 환경은 향후 service 모드 사용 권장.
+
+### 12.7.8 ERP 측 진단 엔드포인트
+
+| Endpoint | 용도 | 인증 |
+|---|---|---|
+| `GET /api/snmp/agent-version` | 최신 exe 버전 + 다운로드 URL | 없음 (정적) |
+| `POST /api/snmp/heartbeat` | 에이전트가 매시간 호출 | `Authorization: Bearer <contractToken>` |
+| `POST /api/snmp/readings` | 에이전트가 카운터 전송 | `Authorization: Bearer <deviceToken>` |
+| `POST /api/snmp/register-devices` | 에이전트가 새 발견 장비 등록 신청 | `Authorization: Bearer <contractToken>` |
+
+본사에서 진단 시 (브라우저 또는 curl):
+```bash
+# 최신 버전 정보
+curl https://tellustech-admin-production.up.railway.app/api/snmp/agent-version
+
+# 토큰 유효성 (200 = 유효, 401 = 폐기/만료)
+curl -X POST https://.../api/snmp/heartbeat \
+  -H "Authorization: Bearer ctr_xxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"agentVersion":"1.0.0","agentMachineId":"test"}'
+```
+
+### 12.7.9 자주 보는 ERP 측 SQL (관리자 콘솔 / IT 팀 직접)
+
+```sql
+-- 최근 24시간 수집 받은 장비
+SELECT contract_id, equipment_id, MAX(collected_at) AS last
+  FROM snmp_readings
+  WHERE collected_at >= NOW() - INTERVAL '1 day'
+  GROUP BY contract_id, equipment_id
+  ORDER BY last DESC;
+
+-- 30일 이상 수집 없는 장비 (heartbeat 모니터)
+SELECT eq.id, eq.serial_number, c.contract_number, eq.last_reading_at
+  FROM it_contract_equipment eq
+  JOIN it_contracts c ON eq.it_contract_id = c.id
+  WHERE c.status = 'ACTIVE' AND eq.removed_at IS NULL
+    AND (eq.last_reading_at IS NULL OR eq.last_reading_at < NOW() - INTERVAL '30 days')
+  ORDER BY eq.last_reading_at NULLS FIRST;
+
+-- 토큰 만료 임박 (D-7 이내)
+SELECT serial_number, device_token_expires_at
+  FROM it_contract_equipment
+  WHERE device_token_revoked_at IS NULL
+    AND device_token_expires_at < NOW() + INTERVAL '7 days';
+
+-- 카운터 리셋이 자주 발생한 장비 (관리자 정합성 점검)
+SELECT equipment_id, COUNT(*) AS reset_count
+  FROM snmp_readings
+  WHERE is_counter_reset = TRUE
+    AND collected_at >= NOW() - INTERVAL '90 days'
+  GROUP BY equipment_id
+  HAVING COUNT(*) >= 3
+  ORDER BY reset_count DESC;
+```
 
 # 13부. 소모품 적정율 분석 (NEW)
 

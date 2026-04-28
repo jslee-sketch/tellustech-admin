@@ -182,16 +182,22 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
     {
       key: "yieldRateBw",
       label: t("yield.adequacyRate", lang),
-      width: "140px",
+      width: "180px",
       align: "right",
       render: (_v, row) => {
         if (row.yieldRateBw === null) return <span className="text-[color:var(--tts-muted)]">—</span>;
         const bw = pickYieldEmoji(row.yieldRateBw);
         const col = row.yieldRateColor !== null ? pickYieldEmoji(row.yieldRateColor) : null;
         return (
-          <Link href="/admin/yield-analysis" className="inline-flex items-center gap-1 font-mono text-[11px] hover:underline">
-            <span className={bw.cls}>{bw.emoji} {row.yieldRateBw}%</span>
-            {col && <span className={col.cls}>· {col.emoji} {row.yieldRateColor}%</span>}
+          <Link href="/admin/yield-analysis" className="inline-flex items-center gap-1.5 font-mono text-[11px] hover:underline" title="해당 거래처의 IT계약 장비 중 가장 낮은 적정율 (B/W=흑백, C=컬러)">
+            <span className={bw.cls}>
+              <span className="text-[9px] text-[color:var(--tts-muted)]">B/W</span> {bw.emoji} {row.yieldRateBw}%
+            </span>
+            {col && (
+              <span className={col.cls}>
+                <span className="text-[9px] text-[color:var(--tts-muted)]">C</span> {col.emoji} {row.yieldRateColor}%
+              </span>
+            )}
           </Link>
         );
       },

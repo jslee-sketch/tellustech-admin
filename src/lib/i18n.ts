@@ -85,9 +85,9 @@ const DICT: Dict = {
   "scan.guide.consum":{ vi: "Bắt buộc nhập S/N thiết bị mục tiêu khi xuất vật tư tiêu hao.", en: "Target equipment S/N is required when issuing consumables.", ko: "소모품출고 시 대상 장비 S/N 필수." },
 
   // ── QR 라벨 사이즈 라벨 ──
-  "labelSize.large":  { vi: "Lớn (50×30mm · Thiết bị)",   en: "Large (50×30mm · Equipment)", ko: "대형 (50×30mm · 장비용)" },
-  "labelSize.medium": { vi: "Vừa (30×20mm · Vật tư)",     en: "Medium (30×20mm · Consumable)", ko: "중형 (30×20mm · 소모품용)" },
-  "labelSize.small":  { vi: "Nhỏ (20×12mm · Linh kiện)",  en: "Small (20×12mm · Part)",      ko: "소형 (20×12mm · 부품용)" },
+  "labelSize.large":  { vi: "Lớn (60×40mm · Thiết bị)",   en: "Large (60×40mm · Equipment)",   ko: "대형 (60×40mm · 장비용)" },
+  "labelSize.medium": { vi: "Vừa (50×35mm · Vật tư)",     en: "Medium (50×35mm · Consumable)", ko: "중형 (50×35mm · 소모품용)" },
+  "labelSize.small":  { vi: "Nhỏ (40×30mm · Linh kiện)",  en: "Small (40×30mm · Part)",        ko: "소형 (40×30mm · 부품용)" },
 
   // ── 포탈 Phase A 신규 키 ──
   "portal.sidebar.oaDivision":      { vi: "Bộ phận OA",            en: "OA Division",          ko: "OA 사업부문" },

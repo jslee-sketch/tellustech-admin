@@ -107,6 +107,7 @@ const DICT: Dict = {
   "portal.sidebar.feedback":        { vi: "Khen/Cải tiến/Đề xuất", en: "Praise/Improve/Suggest", ko: "칭찬/개선/제안" },
   "portal.sidebar.posts":           { vi: "Tin tức",               en: "News",                 ko: "소식" },
   "portal.sidebar.surveys":         { vi: "Khảo sát",              en: "Survey",               ko: "서베이" },
+  "portal.sidebar.account":         { vi: "Tài khoản của tôi",     en: "My Account",           ko: "내 계정" },
   "portal.serviceSummary":          { vi: "Tóm tắt dịch vụ",       en: "Service Summary",      ko: "내 서비스 요약" },
   "portal.requestStatus":           { vi: "Trạng thái yêu cầu",    en: "Request Status",       ko: "내 요청 현황" },
   "portal.noRequests":              { vi: "Chưa có yêu cầu",       en: "No requests yet",      ko: "아직 요청이 없습니다" },

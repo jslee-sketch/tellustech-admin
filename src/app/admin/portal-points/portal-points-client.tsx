@@ -64,47 +64,31 @@ function PoliciesTab({ lang }: { lang: Lang }) {
     } finally { setSavingId(null); }
   }
 
+  // 단순화: ID = clientCode 자동, PW = 1234 기본. 신규 거래처는 등록 시 자동 발급되므로
+  // 보통 「미발급」 케이스가 없음. 만약 누락된 경우만 수동 [발급] 버튼 노출.
   async function issueAccount(clientId: string) {
-    const username = prompt("포탈 ID (비워두면 자동 생성: clientCode_portal)") ?? "";
-    const password = prompt("초기 비밀번호 (비워두면 10자리 자동 생성)") ?? "";
+    if (!confirm("이 거래처에 포탈 계정이 없습니다. ID = 거래처코드, 비밀번호 = 1234 로 발급할까요?")) return;
     setSavingId(clientId);
     try {
-      const r = await fetch(`/api/admin/clients/${clientId}/portal-account`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
-        body: JSON.stringify({ username, password }),
-      });
+      const r = await fetch(`/api/admin/clients/${clientId}/portal-account`, { method: "POST", credentials: "same-origin" });
       const j = await r.json();
-      if (!r.ok) { alert("발급 실패: " + (j?.error ?? j?.details?.hint ?? "")); return; }
-      const tempPw = j.temporaryPassword ? `\n초기 비밀번호: ${j.temporaryPassword}\n\n⚠️ 이 비밀번호는 다시 표시되지 않습니다. 고객에게 즉시 전달하세요.` : "\n비밀번호: 입력하신 값으로 설정됨";
-      alert(`✅ 포탈 ID 발급 완료\n\nID: ${j.user.username}${tempPw}`);
+      if (!r.ok) { alert("발급 실패: " + (j?.error ?? "")); return; }
+      alert(`✅ 발급 완료\n\nID: ${j.user.username}\n비밀번호: 1234\n\n고객은 포탈에서 비밀번호를 변경할 수 있습니다.`);
       await refetch();
     } finally { setSavingId(null); }
   }
 
-  async function resetPassword(clientId: string) {
-    if (!confirm("비밀번호를 재설정합니다. 기존 비밀번호는 즉시 무효화됩니다. 계속하시겠습니까?")) return;
-    const password = prompt("새 비밀번호 (비워두면 10자리 자동 생성)") ?? "";
+  async function resetTo1234(clientId: string) {
+    if (!confirm("비밀번호를 1234 로 리셋합니다. 기존 비밀번호는 즉시 무효화됩니다.")) return;
     setSavingId(clientId);
     try {
       const r = await fetch(`/api/admin/clients/${clientId}/portal-account`, {
         method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
-        body: JSON.stringify({ action: "reset_password", password }),
+        body: JSON.stringify({ action: "reset_password" }),
       });
       const j = await r.json();
-      if (!r.ok) { alert("재설정 실패: " + (j?.error ?? "")); return; }
-      const tempPw = j.temporaryPassword ? `\n새 임시 비밀번호: ${j.temporaryPassword}\n\n⚠️ 이 비밀번호는 다시 표시되지 않습니다. 고객에게 즉시 전달하세요.` : "\n비밀번호: 입력하신 값으로 설정됨";
-      alert(`✅ 비밀번호 재설정 완료${tempPw}`);
-    } finally { setSavingId(null); }
-  }
-
-  async function toggleActive(clientId: string) {
-    setSavingId(clientId);
-    try {
-      await fetch(`/api/admin/clients/${clientId}/portal-account`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
-        body: JSON.stringify({ action: "toggle_active" }),
-      });
-      await refetch();
+      if (!r.ok) { alert("리셋 실패: " + (j?.error ?? "")); return; }
+      alert(`✅ 비밀번호가 1234 로 리셋되었습니다.`);
     } finally { setSavingId(null); }
   }
 
@@ -164,12 +148,9 @@ function PoliciesTab({ lang }: { lang: Lang }) {
               </td>
               <td className="px-2 py-1.5 text-right whitespace-nowrap">
                 {c.portalUsername ? (
-                  <>
-                    <button onClick={() => resetPassword(c.id)} disabled={savingId === c.id} className="mr-1 rounded bg-[color:var(--tts-warn)] px-2 py-0.5 text-[10px] font-bold text-white" title="비밀번호 재설정">🔑 비번재설정</button>
-                    <button onClick={() => toggleActive(c.id)} disabled={savingId === c.id} className="rounded border border-[color:var(--tts-border)] px-2 py-0.5 text-[10px]">{c.portalActive ? "비활성화" : "활성화"}</button>
-                  </>
+                  <button onClick={() => resetTo1234(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-warn)] px-2 py-0.5 text-[10px] font-bold text-white" title="비밀번호를 1234 로 리셋">🔑 1234 리셋</button>
                 ) : (
-                  <button onClick={() => issueAccount(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-[10px] font-bold text-white">+ ID 발급</button>
+                  <button onClick={() => issueAccount(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-[10px] font-bold text-white">+ 발급</button>
                 )}
               </td>
             </tr>

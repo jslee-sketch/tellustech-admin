@@ -1497,6 +1497,9 @@ model User {
   preferredLang    Language      @default(KO)
   chatDisplayMode  Int           @default(1) // 1/2/3개 언어
   isActive         Boolean       @default(true)
+  // 신규 발급 또는 관리자 리셋 직후 true. 사용자가 비밀번호를 변경하면 false.
+  // 포탈에서는 true 인 동안 매 페이지마다 "비밀번호를 변경해주세요" 경고 배너 표시.
+  mustChangePassword Boolean     @default(false)
   lastLoginAt      DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

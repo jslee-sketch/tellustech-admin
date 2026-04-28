@@ -202,29 +202,42 @@ async function seedEmployeesAndUsers() {
     },
   });
 
-  // CLIENT 포탈 테스트 계정 — WELSTORY 연결
-  const welstory = await prisma.client.findUnique({
-    where: { clientCode: "CL-000001" },
-    select: { id: true },
-  });
-  if (welstory) {
-    await prisma.user.upsert({
-      where: { username: "welstory_portal" },
-      update: { clientId: welstory.id },
-      create: {
-        username: "welstory_portal",
-        passwordHash: hash("client123"),
-        email: "portal@welstory.example",
-        allowedCompanies: [] as CompanyCode[],
-        role: "CLIENT" as UserRole,
-        preferredLang: "EN" as Language,
-        clientId: welstory.id,
-      },
-    });
+  // CLIENT 포탈 계정 — username = clientCode 정책으로 통합.
+  // 기존 CLIENT 사용자 (예: welstory_portal) 의 username 을 clientCode 로 rename.
+  const existingClientUsers = await prisma.user.findMany({ where: { role: "CLIENT" as UserRole, clientId: { not: null } }, select: { id: true, username: true, clientId: true } });
+  for (const u of existingClientUsers) {
+    const c = await prisma.client.findUnique({ where: { id: u.clientId! }, select: { clientCode: true } });
+    if (c && u.username !== c.clientCode) {
+      try {
+        await prisma.user.update({ where: { id: u.id }, data: { username: c.clientCode } });
+      } catch (e) {
+        // username 충돌 (이미 다른 user 가 그 clientCode 로 있음) — 구계정 삭제 후 재시도
+        await prisma.user.delete({ where: { id: u.id } }).catch(() => undefined);
+      }
+    }
+  }
+  // 미발급 거래처에 새 계정 생성
+  const allClients = await prisma.client.findMany({ where: { deletedAt: null, portalUser: null }, select: { id: true, clientCode: true } });
+  let portalCount = 0;
+  for (const c of allClients) {
+    try {
+      await prisma.user.create({
+        data: {
+          username: c.clientCode,
+          passwordHash: hash("1234"),
+          allowedCompanies: [] as CompanyCode[],
+          role: "CLIENT" as UserRole,
+          preferredLang: "KO" as Language,
+          clientId: c.id,
+          mustChangePassword: true,
+        },
+      });
+      portalCount++;
+    } catch { /* skip duplicates */ }
   }
 
   console.log(`  ✓ employees: 2 (TNV-001, VNV-001)`);
-  console.log(`  ✓ users: 5 (admin, vr_admin, tech1, sales1, welstory_portal)`);
+  console.log(`  ✓ users: 4 admin/staff + ${portalCount} portal accounts (clientCode_portal 형식 폐지 — 이제 username = clientCode)`);
 }
 
 async function seedWarehouses() {

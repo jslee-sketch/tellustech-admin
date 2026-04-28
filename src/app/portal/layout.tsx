@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { pickName } from "@/lib/i18n";
@@ -8,14 +9,24 @@ export const dynamic = "force-dynamic";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   let clientName = "";
+  let mustChangePassword = false;
   if (session.role === "CLIENT") {
     const user = await prisma.user.findUnique({ where: { id: session.sub }, include: { clientAccount: true } });
     if (user?.clientAccount) clientName = pickName(user.clientAccount, session.language);
+    mustChangePassword = user?.mustChangePassword ?? false;
   }
   return (
     <div className="flex min-h-screen">
       <PortalSidebar initialLang={session.language} clientName={clientName} />
-      <div className="flex-1 overflow-x-hidden">{children}</div>
+      <div className="flex-1 overflow-x-hidden">
+        {mustChangePassword && (
+          <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-[color:var(--tts-danger)] bg-[color:var(--tts-danger-dim)] px-4 py-2 text-[13px] font-bold text-[color:var(--tts-danger)]">
+            <span>⚠️ 보안을 위해 초기 비밀번호(1234)를 변경해주세요.</span>
+            <Link href="/portal/account" className="rounded bg-[color:var(--tts-danger)] px-3 py-1 text-[12px] text-white">비밀번호 변경하기</Link>
+          </div>
+        )}
+        {children}
+      </div>
     </div>
   );
 }

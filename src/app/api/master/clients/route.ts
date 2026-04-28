@@ -13,7 +13,13 @@ import {
 } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
 import { fillTranslations } from "@/lib/translate";
+import bcrypt from "bcryptjs";
 import type { ClientGrade, Industry, ReceivableStatus } from "@/generated/prisma/client";
+
+// 신규 거래처 등록 시 자동 발급되는 포탈 계정 정책
+//   ID = clientCode (자동, 변경 불가)
+//   PW = "1234"   (고객이 포탈에서 변경. 관리자는 다시 1234 로 리셋만 가능)
+const DEFAULT_PORTAL_PASSWORD = "1234";
 
 // Client 는 공유 마스터 — 회사 스코프 없음.
 // clientCode 자동 생성: CL-YYMMDD-### (가이드 규칙)
@@ -128,6 +134,25 @@ export async function POST(request: Request) {
         },
         { isConflict: isUniqueConstraintError },
       );
+
+      // 자동 포탈 계정 발급 — username = clientCode, password = "1234", mustChangePassword = true.
+      // 실패해도 거래처 등록은 그대로 살림.
+      try {
+        await prisma.user.create({
+          data: {
+            username: created.clientCode,
+            passwordHash: bcrypt.hashSync(DEFAULT_PORTAL_PASSWORD, 10),
+            clientId: created.id,
+            allowedCompanies: [],
+            role: "CLIENT",
+            preferredLang: "KO",
+            isActive: true,
+            mustChangePassword: true,
+          },
+        });
+      } catch (e) {
+        console.error("[clients] 포탈 계정 자동 발급 실패", created.clientCode, e);
+      }
 
       return ok({ client: created }, { status: 201 });
     } catch (err) {

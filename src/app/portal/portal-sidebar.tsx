@@ -32,6 +32,7 @@ const COMM_ITEMS: NavItem[] = [
   { href: "/portal/feedback", labelKey: "portal.sidebar.feedback", icon: "🌟" },
   { href: "/portal/posts", labelKey: "portal.sidebar.posts", icon: "📰" },
   { href: "/portal/surveys", labelKey: "portal.sidebar.surveys", icon: "📊" },
+  { href: "/portal/account", labelKey: "portal.sidebar.account", icon: "🔐" },
 ];
 
 type GroupKey = "oa" | "tm" | "comm";

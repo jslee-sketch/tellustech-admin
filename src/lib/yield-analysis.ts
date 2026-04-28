@@ -33,10 +33,12 @@ export type YieldComputation = {
 
 const DEFAULT_THRESHOLDS = { blue: 120, green: 80, yellow: 50, orange: 30, fraud: 30 };
 
-function classifyConsumable(itemName: string): "BW" | "COLOR" {
+function classifyConsumable(itemName: string): "BW" | "CYAN" | "MAGENTA" | "YELLOW" {
   const n = itemName.toLowerCase();
-  if (/(cyan|magenta|yellow|color|컬러)/i.test(n)) return "COLOR";
-  // Black/Drum/Fuser/흑백/Toner Black → BW (default)
+  if (/cyan/i.test(n)) return "CYAN";
+  if (/magenta/i.test(n)) return "MAGENTA";
+  if (/yellow/i.test(n)) return "YELLOW";
+  // Black/Drum/Fuser/흑백/Toner Black/color(generic) → BW (default)
   return "BW";
 }
 
@@ -100,10 +102,14 @@ export async function calculateYieldRate(
     },
   });
 
+  // BW: 단순 합산. COLOR: C/M/Y 그룹별 합산 후 MIN (1 페이지 = C+M+Y 동시 소모).
   let expectedBw = 0;
-  let expectedColor = 0;
   const bwDetails: ConsumableDetail[] = [];
-  const colorDetails: ConsumableDetail[] = [];
+  const colorGroups: Record<"CYAN" | "MAGENTA" | "YELLOW", { sum: number; details: ConsumableDetail[] }> = {
+    CYAN: { sum: 0, details: [] },
+    MAGENTA: { sum: 0, details: [] },
+    YELLOW: { sum: 0, details: [] },
+  };
 
   for (const p of parts) {
     if (!p.item.expectedYield || p.item.expectedYield <= 0) continue;
@@ -120,14 +126,26 @@ export async function calculateYieldRate(
       contributedExpectedPages: Math.round(contributed),
     };
 
-    if (classifyConsumable(p.item.name) === "COLOR") {
-      expectedColor += contributed;
-      colorDetails.push(detail);
-    } else {
+    const cat = classifyConsumable(p.item.name);
+    if (cat === "BW") {
       expectedBw += contributed;
       bwDetails.push(detail);
+    } else {
+      colorGroups[cat].sum += contributed;
+      colorGroups[cat].details.push(detail);
     }
   }
+
+  // 컬러 기대값: C/M/Y 모두 투입된 경우만 MIN. 한 색이라도 0이면 0 → 컬러 분석 없음.
+  const colorPresent = colorGroups.CYAN.sum > 0 && colorGroups.MAGENTA.sum > 0 && colorGroups.YELLOW.sum > 0;
+  const expectedColor = colorPresent
+    ? Math.min(colorGroups.CYAN.sum, colorGroups.MAGENTA.sum, colorGroups.YELLOW.sum)
+    : 0;
+  const colorDetails: ConsumableDetail[] = [
+    ...colorGroups.CYAN.details,
+    ...colorGroups.MAGENTA.details,
+    ...colorGroups.YELLOW.details,
+  ];
 
   const t = await loadThresholds();
 

@@ -874,3 +874,112 @@ ItContractEquipment 추가 필드 (장비 등록·수정 시):
 에이전트가 발견했지만 ItContractEquipment 에 매칭 안 된 장비는 `SnmpUnregisteredDevice(PENDING)` 큐에 적재. 관리자가 검토 후:
 - 신규 장비로 등록 → ItContractEquipment 추가 후 토큰 발급
 - 무시 → IGNORED 로 변경
+
+# 13부. 소모품 적정율 분석 (NEW)
+
+토너·드럼 등 소모품 투입량 대비 SNMP 실제 출력량을 비교해 효율성·재고 신호·**부정 사용 의심**을 자동 감지하는 모듈.
+
+## 13.1 핵심 공식
+
+```
+기대 출력량 = 투입수량 × 정격출력장수 × (기준상밀도 ÷ 실제상밀도)
+적정율(%)   = 실제출력량 ÷ 기대출력량 × 100
+```
+
+- **흑백(B/W)**: Black 토너·Drum·Fuser 합산
+- **컬러(C)**: C/M/Y 그룹별 합산 후 **MIN** (1 페이지 = C+M+Y 동시 소모) — 한 색이라도 미투입이면 컬러 분석 대상에서 제외
+
+### 뱃지 5단계
+
+| 적정율 | 뱃지 | 의미 | 자동 액션 |
+|---|---|---|---|
+| 120% 이상 | 🔵 BLUE | 토너 부족 — 추가 투입 필요 | (확장 예정) 재발주 알림 |
+| 80~119% | 🟢 GREEN | 정상 | 없음 |
+| 50~79% | 🟡 YELLOW | 주의 — 과다 투입 의심 | 모니터링 |
+| 30~49% | 🟠 ORANGE | 경고 — 사유 확인 | 관리자 알림 |
+| 30% 미만 | 🔴 RED | 부정 의심 | 관리자 알림 + audit_log 자동 기록 + isFraudSuspect=true |
+
+임계값은 `/admin/yield-analysis` 의 **설정** 탭에서 조정 가능 (단조감소 검증).
+
+## 13.2 사전 작업 — 품목 마스터 yield 입력
+
+1. **품목 마스터** → CONSUMABLE 또는 PART 유형 → 편집  
+2. "출력 관련 (소모품)" 섹션 입력:
+   - **정격 출력 장수** (제조사 공표, 5% 상밀도 기준): 예 25,000
+   - **기준 상밀도 (%)**: 기본 5
+
+> 입력 안 하면 적정율 계산에서 해당 부품은 무시됨. 시드는 기존 토너·드럼 자동 매핑됨 (build-in 패턴).
+
+## 13.3 사전 작업 — 장비별 실제 상밀도
+
+IT계약 상세 → **장비 목록** 탭 → 각 행의 **"실제 상밀도"** 컬럼에 인라인 입력 (1~100%).
+- 기본 5% — 일반 사무 환경.
+- 사진/그래픽 다출력 고객은 10~15% 등으로 조정.
+- 적정율 재계산 시 즉시 반영.
+
+## 13.4 적정율 계산 실행
+
+### 자동 — 매월 cron
+- `/api/jobs/yield-analysis-monthly` (매월 1일 02:00 KST)
+- 전월 ACTIVE 계약의 모든 장비에 대해 일괄 계산.
+- SNMP reading 또는 AsDispatchPart 가 1건이라도 있으면 분석 대상.
+- RED 뱃지 → 모든 ADMIN 사용자에게 자동 알림 (`YIELD_FRAUD_SUSPECT` 타입, 3언어).
+
+### 수동 — 단일 장비 재계산
+IT계약 → 장비 목록 행 → 📊 버튼 → 직전 6개월 기간 계산.
+
+### 수동 — 동기 일괄 (테스트/관리)
+```
+curl -X POST "<host>/api/jobs/yield-analysis-monthly?sync=1&targetMonth=2026-04" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+응답: `{ total, created, fraudCount, skippedNoData }`
+
+## 13.5 대시보드 (`/admin/yield-analysis`)
+
+### 탭 1 — 전체 현황
+- **계약 단위 그룹 뷰**: 계약번호 행 클릭 시 ▾ 펼쳐져 장비 S/N 행 표시.
+- 그룹 행은 계약 내 **최저 적정율** + 부정 의심 건수 노출.
+- 정렬: 최저 적정율 오름차순 (위험한 것 먼저).
+- **검색·필터**: 계약번호 / 거래처 / 장비 S/N / 기간 시작·종료 / 뱃지(5단계) — 부분일치, **초기화** 버튼.
+
+### 탭 2 — 부정 의심 관리
+- isFraudSuspect=true 만 표시 + 위 검색·필터 동일 동작.
+- 행 액션 [조사 메모] → 모달에서 메모 입력 → 저장 시 fraudReviewedById/At 자동 기록.
+- 한번 조사 완료 후에도 [조사 결과] 로 메모 수정 가능.
+
+### 탭 3 — 거래처별 통계
+- 거래처별 분석 건수, 평균 적정율, 부정 의심 건수.
+- (향후 AsDispatchPart.dispatchEmployee 기반 **기사별 통계** 로 확장 예정)
+
+### 탭 4 — 설정
+- BLUE/GREEN/YELLOW/ORANGE 임계값 + 부정 알림 임계값 조정.
+- 단조감소 검증 (Blue > Green > Yellow > Orange > 0).
+
+## 13.6 매출 현황 적정율 컬럼
+
+`/sales` 매출 리스트 — RENTAL 프로젝트 매출에만 거래처 단위 **최저 적정율** 노출:
+- `B/W 🟢 90%  C 🟢 90%` 형식 (B/W=흑백, C=컬러)
+- 같은 거래처의 IT계약 장비들 중 가장 우려되는 값 기준
+- 클릭 시 적정율 대시보드로 이동
+- TRADE/MAINTENANCE 등 비-RENTAL 매출은 "—"
+
+## 13.7 알림
+
+부정 의심 발생 시 모든 ADMIN 사용자에게 `Notification` 자동 생성:
+- 제목: `소모품 적정율 이상 감지 — {S/N}`
+- 본문: 계약번호, 거래처, 흑백/컬러 적정율
+- 링크: `/admin/yield-analysis?id={analysisId}`
+- 3언어 (vi/en/ko) 동시 저장
+
+## 13.8 데이터 모델 요약
+
+| 모델 | 역할 |
+|---|---|
+| `Item.expectedYield`, `yieldCoverageBase` | 품목별 정격·기준 |
+| `ItContractEquipment.actualCoverage` | 고객별 실제 상밀도 (기본 5) |
+| `ItContractEquipment.lastYieldRateBw/Color/CalcAt` | 마지막 계산 캐시 (정렬·필터용) |
+| `YieldAnalysis` | 분석 이력 (기간·실제·기대·뱃지·부정·조사메모) |
+| `YieldConfig` | 임계값 설정 (단일 row, id="default") |
+| `YieldBadge` enum | BLUE / GREEN / YELLOW / ORANGE / RED |
+| `NotificationType.YIELD_FRAUD_SUSPECT` | 부정 의심 알림 타입 |

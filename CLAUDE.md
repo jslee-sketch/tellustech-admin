@@ -97,6 +97,12 @@
 
 ## Phase 상태
 
-- Phase 1-1 완료: Next.js + Prisma + 인증 의존성 세팅.
-- Phase 1-2 진행 중: Prisma 스키마 / DB 생성.
-- Phase 1-3 이후는 가이드 참조.
+- Phase 1~5 완료. 최근 추가된 모듈은 아래 부록 참조.
+
+### 최근 추가 (2026-04 ~)
+
+- **SNMP 자동수집** (Phase 1~3): Windows Agent (Node 18 + pkg 단일 exe), 토큰 인증, 사용량 확인서 6단계 워크플로 + PDF 생성, GitHub Releases 자동 업데이트.
+- **소모품 적정율 분석**: `Item.expectedYield`, `ItContractEquipment.actualCoverage`, `YieldAnalysis`, `YieldConfig`, `YieldBadge` enum, `NotificationType.YIELD_FRAUD_SUSPECT`. `/admin/yield-analysis` 4탭 대시보드 + 검색 필터 + 계약별 그룹 펼치기. 매월 1일 02:00 KST `/api/jobs/yield-analysis-monthly` 자동 계산. 부정 의심(RED) 시 ADMIN 자동 알림 (3언어). 컬러 토너 공식: `MIN(sum_C, sum_M, sum_Y)` (1 페이지 = C+M+Y 동시 소모).
+- **QR 라벨/스캔 개선**: 모바일 카메라 인식률 (qrbox 동적, focusMode continuous, fps 15), 품목 매핑 server fallback (`/api/master/items?q=`), 인쇄 시 사이드바 숨김 + 헤더(매입처·매입번호·매입일자·출력일자) 자동 출력, 스캔 사유 옵션 매입/매출/반품 차단.
+- **사이드바·대시보드 재구성** (13그룹): 마스터·영업·렌탈·A/S·재고·인사·재경·회의·캘린더·메시징·**고객 포탈 운영(NEW)**·**통계(NEW)**·관리. SNMP/사용량확인서/적정율은 렌탈 그룹으로, 견적은 영업 그룹으로, 마감은 재경 그룹으로, 품목호환은 마스터 그룹으로 이동. 대시보드 12개 NavCard 가 사이드바와 1:1.
+- **Cron**: `/api/jobs/portal-news-generate` (월요일 09:00 KST · async fire-and-forget · Promise.allSettled). `/api/jobs/yield-analysis-monthly` (매월 1일 02:00 KST).

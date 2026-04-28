@@ -4,11 +4,18 @@ import "server-only";
 // 실제 연동: npm install net-snmp + 복합기별 OID + 장비 IP 정보 (스키마 확장 필요).
 // 여기서는 시뮬레이션 + 추후 실물 연결 포인트.
 
-export type DeviceModel = "SAMSUNG_SLX7500" | "SINDOH_D410" | "SINDOH_D320" | "SINDOH_D330";
+export type DeviceModel =
+  | "SAMSUNG_SLX7500"
+  | "SAMSUNG_SCX8123" // 흑백 전용 (컬러 OID 없음)
+  | "SINDOH_D410"
+  | "SINDOH_D320"
+  | "SINDOH_D330";
 
-// 모델별 OID 매핑 (플레이스홀더 — 실제 장비 문서 참조해 교체 필요)
-export const SNMP_OIDS: Record<DeviceModel, { bw: string; color: string }> = {
+// 모델별 OID 매핑. color = null 인 경우 흑백 전용 장비 (컬러 카운터 미지원).
+export const SNMP_OIDS: Record<DeviceModel, { bw: string; color: string | null }> = {
   SAMSUNG_SLX7500: { bw: "1.3.6.1.4.1.236.11.5.11.53.38.1.0", color: "1.3.6.1.4.1.236.11.5.11.53.38.2.0" },
+  // SCX-8123 — 흑백 전용 MFP. 표준 프린터 MIB(RFC 3805) prtMarkerLifeCount 의 총 페이지 카운터 사용.
+  SAMSUNG_SCX8123: { bw: "1.3.6.1.2.1.43.10.2.1.4.1.1", color: null },
   SINDOH_D410:     { bw: "1.3.6.1.4.1.46240.1.0", color: "1.3.6.1.4.1.46240.2.0" },
   SINDOH_D320:     { bw: "1.3.6.1.4.1.46240.1.0", color: "1.3.6.1.4.1.46240.2.0" },
   SINDOH_D330:     { bw: "1.3.6.1.4.1.46240.1.0", color: "1.3.6.1.4.1.46240.2.0" },
@@ -49,7 +56,9 @@ export async function fetchSnmpCounters(
       }
       const community = process.env.SNMP_COMMUNITY ?? "public";
       const session = snmp.createSession(safeIp, community);
-      const oids = [SNMP_OIDS[model].bw, SNMP_OIDS[model].color];
+      const colorOid = SNMP_OIDS[model].color;
+      // 흑백 전용 모델은 bw OID 만 쿼리. 컬러 모델은 두 OID 모두.
+      const oids = colorOid ? [SNMP_OIDS[model].bw, colorOid] : [SNMP_OIDS[model].bw];
       const varbinds = await new Promise<{ value: number | bigint }[]>((resolve, reject) => {
         session.get(oids, (err: unknown, vb: { value: number | bigint }[]) => {
           session.close();
@@ -60,7 +69,7 @@ export async function fetchSnmpCounters(
         model,
         ip: safeIp,
         counterBw: Number(varbinds[0]?.value ?? 0),
-        counterColor: Number(varbinds[1]?.value ?? 0),
+        counterColor: colorOid ? Number(varbinds[1]?.value ?? 0) : null,
         fetchedAt: new Date(),
         success: true,
       };
@@ -78,11 +87,12 @@ export async function fetchSnmpCounters(
 function mockReading(model: DeviceModel, ip: string, note?: string): SnmpReading {
   const seed = Array.from(ip).reduce((s, c) => s + c.charCodeAt(0), 0);
   const dayOffset = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+  const isMonochrome = SNMP_OIDS[model].color === null;
   return {
     model,
     ip,
     counterBw: 1000 + seed * 10 + dayOffset * 100,
-    counterColor: 200 + seed * 2 + dayOffset * 30,
+    counterColor: isMonochrome ? null : 200 + seed * 2 + dayOffset * 30,
     fetchedAt: new Date(),
     success: true,
     ...(note ? { error: `mock(${note})` } : {}),

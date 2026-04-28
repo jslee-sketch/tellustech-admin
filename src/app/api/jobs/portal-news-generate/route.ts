@@ -52,9 +52,9 @@ JSON 스키마:
       headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 4096,
+        max_tokens: 1500, // 4096 → 1500 (응답 시간 단축, 본문 300~500자엔 충분)
         system: "당신은 텔러스테크 회사의 사내 에디터입니다. 사용자(관리자)가 의뢰하는 사내 콘텐츠를 즉시 작성합니다. 출력은 항상 단일 JSON 객체만.",
-        tools: [{ type: "web_search_20250305" as any, name: "web_search", max_uses: 3 }],
+        // web_search 제거 — Railway 30초 타임아웃 안에 못 끝나는 주범. 외부 사실 확인은 관리자 검토 단계에서.
         messages: [
           { role: "user", content: prompt },
           { role: "assistant", content: '{"title":"' },
@@ -117,19 +117,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized", hint: "Railway logs 의 [portal-news-generate] auth diagnostic 확인" }, { status: 401 });
   }
 
-  // 시스템 사용자 (audit 컨텍스트)
-  const sysUser = await prisma.user.findFirst({
-    where: { username: { in: ["system", "cron", "admin"] } },
-    select: { id: true },
-  });
-
-  const results: any[] = [];
-  for (const t of TARGETS) {
+  // 한 카테고리 1건 생성 (전체 흐름 캡슐화 — Promise.allSettled 로 병렬)
+  async function generateOne(t: { category: PostCategory; topicHint: string }, sysUserId: string | null) {
     const generated = await generateNews(t.category, t.topicHint);
-    if (!generated) {
-      results.push({ category: t.category, status: "ai_unavailable" });
-      continue;
-    }
+    if (!generated) return { category: t.category, status: "ai_unavailable" };
 
     const sourceFooter = generated.sources.length > 0
       ? "\n\n---\n출처:\n" + generated.sources.map((u) => `- ${u}`).join("\n")
@@ -137,8 +128,11 @@ export async function POST(request: Request) {
     const disclaimerFooter = "\n\n※ AI 자동 생성 초안 (주간 자동 발행) — 발행 전 사실 검증 필요";
     const bodyKoWithFooter = generated.bodyKo + sourceFooter + disclaimerFooter;
 
-    const titleFilled = await fillTranslations({ vi: null, en: null, ko: generated.titleKo, originalLang: "KO" as Language });
-    const bodyFilled = await fillTranslations({ vi: null, en: null, ko: bodyKoWithFooter, originalLang: "KO" as Language });
+    // 번역 2건 병렬
+    const [titleFilled, bodyFilled] = await Promise.all([
+      fillTranslations({ vi: null, en: null, ko: generated.titleKo, originalLang: "KO" as Language }),
+      fillTranslations({ vi: null, en: null, ko: bodyKoWithFooter, originalLang: "KO" as Language }),
+    ]);
 
     try {
       const post = await withUniqueRetry(
@@ -155,19 +149,55 @@ export async function POST(request: Request) {
             originalLang: "KO" as Language,
             titleKo: titleFilled.ko, titleVi: titleFilled.vi, titleEn: titleFilled.en,
             bodyKo: bodyFilled.ko, bodyVi: bodyFilled.vi, bodyEn: bodyFilled.en,
-            isPublished: false, // 검토 후 발행
+            isPublished: false,
             isAiGenerated: true,
-            authorId: sysUser?.id ?? null,
+            authorId: sysUserId,
             companyCode: "TV",
           },
         })),
         { isConflict: () => true },
       );
-      results.push({ category: t.category, status: "created", postCode: post.postCode, title: post.titleKo });
+      return { category: t.category, status: "created", postCode: post.postCode, title: post.titleKo };
     } catch (e: any) {
-      results.push({ category: t.category, status: "db_error", error: e?.message });
+      return { category: t.category, status: "db_error", error: e?.message };
     }
   }
 
-  return NextResponse.json({ ok: true, generated: results.length, results });
+  // 백그라운드 작업 — fire-and-forget. 30초 타임아웃 우회.
+  // ?sync=1 쿼리로 동기 실행 (수동 테스트용)도 지원.
+  const url = new URL(request.url);
+  const sync = url.searchParams.get("sync") === "1";
+
+  const runJob = async () => {
+    try {
+      const sysUser = await prisma.user.findFirst({
+        where: { username: { in: ["system", "cron", "admin"] } },
+        select: { id: true },
+      });
+      // Promise.allSettled — 부분 성공 허용 (1건만 되도 OK).
+      const settled = await Promise.allSettled(TARGETS.map((t) => generateOne(t, sysUser?.id ?? null)));
+      const results = settled.map((s, i) => s.status === "fulfilled" ? s.value : { category: TARGETS[i].category, status: "rejected", error: String(s.reason?.message ?? s.reason) });
+      console.log("[portal-news-generate] async job complete:", JSON.stringify(results));
+      return results;
+    } catch (e: any) {
+      console.error("[portal-news-generate] async job error:", e?.message ?? e);
+      return [{ status: "fatal", error: String(e?.message ?? e) }];
+    }
+  };
+
+  if (sync) {
+    // 수동 테스트 — await 해서 결과 반환
+    const results = await runJob();
+    return NextResponse.json({ ok: true, mode: "sync", generated: results.length, results });
+  }
+
+  // 비동기 실행: 즉시 200 반환, 백그라운드에서 처리.
+  // catch 로 unhandled rejection 방지.
+  runJob().catch((e) => console.error("[portal-news-generate] background error:", e));
+  return NextResponse.json({
+    ok: true,
+    mode: "async",
+    scheduled: TARGETS.length,
+    note: "Generation runs in background. Check Railway logs or /admin/portal-posts in 1-2 minutes.",
+  }, { status: 202 });
 }

@@ -55,6 +55,13 @@ function isCronPath(pathname: string): boolean {
   return pathname.startsWith("/api/jobs/");
 }
 
+// /api/snmp/* 는 에이전트(고객사 PC)에서 토큰 인증으로 직접 호출.
+// X-Device-Token / X-Contract-Token 검증을 라우트 자체에서 처리하므로 세션 가드 우회.
+// 단 /api/admin/snmp/* 는 관리자 세션 필요 — 그건 그대로.
+function isAgentSnmpPath(pathname: string): boolean {
+  return pathname.startsWith("/api/snmp/");
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -76,6 +83,8 @@ export function proxy(request: NextRequest) {
   if (!session) {
     // /api/jobs/* 는 라우트가 자체 인증(Bearer or ADMIN session) — 그냥 통과.
     if (isCronPath(pathname)) return NextResponse.next();
+    // /api/snmp/* 는 에이전트 토큰 인증 (X-Device-Token / X-Contract-Token) — 그냥 통과.
+    if (isAgentSnmpPath(pathname)) return NextResponse.next();
     // API 요청은 401 JSON, 페이지 요청은 /login 리다이렉트
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 });

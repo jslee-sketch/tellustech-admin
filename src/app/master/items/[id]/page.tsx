@@ -43,6 +43,8 @@ export default async function EditItemPage({ params }: PageProps) {
               name: item.name,
               unit: item.unit ?? "",
               category: item.category ?? "",
+              expectedYield: item.expectedYield !== null && item.expectedYield !== undefined ? String(item.expectedYield) : "",
+              yieldCoverageBase: item.yieldCoverageBase !== null && item.yieldCoverageBase !== undefined ? String(item.yieldCoverageBase) : "5",
             }}
           />
         </Card>

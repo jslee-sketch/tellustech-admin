@@ -12,6 +12,8 @@ export type ItemFormValue = {
   name: string;
   unit: string;
   category: string;
+  expectedYield?: string;       // 정격 출력장수 (CONSUMABLE/PART 만)
+  yieldCoverageBase?: string;   // 기준 상밀도 (%, 기본 5)
 };
 
 type Props = {
@@ -43,11 +45,14 @@ export function ItemForm({ mode, initial, lang }: Props) {
         setSubmitting(false);
         return;
       }
+      const isConsumable = value.itemType === "CONSUMABLE" || value.itemType === "PART";
       const body = {
         itemType: value.itemType,
         name: value.name,
         unit: value.unit || null,
         category: value.category || null,
+        expectedYield: isConsumable && value.expectedYield ? Number(value.expectedYield) : null,
+        yieldCoverageBase: isConsumable && value.yieldCoverageBase ? Number(value.yieldCoverageBase) : null,
       };
       const res = await fetch(endpoint, {
         method,
@@ -137,6 +142,37 @@ export function ItemForm({ mode, initial, lang }: Props) {
           />
         </Field>
       </Row>
+
+      {(value.itemType === "CONSUMABLE" || value.itemType === "PART") && (
+        <div className="mt-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)]/40 p-3">
+          <div className="mb-2 text-[12px] font-bold text-[color:var(--tts-sub)]">
+            {t("yield.section.title", lang)}
+          </div>
+          <Row>
+            <Field label={t("yield.expectedYield", lang)} width="240px" hint={t("yield.expectedYieldHint", lang)}>
+              <TextInput
+                type="number"
+                min="0"
+                step="100"
+                value={value.expectedYield ?? ""}
+                onChange={(e) => set("expectedYield", e.target.value)}
+                placeholder="25000"
+              />
+            </Field>
+            <Field label={t("yield.coverageBase", lang)} width="160px" hint={t("yield.coverageBaseHint", lang)}>
+              <TextInput
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value={value.yieldCoverageBase ?? "5"}
+                onChange={(e) => set("yieldCoverageBase", e.target.value)}
+                placeholder="5"
+              />
+            </Field>
+          </Row>
+        </div>
+      )}
 
       {error && (
         <div className="mt-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">

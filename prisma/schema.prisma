@@ -231,6 +231,7 @@ enum NotificationType {
   SCHEDULE_DUE
   LICENSE_EXPIRING
   USAGE_CONFIRM_REQUEST
+  YIELD_FRAUD_SUSPECT
   OTHER
 }
 
@@ -492,16 +493,22 @@ model ClientContact {
 
 /// 공유 마스터 — company_code 없음. 품목명은 영어로만 관리.
 model Item {
-  id           String    @id @default(cuid())
-  itemCode     String    @unique
-  itemType     ItemType
-  name         String // 품목명 — 영어로만 입력
-  unit         String?
-  category     String?
-  reorderPoint Int? // 재고부족 알림 임계치 — null 이면 알림 없음(소모품 계열에서만 의미)
-  createdAt    DateTime  @default(now())
-  deletedAt    DateTime?
-  updatedAt    DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  itemCode          String    @unique
+  itemType          ItemType
+  name              String // 품목명 — 영어로만 입력
+  unit              String?
+  category          String?
+  reorderPoint      Int? // 재고부족 알림 임계치 — null 이면 알림 없음(소모품 계열에서만 의미)
+  // 소모품 적정율 계산 — itemType=CONSUMABLE/PART 일 때만 의미.
+  // expectedYield: 정격 출력 장수 (제조사 공표, 5% 상밀도 기준). 예 25000.
+  // yieldCoverageBase: 기준 상밀도 (%, 보통 5).
+  expectedYield     Int?
+  yieldCoverageBase Int?      @default(5)
+  yieldUnit         String?   @default("pages")
+  createdAt         DateTime  @default(now())
+  deletedAt         DateTime?
+  updatedAt         DateTime  @updatedAt
 
   inventoryStocks       InventoryStock[]
   inventoryTransactions InventoryTransaction[]
@@ -677,6 +684,7 @@ model ItContract {
   usageConfirmations  UsageConfirmation[]
   agentHeartbeats     AgentHeartbeat[]
   unregisteredDevices SnmpUnregisteredDevice[]
+  yieldAnalyses       YieldAnalysis[]
 
   @@index([clientId])
   @@index([status])
@@ -719,12 +727,19 @@ model ItContractEquipment {
   extraRateBw          Decimal?  @db.Decimal(10, 2)
   extraRateColor       Decimal?  @db.Decimal(10, 2)
   note                 String?
+  // 소모품 적정율 — 고객별 실제 상밀도 (%, 기본 5). 계약 협의/운영 중 조정.
+  actualCoverage       Int?      @default(5)
+  // 마지막 적정율 캐시 — 리스트 정렬/필터·뱃지 즉시 표시용.
+  lastYieldRateBw      Decimal?  @db.Decimal(5, 1)
+  lastYieldRateColor   Decimal?  @db.Decimal(5, 1)
+  lastYieldCalcAt      DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  itContract   ItContract    @relation(fields: [itContractId], references: [id], onDelete: Cascade)
-  item         Item          @relation(fields: [itemId], references: [id])
-  snmpReadings SnmpReading[]
+  itContract    ItContract      @relation(fields: [itContractId], references: [id], onDelete: Cascade)
+  item          Item            @relation(fields: [itemId], references: [id])
+  snmpReadings  SnmpReading[]
+  yieldAnalyses YieldAnalysis[]
 
   @@unique([itContractId, serialNumber])
   @@index([itContractId])
@@ -2702,4 +2717,85 @@ model SnmpUnregisteredDevice {
 
   @@index([contractId, status])
   @@map("snmp_unregistered_devices")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 소모품 적정율 분석 (Yield Analysis) — 토너/드럼 투입 vs 실제 출력
+// ═══════════════════════════════════════════════════════════════
+
+enum YieldBadge {
+  BLUE // 120% 이상 — 토너 부족 (재발주)
+  GREEN // 80~120% — 정상
+  YELLOW // 50~79% — 주의
+  ORANGE // 30~49% — 경고
+  RED // 30% 미만 — 부정 의심
+}
+
+model YieldAnalysis {
+  id          String              @id @default(cuid())
+  // 대상
+  equipmentId String
+  equipment   ItContractEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  contractId  String
+  contract    ItContract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  clientId    String
+
+  // 분석 기간
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // SNMP 기반 실제 출력량
+  actualPagesBw    Int
+  actualPagesColor Int @default(0)
+
+  // 소모품 투입 상세 ([{itemId, itemName, quantity, expectedYield, yieldCoverageBase, contributedExpectedPages}, ...])
+  consumablesUsed Json
+
+  // 분석 시점의 고객 상밀도 (%)
+  actualCoverage Int
+
+  // 기대 출력량 (공식 적용 후)
+  expectedPagesBw    Int
+  expectedPagesColor Int @default(0)
+
+  // 적정율 (%, 소수 1)
+  yieldRateBw    Decimal  @db.Decimal(5, 1)
+  yieldRateColor Decimal? @db.Decimal(5, 1)
+
+  // 뱃지
+  badgeBw    YieldBadge
+  badgeColor YieldBadge?
+
+  // 부정 감지
+  isFraudSuspect    Boolean   @default(false)
+  fraudNote         String?
+  fraudReviewedById String?
+  fraudReviewedAt   DateTime?
+
+  // 메타
+  calculatedById String? // 'SYSTEM' (cron) 또는 사용자 id
+  companyCode    String
+  createdAt      DateTime @default(now())
+
+  @@index([equipmentId])
+  @@index([contractId])
+  @@index([clientId])
+  @@index([isFraudSuspect])
+  @@index([badgeBw])
+  @@index([periodStart, periodEnd])
+  @@map("yield_analyses")
+}
+
+// 단일 row (id="default") — 관리자 임계값 설정
+model YieldConfig {
+  id                  String   @id @default(cuid())
+  thresholdBlue       Int      @default(120)
+  thresholdGreen      Int      @default(80)
+  thresholdYellow     Int      @default(50)
+  thresholdOrange     Int      @default(30)
+  fraudAlertThreshold Int      @default(30)
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+
+  @@map("yield_configs")
 }

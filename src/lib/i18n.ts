@@ -299,6 +299,7 @@ const DICT: Dict = {
   "nav.adminReferrals":             { vi: "Giới thiệu",            en: "Referrals",            ko: "업체 추천" },
   "nav.adminSnmp":                  { vi: "Quản lý SNMP",          en: "SNMP Admin",           ko: "SNMP 관리" },
   "nav.adminUsageConfirm":          { vi: "Xác nhận sản lượng",    en: "Usage Confirmations",  ko: "사용량 확인서" },
+  "nav.adminYield":                 { vi: "Phân tích vật tư",      en: "Yield Analysis",       ko: "소모품 적정율" },
 
   // ── 포털 메인 ──
   "portal.title":          { vi: "Cổng khách hàng TELLUSTECH",    en: "TELLUSTECH Customer Portal",  ko: "TELLUSTECH · 고객 포탈" },
@@ -2517,6 +2518,34 @@ const DICT: Dict = {
   "note.itEquipStock":       { vi: "Kiểm tồn S/N nghiêm ngặt sẽ kích hoạt sau khi triển khai Phase 2 #5 Tồn kho. Hiện tại chỉ chặn trùng S/N trong nội bộ HĐ. Tải lên hàng loạt Excel sẽ thêm trong chunk tiếp theo.", en: "Strict S/N stock check activates after Phase 2 #5 Inventory. For now, only intra-contract S/N duplicates are blocked. Bulk Excel upload will be added in the next chunk.", ko: "S/N 엄격 재고확인은 Phase 2 #5 재고관리 구현 후 활성화됩니다. 지금은 계약 내 S/N 중복만 방지합니다. 엑셀 대량 업로드도 다음 청크에서 추가 예정입니다." },
   "note.itGenerateOrders":   { vi: "Tự động lấp các tháng trong kỳ hợp đồng. Tháng đã có sẽ bỏ qua, có thể nhấn nhiều lần. Mỗi đơn nếu Có thể chỉnh sửa thì có thể sửa số tiền/huỷ/xoá. Đơn đã huỷ không tính vào tổng. Khi đổi phí cơ bản thiết bị, đơn cũ KHÔNG được tính lại tự động — phải sửa từng đơn hoặc xoá tháng đó rồi tạo lại.", en: "Auto-fills months in the contract period. Existing months are skipped, so it's safe to click multiple times. Each order, if Editable, can have amount edited/canceled/deleted. Canceled orders are excluded from active total. When equipment base fee changes, existing order amounts are NOT recomputed automatically — edit each, or delete the month and regenerate.", ko: "계약기간에 해당하는 월을 자동으로 채웁니다. 이미 있는 월은 건너뛰므로 여러 번 눌러도 안전. 각 오더는 편집 가능 이면 금액 수정/취소/삭제가 됩니다. 취소된 오더는 활성 합계에서 제외됩니다. 장비 기본료 변경 시 기존 오더 금액은 자동 재산정되지 않습니다 — 개별 수정 또는 해당 월을 삭제 후 재생성." },
   "note.itBillingDelta":     { vi: "Tính sử dụng theo delta so với tháng trước, tự cộng phí cơ bản theo thiết bị + phí vượt B/W + Color. Tháng đầu chưa có lịch sử nên xem toàn bộ counter hiện tại là sử dụng — nếu là máy cũ đã dùng, hãy tạo bản ghi xác nhận đầu tiên với counter ban đầu, sau đó các tháng kế tiếp delta sẽ chính xác. Chữ ký KH lưu base64 PNG từ HTML5 Canvas.", en: "Computes usage as delta vs the previous month and auto-sums base fee per equipment + B/W + Color overage. The first month has no prior record, so the entire current counter is treated as usage — for already-used devices, first create a confirmation record with the install-time counter so that delta is correct from the next month. Customer signature stored as base64 PNG from HTML5 Canvas.", ko: "이전 월 카운터와의 delta 로 사용량을 계산해 장비별 기본료 + 흑백/컬러 초과 과금을 자동 합산합니다. 첫 월은 이전 기록이 없어 현재 카운터 전체를 사용량으로 간주합니다 — 설치 시점 공장 초기값이 아닌 기존 사용 기기라면 설치 시 카운터를 별도로 관리하는 첫 컨펌 레코드를 먼저 생성하고 이후 월부터 delta 가 맞게 계산되도록 사용하세요. 고객 서명은 HTML5 Canvas 에서 base64 PNG 로 저장." },
+
+  // ── 소모품 적정율 (Yield Analysis) ──
+  "yield.section.title":     { vi: "Thông tin in ấn (vật tư tiêu hao)", en: "Print yield (consumables)", ko: "출력 관련 (소모품)" },
+  "yield.expectedYield":     { vi: "Số trang định mức", en: "Rated yield (pages)", ko: "정격 출력장수" },
+  "yield.expectedYieldHint": { vi: "Theo nhà sản xuất, ở mật độ 5%", en: "Mfr. spec at 5% coverage", ko: "제조사 공표, 5% 상밀도 기준" },
+  "yield.coverageBase":      { vi: "Mật độ chuẩn (%)", en: "Base coverage (%)", ko: "기준 상밀도 (%)" },
+  "yield.coverageBaseHint":  { vi: "Mặc định 5%", en: "Default 5%", ko: "기본 5%" },
+  "yield.adequacyRate":      { vi: "Tỷ lệ hiệu suất", en: "Adequacy rate", ko: "적정율" },
+  "yield.actualCoverage":    { vi: "Mật độ thực tế", en: "Actual coverage", ko: "실제 상밀도" },
+  "yield.consumableInput":   { vi: "Số lượng đầu vào", en: "Input quantity", ko: "투입 수량" },
+  "yield.actualOutput":      { vi: "Sản lượng thực tế", en: "Actual output", ko: "실제 출력량" },
+  "yield.expectedOutput":    { vi: "Sản lượng kỳ vọng", en: "Expected output", ko: "기대 출력량" },
+  "yield.fraudSuspect":      { vi: "Nghi ngờ cung cấp vật tư quá mức", en: "Excessive consumable supply suspected", ko: "소모품 과다 투입 의심" },
+  "yield.investigation":     { vi: "Ghi chú điều tra", en: "Investigation note", ko: "조사 메모" },
+  "yield.technicianStats":   { vi: "Thống kê theo kỹ thuật viên", en: "Technician supply stats", ko: "기사별 투입 통계" },
+  "yield.badge.blue":        { vi: "Thiếu mực", en: "Toner low", ko: "토너 부족" },
+  "yield.badge.green":       { vi: "Bình thường", en: "Normal", ko: "정상" },
+  "yield.badge.yellow":      { vi: "Chú ý", en: "Caution", ko: "주의" },
+  "yield.badge.orange":      { vi: "Cảnh báo", en: "Warning", ko: "경고" },
+  "yield.badge.red":         { vi: "Nghi ngờ gian lận", en: "Fraud suspect", ko: "부정 의심" },
+  "yield.tab.overview":      { vi: "Tổng quan", en: "Overview", ko: "전체 현황" },
+  "yield.tab.fraud":         { vi: "Quản lý nghi ngờ", en: "Fraud Suspects", ko: "부정 의심 관리" },
+  "yield.tab.tech":          { vi: "Theo kỹ thuật viên", en: "By technician", ko: "기사별 통계" },
+  "yield.tab.config":        { vi: "Thiết lập", en: "Settings", ko: "설정" },
+  "yield.dashboard.title":   { vi: "Phân tích tỷ lệ vật tư tiêu hao", en: "Consumable Yield Analysis", ko: "소모품 적정율 분석" },
+  "yield.recalculate":       { vi: "Tính lại", en: "Recalculate", ko: "재계산" },
+  "yield.viewHistory":       { vi: "Xem lịch sử", en: "View history", ko: "이력 보기" },
+  "yield.recentMonths":      { vi: "{n} tháng gần đây", en: "Last {n} months", ko: "최근 {n}개월" },
 };
 
 export function t(key: string, lang: Lang): string {

@@ -59,6 +59,25 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
       if (p.unit !== undefined) data.unit = trimNonEmpty(p.unit);
       if (p.category !== undefined) data.category = trimNonEmpty(p.category);
+      // 소모품 적정율 — null 허용(해제), 정수 0~10,000,000.
+      if (p.expectedYield !== undefined) {
+        if (p.expectedYield === null || p.expectedYield === "") {
+          data.expectedYield = null;
+        } else {
+          const n = Number(p.expectedYield);
+          if (!Number.isInteger(n) || n < 0 || n > 10000000) return badRequest("invalid_input", { field: "expectedYield" });
+          data.expectedYield = n;
+        }
+      }
+      if (p.yieldCoverageBase !== undefined) {
+        if (p.yieldCoverageBase === null || p.yieldCoverageBase === "") {
+          data.yieldCoverageBase = null;
+        } else {
+          const n = Number(p.yieldCoverageBase);
+          if (!Number.isInteger(n) || n < 1 || n > 100) return badRequest("invalid_input", { field: "yieldCoverageBase" });
+          data.yieldCoverageBase = n;
+        }
+      }
       if (p.reorderPoint !== undefined) {
         if (p.reorderPoint === null || p.reorderPoint === "") {
           data.reorderPoint = null;

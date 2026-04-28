@@ -17,6 +17,17 @@ import type { ItemType } from "@/generated/prisma/client";
 
 const ITEM_TYPES: readonly ItemType[] = ["PRODUCT", "CONSUMABLE", "PART"] as const;
 
+function parseYieldInt(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 10000000 ? n : null;
+}
+function parseCoverage(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 1 && n <= 100 ? n : null;
+}
+
 // 품목은 공유 마스터. itemCode 는 ITM-YYMMDD-### 자동 생성.
 
 export async function GET(request: Request) {
@@ -65,6 +76,8 @@ export async function POST(request: Request) {
       }
       const unit = trimNonEmpty(p.unit);
       const category = trimNonEmpty(p.category);
+      const expectedYield = parseYieldInt(p.expectedYield);
+      const yieldCoverageBase = parseCoverage(p.yieldCoverageBase);
 
       const created = await withUniqueRetry(
         async () => {
@@ -80,7 +93,12 @@ export async function POST(request: Request) {
             },
           });
           return prisma.item.create({
-            data: { itemCode, itemType, name, unit, category },
+            data: {
+              itemCode, itemType, name, unit, category,
+              ...(itemType === "CONSUMABLE" || itemType === "PART"
+                ? { expectedYield, yieldCoverageBase: yieldCoverageBase ?? 5 }
+                : {}),
+            },
           });
         },
         { isConflict: isUniqueConstraintError },

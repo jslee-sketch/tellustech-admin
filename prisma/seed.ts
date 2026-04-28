@@ -320,6 +320,46 @@ async function seedItems() {
     });
   }
   console.log(`  ✓ items: ${SAMPLE_ITEMS.length}`);
+
+  // 소모품 적정율 기준값 — 제조사 공표 기준 (5% 상밀도). 카테고리·이름 패턴 매칭.
+  const YIELD_DEFAULTS: { match: (name: string, category: string | null) => boolean; expectedYield: number }[] = [
+    { match: (n) => /Drum.*D330|D330.*Drum/i.test(n), expectedYield: 80000 },
+    { match: (n) => /Toner Black.*D330|Black.*D330.*Toner/i.test(n), expectedYield: 25000 },
+    { match: (n) => /Toner.*(Cyan|Magenta|Yellow).*X7500/i.test(n), expectedYield: 15000 },
+    { match: (n) => /Fuser/i.test(n), expectedYield: 100000 },
+  ];
+  let updated = 0;
+  const consumables = await prisma.item.findMany({
+    where: { itemType: { in: ["CONSUMABLE", "PART"] }, expectedYield: null },
+    select: { id: true, name: true, category: true },
+  });
+  for (const c of consumables) {
+    const match = YIELD_DEFAULTS.find((d) => d.match(c.name, c.category));
+    if (match) {
+      await prisma.item.update({
+        where: { id: c.id },
+        data: { expectedYield: match.expectedYield, yieldCoverageBase: 5, yieldUnit: "pages" },
+      });
+      updated++;
+    }
+  }
+  console.log(`  ✓ items expectedYield seeded: ${updated}`);
+}
+
+async function seedYieldConfig() {
+  await prisma.yieldConfig.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      thresholdBlue: 120,
+      thresholdGreen: 80,
+      thresholdYellow: 50,
+      thresholdOrange: 30,
+      fraudAlertThreshold: 30,
+    },
+  });
+  console.log(`  ✓ yieldConfig: default`);
 }
 
 // Phase A — 포탈 포인트 시스템 기본 단가 + 사이드바 배너
@@ -418,6 +458,7 @@ async function main() {
   await seedPointConfigs();
   await seedPortalBanners();
   await seedSnmpModels();
+  await seedYieldConfig();
   console.log("✅ Seed complete");
 }
 

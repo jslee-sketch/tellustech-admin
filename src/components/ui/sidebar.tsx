@@ -429,10 +429,10 @@ function NavItem({
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFav(entry.href); }}
             title={isFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}
             aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
-            className={`mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-[14px] transition ${
+            className={`mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded text-[18px] transition ${
               isFav
                 ? "text-[color:var(--tts-danger)]"
-                : "text-[color:var(--tts-muted)] opacity-30 hover:opacity-100 group-hover:opacity-60"
+                : "text-[color:var(--tts-sub)] opacity-60 hover:opacity-100 group-hover:opacity-90"
             }`}
           >
             {isFav ? "♥" : "♡"}

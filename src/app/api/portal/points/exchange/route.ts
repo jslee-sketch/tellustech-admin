@@ -23,6 +23,13 @@ export async function POST(request: Request) {
     if (!Number.isFinite(amount) || amount < MIN_EXCHANGE) return badRequest("minimum_1m");
     if (amount % MIN_EXCHANGE !== 0) return badRequest("must_be_million_unit");
 
+    // 거래처별 포인트 사용 정책 검증 — 계약 시 결정된 사용 방식만 허용
+    const client = await prisma.client.findUnique({ where: { id: user.clientId }, select: { pointPolicy: true } });
+    const policy = client?.pointPolicy ?? "NONE";
+    if (policy === "NONE") return badRequest("policy_not_set", { hint: "관리자가 포인트 사용 정책을 설정하지 않았습니다. 영업담당에게 문의하세요." });
+    if (policy === "INVOICE_DEDUCT_ONLY" && rewardType !== "INVOICE_DEDUCT") return badRequest("policy_violation", { hint: "이 거래처는 청구액 차감만 가능합니다." });
+    if (policy === "GIFT_CARD_ONLY" && rewardType !== "GIFT_CARD") return badRequest("policy_violation", { hint: "이 거래처는 상품권 수령만 가능합니다." });
+
     try {
       const reward = await prisma.portalReward.create({
         data: {

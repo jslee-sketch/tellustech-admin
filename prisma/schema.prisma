@@ -433,6 +433,9 @@ model Client {
   grade              ClientGrade?
   marketingTags      String[] // groupTags 와 동일 의미
   receivableStatus   ReceivableStatus @default(NORMAL)
+  // 포탈 포인트 사용 정책 — 계약 시점에 결정. 고객은 이 범위 안에서만 교환 신청 가능.
+  // 대기업 컴플라이언스 (개인 상품권 수령 금지 등) 대응.
+  pointPolicy        ClientPointPolicy @default(NONE)
   notes              String?
   createdAt          DateTime         @default(now())
   deletedAt          DateTime?
@@ -2235,6 +2238,18 @@ model PortalReward {
 enum RewardType {
   INVOICE_DEDUCT
   GIFT_CARD
+}
+
+// 거래처별 포인트 사용 정책 — 관리자가 계약 시 설정.
+// NONE: 교환 불가 (적립만 가능 — 추후 정책 결정까지 보관)
+// INVOICE_DEDUCT_ONLY: 청구액 차감만
+// GIFT_CARD_ONLY: 상품권만
+// BOTH: 둘 다 선택 가능
+enum ClientPointPolicy {
+  NONE
+  INVOICE_DEDUCT_ONLY
+  GIFT_CARD_ONLY
+  BOTH
 }
 
 enum RewardStatus {

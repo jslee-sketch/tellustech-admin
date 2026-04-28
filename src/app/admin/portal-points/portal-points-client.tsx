@@ -4,27 +4,116 @@ import { useEffect, useState } from "react";
 import { Card, ClientCombobox } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
-type Tab = "config" | "grant" | "rewards" | "history";
+type Tab = "config" | "grant" | "rewards" | "history" | "policies";
+
+const TAB_LABEL: Record<Tab, string> = {
+  config: "단가 설정",
+  grant: "수동 지급",
+  rewards: "교환 승인",
+  history: "이력",
+  policies: "거래처별 정책",
+};
 
 export function PortalPointsAdminClient({ lang, canEditConfig }: { lang: Lang; canEditConfig: boolean }) {
-  const [tab, setTab] = useState<Tab>("config");
+  const [tab, setTab] = useState<Tab>("policies");
   return (
     <main className="flex-1 p-6 md:p-8">
       <div className="mx-auto max-w-6xl">
         <h1 className="mb-4 text-2xl font-extrabold">🏆 {t("admin.portalPoints.title", lang)}</h1>
         <div className="mb-4 flex gap-1 border-b border-[color:var(--tts-border)]">
-          {(["config", "grant", "rewards", "history"] as const).map((k) => (
+          {(["policies", "config", "grant", "rewards", "history"] as const).map((k) => (
             <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 text-[13px] font-bold ${tab === k ? "border-b-2 border-[color:var(--tts-accent)] text-[color:var(--tts-accent)]" : "text-[color:var(--tts-muted)] hover:text-[color:var(--tts-text)]"}`}>
-              {t(`admin.portalPoints.tab.${k}`, lang)}
+              {TAB_LABEL[k]}
             </button>
           ))}
         </div>
+        {tab === "policies" && <PoliciesTab lang={lang} />}
         {tab === "config" && <ConfigTab lang={lang} canEdit={canEditConfig} />}
         {tab === "grant" && <GrantTab lang={lang} />}
         {tab === "rewards" && <RewardsTab lang={lang} />}
         {tab === "history" && <HistoryTab lang={lang} />}
       </div>
     </main>
+  );
+}
+
+const POLICY_LABEL: Record<string, string> = {
+  NONE: "❌ 미설정 (교환 불가)",
+  INVOICE_DEDUCT_ONLY: "💰 청구액 차감만",
+  GIFT_CARD_ONLY: "🎫 상품권만",
+  BOTH: "✅ 둘 다 가능",
+};
+
+function PoliciesTab({ lang }: { lang: Lang }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
+
+  async function refetch() {
+    const r = await fetch("/api/admin/portal-points/policies", { credentials: "same-origin" });
+    const j = await r.json();
+    setItems(j?.items ?? []);
+  }
+  useEffect(() => { refetch(); }, []);
+
+  async function setPolicy(clientId: string, pointPolicy: string) {
+    setSavingId(clientId);
+    try {
+      await fetch("/api/admin/portal-points/policies", { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ clientId, pointPolicy }) });
+      await refetch();
+    } finally { setSavingId(null); }
+  }
+
+  const filtered = filter
+    ? items.filter((c) => `${c.clientCode} ${c.companyNameVi} ${c.companyNameKo ?? ""}`.toLowerCase().includes(filter.toLowerCase()))
+    : items;
+
+  return (
+    <Card title="거래처별 포인트 사용 정책" count={items.length}>
+      <div className="mb-3 rounded bg-[color:var(--tts-warn-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-warn)]">
+        ⚠️ 계약 시점에 결정된 정책에 따라 거래처가 포인트를 어떻게 사용할 수 있는지 정합니다.
+        <br />
+        대기업 컴플라이언스 (개인 상품권 수령 금지 등) 대응을 위해 신중히 설정하세요.
+      </div>
+      <input
+        type="text"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="거래처 검색 (코드 / 이름)"
+        className="mb-3 w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px]"
+      />
+      <table className="w-full text-[12px]">
+        <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
+          <tr>
+            <th className="px-2 py-1 text-left">코드</th>
+            <th className="px-2 py-1 text-left">거래처명</th>
+            <th className="px-2 py-1 text-left">포탈 ID</th>
+            <th className="px-2 py-1 text-right">포인트 잔액</th>
+            <th className="px-2 py-1 text-left">사용 정책</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((c) => (
+            <tr key={c.id} className="border-b border-[color:var(--tts-border)]/50">
+              <td className="px-2 py-1.5 font-mono">{c.clientCode}</td>
+              <td className="px-2 py-1.5">{c.companyNameKo ?? c.companyNameVi}</td>
+              <td className="px-2 py-1.5 text-[11px]">{c.portalUsername ? <span className={c.portalActive ? "" : "text-[color:var(--tts-muted)] line-through"}>{c.portalUsername}</span> : <span className="text-[color:var(--tts-muted)]">미발급</span>}</td>
+              <td className="px-2 py-1.5 text-right font-mono font-bold text-[color:var(--tts-warn)]">{new Intl.NumberFormat("vi-VN").format(c.balance)}d</td>
+              <td className="px-2 py-1.5">
+                <select
+                  value={c.pointPolicy}
+                  disabled={savingId === c.id}
+                  onChange={(e) => setPolicy(c.id, e.target.value)}
+                  className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[12px]"
+                >
+                  {Object.entries(POLICY_LABEL).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                </select>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
   );
 }
 

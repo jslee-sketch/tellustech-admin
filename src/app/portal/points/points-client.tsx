@@ -25,7 +25,7 @@ const REASON_LABEL_KEY: Record<string, string> = {
 };
 
 export function PointsClient({ lang }: { lang: Lang }) {
-  const [data, setData] = useState<{ balance: number; items: any[] } | null>(null);
+  const [data, setData] = useState<{ balance: number; items: any[]; pointPolicy: string } | null>(null);
   const [exchangeOpen, setExchangeOpen] = useState(false);
 
   async function refetch() {
@@ -39,7 +39,8 @@ export function PointsClient({ lang }: { lang: Lang }) {
   if (!data) return <div className="p-8 text-[color:var(--tts-muted)]">{t("common.loading", lang)}</div>;
 
   const progress = Math.min((data.balance / MIN_EXCHANGE) * 100, 100);
-  const canExchange = data.balance >= MIN_EXCHANGE;
+  const policyAllowsExchange = data.pointPolicy && data.pointPolicy !== "NONE";
+  const canExchange = data.balance >= MIN_EXCHANGE && policyAllowsExchange;
 
   return (
     <main className="flex-1 p-6 md:p-8">
@@ -54,7 +55,13 @@ export function PointsClient({ lang }: { lang: Lang }) {
           </div>
           <div className="mb-3 text-[11px] text-[color:var(--tts-muted)]">{progress.toFixed(1)}% / {MIN_EXCHANGE.toLocaleString("vi-VN")}d ({t("portal.points.toExchange", lang)})</div>
           <Button onClick={() => setExchangeOpen(true)} disabled={!canExchange} variant={canExchange ? "accent" : undefined}>{t("portal.points.exchange", lang)}</Button>
-          {!canExchange && <span className="ml-2 text-[11px] text-[color:var(--tts-muted)]">{t("portal.points.minimum", lang)}</span>}
+          {!policyAllowsExchange && <span className="ml-2 text-[11px] text-[color:var(--tts-warn)]">⚠ 포인트 사용 정책 미설정 — 영업담당에게 문의하세요</span>}
+          {policyAllowsExchange && data.balance < MIN_EXCHANGE && <span className="ml-2 text-[11px] text-[color:var(--tts-muted)]">{t("portal.points.minimum", lang)}</span>}
+          {policyAllowsExchange && (
+            <div className="mt-2 text-[11px] text-[color:var(--tts-sub)]">
+              계약상 사용 방식: {data.pointPolicy === "INVOICE_DEDUCT_ONLY" ? "💰 청구액 차감만" : data.pointPolicy === "GIFT_CARD_ONLY" ? "🎫 상품권 수령만" : "💰 청구액 차감 또는 🎫 상품권 수령"}
+            </div>
+          )}
         </Card>
 
         <div className="mt-4">
@@ -96,14 +103,18 @@ export function PointsClient({ lang }: { lang: Lang }) {
           </Card>
         </div>
 
-        {exchangeOpen && <ExchangeModal balance={data.balance} lang={lang} onClose={() => setExchangeOpen(false)} onSuccess={() => { setExchangeOpen(false); refetch(); }} />}
+        {exchangeOpen && <ExchangeModal balance={data.balance} lang={lang} pointPolicy={data.pointPolicy} onClose={() => setExchangeOpen(false)} onSuccess={() => { setExchangeOpen(false); refetch(); }} />}
       </div>
     </main>
   );
 }
 
-function ExchangeModal({ balance, lang, onClose, onSuccess }: { balance: number; lang: Lang; onClose: () => void; onSuccess: () => void }) {
-  const [rewardType, setRewardType] = useState<"INVOICE_DEDUCT" | "GIFT_CARD">("INVOICE_DEDUCT");
+function ExchangeModal({ balance, lang, pointPolicy, onClose, onSuccess }: { balance: number; lang: Lang; pointPolicy: string; onClose: () => void; onSuccess: () => void }) {
+  // 정책에 따라 허용된 옵션만 표시
+  const allowInvoice = pointPolicy === "INVOICE_DEDUCT_ONLY" || pointPolicy === "BOTH";
+  const allowGift = pointPolicy === "GIFT_CARD_ONLY" || pointPolicy === "BOTH";
+  const initial: "INVOICE_DEDUCT" | "GIFT_CARD" = allowInvoice ? "INVOICE_DEDUCT" : "GIFT_CARD";
+  const [rewardType, setRewardType] = useState<"INVOICE_DEDUCT" | "GIFT_CARD">(initial);
   const [amount, setAmount] = useState(MIN_EXCHANGE);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,9 +147,16 @@ function ExchangeModal({ balance, lang, onClose, onSuccess }: { balance: number;
         <div className="mb-3">
           <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.points.exchangeMethod", lang)}</div>
           <div className="space-y-1.5">
-            <label className="flex cursor-pointer items-center gap-2 text-[13px]"><input type="radio" checked={rewardType === "INVOICE_DEDUCT"} onChange={() => setRewardType("INVOICE_DEDUCT")} /> 💰 {t("portal.points.invoiceDeduct", lang)}</label>
-            <label className="flex cursor-pointer items-center gap-2 text-[13px]"><input type="radio" checked={rewardType === "GIFT_CARD"} onChange={() => setRewardType("GIFT_CARD")} /> 🎫 {t("portal.points.giftCard", lang)}</label>
+            {allowInvoice && (
+              <label className="flex cursor-pointer items-center gap-2 text-[13px]"><input type="radio" checked={rewardType === "INVOICE_DEDUCT"} onChange={() => setRewardType("INVOICE_DEDUCT")} /> 💰 {t("portal.points.invoiceDeduct", lang)}</label>
+            )}
+            {allowGift && (
+              <label className="flex cursor-pointer items-center gap-2 text-[13px]"><input type="radio" checked={rewardType === "GIFT_CARD"} onChange={() => setRewardType("GIFT_CARD")} /> 🎫 {t("portal.points.giftCard", lang)}</label>
+            )}
           </div>
+          {(!allowInvoice || !allowGift) && (
+            <div className="mt-1 text-[10px] text-[color:var(--tts-muted)]">※ 계약상 결정된 사용 방식만 표시됩니다.</div>
+          )}
         </div>
 
         <div className="mb-3">

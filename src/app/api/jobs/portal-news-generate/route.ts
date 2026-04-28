@@ -103,8 +103,18 @@ export async function POST(request: Request) {
       adminOk = session.role === "ADMIN";
     } catch { /* 비로그인 */ }
   }
+  // 진단 로그 — Railway logs 에서 확인. secret 값은 마스킹.
+  // (이 로그는 안정화 후 제거 권장)
+  console.log("[portal-news-generate] auth diagnostic:", JSON.stringify({
+    receivedAuthHeader: auth ? `${auth.slice(0, 10)}...(len=${auth.length})` : "(empty)",
+    cronSecretSet: !!expected,
+    cronSecretLen: expected ? expected.length : 0,
+    bearerOk,
+    adminOk,
+    userAgent: request.headers.get("user-agent")?.slice(0, 60),
+  }));
   if (!bearerOk && !adminOk) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "unauthorized", hint: "Railway logs 의 [portal-news-generate] auth diagnostic 확인" }, { status: 401 });
   }
 
   // 시스템 사용자 (audit 컨텍스트)

@@ -125,6 +125,8 @@ const GROUPS: NavGroup[] = [
   },
 ];
 
+const FAV_STORAGE_KEY = "tts-sidebar-favs";
+
 export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
@@ -137,6 +139,24 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
   const [perms, setPerms] = useState<Record<string, "HIDDEN" | "VIEW" | "WRITE">>({});
   const [companyCode, setCompanyCode] = useState<string>("");
   const [allowedCompanies, setAllowedCompanies] = useState<string[]>([]);
+  // 즐겨찾기 — 사용자별 자주 사용하는 항목 (localStorage 저장).
+  // 빈 하트 → 클릭 시 빨간 하트로 바뀌고, 사이드바 상단 "즐겨찾기" 그룹에 자동 노출.
+  const [favs, setFavs] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem(FAV_STORAGE_KEY) : null;
+      if (saved) setFavs(new Set(JSON.parse(saved) as string[]));
+    } catch { /* ignore */ }
+  }, []);
+  function toggleFav(href: string) {
+    setFavs((prev) => {
+      const next = new Set(prev);
+      if (next.has(href)) next.delete(href);
+      else next.add(href);
+      try { localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(Array.from(next))); } catch { /* ignore */ }
+      return next;
+    });
+  }
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "same-origin" }).then((r) => r.json()).then((j) => {
       if (j?.permissions) setPerms(j.permissions);
@@ -308,15 +328,40 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
       {/* 네비 */}
       <nav className="flex-1 overflow-y-auto py-2">
         <ul className="space-y-0.5 px-2">
-          <NavItem entry={HOME} active={HOME.match(pathname)} collapsed={collapsed} lang={currentLang} />
+          <NavItem entry={HOME} active={HOME.match(pathname)} collapsed={collapsed} lang={currentLang} isFav={favs.has(HOME.href)} onToggleFav={toggleFav} />
         </ul>
+
+        {/* 즐겨찾기 — 빨간 하트 누른 항목들 자동 노출 */}
+        {favs.size > 0 && (() => {
+          const allItems = GROUPS.flatMap((g) => g.items);
+          const favEntries = allItems.filter((n) => favs.has(n.href) && !isHidden(n.labelKey));
+          if (favEntries.length === 0) return null;
+          return (
+            <div className={collapsed ? "mt-2 border-t border-[color:var(--tts-border)] pt-2" : "mt-3"}>
+              {!collapsed && (
+                <div className="mb-1 flex items-center gap-2 px-3">
+                  <span className="h-3.5 w-1 rounded-full bg-[color:var(--tts-danger)]" aria-hidden />
+                  <span className="text-[13px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
+                    ❤ 즐겨찾기
+                  </span>
+                </div>
+              )}
+              <ul className="space-y-0.5 px-2">
+                {favEntries.map((n) => (
+                  <NavItem key={`fav-${n.href}`} entry={n} active={n.match(pathname)} collapsed={collapsed} lang={currentLang} isFav={true} onToggleFav={toggleFav} />
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
+
         {GROUPS.map((g, gi) => (
           <div
             key={g.labelKey}
             className={
               collapsed
                 ? "mt-2 border-t border-[color:var(--tts-border)] pt-2"
-                : gi === 0
+                : gi === 0 && favs.size === 0
                   ? "mt-3"
                   : "mt-4 border-t border-[color:var(--tts-border)] pt-3"
             }
@@ -331,7 +376,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
             )}
             <ul className="space-y-0.5 px-2">
               {g.items.filter((n) => !isHidden(n.labelKey)).map((n) => (
-                <NavItem key={n.href} entry={n} active={n.match(pathname)} collapsed={collapsed} lang={currentLang} />
+                <NavItem key={n.href} entry={n} active={n.match(pathname)} collapsed={collapsed} lang={currentLang} isFav={favs.has(n.href)} onToggleFav={toggleFav} />
               ))}
             </ul>
           </div>
@@ -354,22 +399,46 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
   );
 }
 
-function NavItem({ entry, active, collapsed, lang }: { entry: NavEntry; active: boolean; collapsed: boolean; lang: Lang }) {
+function NavItem({
+  entry, active, collapsed, lang, isFav, onToggleFav,
+}: {
+  entry: NavEntry; active: boolean; collapsed: boolean; lang: Lang;
+  isFav: boolean; onToggleFav: (href: string) => void;
+}) {
   const label = t(entry.labelKey, lang);
   return (
     <li>
-      <Link
-        href={entry.href}
-        title={label}
-        className={`flex items-center gap-2 rounded-md px-2 py-2 text-[13px] font-semibold transition ${
-          active
-            ? "bg-[color:var(--tts-primary-dim)] text-[color:var(--tts-primary)]"
-            : "text-[color:var(--tts-sub)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-        }`}
-      >
-        <span className="text-[18px] leading-none">{entry.icon}</span>
-        {!collapsed && <span className="truncate">{label}</span>}
-      </Link>
+      <div className={`group flex items-center gap-1 rounded-md transition ${
+        active
+          ? "bg-[color:var(--tts-primary-dim)]"
+          : "hover:bg-[color:var(--tts-card-hover)]"
+      }`}>
+        <Link
+          href={entry.href}
+          title={label}
+          className={`flex flex-1 items-center gap-2 rounded-md px-2 py-2 text-[13px] font-semibold transition ${
+            active ? "text-[color:var(--tts-primary)]" : "text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"
+          }`}
+        >
+          <span className="text-[18px] leading-none">{entry.icon}</span>
+          {!collapsed && <span className="truncate">{label}</span>}
+        </Link>
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFav(entry.href); }}
+            title={isFav ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+            aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+            className={`mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded text-[14px] transition ${
+              isFav
+                ? "text-[color:var(--tts-danger)]"
+                : "text-[color:var(--tts-muted)] opacity-30 hover:opacity-100 group-hover:opacity-60"
+            }`}
+          >
+            {isFav ? "♥" : "♡"}
+          </button>
+        )}
+      </div>
     </li>
   );
 }

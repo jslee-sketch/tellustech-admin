@@ -1,0 +1,36 @@
+{
+  "name": "tellustech-agent",
+  "version": "1.0.0",
+  "description": "Tellustech ERP — SNMP 카운터 자동수집 에이전트 (Windows)",
+  "main": "dist/index.js",
+  "bin": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "package": "npm run build && pkg . -t node18-win-x64 -o build/tellustech-agent.exe"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "net-snmp": "^3.18.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "@types/node-cron": "^3.0.11",
+    "@yao-pkg/pkg": "^5.16.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  },
+  "pkg": {
+    "scripts": [
+      "dist/**/*.js"
+    ],
+    "assets": [
+      "node_modules/better-sqlite3/build/Release/*.node"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ]
+  }
+}

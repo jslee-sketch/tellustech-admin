@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+*.log
+config.json
+agent.db
+agent.db-wal
+agent.db-shm
+update/
+logs/

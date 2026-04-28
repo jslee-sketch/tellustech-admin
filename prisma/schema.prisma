@@ -409,8 +409,8 @@ model Employee {
 
 /// 공유 마스터 — company_code 없음
 model Client {
-  id                 String           @id @default(cuid())
-  clientCode         String           @unique
+  id                 String            @id @default(cuid())
+  clientCode         String            @unique
   companyNameVi      String
   companyNameEn      String?
   companyNameKo      String?
@@ -425,21 +425,21 @@ model Client {
   address            String?
   phone              String?
   email              String?
-  emailConsent       Boolean          @default(false) // 마케팅 이메일 수신 동의
+  emailConsent       Boolean           @default(false) // 마케팅 이메일 수신 동의
   leadSource         String?
   referrerId         String? // 거래처가 다른 거래처 소개 (referrerClientId 의미)
   referrerEmployeeId String? // 내부 직원이 소개한 경우
   salesPicId         String? // 영업담당 직원 (sales PIC)
   grade              ClientGrade?
   marketingTags      String[] // groupTags 와 동일 의미
-  receivableStatus   ReceivableStatus @default(NORMAL)
+  receivableStatus   ReceivableStatus  @default(NORMAL)
   // 포탈 포인트 사용 정책 — 계약 시점에 결정. 고객은 이 범위 안에서만 교환 신청 가능.
   // 대기업 컴플라이언스 (개인 상품권 수령 금지 등) 대응.
   pointPolicy        ClientPointPolicy @default(NONE)
   notes              String?
-  createdAt          DateTime         @default(now())
+  createdAt          DateTime          @default(now())
   deletedAt          DateTime?
-  updatedAt          DateTime         @updatedAt
+  updatedAt          DateTime          @updatedAt
 
   referrer         Client?                @relation("ClientReferrer", fields: [referrerId], references: [id])
   referrals        Client[]               @relation("ClientReferrer")
@@ -462,8 +462,10 @@ model Client {
   portalFeedback      PortalFeedback[]
   quoteRequests       QuoteRequest[]
   surveyResponses     SurveyResponse[]
-  referralsAsReferrer Referral[]       @relation("ReferralReferrer")
+  referralsAsReferrer Referral[]          @relation("ReferralReferrer")
   portalPostViews     PortalPostView[]
+  // SNMP / 사용량 확인서
+  usageConfirmations  UsageConfirmation[]
 
   @@index([referrerEmployeeId])
   @@index([salesPicId])
@@ -628,43 +630,52 @@ model Project {
 
 /// 가이드: "회사코드 없음(거래처 기반)"
 model ItContract {
-  id                   String         @id @default(cuid())
-  contractNumber       String         @unique // TLS-/VRT-YYMMDD-###
-  clientId             String
-  installationAddress  String?
-  status               ContractStatus @default(DRAFT)
-  startDate            DateTime
-  endDate              DateTime
-  deposit              Decimal?       @db.Decimal(15, 2)
-  installationFee      Decimal?       @db.Decimal(15, 2)
-  deliveryFee          Decimal?       @db.Decimal(15, 2)
-  additionalServiceFee Decimal?       @db.Decimal(15, 2)
-  currency             Currency       @default(VND)
-  fxRate               Decimal        @default(1) @db.Decimal(15, 6)
+  id                     String         @id @default(cuid())
+  contractNumber         String         @unique // TLS-/VRT-YYMMDD-###
+  clientId               String
+  installationAddress    String?
+  status                 ContractStatus @default(DRAFT)
+  startDate              DateTime
+  endDate                DateTime
+  deposit                Decimal?       @db.Decimal(15, 2)
+  installationFee        Decimal?       @db.Decimal(15, 2)
+  deliveryFee            Decimal?       @db.Decimal(15, 2)
+  additionalServiceFee   Decimal?       @db.Decimal(15, 2)
+  currency               Currency       @default(VND)
+  fxRate                 Decimal        @default(1) @db.Decimal(15, 6)
   // 담당자 3종 (이름 / HP / Office / Email)
-  contractMgrName      String?
-  contractMgrPhone     String?
-  contractMgrOffice    String?
-  contractMgrEmail     String?
-  technicalMgrName     String?
-  technicalMgrPhone    String?
-  technicalMgrOffice   String?
-  technicalMgrEmail    String?
-  financeMgrName       String?
-  financeMgrPhone      String?
-  financeMgrOffice     String?
-  financeMgrEmail      String?
-  createdAt            DateTime       @default(now())
-  deletedAt            DateTime?
-  lockedAt             DateTime?
-  lockReason           String?
-  updatedAt            DateTime       @updatedAt
+  contractMgrName        String?
+  contractMgrPhone       String?
+  contractMgrOffice      String?
+  contractMgrEmail       String?
+  technicalMgrName       String?
+  technicalMgrPhone      String?
+  technicalMgrOffice     String?
+  technicalMgrEmail      String?
+  financeMgrName         String?
+  financeMgrPhone        String?
+  financeMgrOffice       String?
+  financeMgrEmail        String?
+  createdAt              DateTime       @default(now())
+  deletedAt              DateTime?
+  lockedAt               DateTime?
+  lockReason             String?
+  updatedAt              DateTime       @updatedAt
+  // 매월 자동 SNMP 수집일 (1~28). 28 초과 입력 방지.
+  snmpCollectDay         Int            @default(25)
+  // 계약 단위 토큰 (에이전트 패키지 + register-devices 인증)
+  contractToken          String?        @unique
+  contractTokenExpiresAt DateTime?
 
-  client          Client                @relation(fields: [clientId], references: [id])
-  monthlyBillings ItMonthlyBilling[]
-  rentalOrders    RentalOrder[]
-  equipment       ItContractEquipment[]
-  amendments      ItContractAmendment[]
+  client              Client                   @relation(fields: [clientId], references: [id])
+  monthlyBillings     ItMonthlyBilling[]
+  rentalOrders        RentalOrder[]
+  equipment           ItContractEquipment[]
+  amendments          ItContractAmendment[]
+  snmpReadings        SnmpReading[]
+  usageConfirmations  UsageConfirmation[]
+  agentHeartbeats     AgentHeartbeat[]
+  unregisteredDevices SnmpUnregisteredDevice[]
 
   @@index([clientId])
   @@index([status])
@@ -674,27 +685,45 @@ model ItContract {
 /// IT계약의 장비 목록 (복수 S/N + 과금조건).
 /// 하나의 IT계약에 수백 개까지 등록 가능. S/N 은 계약 내에서 유일.
 model ItContractEquipment {
-  id                 String    @id @default(cuid())
-  itContractId       String
-  itemId             String
-  serialNumber       String
-  manufacturer       String?
-  installedAt        DateTime?
-  removedAt          DateTime?
-  monthlyBaseFee     Decimal?  @db.Decimal(15, 2)
-  bwIncludedPages    Int?
-  bwOverageRate      Decimal?  @db.Decimal(10, 2)
-  colorIncludedPages Int?
-  colorOverageRate   Decimal?  @db.Decimal(10, 2)
+  id                   String    @id @default(cuid())
+  itContractId         String
+  itemId               String
+  serialNumber         String
+  manufacturer         String?
+  installedAt          DateTime?
+  removedAt            DateTime?
+  monthlyBaseFee       Decimal?  @db.Decimal(15, 2)
+  bwIncludedPages      Int?
+  bwOverageRate        Decimal?  @db.Decimal(10, 2)
+  colorIncludedPages   Int?
+  colorOverageRate     Decimal?  @db.Decimal(10, 2)
   // SNMP 자동수집용 — IP 와 모델. 둘 다 null 이면 mock fallback.
-  deviceIp           String?
-  deviceModel        String?
-  note               String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  deviceIp             String?
+  deviceModel          String?
+  // 에이전트 인증 토큰 (UUID). 60일 미접속 자동 만료 + 관리자 [폐기] 가능.
+  deviceToken          String?   @unique
+  deviceTokenExpiresAt DateTime?
+  deviceTokenRevokedAt DateTime?
+  snmpCommunity        String?   @default("public")
+  // 모니터링: 마지막 SNMP 수집 시각
+  lastReadingAt        DateTime?
+  // 설치 시점 카운터 (첫 달 prev 기준)
+  installCounterBw     Int?
+  installCounterColor  Int?
+  // 카운터 리셋/메인보드 교체 시점 (수동 입력 — usage 계산 시 prev 무시)
+  resetAt              DateTime?
+  // 과금 기준 (지시문 별도 필드 — 기존 bwIncludedPages 와 병행 보존)
+  baseIncludedBw       Int?      @default(0)
+  baseIncludedColor    Int?      @default(0)
+  extraRateBw          Decimal?  @db.Decimal(10, 2)
+  extraRateColor       Decimal?  @db.Decimal(10, 2)
+  note                 String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  itContract ItContract @relation(fields: [itContractId], references: [id], onDelete: Cascade)
-  item       Item       @relation(fields: [itemId], references: [id])
+  itContract   ItContract    @relation(fields: [itContractId], references: [id], onDelete: Cascade)
+  item         Item          @relation(fields: [itemId], references: [id])
+  snmpReadings SnmpReading[]
 
   @@unique([itContractId, serialNumber])
   @@index([itContractId])
@@ -1486,23 +1515,23 @@ model DelayReason {
 // ==================================================
 
 model User {
-  id               String        @id @default(cuid())
-  username         String        @unique
-  passwordHash     String
-  email            String?       @unique
-  employeeId       String?       @unique
-  clientId         String?       @unique // 고객 포탈 사용자 — role=CLIENT
-  allowedCompanies CompanyCode[]
-  role             UserRole
-  preferredLang    Language      @default(KO)
-  chatDisplayMode  Int           @default(1) // 1/2/3개 언어
-  isActive         Boolean       @default(true)
+  id                 String        @id @default(cuid())
+  username           String        @unique
+  passwordHash       String
+  email              String?       @unique
+  employeeId         String?       @unique
+  clientId           String?       @unique // 고객 포탈 사용자 — role=CLIENT
+  allowedCompanies   CompanyCode[]
+  role               UserRole
+  preferredLang      Language      @default(KO)
+  chatDisplayMode    Int           @default(1) // 1/2/3개 언어
+  isActive           Boolean       @default(true)
   // 신규 발급 또는 관리자 리셋 직후 true. 사용자가 비밀번호를 변경하면 false.
   // 포탈에서는 true 인 동안 매 페이지마다 "비밀번호를 변경해주세요" 경고 배너 표시.
-  mustChangePassword Boolean     @default(false)
-  lastLoginAt      DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  mustChangePassword Boolean       @default(false)
+  lastLoginAt        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   employee        Employee?        @relation(fields: [employeeId], references: [id])
   clientAccount   Client?          @relation("ClientPortalUser", fields: [clientId], references: [id])
@@ -2511,4 +2540,165 @@ enum ReferralStatus {
   CONTRACTED
   PAID
   DECLINED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SNMP — 모델별 OID 매핑 (관리자가 신규 모델 추가 가능)
+// ═══════════════════════════════════════════════════════════════
+
+model SnmpModelOid {
+  id          String   @id @default(cuid())
+  deviceModel String   @unique // "SAMSUNG_SCX8123" 등 고유 식별자
+  brand       String // Samsung
+  modelName   String // SCX-8123
+  oidTotal    String // 총 페이지 OID (대부분 표준 prtMarkerLifeCount)
+  oidBw       String? // 흑백 OID. null 이면 oidTotal 을 흑백으로 간주
+  oidColor    String? // 컬러 OID. null = 흑백 전용
+  oidSerial   String? // S/N 자동감지 OID (1.3.6.1.2.1.43.5.1.1.17.1)
+  isMonoOnly  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("snmp_model_oids")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SNMP — 카운터 수집 이력 (에이전트 PUSH 또는 수동 입력)
+// ═══════════════════════════════════════════════════════════════
+
+model SnmpReading {
+  id          String              @id @default(cuid())
+  equipmentId String
+  equipment   ItContractEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  contractId  String
+  contract    ItContract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  clientId    String
+
+  // 수집 데이터
+  brand        String
+  itemName     String
+  serialNumber String
+  totalPages   Int
+  bwPages      Int? // null 이면 = totalPages (흑백 전용)
+  colorPages   Int? // null = 컬러 없음
+
+  // 수집 메타
+  collectedAt    DateTime
+  collectedBy    String // "AGENT" | "MANUAL"
+  deviceIp       String?
+  agentVersion   String?
+  agentMachineId String? // PC 식별자 (DPAPI 머신 키 hash)
+
+  // 카운터 리셋 / 음수 처리
+  isCounterReset Boolean @default(false)
+
+  // 처리
+  billingId   String?
+  companyCode String
+  createdAt   DateTime @default(now())
+
+  @@unique([equipmentId, collectedAt]) // 멱등성 — 중복 전송 자동 차단
+  @@index([equipmentId])
+  @@index([contractId])
+  @@index([collectedAt])
+  @@map("snmp_readings")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SNMP — 사용량 확인서 (월별 청구 워크플로)
+// ═══════════════════════════════════════════════════════════════
+
+model UsageConfirmation {
+  id          String     @id @default(cuid())
+  confirmCode String     @unique // UC-YYMMDD-###
+  contractId  String
+  contract    ItContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  clientId    String
+  client      Client     @relation(fields: [clientId], references: [id])
+
+  billingMonth String // "2026-05"
+  periodStart  DateTime
+  periodEnd    DateTime
+
+  // 장비별 사용량 (JSON 배열) — 자동 계산 결과
+  equipmentUsage Json
+
+  totalAmount Decimal  @db.Decimal(15, 2)
+  currency    Currency @default(VND)
+
+  // 고객 CFM
+  customerConfirmedAt DateTime?
+  customerSignature   String?   @db.Text
+  customerNote        String?
+
+  // 관리자 CFM
+  adminConfirmedAt   DateTime?
+  adminConfirmedById String?
+
+  // PDF
+  pdfFileId String?
+
+  // 매출 전표 연결
+  salesId String?
+
+  status      UsageConfirmStatus @default(COLLECTED)
+  companyCode String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([contractId])
+  @@index([clientId])
+  @@index([billingMonth])
+  @@index([status])
+  @@map("usage_confirmations")
+}
+
+enum UsageConfirmStatus {
+  COLLECTED
+  CUSTOMER_NOTIFIED
+  CUSTOMER_CONFIRMED
+  ADMIN_CONFIRMED
+  PDF_GENERATED
+  BILLED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SNMP — 에이전트 heartbeat (운영 모니터링)
+// ═══════════════════════════════════════════════════════════════
+
+model AgentHeartbeat {
+  id             String     @id @default(cuid())
+  contractId     String
+  contract       ItContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  reportedAt     DateTime   @default(now())
+  agentVersion   String
+  agentMachineId String?
+  scannedDevices Int        @default(0)
+  successCount   Int        @default(0)
+  errorMessages  String[]
+
+  @@index([contractId, reportedAt])
+  @@map("agent_heartbeats")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SNMP — 에이전트가 발견한 미등록 장비 큐 (관리자 검토 대기)
+// ═══════════════════════════════════════════════════════════════
+
+model SnmpUnregisteredDevice {
+  id             String     @id @default(cuid())
+  contractId     String
+  contract       ItContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  ip             String
+  serialNumber   String?
+  brand          String?
+  modelName      String?
+  sysDescription String?    @db.Text
+  totalPages     Int?
+  firstSeenAt    DateTime   @default(now())
+  lastSeenAt     DateTime   @default(now())
+  status         String     @default("PENDING") // PENDING / IGNORED / REGISTERED
+
+  @@index([contractId, status])
+  @@map("snmp_unregistered_devices")
 }

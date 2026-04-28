@@ -367,6 +367,46 @@ async function seedPortalBanners() {
   console.log(`  ✓ portal banners: ${BANNER_DEFAULTS.length}`);
 }
 
+const SNMP_MODELS = [
+  { deviceModel: "SAMSUNG_SCX8123", brand: "Samsung", modelName: "SCX-8123",
+    oidTotal: "1.3.6.1.2.1.43.10.2.1.4.1.1", oidBw: null, oidColor: null,
+    oidSerial: "1.3.6.1.2.1.43.5.1.1.17.1", isMonoOnly: true },
+  { deviceModel: "SAMSUNG_X7500", brand: "Samsung", modelName: "SL-X7500",
+    oidTotal: "1.3.6.1.2.1.43.10.2.1.4.1.1",
+    oidBw: "1.3.6.1.4.1.236.11.5.11.81.11.4.1.1.1",
+    oidColor: "1.3.6.1.4.1.236.11.5.11.81.11.4.1.1.2",
+    oidSerial: "1.3.6.1.2.1.43.5.1.1.17.1", isMonoOnly: false },
+  { deviceModel: "SINDOH_D330", brand: "Sindoh", modelName: "D330",
+    oidTotal: "1.3.6.1.2.1.43.10.2.1.4.1.1",
+    oidBw: "1.3.6.1.4.1.18334.1.1.1.5.7.2.2.1.5.1.1",
+    oidColor: "1.3.6.1.4.1.18334.1.1.1.5.7.2.2.1.5.1.2",
+    oidSerial: "1.3.6.1.2.1.43.5.1.1.17.1", isMonoOnly: false },
+  { deviceModel: "SINDOH_D410", brand: "Sindoh", modelName: "D410",
+    oidTotal: "1.3.6.1.2.1.43.10.2.1.4.1.1",
+    oidBw: "1.3.6.1.4.1.18334.1.1.1.5.7.2.2.1.5.1.1",
+    oidColor: "1.3.6.1.4.1.18334.1.1.1.5.7.2.2.1.5.1.2",
+    oidSerial: "1.3.6.1.2.1.43.5.1.1.17.1", isMonoOnly: false },
+  { deviceModel: "SINDOH_D320", brand: "Sindoh", modelName: "D320",
+    oidTotal: "1.3.6.1.2.1.43.10.2.1.4.1.1",
+    oidBw: "1.3.6.1.4.1.18334.1.1.1.5.7.2.2.1.5.1.1",
+    oidColor: "1.3.6.1.4.1.18334.1.1.1.5.7.2.2.1.5.1.2",
+    oidSerial: "1.3.6.1.2.1.43.5.1.1.17.1", isMonoOnly: false },
+  { deviceModel: "GENERIC_PRINTER", brand: "Generic", modelName: "Standard MIB",
+    oidTotal: "1.3.6.1.2.1.43.10.2.1.4.1.1", oidBw: null, oidColor: null,
+    oidSerial: "1.3.6.1.2.1.43.5.1.1.17.1", isMonoOnly: true },
+];
+
+async function seedSnmpModels() {
+  for (const m of SNMP_MODELS) {
+    await (prisma as any).snmpModelOid.upsert({
+      where: { deviceModel: m.deviceModel },
+      update: {}, // 기존 매핑 보존
+      create: m,
+    });
+  }
+  console.log(`  ✓ snmp model OIDs: ${SNMP_MODELS.length}`);
+}
+
 async function main() {
   console.log("🌱 Seeding Tellustech ERP database...");
   await seedDepartments();
@@ -377,6 +417,7 @@ async function main() {
   await seedItems();
   await seedPointConfigs();
   await seedPortalBanners();
+  await seedSnmpModels();
   console.log("✅ Seed complete");
 }
 

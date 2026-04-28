@@ -19,6 +19,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/master/clients", labelKey: "nav.clients", icon: "🤝", match: (p) => p.startsWith("/master/clients") },
       { href: "/master/items", labelKey: "nav.items", icon: "📦", match: (p) => p.startsWith("/master/items") },
+      { href: "/admin/item-compatibility", labelKey: "nav.itemCompat", icon: "🔗", match: (p) => p.startsWith("/admin/item-compatibility") },
       { href: "/master/employees", labelKey: "nav.employees", icon: "👤", match: (p) => p.startsWith("/master/employees") },
       { href: "/master/departments", labelKey: "nav.departments", icon: "🏢", match: (p) => p.startsWith("/master/departments") },
       { href: "/master/warehouses", labelKey: "nav.warehouses", icon: "🏬", match: (p) => p.startsWith("/master/warehouses") },
@@ -32,6 +33,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/sales", labelKey: "nav.salesOrder", icon: "💵", match: (p) => p.startsWith("/sales") },
       { href: "/purchases", labelKey: "nav.purchase", icon: "🛒", match: (p) => p.startsWith("/purchases") },
+      { href: "/admin/quotes", labelKey: "nav.adminQuotes", icon: "💬", match: (p) => p.startsWith("/admin/quotes") },
     ],
   },
   {
@@ -39,6 +41,9 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/rental/it-contracts", labelKey: "nav.itContract", icon: "🖨️", match: (p) => p.startsWith("/rental/it-contracts") },
       { href: "/rental/tm-rentals", labelKey: "nav.tmRental", icon: "🔧", match: (p) => p.startsWith("/rental/tm-rentals") },
+      { href: "/admin/snmp", labelKey: "nav.adminSnmp", icon: "📡", match: (p) => p.startsWith("/admin/snmp") },
+      { href: "/admin/usage-confirmations", labelKey: "nav.adminUsageConfirm", icon: "📋", match: (p) => p.startsWith("/admin/usage-confirmations") },
+      { href: "/admin/yield-analysis", labelKey: "nav.adminYield", icon: "🧪", match: (p) => p.startsWith("/admin/yield-analysis") },
     ],
   },
   {
@@ -72,6 +77,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/finance/payables", labelKey: "nav.payables", icon: "💰", match: (p) => p.startsWith("/finance/payables") },
       { href: "/finance/expenses", labelKey: "nav.expenses", icon: "🧾", match: (p) => p.startsWith("/finance/expenses") },
+      { href: "/admin/closings", labelKey: "nav.closings", icon: "🔒", match: (p) => p.startsWith("/admin/closings") },
     ],
   },
   {
@@ -93,24 +99,28 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
+    labelKey: "nav.portalOps",
+    items: [
+      { href: "/admin/portal-points", labelKey: "nav.portalPoints", icon: "🏆", match: (p) => p.startsWith("/admin/portal-points") },
+      { href: "/admin/portal-banners", labelKey: "nav.portalBanners", icon: "📣", match: (p) => p.startsWith("/admin/portal-banners") },
+      { href: "/admin/portal-posts", labelKey: "nav.adminPosts", icon: "📰", match: (p) => p.startsWith("/admin/portal-posts") },
+      { href: "/admin/feedback", labelKey: "nav.adminFeedback", icon: "🌟", match: (p) => p.startsWith("/admin/feedback") },
+      { href: "/admin/surveys", labelKey: "nav.adminSurveys", icon: "📊", match: (p) => p.startsWith("/admin/surveys") },
+      { href: "/admin/referrals", labelKey: "nav.adminReferrals", icon: "🤝", match: (p) => p.startsWith("/admin/referrals") },
+    ],
+  },
+  {
+    labelKey: "nav.analytics",
+    items: [
+      { href: "/stats", labelKey: "nav.stats", icon: "📈", match: (p) => p.startsWith("/stats") },
+    ],
+  },
+  {
     labelKey: "nav.admin",
     items: [
       { href: "/admin/audit-logs", labelKey: "nav.audit", icon: "🧾", match: (p) => p.startsWith("/admin/audit-logs") },
       { href: "/admin/permissions", labelKey: "nav.permissions", icon: "🔐", match: (p) => p.startsWith("/admin/permissions") },
-      { href: "/admin/item-compatibility", labelKey: "nav.itemCompat", icon: "🔗", match: (p) => p.startsWith("/admin/item-compatibility") },
-      { href: "/admin/closings", labelKey: "nav.closings", icon: "🔒", match: (p) => p.startsWith("/admin/closings") },
       { href: "/admin/trash", labelKey: "nav.trash", icon: "🗑", match: (p) => p.startsWith("/admin/trash") },
-      { href: "/admin/portal-points", labelKey: "nav.portalPoints", icon: "🏆", match: (p) => p.startsWith("/admin/portal-points") },
-      { href: "/admin/portal-banners", labelKey: "nav.portalBanners", icon: "📣", match: (p) => p.startsWith("/admin/portal-banners") },
-      { href: "/admin/quotes", labelKey: "nav.adminQuotes", icon: "💬", match: (p) => p.startsWith("/admin/quotes") },
-      { href: "/admin/feedback", labelKey: "nav.adminFeedback", icon: "🌟", match: (p) => p.startsWith("/admin/feedback") },
-      { href: "/admin/portal-posts", labelKey: "nav.adminPosts", icon: "📰", match: (p) => p.startsWith("/admin/portal-posts") },
-      { href: "/admin/surveys", labelKey: "nav.adminSurveys", icon: "📊", match: (p) => p.startsWith("/admin/surveys") },
-      { href: "/admin/referrals", labelKey: "nav.adminReferrals", icon: "🤝", match: (p) => p.startsWith("/admin/referrals") },
-      { href: "/admin/snmp", labelKey: "nav.adminSnmp", icon: "📡", match: (p) => p.startsWith("/admin/snmp") },
-      { href: "/admin/usage-confirmations", labelKey: "nav.adminUsageConfirm", icon: "📋", match: (p) => p.startsWith("/admin/usage-confirmations") },
-      { href: "/admin/yield-analysis", labelKey: "nav.adminYield", icon: "📊", match: (p) => p.startsWith("/admin/yield-analysis") },
-      { href: "/stats", labelKey: "nav.stats", icon: "📈", match: (p) => p.startsWith("/stats") },
     ],
   },
 ];

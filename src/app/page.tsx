@@ -150,6 +150,7 @@ export default async function Home() {
             { href: "/master/employees",   label: t("nav.employees", L),   icon: "👤" },
             { href: "/master/clients",     label: t("nav.clients", L),     icon: "🤝" },
             { href: "/master/items",       label: t("nav.items", L),       icon: "📦" },
+            { href: "/admin/item-compatibility", label: t("nav.itemCompat", L), icon: "🔗" },
             { href: "/master/warehouses",  label: t("nav.warehouses", L),  icon: "🏬" },
             { href: "/master/projects",    label: t("nav.projects", L),    icon: "🗂️" },
             { href: "/master/schedules",   label: t("nav.schedules", L),   icon: "🗓️" },
@@ -158,10 +159,14 @@ export default async function Home() {
           <NavCard title={t("dash.card.contracts", L)} subtitle="Contracts" accent="accent" items={[
             { href: "/rental/it-contracts", label: t("nav.itContract", L), icon: "🖨️" },
             { href: "/rental/tm-rentals",   label: t("nav.tmRental", L),   icon: "🔧" },
+            { href: "/admin/snmp", label: t("nav.adminSnmp", L), icon: "📡" },
+            { href: "/admin/usage-confirmations", label: t("nav.adminUsageConfirm", L), icon: "📋" },
+            { href: "/admin/yield-analysis", label: t("nav.adminYield", L), icon: "🧪" },
           ]} />
           <NavCard title={t("dash.card.salesPurchase", L)} subtitle="Sales / Purchase" accent="purple" items={[
             { href: "/sales",     label: t("nav.salesOrder", L), icon: "💵" },
             { href: "/purchases", label: t("nav.purchase", L),   icon: "🛒" },
+            { href: "/admin/quotes", label: t("nav.adminQuotes", L), icon: "💬" },
           ]} />
           <NavCard title={t("dash.card.service", L)} subtitle="Service" accent="warn" items={[
             { href: "/as/tickets",     label: t("nav.asTickets", L), icon: "🛠️" },
@@ -171,6 +176,7 @@ export default async function Home() {
             { href: "/inventory/stock",        label: t("nav.stock", L),  icon: "📊" },
             { href: "/inventory/transactions", label: t("nav.invTxn", L), icon: "🔄" },
             { href: "/inventory/scan",         label: t("nav.qrScan", L), icon: "📷" },
+            { href: "/inventory/labels",       label: t("nav.qrLabel", L), icon: "🏷️" },
             { href: "/inventory/depreciation", label: t("nav.depreciation", L), icon: "📉" },
           ]} />
           <NavCard title={t("dash.card.hr", L)} subtitle="Human Resources" accent="primary" items={[
@@ -183,6 +189,7 @@ export default async function Home() {
           <NavCard title={t("dash.card.finance", L)} subtitle="Finance" accent="danger" items={[
             { href: "/finance/payables", label: t("nav.payables", L), icon: "💰" },
             { href: "/finance/expenses", label: t("nav.expenses", L), icon: "🧾" },
+            { href: "/admin/closings", label: t("nav.closings", L), icon: "🔒" },
           ]} />
           <NavCard title={t("dash.card.collab", L)} subtitle="Collaboration" accent="accent" items={[
             { href: "/chat", label: t("nav.chat", L), icon: "💬" },
@@ -190,6 +197,22 @@ export default async function Home() {
           <NavCard title={t("dash.card.meeting", L)} subtitle="Weekly Meeting" accent="purple" items={[
             { href: "/weekly-report", label: t("nav.weeklyReport", L), icon: "📋" },
             { href: "/calendar",      label: t("nav.calendar", L),     icon: "📅" },
+          ]} />
+          <NavCard title={t("nav.portalOps", L)} subtitle="Customer Portal" accent="accent" items={[
+            { href: "/admin/portal-points", label: t("nav.portalPoints", L), icon: "🏆" },
+            { href: "/admin/portal-banners", label: t("nav.portalBanners", L), icon: "📣" },
+            { href: "/admin/portal-posts", label: t("nav.adminPosts", L), icon: "📰" },
+            { href: "/admin/feedback", label: t("nav.adminFeedback", L), icon: "🌟" },
+            { href: "/admin/surveys", label: t("nav.adminSurveys", L), icon: "📊" },
+            { href: "/admin/referrals", label: t("nav.adminReferrals", L), icon: "🤝" },
+          ]} />
+          <NavCard title={t("nav.analytics", L)} subtitle="Analytics" accent="success" items={[
+            { href: "/stats", label: t("nav.stats", L), icon: "📈" },
+          ]} />
+          <NavCard title={t("nav.admin", L)} subtitle="Administration" accent="danger" items={[
+            { href: "/admin/audit-logs", label: t("nav.audit", L), icon: "🧾" },
+            { href: "/admin/permissions", label: t("nav.permissions", L), icon: "🔐" },
+            { href: "/admin/trash", label: t("nav.trash", L), icon: "🗑" },
           ]} />
         </div>
       </div>

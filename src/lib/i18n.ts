@@ -19,6 +19,8 @@ const DICT: Dict = {
   "nav.calendar":    { vi: "Lịch",         en: "Calendar",      ko: "캘린더" },
   "nav.messaging":   { vi: "Tin nhắn",     en: "Messaging",     ko: "메시징" },
   "nav.admin":       { vi: "Quản trị",     en: "Admin",         ko: "관리" },
+  "nav.portalOps":   { vi: "Cổng KH",      en: "Customer Portal", ko: "고객 포탈 운영" },
+  "nav.analytics":   { vi: "Thống kê",     en: "Analytics",     ko: "통계" },
 
   // ── 사이드바 항목 ──
   "nav.home":        { vi: "Trang chủ",       en: "Home",            ko: "홈" },

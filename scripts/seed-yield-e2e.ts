@@ -18,7 +18,7 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 const PERIOD_START = new Date("2026-01-01T00:00:00.000Z");
-const PERIOD_END = new Date("2026-04-01T00:00:00.000Z");
+const PERIOD_END = new Date("2026-03-31T23:00:00.000Z"); // 3월 말 — 월별 cron 의 lte 와 일치하도록
 
 type Scenario = {
   clientCode: string;

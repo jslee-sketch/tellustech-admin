@@ -297,6 +297,8 @@ const DICT: Dict = {
   "nav.adminPosts":                 { vi: "Bài viết Portal",       en: "Portal Posts",         ko: "포탈 게시글" },
   "nav.adminSurveys":               { vi: "Khảo sát",              en: "Surveys",              ko: "서베이" },
   "nav.adminReferrals":             { vi: "Giới thiệu",            en: "Referrals",            ko: "업체 추천" },
+  "nav.adminSnmp":                  { vi: "Quản lý SNMP",          en: "SNMP Admin",           ko: "SNMP 관리" },
+  "nav.adminUsageConfirm":          { vi: "Xác nhận sản lượng",    en: "Usage Confirmations",  ko: "사용량 확인서" },
 
   // ── 포털 메인 ──
   "portal.title":          { vi: "Cổng khách hàng TELLUSTECH",    en: "TELLUSTECH Customer Portal",  ko: "TELLUSTECH · 고객 포탈" },

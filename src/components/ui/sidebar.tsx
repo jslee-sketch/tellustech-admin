@@ -107,6 +107,8 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/portal-posts", labelKey: "nav.adminPosts", icon: "📰", match: (p) => p.startsWith("/admin/portal-posts") },
       { href: "/admin/surveys", labelKey: "nav.adminSurveys", icon: "📊", match: (p) => p.startsWith("/admin/surveys") },
       { href: "/admin/referrals", labelKey: "nav.adminReferrals", icon: "🤝", match: (p) => p.startsWith("/admin/referrals") },
+      { href: "/admin/snmp", labelKey: "nav.adminSnmp", icon: "📡", match: (p) => p.startsWith("/admin/snmp") },
+      { href: "/admin/usage-confirmations", labelKey: "nav.adminUsageConfirm", icon: "📋", match: (p) => p.startsWith("/admin/usage-confirmations") },
       { href: "/stats", labelKey: "nav.stats", icon: "📈", match: (p) => p.startsWith("/stats") },
     ],
   },

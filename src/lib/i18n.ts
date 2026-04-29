@@ -2602,6 +2602,9 @@ const DICT: Dict = {
   "salesConfirm.empty":              { vi: "Không có doanh thu chờ.",       en: "No pending sales.",          ko: "대기 매출 없음." },
   "salesConfirm.btnSingle":          { vi: "✓ XN",                          en: "✓ CFM",                       ko: "✓ CFM" },
   "salesConfirm.colSalesConfirmed":  { vi: "Phát hành lúc",                 en: "Sales confirmed at",          ko: "영업 발행일" },
+  "filter.allCountSuffix":           { vi: "Tất cả",                        en: "All",                         ko: "전체" },
+  "filter.allStages":                { vi: "Tất cả giai đoạn",              en: "All stages",                  ko: "전체 단계" },
+  "col.stage":                       { vi: "Giai đoạn",                     en: "Stage",                       ko: "단계" },
 };
 
 export function t(key: string, lang: Lang): string {

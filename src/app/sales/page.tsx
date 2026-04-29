@@ -50,7 +50,7 @@ export default async function SalesListPage() {
 
   return (
     <main className="flex-1 p-8">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-screen-2xl">
         <div className="mb-6">
           <Link
             href="/"

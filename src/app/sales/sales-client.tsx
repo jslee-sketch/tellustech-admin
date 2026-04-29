@@ -28,11 +28,11 @@ export type SalesRow = {
   stage: "TECH" | "SALES" | "FINANCE" | "DONE";
 };
 
-const STAGE_META: Record<SalesRow["stage"], { emoji: string; label: string; tone: BadgeTone }> = {
-  TECH:    { emoji: "🟡", label: "기술 대기",  tone: "warn" },
-  SALES:   { emoji: "🟠", label: "영업 발행 대기", tone: "accent" },
-  FINANCE: { emoji: "🔵", label: "재경 CFM 대기", tone: "primary" },
-  DONE:    { emoji: "🟢", label: "완료",       tone: "success" },
+const STAGE_META: Record<SalesRow["stage"], { emoji: string; key: string; tone: BadgeTone }> = {
+  TECH:    { emoji: "🟡", key: "stage.tech",    tone: "warn" },
+  SALES:   { emoji: "🟠", key: "stage.sales",   tone: "accent" },
+  FINANCE: { emoji: "🔵", key: "stage.finance", tone: "primary" },
+  DONE:    { emoji: "🟢", key: "stage.done",    tone: "success" },
 };
 
 function pickYieldEmoji(rate: number): { emoji: string; cls: string } {
@@ -198,11 +198,11 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
     },
     {
       key: "stage",
-      label: "단계",
-      width: "140px",
+      label: t("col.stage", lang),
+      width: "150px",
       render: (_v, row) => {
         const m = STAGE_META[row.stage];
-        return <Badge tone={m.tone}>{m.emoji} {m.label}</Badge>;
+        return <Badge tone={m.tone}>{m.emoji} {t(m.key, lang)}</Badge>;
       },
     },
     {
@@ -262,13 +262,13 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
     >
       {/* 4단계 뱃지 KPI + 클릭 필터 */}
       <div className="mb-2 flex flex-wrap gap-2 text-[12px]">
-        <button onClick={() => setStage("all")} className={`rounded px-2.5 py-1 font-bold ${stage === "all" ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"}`}>전체 {initialData.length}</button>
+        <button onClick={() => setStage("all")} className={`rounded px-2.5 py-1 font-bold ${stage === "all" ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"}`}>{t("filter.allCountSuffix", lang)} {initialData.length}</button>
         {(["TECH", "SALES", "FINANCE", "DONE"] as const).map((st) => {
           const m = STAGE_META[st];
           return (
             <button key={st} onClick={() => setStage(st)}
               className={`rounded px-2.5 py-1 font-bold ${stage === st ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"}`}>
-              {m.emoji} {m.label} {stageCounts[st]}
+              {m.emoji} {t(m.key, lang)} {stageCounts[st]}
             </button>
           );
         })}
@@ -291,11 +291,11 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
           onChange={(e) => setStage(e.target.value as typeof stage)}
           className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
         >
-          <option value="all">전체 단계</option>
-          <option value="TECH">🟡 기술 대기</option>
-          <option value="SALES">🟠 영업 발행 대기</option>
-          <option value="FINANCE">🔵 재경 CFM 대기</option>
-          <option value="DONE">🟢 완료</option>
+          <option value="all">{t("filter.allStages", lang)}</option>
+          <option value="TECH">🟡 {t("stage.tech", lang)}</option>
+          <option value="SALES">🟠 {t("stage.sales", lang)}</option>
+          <option value="FINANCE">🔵 {t("stage.finance", lang)}</option>
+          <option value="DONE">🟢 {t("stage.done", lang)}</option>
         </select>
       </div>
       <DataTable columns={columns} data={filtered} rowKey={(s) => s.id} emptyMessage={t("empty.sales", lang)}

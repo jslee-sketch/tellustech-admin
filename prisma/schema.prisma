@@ -493,22 +493,30 @@ model ClientContact {
 
 /// 공유 마스터 — company_code 없음. 품목명은 영어로만 관리.
 model Item {
-  id                String    @id @default(cuid())
-  itemCode          String    @unique
+  id                String        @id @default(cuid())
+  itemCode          String        @unique
   itemType          ItemType
   name              String // 품목명 — 영어로만 입력
   unit              String?
-  category          String?
+  // 설명 — 자유 텍스트 (구 category 필드 의 이름 변경 + 의미 확장). 검색·표시용.
+  description       String        @default("")
   reorderPoint      Int? // 재고부족 알림 임계치 — null 이면 알림 없음(소모품 계열에서만 의미)
   // 소모품 적정율 계산 — itemType=CONSUMABLE/PART 일 때만 의미.
-  // expectedYield: 정격 출력 장수 (제조사 공표, 5% 상밀도 기준). 예 25000.
-  // yieldCoverageBase: 기준 상밀도 (%, 보통 5).
   expectedYield     Int?
-  yieldCoverageBase Int?      @default(5)
-  yieldUnit         String?   @default("pages")
-  createdAt         DateTime  @default(now())
+  yieldCoverageBase Int?          @default(5)
+  yieldUnit         String?       @default("pages")
+  // 색상 채널 — 토너/드럼/퓨저 분류. 적정율 계산에 사용. NONE 또는 null 이면 BW 합산.
+  colorChannel      ColorChannel?
+  // BOM (Bill of Materials) — 3단계 트리.
+  parentItemId      String?
+  parentItem        Item?         @relation("ItemBOM", fields: [parentItemId], references: [id])
+  childItems        Item[]        @relation("ItemBOM")
+  bomQuantity       Decimal?      @default(1) @db.Decimal(10, 2)
+  bomLevel          Int?          @default(0) // 0=독립, 1=A'ssy, 2=서브, 3=구성
+  bomNote           String?
+  createdAt         DateTime      @default(now())
   deletedAt         DateTime?
-  updatedAt         DateTime  @updatedAt
+  updatedAt         DateTime      @updatedAt
 
   inventoryStocks       InventoryStock[]
   inventoryTransactions InventoryTransaction[]
@@ -523,7 +531,20 @@ model Item {
   compatProducts        ItemCompatibility[]    @relation("CompatProductItem")
   compatConsumables     ItemCompatibility[]    @relation("CompatConsumableItem")
 
+  @@index([parentItemId])
+  @@index([itemType])
+  @@index([colorChannel])
   @@map("items")
+}
+
+enum ColorChannel {
+  BLACK
+  CYAN
+  MAGENTA
+  YELLOW
+  DRUM
+  FUSER
+  NONE
 }
 
 // 본체 장비(productItem) ↔ 호환 소모품(consumableItem) 매핑.

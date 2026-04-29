@@ -33,12 +33,23 @@ export type YieldComputation = {
 
 const DEFAULT_THRESHOLDS = { blue: 120, green: 80, yellow: 50, orange: 30, fraud: 30 };
 
-function classifyConsumable(itemName: string): "BW" | "CYAN" | "MAGENTA" | "YELLOW" {
-  const n = itemName.toLowerCase();
+// colorChannel enum 우선 사용. 없으면 이름 패턴 fallback.
+function classifyConsumable(item: { name: string; colorChannel: string | null }): "BW" | "CYAN" | "MAGENTA" | "YELLOW" {
+  switch (item.colorChannel) {
+    case "CYAN":   return "CYAN";
+    case "MAGENTA": return "MAGENTA";
+    case "YELLOW": return "YELLOW";
+    case "BLACK":
+    case "DRUM":
+    case "FUSER":
+    case "NONE":
+      return "BW";
+  }
+  // colorChannel 미설정 → 이름 패턴 fallback (이전 버전 호환).
+  const n = item.name.toLowerCase();
   if (/cyan/i.test(n)) return "CYAN";
   if (/magenta/i.test(n)) return "MAGENTA";
   if (/yellow/i.test(n)) return "YELLOW";
-  // Black/Drum/Fuser/흑백/Toner Black/color(generic) → BW (default)
   return "BW";
 }
 
@@ -98,7 +109,7 @@ export async function calculateYieldRate(
       asDispatch: { completedAt: { gte: periodStart, lte: periodEnd } },
     },
     include: {
-      item: { select: { id: true, name: true, expectedYield: true, yieldCoverageBase: true } },
+      item: { select: { id: true, name: true, expectedYield: true, yieldCoverageBase: true, colorChannel: true } },
     },
   });
 
@@ -126,7 +137,7 @@ export async function calculateYieldRate(
       contributedExpectedPages: Math.round(contributed),
     };
 
-    const cat = classifyConsumable(p.item.name);
+    const cat = classifyConsumable({ name: p.item.name, colorChannel: p.item.colorChannel ?? null });
     if (cat === "BW") {
       expectedBw += contributed;
       bwDetails.push(detail);

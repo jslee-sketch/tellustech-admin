@@ -58,7 +58,13 @@ export async function PATCH(request: Request, context: RouteContext) {
         data.name = name;
       }
       if (p.unit !== undefined) data.unit = trimNonEmpty(p.unit);
-      if (p.category !== undefined) data.category = trimNonEmpty(p.category);
+      if (p.description !== undefined) data.description = trimNonEmpty(p.description) ?? "";
+      if (p.colorChannel !== undefined) {
+        const v = p.colorChannel === null || p.colorChannel === "" ? null : String(p.colorChannel);
+        const allowed = ["BLACK","CYAN","MAGENTA","YELLOW","DRUM","FUSER","NONE"];
+        if (v !== null && !allowed.includes(v)) return badRequest("invalid_input", { field: "colorChannel" });
+        data.colorChannel = v as "BLACK"|"CYAN"|"MAGENTA"|"YELLOW"|"DRUM"|"FUSER"|"NONE"|null;
+      }
       // 소모품 적정율 — null 허용(해제), 정수 0~10,000,000.
       if (p.expectedYield !== undefined) {
         if (p.expectedYield === null || p.expectedYield === "") {

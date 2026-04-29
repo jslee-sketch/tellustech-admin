@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { ItemForm } from "../item-form";
+import { BomTab } from "./bom-tab";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,19 @@ export default async function EditItemPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
   const L = session.language;
-  const item = await prisma.item.findUnique({ where: { id } });
+  const item = await prisma.item.findUnique({
+    where: { id },
+    include: {
+      compatProducts: { include: { consumable: { select: { id: true } } } },
+      compatConsumables: { include: { product: { select: { id: true } } } },
+    },
+  });
   if (!item) notFound();
+
+  // CONSUMABLE/PART → 호환 PRODUCT id 들 (compatConsumables 의 product)
+  const compatibleItemIds: string[] = (item.itemType === "CONSUMABLE" || item.itemType === "PART")
+    ? item.compatConsumables.map((c) => c.product.id)
+    : [];
 
   return (
     <main className="flex-1 p-8">
@@ -42,12 +54,23 @@ export default async function EditItemPage({ params }: PageProps) {
               itemType: item.itemType,
               name: item.name,
               unit: item.unit ?? "",
-              category: item.category ?? "",
+              description: item.description ?? "",
               expectedYield: item.expectedYield !== null && item.expectedYield !== undefined ? String(item.expectedYield) : "",
               yieldCoverageBase: item.yieldCoverageBase !== null && item.yieldCoverageBase !== undefined ? String(item.yieldCoverageBase) : "5",
+              colorChannel: item.colorChannel ?? "",
+              compatibleItemIds,
             }}
           />
         </Card>
+
+        {/* BOM 탭 — PRODUCT 가 아닌 (CONSUMABLE/PART) 만 노출 */}
+        {item.itemType !== "PRODUCT" && (
+          <div className="mt-4">
+            <Card title={t("item.bom", L)}>
+              <BomTab itemId={item.id} itemType={item.itemType} bomLevel={item.bomLevel ?? 0} lang={L} />
+            </Card>
+          </div>
+        )}
       </div>
     </main>
   );

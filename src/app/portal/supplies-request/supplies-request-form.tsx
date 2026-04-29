@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Card, Field, Note, Select, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
-type Supply = { id: string; itemCode: string; name: string; unit: string|null; category: string|null; itemType: string };
+type Supply = { id: string; itemCode: string; name: string; unit: string|null; description: string; itemType: string };
 
 export function SuppliesRequestForm({ lang }: { clientId?: string; lang: Lang }) {
   const router = useRouter();
@@ -65,7 +65,7 @@ export function SuppliesRequestForm({ lang }: { clientId?: string; lang: Lang })
                 <Select required value={row.itemId} onChange={(e)=>update(i,"itemId",e.target.value)}
                   options={[
                     { value:"", label: t("placeholder.select", lang) },
-                    ...supplies.map(s => ({ value: s.id, label: `${s.itemCode} · ${s.name}${s.unit ? ` (${s.unit})` : ""}${s.category ? ` [${s.category}]` : ""}` })),
+                    ...supplies.map(s => ({ value: s.id, label: `${s.itemCode} · ${s.name}${s.unit ? ` (${s.unit})` : ""}${s.description ? ` [${s.description}]` : ""}` })),
                   ]}
                 />
               </Field>

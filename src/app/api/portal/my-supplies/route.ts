@@ -22,7 +22,7 @@ export async function GET() {
 
     const compats = await prisma.itemCompatibility.findMany({
       where: { productItemId: { in: productIds } },
-      include: { consumable: { select: { id: true, itemCode: true, name: true, unit: true, category: true, itemType: true } } },
+      include: { consumable: { select: { id: true, itemCode: true, name: true, unit: true, description: true, itemType: true } } },
     });
     // 중복 제거 (같은 소모품이 여러 본체에 호환)
     const uniqMap = new Map<string, typeof compats[number]["consumable"]>();

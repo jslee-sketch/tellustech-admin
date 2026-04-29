@@ -13,7 +13,8 @@ export type ItemRow = {
   itemType: string;
   name: string;
   unit: string | null;
-  category: string | null;
+  description: string;
+  colorChannel: string | null;
 };
 
 const typeTone: Record<string, BadgeTone> = {
@@ -42,7 +43,7 @@ export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lan
       return (
         it.itemCode.toLowerCase().includes(qLower) ||
         it.name.toLowerCase().includes(qLower) ||
-        (it.category?.toLowerCase().includes(qLower) ?? false)
+        (it.description?.toLowerCase().includes(qLower) ?? false)
       );
     });
   }, [initialData, q, type]);
@@ -82,9 +83,20 @@ export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lan
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
-      key: "category",
-      label: t("col.category", lang),
-      render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
+      key: "colorChannel",
+      label: t("item.colorChannel", lang),
+      width: "100px",
+      render: (v) => {
+        const s = v as string | null;
+        if (!s) return <span className="text-[color:var(--tts-muted)]">—</span>;
+        const emoji: Record<string, string> = { BLACK: "🖤", CYAN: "🩵", MAGENTA: "💗", YELLOW: "💛", DRUM: "🥁", FUSER: "🔥", NONE: "—" };
+        return <span className="font-mono text-[11px]">{emoji[s] ?? ""} {s}</span>;
+      },
+    },
+    {
+      key: "description",
+      label: t("item.description", lang),
+      render: (v) => (v as string) || <span className="text-[color:var(--tts-muted)]">—</span>,
     },
   ];
 
@@ -101,7 +113,8 @@ export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lan
               { key: "name", header: t("col.itemNameCol", lang) },
               { key: "itemType", header: t("col.itemTypeCol", lang) },
               { key: "unit", header: t("col.unit", lang) },
-              { key: "category", header: t("col.category", lang) },
+              { key: "colorChannel", header: t("item.colorChannel", lang) },
+              { key: "description", header: t("item.description", lang) },
             ]}
             filename={`items-${new Date().toISOString().slice(0, 10)}.xlsx`}
             sheetName="Items"

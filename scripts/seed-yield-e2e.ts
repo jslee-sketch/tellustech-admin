@@ -89,7 +89,7 @@ async function ensureItem(code: string, name: string, itemType: "PRODUCT" | "CON
       itemType,
       name,
       unit: "ea",
-      category: itemType === "PRODUCT" ? "Printer" : "Toner",
+      description: itemType === "PRODUCT" ? "Printer" : "Toner",
       ...(expectedYield !== undefined ? { expectedYield, yieldCoverageBase: 5, yieldUnit: "pages" } : {}),
     },
   });

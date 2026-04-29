@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       where: { ...(productItemId ? { productItemId } : {}), ...(consumableItemId ? { consumableItemId } : {}) },
       include: {
         product:    { select: { id: true, itemCode: true, name: true, itemType: true } },
-        consumable: { select: { id: true, itemCode: true, name: true, itemType: true, unit: true, category: true } },
+        consumable: { select: { id: true, itemCode: true, name: true, itemType: true, unit: true, description: true } },
       },
     });
     return ok({ compatibilities: rows });

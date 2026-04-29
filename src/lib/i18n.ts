@@ -341,7 +341,7 @@ const DICT: Dict = {
   "nav.chat":        { vi: "Trò chuyện",      en: "Chat",            ko: "채팅" },
   "nav.audit":       { vi: "Nhật ký kiểm toán", en: "Audit Logs",    ko: "감사로그" },
   "nav.permissions": { vi: "Phân quyền",       en: "Permissions",   ko: "권한관리" },
-  "nav.itemCompat":  { vi: "Tương thích vật tư", en: "Item Compat",  ko: "호환매핑" },
+  "nav.itemCompat":  { vi: "Tìm kiếm tương thích", en: "Compatibility Search", ko: "호환검색" },
   "nav.stats":       { vi: "Thống kê",         en: "Statistics",    ko: "통계" },
   "nav.closings":    { vi: "Đóng kỳ",          en: "Closings",      ko: "회계마감" },
   "nav.trash":       { vi: "Thùng rác",        en: "Trash",         ko: "휴지통" },
@@ -2548,6 +2548,27 @@ const DICT: Dict = {
   "yield.recalculate":       { vi: "Tính lại", en: "Recalculate", ko: "재계산" },
   "yield.viewHistory":       { vi: "Xem lịch sử", en: "View history", ko: "이력 보기" },
   "yield.recentMonths":      { vi: "{n} tháng gần đây", en: "Last {n} months", ko: "최근 {n}개월" },
+
+  // ── 품목 등록 / BOM / 호환검색 ──
+  "item.description":            { vi: "Mô tả",                en: "Description",         ko: "설명" },
+  "item.descriptionRequired":    { vi: "Mô tả là bắt buộc.",   en: "Description is required.", ko: "설명은 필수입니다." },
+  "item.colorChannel":           { vi: "Kênh màu",             en: "Color Channel",       ko: "색상 채널" },
+  "item.compatibleEquipment":    { vi: "Thiết bị tương thích", en: "Compatible Equipment", ko: "호환 장비" },
+  "item.compatRequired":         { vi: "Vật tư/Linh kiện cần ít nhất 1 thiết bị tương thích.", en: "Consumables/Parts require at least 1 compatible equipment.", ko: "소모품/부품은 최소 1개의 호환 장비가 필수입니다." },
+  "item.bom":                    { vi: "BOM (Cấu trúc linh kiện)", en: "BOM (Parts Structure)", ko: "BOM (부품 구성)" },
+  "item.bomLevel":               { vi: "Cấp BOM",              en: "BOM Level",           ko: "BOM 단계" },
+  "item.bomQuantity":            { vi: "Số lượng cần",         en: "Required Qty",        ko: "필요 수량" },
+  "item.bomNote":                { vi: "Ghi chú lắp ráp",      en: "Assembly Note",       ko: "조립 메모" },
+  "item.bomCostTotal":           { vi: "Tổng chi phí linh kiện", en: "Parts Cost Total",  ko: "부품 원가 합계" },
+  "item.bomAddChild":            { vi: "Thêm linh kiện con",   en: "Add Sub-Part",        ko: "하위 부품 추가" },
+  "item.bomMaxDepth":            { vi: "Chỉ cho phép tối đa 3 cấp.", en: "Maximum 3 levels allowed.", ko: "최대 3단계까지만 허용됩니다." },
+  "item.assy":                   { vi: "Cụm lắp ráp",          en: "Assembly",            ko: "어셈블리" },
+  "item.subPart":                { vi: "Linh kiện phụ",        en: "Sub-Part",            ko: "서브 부품" },
+  "item.component":              { vi: "Linh kiện thành phần", en: "Component",           ko: "구성 부품" },
+  "compat.direction":            { vi: "Hướng tìm kiếm",       en: "Search Direction",    ko: "검색 방향" },
+  "compat.productToParts":       { vi: "Thiết bị → Vật tư",    en: "Equipment → Parts",   ko: "장비 → 소모품/부품" },
+  "compat.partsToProduct":       { vi: "Vật tư → Thiết bị",    en: "Parts → Equipment",   ko: "소모품/부품 → 장비" },
+  "compat.recommendRegister":    { vi: "Khuyến nghị đăng ký tương thích tại màn hình đăng ký sản phẩm.", en: "Recommend registering compatibility on the item registration screen.", ko: "호환 등록은 품목 등록 화면에서 하는 것을 권장합니다." },
 };
 
 export function t(key: string, lang: Lang): string {

@@ -132,7 +132,13 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
         </Row>
         <Row>
           <Field label={t("field.item", lang)} required>
-            <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
+            <ItemCombobox
+              value={itemId}
+              onChange={setItemId}
+              required
+              lang={lang}
+              compatibleWithSn={equipmentSN || undefined}
+            />
           </Field>
           <Field label={t("field.partSerial", lang)} width="180px">
             <SerialCombobox value={serialNumber} onChange={setSerialNumber} itemId={itemId || undefined} lang={lang} />

@@ -26,6 +26,10 @@ type Props = {
   className?: string;
   limit?: number; // 서버 응답 상한 (기본 20)
   itemType?: "PRODUCT" | "CONSUMABLE" | "PART"; // 특정 유형만 검색하고 싶을 때
+  // 호환 필터링 — 지정 시 해당 장비 S/N 의 호환 소모품/부품만 노출.
+  compatibleWithSn?: string;
+  // 호환 필터링 — 장비 itemId 직접 지정.
+  compatibleWithItemId?: string;
   lang?: Lang;
 };
 
@@ -40,6 +44,8 @@ export function ItemCombobox({
   className,
   limit = 20,
   itemType,
+  compatibleWithSn,
+  compatibleWithItemId,
   lang = "EN",
 }: Props) {
   const effectivePlaceholder = placeholder ?? t("item.searchPlaceholder", lang);
@@ -89,6 +95,8 @@ export function ItemCombobox({
       try {
         const params = new URLSearchParams({ q });
         if (itemType) params.set("type", itemType);
+        if (compatibleWithSn) params.set("compatibleWithSn", compatibleWithSn);
+        if (compatibleWithItemId) params.set("compatibleWithItemId", compatibleWithItemId);
         const res = await fetch(`/api/master/items?${params.toString()}`, { cache: "no-store" });
         if (!res.ok) return;
         const json = (await res.json()) as { items: ItemOption[] };
@@ -101,7 +109,7 @@ export function ItemCombobox({
         if (seq === reqSeqRef.current) setLoading(false);
       }
     },
-    [itemType, limit],
+    [itemType, compatibleWithSn, compatibleWithItemId, limit],
   );
 
   function onInputChange(v: string) {

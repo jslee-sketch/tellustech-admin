@@ -5,20 +5,16 @@ import { ExcelUploader } from "@/components/ui";
 import type { UploaderColumn } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
-// 품목 일괄 업로드 — 거래처/직원 같은 참조 필드가 없어 비교적 단순.
-// 품목코드(ITM-xxxx) 형식은 서버가 자동 생성하므로 업로드 시 미지정 허용 (선택).
+// 품목 일괄 업로드 — 15컬럼.
+// Phase 1: 품목 생성 (parentItemId 보류)
+// Phase 2: 호환 매핑 (compatibleItemCodes)
+// Phase 3: BOM 부모 연결 (parentItemCode)
+
+const COLOR_CHANNELS = ["BLACK", "CYAN", "MAGENTA", "YELLOW", "DRUM", "FUSER", "NONE"];
 
 function buildColumns(lang: Lang): UploaderColumn[] {
   return [
-    {
-      key: "name",
-      header: t("header.itemName", lang),
-      required: true,
-      validate: (raw) => {
-        if (!/^[\x20-\x7E]+$/.test(raw)) return { error: t("msg.uploadAsciiOnly", lang) };
-        return { normalized: raw };
-      },
-    },
+    { key: "itemCode", header: lang === "KO" ? "품목코드(빈값=자동)" : "itemCode (blank=auto)", validate: (raw) => ({ normalized: raw }) },
     {
       key: "itemType",
       header: t("header.itemType", lang),
@@ -30,15 +26,24 @@ function buildColumns(lang: Lang): UploaderColumn[] {
       },
     },
     {
-      key: "unit",
-      header: t("header.unit", lang),
-      validate: (raw) => ({ normalized: raw }),
+      key: "name",
+      header: t("header.itemName", lang),
+      required: true,
+      validate: (raw) => {
+        if (!/^[\x20-\x7E]+$/.test(raw)) return { error: t("msg.uploadAsciiOnly", lang) };
+        return { normalized: raw };
+      },
     },
-    {
-      key: "category",
-      header: t("header.category", lang),
-      validate: (raw) => ({ normalized: raw }),
-    },
+    { key: "description", header: t("item.description", lang), required: true, validate: (raw) => ({ normalized: raw }) },
+    { key: "unit", header: t("header.unit", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "reorderPoint", header: lang === "KO" ? "재발주점" : "reorderPoint", validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number.isInteger(Number(raw)) && Number(raw) >= 0 ? { normalized: raw } : { error: "integer ≥ 0" }) },
+    { key: "colorChannel", header: t("item.colorChannel", lang), validate: (raw) => raw === "" ? { normalized: "" } : (COLOR_CHANNELS.includes(raw.toUpperCase()) ? { normalized: raw.toUpperCase() } : { error: COLOR_CHANNELS.join("|") }) },
+    { key: "expectedYield", header: t("yield.expectedYield", lang), validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number(raw) >= 0 ? { normalized: raw } : { error: "number ≥ 0" }) },
+    { key: "yieldCoverageBase", header: t("yield.coverageBase", lang), validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number(raw) >= 1 && Number(raw) <= 100 ? { normalized: raw } : { error: "1~100" }) },
+    { key: "compatibleItemCodes", header: lang === "KO" ? "호환장비코드(;구분)" : "compatibleItemCodes (;)", validate: (raw) => ({ normalized: raw }) },
+    { key: "parentItemCode", header: lang === "KO" ? "상위품목코드" : "parentItemCode", validate: (raw) => ({ normalized: raw }) },
+    { key: "bomQuantity", header: t("item.bomQuantity", lang), validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number(raw) > 0 ? { normalized: raw } : { error: "> 0" }) },
+    { key: "bomNote", header: t("item.bomNote", lang), validate: (raw) => ({ normalized: raw }) },
   ];
 }
 
@@ -50,26 +55,20 @@ export function ItemsImport({ lang }: { lang: Lang }) {
       templateName="items-template.xlsx"
       columns={buildColumns(lang)}
       onSave={async (rows) => {
-        let ok = 0;
-        let failed = 0;
-        for (const r of rows) {
-          const res = await fetch("/api/master/items", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: r.name,
-              itemType: r.itemType,
-              unit: r.unit || null,
-              category: r.category || null,
-            }),
-          });
-          if (res.ok) ok++; else failed++;
-        }
-        if (failed === 0) {
-          router.refresh();
-          return { ok: true, message: t("msg.uploadResultOk", lang).replace("{ok}", String(ok)) };
-        }
-        return { ok: false, message: t("msg.uploadResultPartial", lang).replace("{ok}", String(ok)).replace("{failed}", String(failed)) };
+        // 3-phase 처리. 서버 일괄 엔드포인트 호출.
+        const r = await fetch("/api/master/items/bulk-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ rows }),
+        });
+        const j = await r.json();
+        if (!r.ok) return { ok: false, message: j?.error ?? t("msg.uploadResultPartial", lang).replace("{ok}", "0").replace("{failed}", String(rows.length)) };
+        router.refresh();
+        const okCount = j?.created ?? 0;
+        const failedCount = j?.failed ?? 0;
+        if (failedCount === 0) return { ok: true, message: t("msg.uploadResultOk", lang).replace("{ok}", String(okCount)) };
+        return { ok: false, message: t("msg.uploadResultPartial", lang).replace("{ok}", String(okCount)).replace("{failed}", String(failedCount)) };
       }}
     />
   );

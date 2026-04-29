@@ -39,7 +39,8 @@ export default async function ItemsPage() {
             itemType: i.itemType,
             name: i.name,
             unit: i.unit,
-            category: i.category,
+            description: i.description ?? "",
+            colorChannel: i.colorChannel ?? null,
           }))}
         />
       </div>

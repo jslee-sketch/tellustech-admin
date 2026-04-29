@@ -25,7 +25,7 @@ export default async function NewItemPage() {
           <ItemForm
             mode="create"
             lang={L}
-            initial={{ itemType: "", name: "", unit: "", category: "", expectedYield: "", yieldCoverageBase: "5" }}
+            initial={{ itemType: "", name: "", unit: "", description: "", expectedYield: "", yieldCoverageBase: "5", colorChannel: "", compatibleItemIds: [] }}
           />
         </Card>
       </div>

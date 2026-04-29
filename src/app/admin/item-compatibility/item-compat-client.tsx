@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Field, Select, Badge } from "@/components/ui";
 
-type Item = { id: string; itemCode: string; name: string; itemType: string; category: string|null };
+type Item = { id: string; itemCode: string; name: string; itemType: string; description: string };
 type Compat = { id: string; productItemId: string; consumableItemId: string; product: Item; consumable: Item };
 
 export function ItemCompatClient({ items }: { items: Item[] }) {
@@ -61,7 +61,7 @@ export function ItemCompatClient({ items }: { items: Item[] }) {
               <Select value={adding} onChange={(e)=>setAdding(e.target.value)}
                 options={[
                   { value:"", label:"선택 / Chọn" },
-                  ...candidates.map(c => ({ value: c.id, label: `[${c.itemType}] ${c.itemCode} · ${c.name}${c.category ? ` (${c.category})` : ""}` })),
+                  ...candidates.map(c => ({ value: c.id, label: `[${c.itemType}] ${c.itemCode} · ${c.name}${c.description ? ` (${c.description})` : ""}` })),
                 ]} />
             </Field>
           </div>
@@ -78,7 +78,7 @@ export function ItemCompatClient({ items }: { items: Item[] }) {
                   <Badge tone={c.consumable.itemType === "CONSUMABLE" ? "primary" : "accent"}>{c.consumable.itemType}</Badge>
                   <span className="ml-2 font-mono">{c.consumable.itemCode}</span>
                   <span className="ml-2">{c.consumable.name}</span>
-                  {c.consumable.category && <span className="ml-2 text-[11px] text-[color:var(--tts-muted)]">[{c.consumable.category}]</span>}
+                  {c.consumable.description && <span className="ml-2 text-[11px] text-[color:var(--tts-muted)]">[{c.consumable.description}]</span>}
                 </span>
                 <Button size="sm" variant="ghost" onClick={()=>remove(c.consumableItemId)} disabled={busy}>제거</Button>
               </li>

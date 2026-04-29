@@ -293,36 +293,36 @@ async function seedProjects() {
   console.log(`  ✓ projects: ${PROJECTS.length * companies.length} (${PROJECTS.length} × 2 companies)`);
 }
 
-const SAMPLE_ITEMS: { itemCode: string; name: string; itemType: "PRODUCT" | "CONSUMABLE" | "PART"; unit?: string; category?: string }[] = [
-  { itemCode: "ITM-001", name: "Sindoh D330 Copier", itemType: "PRODUCT", unit: "ea", category: "Copier" },
-  { itemCode: "ITM-002", name: "Samsung X7500 Laser Printer", itemType: "PRODUCT", unit: "ea", category: "Printer" },
-  { itemCode: "ITM-003", name: "HP LaserJet Pro M404dn", itemType: "PRODUCT", unit: "ea", category: "Printer" },
-  { itemCode: "ITM-004", name: "Toner Black D330", itemType: "CONSUMABLE", unit: "ea", category: "Toner" },
-  { itemCode: "ITM-005", name: "Toner Cyan X7500", itemType: "CONSUMABLE", unit: "ea", category: "Toner" },
-  { itemCode: "ITM-006", name: "Toner Magenta X7500", itemType: "CONSUMABLE", unit: "ea", category: "Toner" },
-  { itemCode: "ITM-007", name: "Toner Yellow X7500", itemType: "CONSUMABLE", unit: "ea", category: "Toner" },
-  { itemCode: "ITM-008", name: "A4 Paper 80gsm 500 sheets", itemType: "CONSUMABLE", unit: "ream", category: "Paper" },
-  { itemCode: "ITM-009", name: "Drum Unit D330", itemType: "PART", unit: "ea", category: "Drum" },
-  { itemCode: "ITM-010", name: "Digital Multimeter Fluke 87V", itemType: "PRODUCT", unit: "ea", category: "Test & Measurement" },
-  { itemCode: "ITM-011", name: "Oscilloscope Rigol DS1054Z", itemType: "PRODUCT", unit: "ea", category: "Test & Measurement" },
-  { itemCode: "ITM-012", name: "Power Supply Rigol DP832", itemType: "PRODUCT", unit: "ea", category: "Test & Measurement" },
-  { itemCode: "ITM-013", name: "USB Cable Type-C 2m", itemType: "PART", unit: "ea", category: "Cable" },
-  { itemCode: "ITM-014", name: "Ethernet Patch Cable Cat6 3m", itemType: "PART", unit: "ea", category: "Cable" },
-  { itemCode: "ITM-015", name: "Fuser Unit D330", itemType: "PART", unit: "ea", category: "Fuser" },
+const SAMPLE_ITEMS: { itemCode: string; name: string; itemType: "PRODUCT" | "CONSUMABLE" | "PART"; unit?: string; description?: string }[] = [
+  { itemCode: "ITM-001", name: "Sindoh D330 Copier", itemType: "PRODUCT", unit: "ea", description: "Copier" },
+  { itemCode: "ITM-002", name: "Samsung X7500 Laser Printer", itemType: "PRODUCT", unit: "ea", description: "Printer" },
+  { itemCode: "ITM-003", name: "HP LaserJet Pro M404dn", itemType: "PRODUCT", unit: "ea", description: "Printer" },
+  { itemCode: "ITM-004", name: "Toner Black D330", itemType: "CONSUMABLE", unit: "ea", description: "Toner" },
+  { itemCode: "ITM-005", name: "Toner Cyan X7500", itemType: "CONSUMABLE", unit: "ea", description: "Toner" },
+  { itemCode: "ITM-006", name: "Toner Magenta X7500", itemType: "CONSUMABLE", unit: "ea", description: "Toner" },
+  { itemCode: "ITM-007", name: "Toner Yellow X7500", itemType: "CONSUMABLE", unit: "ea", description: "Toner" },
+  { itemCode: "ITM-008", name: "A4 Paper 80gsm 500 sheets", itemType: "CONSUMABLE", unit: "ream", description: "Paper" },
+  { itemCode: "ITM-009", name: "Drum Unit D330", itemType: "PART", unit: "ea", description: "Drum" },
+  { itemCode: "ITM-010", name: "Digital Multimeter Fluke 87V", itemType: "PRODUCT", unit: "ea", description: "Test & Measurement" },
+  { itemCode: "ITM-011", name: "Oscilloscope Rigol DS1054Z", itemType: "PRODUCT", unit: "ea", description: "Test & Measurement" },
+  { itemCode: "ITM-012", name: "Power Supply Rigol DP832", itemType: "PRODUCT", unit: "ea", description: "Test & Measurement" },
+  { itemCode: "ITM-013", name: "USB Cable Type-C 2m", itemType: "PART", unit: "ea", description: "Cable" },
+  { itemCode: "ITM-014", name: "Ethernet Patch Cable Cat6 3m", itemType: "PART", unit: "ea", description: "Cable" },
+  { itemCode: "ITM-015", name: "Fuser Unit D330", itemType: "PART", unit: "ea", description: "Fuser" },
 ];
 
 async function seedItems() {
   for (const it of SAMPLE_ITEMS) {
     await prisma.item.upsert({
       where: { itemCode: it.itemCode },
-      update: { name: it.name, itemType: it.itemType, unit: it.unit ?? null, category: it.category ?? null },
-      create: { itemCode: it.itemCode, name: it.name, itemType: it.itemType, unit: it.unit ?? null, category: it.category ?? null },
+      update: { name: it.name, itemType: it.itemType, unit: it.unit ?? null, description: it.description ?? "" },
+      create: { itemCode: it.itemCode, name: it.name, itemType: it.itemType, unit: it.unit ?? null, description: it.description ?? "" },
     });
   }
   console.log(`  ✓ items: ${SAMPLE_ITEMS.length}`);
 
   // 소모품 적정율 기준값 — 제조사 공표 기준 (5% 상밀도). 카테고리·이름 패턴 매칭.
-  const YIELD_DEFAULTS: { match: (name: string, category: string | null) => boolean; expectedYield: number }[] = [
+  const YIELD_DEFAULTS: { match: (name: string, description: string | null) => boolean; expectedYield: number }[] = [
     { match: (n) => /Drum.*D330|D330.*Drum/i.test(n), expectedYield: 80000 },
     { match: (n) => /Toner Black.*D330|Black.*D330.*Toner/i.test(n), expectedYield: 25000 },
     { match: (n) => /Toner.*(Cyan|Magenta|Yellow).*X7500/i.test(n), expectedYield: 15000 },
@@ -331,10 +331,10 @@ async function seedItems() {
   let updated = 0;
   const consumables = await prisma.item.findMany({
     where: { itemType: { in: ["CONSUMABLE", "PART"] }, expectedYield: null },
-    select: { id: true, name: true, category: true },
+    select: { id: true, name: true, description: true },
   });
   for (const c of consumables) {
-    const match = YIELD_DEFAULTS.find((d) => d.match(c.name, c.category));
+    const match = YIELD_DEFAULTS.find((d) => d.match(c.name, c.description));
     if (match) {
       await prisma.item.update({
         where: { id: c.id },

@@ -76,7 +76,7 @@ export async function importItemsFromExcel(buffer: ArrayBuffer): Promise<ImportR
           itemCode,
           name,
           itemType,
-          category: String(r["카테고리"] ?? r["device_line"] ?? "").trim() || null,
+          description: String(r["카테고리"] ?? r["device_line"] ?? "").trim() || "",
         },
       });
       report.created++;

@@ -37,18 +37,27 @@ export async function POST(request: Request) {
     if (!Array.isArray(rows) || rows.length === 0) return badRequest("invalid_input", { field: "rows", reason: "empty" });
 
     let created = 0, failed = 0;
-    const errors: Array<{ index: number; error: string }> = [];
+    // 행별 상세 에러 — 사용자에게 어떤 행/어떤 필드가 누락됐는지 안내.
+    const errors: Array<{ row: number; itemCode?: string; field: string; reason: string }> = [];
     const codeToId = new Map<string, string>();
 
     try {
-      // Phase 1: 품목 upsert
+      // Phase 1: 품목 upsert — 필수 필드 검증 우선.
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
+        const rowNum = i + 2; // 헤더 행 1번째 → 데이터 첫 행은 2번째.
         try {
-          const itemType = r.itemType as ItemType;
-          if (!["PRODUCT", "CONSUMABLE", "PART"].includes(itemType)) throw new Error("invalid_itemType");
-          if (!r.name) throw new Error("name_required");
-          // description 은 단일 등록 API 와 동일하게 빈 문자열 허용 (필수 아님).
+          // ── 필수 검증 ──
+          const itemType = (r.itemType ?? "").trim().toUpperCase() as ItemType;
+          if (!itemType) throw { field: "itemType", reason: "missing_required" };
+          if (!["PRODUCT", "CONSUMABLE", "PART"].includes(itemType)) throw { field: "itemType", reason: "invalid_value" };
+          if (!r.name?.trim()) throw { field: "name", reason: "missing_required" };
+          if (!r.description?.trim()) throw { field: "description", reason: "missing_required" };
+          // CONSUMABLE/PART 는 호환 장비 최소 1건 필수.
+          if (itemType !== "PRODUCT") {
+            const compatList = (r.compatibleItemCodes ?? "").split(";").map((s) => s.trim()).filter(Boolean);
+            if (compatList.length === 0) throw { field: "compatibleItemCodes", reason: "missing_required_for_consumable_part" };
+          }
           let itemCode = r.itemCode?.trim();
           if (!itemCode) {
             itemCode = await generateDatedCode({
@@ -60,7 +69,7 @@ export async function POST(request: Request) {
             });
           }
           const cc = r.colorChannel ? (r.colorChannel.toUpperCase() as ColorChannel) : null;
-          if (cc && !COLOR_CHANNELS.includes(cc)) throw new Error("invalid_colorChannel");
+          if (cc && !COLOR_CHANNELS.includes(cc)) throw { field: "colorChannel", reason: "invalid_value" };
 
           // PRODUCT 는 소모품 전용 필드(yield/coverage/colorChannel) 무시.
           // CONSUMABLE/PART 만 실제 값 적용. yieldCoverageBase 도 빈칸이면 null 유지.
@@ -94,7 +103,12 @@ export async function POST(request: Request) {
           created++;
         } catch (e: unknown) {
           failed++;
-          errors.push({ index: i, error: String((e as Error)?.message ?? e) });
+          const fe = e as { field?: string; reason?: string };
+          if (fe?.field && fe?.reason) {
+            errors.push({ row: rowNum, itemCode: r.itemCode?.trim(), field: fe.field, reason: fe.reason });
+          } else {
+            errors.push({ row: rowNum, itemCode: r.itemCode?.trim(), field: "_unknown", reason: String((e as Error)?.message ?? e) });
+          }
         }
       }
 

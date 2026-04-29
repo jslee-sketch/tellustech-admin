@@ -64,7 +64,8 @@ export default async function SalesListPage() {
           lang={L}
           initialData={sales.map((s) => {
             const yieldRow = yieldByClient.get(s.clientId);
-            const isRental = s.project?.salesType === "RENTAL";
+            // RENTAL 식별: 명시적 RENTAL 프로젝트 or IT/TM 계약 직접 연결.
+            const isRental = s.project?.salesType === "RENTAL" || !!s.itContractId || !!s.tmRentalId;
             return {
               id: s.id,
               salesNumber: s.salesNumber,

@@ -5,13 +5,15 @@ import { generateDatedCode } from "@/lib/code-generator";
 import type { ColorChannel, ItemType } from "@/generated/prisma/client";
 
 // POST /api/master/items/bulk-import
-// Body: { rows: [{...}, ...] }
-// 3-phase 처리:
-//   1) 모든 품목 upsert (parentItemId 미연결)
-//   2) compatibleItemCodes → ItemCompatibility
-//   3) parentItemCode → parentItemId/bomLevel/bomQuantity 연결
+// Body: { rows: [{...}, ...] } — 최대 1000건 권장 (그 이상은 분할 업로드).
+// 3-phase 처리: (1) 품목 upsert (2) 호환 매핑 (3) BOM 부모 연결.
+// 각 phase 는 청크 단위 병렬 (Promise.all) — 수백 행도 30초 안에 처리.
+
+export const maxDuration = 300; // 5분 — Vercel/Railway 의 라우트 핸들러 타임아웃 확장.
 
 const COLOR_CHANNELS: ColorChannel[] = ["BLACK", "CYAN", "MAGENTA", "YELLOW", "DRUM", "FUSER", "NONE"];
+const MAX_ROWS = 2000;
+const CHUNK_SIZE = 25; // DB 커넥션 풀 부하 회피 + 충분한 동시성.
 
 type Row = {
   itemCode?: string;
@@ -35,18 +37,16 @@ export async function POST(request: Request) {
     try { body = await request.json(); } catch { return badRequest("invalid_body"); }
     const rows = (body as { rows?: Row[] })?.rows ?? [];
     if (!Array.isArray(rows) || rows.length === 0) return badRequest("invalid_input", { field: "rows", reason: "empty" });
+    if (rows.length > MAX_ROWS) return badRequest("invalid_input", { field: "rows", reason: `max_${MAX_ROWS}_per_upload` });
 
     let created = 0, failed = 0;
     // 행별 상세 에러 — 사용자에게 어떤 행/어떤 필드가 누락됐는지 안내.
     const errors: Array<{ row: number; itemCode?: string; field: string; reason: string }> = [];
     const codeToId = new Map<string, string>();
 
-    try {
-      // Phase 1: 품목 upsert — 필수 필드 검증 우선.
-      for (let i = 0; i < rows.length; i++) {
-        const r = rows[i];
-        const rowNum = i + 2; // 헤더 행 1번째 → 데이터 첫 행은 2번째.
-        try {
+    // 단일 행 처리 함수 — 청크 병렬화에 사용.
+    async function processRow(r: Row, rowNum: number): Promise<void> {
+      try {
           // ── 필수 검증 ──
           const itemType = (r.itemType ?? "").trim().toUpperCase() as ItemType;
           if (!itemType) throw { field: "itemType", reason: "missing_required" };
@@ -110,13 +110,19 @@ export async function POST(request: Request) {
             errors.push({ row: rowNum, itemCode: r.itemCode?.trim(), field: "_unknown", reason: String((e as Error)?.message ?? e) });
           }
         }
+    }
+
+    try {
+      // Phase 1: 청크 병렬 (CHUNK_SIZE 행씩 Promise.all).
+      for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+        const slice = rows.slice(i, i + CHUNK_SIZE);
+        await Promise.all(slice.map((r, j) => processRow(r, i + j + 2)));
       }
 
-      // Phase 2: 호환 매핑 (CONSUMABLE/PART → PRODUCT)
-      // PRODUCT row 의 compatibleItemCodes 는 무시 (PRODUCT 자체는 호환 매핑의 자식이 아님).
+      // Phase 2: 호환 매핑 (CONSUMABLE/PART → PRODUCT) — flat 후 청크 병렬.
+      const compatTasks: Array<{ pid: string; childId: string }> = [];
       for (const r of rows) {
-        if (!r.compatibleItemCodes) continue;
-        if (r.itemType === "PRODUCT") continue;
+        if (!r.compatibleItemCodes || r.itemType === "PRODUCT") continue;
         const childId = codeToId.get((r.itemCode ?? "").trim());
         if (!childId) continue;
         const codes = r.compatibleItemCodes.split(";").map((s) => s.trim()).filter(Boolean);
@@ -126,19 +132,25 @@ export async function POST(request: Request) {
             const found = await prisma.item.findUnique({ where: { itemCode: code }, select: { id: true } });
             pid = found?.id;
           }
-          if (!pid) continue;
-          await prisma.itemCompatibility.upsert({
+          if (pid) compatTasks.push({ pid, childId });
+        }
+      }
+      for (let i = 0; i < compatTasks.length; i += CHUNK_SIZE) {
+        const slice = compatTasks.slice(i, i + CHUNK_SIZE);
+        await Promise.all(slice.map(({ pid, childId }) =>
+          prisma.itemCompatibility.upsert({
             where: { productItemId_consumableItemId: { productItemId: pid, consumableItemId: childId } },
             update: {},
             create: { productItemId: pid, consumableItemId: childId },
-          }).catch(() => undefined);
-        }
+          }).catch(() => undefined),
+        ));
       }
 
-      // Phase 3: BOM 부모 연결 (PRODUCT 는 BOM 자식 불가)
+      // Phase 3: BOM 부모 연결 (PRODUCT 는 BOM 자식 불가) — 청크 병렬.
+      type BomTask = { childId: string; parentId: string; level: number; quantity: number; note: string | null };
+      const bomTasks: BomTask[] = [];
       for (const r of rows) {
-        if (!r.parentItemCode) continue;
-        if (r.itemType === "PRODUCT") continue;
+        if (!r.parentItemCode || r.itemType === "PRODUCT") continue;
         const childId = codeToId.get((r.itemCode ?? "").trim());
         if (!childId) continue;
         let parentId = codeToId.get(r.parentItemCode.trim());
@@ -150,15 +162,22 @@ export async function POST(request: Request) {
         const parent = await prisma.item.findUnique({ where: { id: parentId }, select: { bomLevel: true, itemType: true } });
         if (!parent || parent.itemType === "PRODUCT") continue;
         if ((parent.bomLevel ?? 0) >= 3) continue;
-        await prisma.item.update({
-          where: { id: childId },
-          data: {
-            parentItemId: parentId,
-            bomLevel: (parent.bomLevel ?? 0) + 1,
-            bomQuantity: r.bomQuantity ? Number(r.bomQuantity) : 1,
-            bomNote: r.bomNote || null,
-          },
-        }).catch(() => undefined);
+        bomTasks.push({
+          childId,
+          parentId,
+          level: (parent.bomLevel ?? 0) + 1,
+          quantity: r.bomQuantity ? Number(r.bomQuantity) : 1,
+          note: r.bomNote || null,
+        });
+      }
+      for (let i = 0; i < bomTasks.length; i += CHUNK_SIZE) {
+        const slice = bomTasks.slice(i, i + CHUNK_SIZE);
+        await Promise.all(slice.map((t) =>
+          prisma.item.update({
+            where: { id: t.childId },
+            data: { parentItemId: t.parentId, bomLevel: t.level, bomQuantity: t.quantity, bomNote: t.note },
+          }).catch(() => undefined),
+        ));
       }
 
       return ok({ created, failed, errors });

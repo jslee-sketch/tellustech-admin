@@ -226,8 +226,31 @@ export function ItContractDetail({
     }
   }
 
+  async function handleTerminate() {
+    const dateStr = window.prompt("종료 일자 (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
+    if (!dateStr) return;
+    const reason = window.prompt("종료 사유 (필수)");
+    if (!reason) return;
+    const status = window.confirm("정상 종료(COMPLETED) 면 OK, 중도 해지(CANCELED) 면 취소") ? "COMPLETED" : "CANCELED";
+    setError(null);
+    const res = await fetch(`/api/rental/it-contracts/${contractId}/terminate`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endDate: dateStr, reason, status }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(`종료 실패: ${j?.error ?? res.status}`);
+      return;
+    }
+    window.alert("계약이 종료되었습니다.");
+    router.refresh();
+  }
+
   return (
     <div>
+      <div className="mb-3 flex justify-end">
+        <Button variant="danger" size="sm" onClick={handleTerminate}>🛑 계약 종료 (조기/정상)</Button>
+      </div>
       <Tabs tabs={buildTabs(lang)} active={active} onChange={setActive} />
 
       {error && (

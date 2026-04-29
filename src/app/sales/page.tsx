@@ -84,6 +84,10 @@ export default async function SalesListPage() {
               yieldRateBw: isRental && yieldRow?.rateBw !== null && yieldRow?.rateBw !== undefined ? yieldRow.rateBw : null,
               yieldRateColor: isRental && yieldRow?.rateColor !== null && yieldRow?.rateColor !== undefined ? yieldRow.rateColor : null,
               yieldIsFraud: isRental ? (yieldRow?.isFraud ?? false) : false,
+              stage: (s.isDraft && !s.technicianReady) ? "TECH"
+                   : (s.isDraft && s.technicianReady) ? "SALES"
+                   : (!s.isDraft && !s.financeConfirmedAt) ? "FINANCE"
+                   : "DONE",
             };
           })}
         />

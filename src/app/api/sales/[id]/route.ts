@@ -51,6 +51,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!existing) return notFound();
     const verdict = canEdit(existing);
     if (!verdict.allowed) return conflict(verdict.reason);
+    // 재경 CFM 후엔 일반 PATCH 차단 (ADMIN 이 finance-confirm DELETE 후 재수정).
+    if (existing.financeConfirmedAt) return conflict("finance_confirmed");
 
     let body: unknown;
     try {

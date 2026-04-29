@@ -108,6 +108,7 @@ enum ContractStatus {
   ACTIVE
   EXPIRED
   CANCELED
+  COMPLETED
 }
 
 enum BillingMethod {
@@ -695,6 +696,10 @@ model ItContract {
   // 계약 단위 토큰 (에이전트 패키지 + register-devices 인증)
   contractToken          String?        @unique
   contractTokenExpiresAt DateTime?
+  // 조기 종료 / 정상 종료 메타
+  terminatedAt           DateTime?
+  terminatedById         String?
+  terminationReason      String?
 
   client              Client                   @relation(fields: [clientId], references: [id])
   monthlyBillings     ItMonthlyBilling[]
@@ -797,8 +802,8 @@ model ItMonthlyBilling {
 
 /// 가이드: "매출정보 먼저 + S/N별 매입정보 + 이익자동계산"
 model TmRental {
-  id                String    @id @default(cuid())
-  rentalCode        String    @unique // TM-YYMMDD-###
+  id                String         @id @default(cuid())
+  rentalCode        String         @unique // TM-YYMMDD-###
   clientId          String
   contractNumber    String?
   address           String?
@@ -814,13 +819,18 @@ model TmRental {
   financeMgrEmail   String?
   startDate         DateTime
   endDate           DateTime
-  currency          Currency  @default(VND)
-  fxRate            Decimal   @default(1) @db.Decimal(15, 6)
-  createdAt         DateTime  @default(now())
+  currency          Currency       @default(VND)
+  fxRate            Decimal        @default(1) @db.Decimal(15, 6)
+  // 조기 종료 / 정상 종료 메타 (IT 계약과 동일 정책)
+  status            ContractStatus @default(ACTIVE)
+  terminatedAt      DateTime?
+  terminatedById    String?
+  terminationReason String?
+  createdAt         DateTime       @default(now())
   deletedAt         DateTime?
   lockedAt          DateTime?
   lockReason        String?
-  updatedAt         DateTime  @updatedAt
+  updatedAt         DateTime       @updatedAt
 
   client     Client              @relation(fields: [clientId], references: [id])
   items      TmRentalItem[]
@@ -1075,26 +1085,35 @@ model AsDispatchPart {
 
 /// 가이드: "회사없음 + 영업담당 추가 + 사용기간(optional)"
 model Sales {
-  id               String    @id @default(cuid())
-  salesNumber      String    @unique
-  clientId         String
-  projectId        String?
-  salesEmployeeId  String?
-  warehouseId      String? // TRADE 프로젝트 자동 OUT 대상 창고
+  id                   String    @id @default(cuid())
+  salesNumber          String    @unique
+  clientId             String
+  projectId            String?
+  salesEmployeeId      String?
+  warehouseId          String? // TRADE 프로젝트 자동 OUT 대상 창고
   // OA(IT)/TM 분기 — 포탈 현황판이 itContractId 또는 tmRentalId 유무로 OA/TM 구분
-  itContractId     String?
-  tmRentalId       String?
-  usagePeriodStart DateTime?
-  usagePeriodEnd   DateTime?
-  totalAmount      Decimal   @db.Decimal(15, 2) // 거래통화(currency) 단위의 합계
-  currency         Currency  @default(VND)
-  fxRate           Decimal   @default(1) @db.Decimal(15, 6) // 1 단위 currency → VND 환산율
-  note             String?
-  createdAt        DateTime  @default(now())
-  deletedAt        DateTime?
-  lockedAt         DateTime?
-  lockReason       String?
-  updatedAt        DateTime  @updatedAt
+  itContractId         String?
+  tmRentalId           String?
+  usagePeriodStart     DateTime?
+  usagePeriodEnd       DateTime?
+  // ── Mock 매출 워크플로 (cron 자동 생성 + 4단계 페르소나 뱃지) ──
+  // billingMonth: 월 첫째 날 UTC (UsageConfirmation 과 매칭 키)
+  billingMonth         DateTime?
+  isDraft              Boolean   @default(false) // cron 이 만든 mock 인지
+  technicianReady      Boolean   @default(false) // SNMP 수집·UC ADMIN_CONFIRMED 완료 (TM 은 항상 true)
+  salesConfirmedById   String?
+  salesConfirmedAt     DateTime? // 영업이 [매출 발행] 누른 시점
+  financeConfirmedById String?
+  financeConfirmedAt   DateTime? // 재경 CFM 시점
+  totalAmount          Decimal   @db.Decimal(15, 2) // 거래통화(currency) 단위의 합계
+  currency             Currency  @default(VND)
+  fxRate               Decimal   @default(1) @db.Decimal(15, 6) // 1 단위 currency → VND 환산율
+  note                 String?
+  createdAt            DateTime  @default(now())
+  deletedAt            DateTime?
+  lockedAt             DateTime?
+  lockReason           String?
+  updatedAt            DateTime  @updatedAt
 
   client         Client              @relation(fields: [clientId], references: [id])
   project        Project?            @relation(fields: [projectId], references: [id])
@@ -1107,6 +1126,8 @@ model Sales {
   @@index([projectId])
   @@index([itContractId])
   @@index([tmRentalId])
+  @@index([billingMonth])
+  @@index([isDraft])
   @@map("sales")
 }
 
@@ -1130,6 +1151,9 @@ model SalesItem {
   alertedAt            DateTime?
   // TmRental → Sales 자동반영의 출처 (있으면 reflect-sales 가 1:1 복제한 것)
   sourceTmRentalItemId String?
+  // Mock 매출 동기화 라벨 — UC ADMIN_CONFIRMED 시 어떤 라인을 삭제·재생성할지 식별.
+  // BASE_FEE / EXTRA_BW / EXTRA_COLOR / TM_LINE / MANUAL
+  sourceType           String?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
 

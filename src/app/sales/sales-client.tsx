@@ -24,6 +24,15 @@ export type SalesRow = {
   yieldRateBw: number | null;
   yieldRateColor: number | null;
   yieldIsFraud: boolean;
+  // Mock 매출 워크플로 단계 — TECH(🟡)/SALES(🟠)/FINANCE(🔵)/DONE(🟢)
+  stage: "TECH" | "SALES" | "FINANCE" | "DONE";
+};
+
+const STAGE_META: Record<SalesRow["stage"], { emoji: string; label: string; tone: BadgeTone }> = {
+  TECH:    { emoji: "🟡", label: "기술 대기",  tone: "warn" },
+  SALES:   { emoji: "🟠", label: "영업 발행 대기", tone: "accent" },
+  FINANCE: { emoji: "🔵", label: "재경 CFM 대기", tone: "primary" },
+  DONE:    { emoji: "🟢", label: "완료",       tone: "success" },
 };
 
 function pickYieldEmoji(rate: number): { emoji: string; cls: string } {
@@ -83,11 +92,19 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("all");
+  const [stage, setStage] = useState<"all" | SalesRow["stage"]>("all");
+
+  const stageCounts = useMemo(() => {
+    const c: Record<SalesRow["stage"], number> = { TECH: 0, SALES: 0, FINANCE: 0, DONE: 0 };
+    for (const s of initialData) c[s.stage] += 1;
+    return c;
+  }, [initialData]);
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
     return initialData.filter((s) => {
       if (status !== "all" && s.receivableStatus !== status) return false;
+      if (stage !== "all" && s.stage !== stage) return false;
       if (!qLower) return true;
       return (
         s.salesNumber.toLowerCase().includes(qLower) ||
@@ -95,7 +112,7 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
         s.clientName.toLowerCase().includes(qLower)
       );
     });
-  }, [initialData, q, status]);
+  }, [initialData, q, status, stage]);
 
   const columns: DataTableColumn<SalesRow>[] = [
     {
@@ -180,6 +197,15 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
       render: (v) => (v as string | null) ?? <span className="text-[color:var(--tts-muted)]">—</span>,
     },
     {
+      key: "stage",
+      label: "단계",
+      width: "140px",
+      render: (_v, row) => {
+        const m = STAGE_META[row.stage];
+        return <Badge tone={m.tone}>{m.emoji} {m.label}</Badge>;
+      },
+    },
+    {
       key: "yieldRateBw",
       label: t("yield.adequacyRate", lang),
       width: "180px",
@@ -234,6 +260,19 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
         </div>
       }
     >
+      {/* 4단계 뱃지 KPI + 클릭 필터 */}
+      <div className="mb-2 flex flex-wrap gap-2 text-[12px]">
+        <button onClick={() => setStage("all")} className={`rounded px-2.5 py-1 font-bold ${stage === "all" ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"}`}>전체 {initialData.length}</button>
+        {(["TECH", "SALES", "FINANCE", "DONE"] as const).map((st) => {
+          const m = STAGE_META[st];
+          return (
+            <button key={st} onClick={() => setStage(st)}
+              className={`rounded px-2.5 py-1 font-bold ${stage === st ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"}`}>
+              {m.emoji} {m.label} {stageCounts[st]}
+            </button>
+          );
+        })}
+      </div>
       <div className="mb-3 flex flex-wrap gap-2">
         <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchSales", lang)} />
         <select
@@ -246,6 +285,17 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
           <option value="PARTIAL">{t("status.partial", lang)}</option>
           <option value="PAID">{t("status.paid", lang)}</option>
           <option value="WRITTEN_OFF">{t("status.writtenOff", lang)}</option>
+        </select>
+        <select
+          value={stage}
+          onChange={(e) => setStage(e.target.value as typeof stage)}
+          className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px] text-[color:var(--tts-text)] outline-none focus:border-[color:var(--tts-border-focus)]"
+        >
+          <option value="all">전체 단계</option>
+          <option value="TECH">🟡 기술 대기</option>
+          <option value="SALES">🟠 영업 발행 대기</option>
+          <option value="FINANCE">🔵 재경 CFM 대기</option>
+          <option value="DONE">🟢 완료</option>
         </select>
       </div>
       <DataTable columns={columns} data={filtered} rowKey={(s) => s.id} emptyMessage={t("empty.sales", lang)}

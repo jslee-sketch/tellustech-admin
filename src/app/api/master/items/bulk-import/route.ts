@@ -48,7 +48,7 @@ export async function POST(request: Request) {
           const itemType = r.itemType as ItemType;
           if (!["PRODUCT", "CONSUMABLE", "PART"].includes(itemType)) throw new Error("invalid_itemType");
           if (!r.name) throw new Error("name_required");
-          if (!r.description) throw new Error("description_required");
+          // description 은 단일 등록 API 와 동일하게 빈 문자열 허용 (필수 아님).
           let itemCode = r.itemCode?.trim();
           if (!itemCode) {
             itemCode = await generateDatedCode({
@@ -62,6 +62,9 @@ export async function POST(request: Request) {
           const cc = r.colorChannel ? (r.colorChannel.toUpperCase() as ColorChannel) : null;
           if (cc && !COLOR_CHANNELS.includes(cc)) throw new Error("invalid_colorChannel");
 
+          // PRODUCT 는 소모품 전용 필드(yield/coverage/colorChannel) 무시.
+          // CONSUMABLE/PART 만 실제 값 적용. yieldCoverageBase 도 빈칸이면 null 유지.
+          const isConsumablePart = itemType === "CONSUMABLE" || itemType === "PART";
           const data = {
             itemCode,
             itemType,
@@ -69,9 +72,17 @@ export async function POST(request: Request) {
             description: r.description ?? "",
             unit: r.unit || null,
             reorderPoint: r.reorderPoint ? Number(r.reorderPoint) : null,
-            colorChannel: cc,
-            expectedYield: r.expectedYield ? Number(r.expectedYield) : null,
-            yieldCoverageBase: r.yieldCoverageBase ? Number(r.yieldCoverageBase) : 5,
+            ...(isConsumablePart
+              ? {
+                  colorChannel: cc,
+                  expectedYield: r.expectedYield ? Number(r.expectedYield) : null,
+                  yieldCoverageBase: r.yieldCoverageBase ? Number(r.yieldCoverageBase) : 5,
+                }
+              : {
+                  colorChannel: null,
+                  expectedYield: null,
+                  yieldCoverageBase: null,
+                }),
           };
 
           const upserted = await prisma.item.upsert({
@@ -88,8 +99,10 @@ export async function POST(request: Request) {
       }
 
       // Phase 2: 호환 매핑 (CONSUMABLE/PART → PRODUCT)
+      // PRODUCT row 의 compatibleItemCodes 는 무시 (PRODUCT 자체는 호환 매핑의 자식이 아님).
       for (const r of rows) {
         if (!r.compatibleItemCodes) continue;
+        if (r.itemType === "PRODUCT") continue;
         const childId = codeToId.get((r.itemCode ?? "").trim());
         if (!childId) continue;
         const codes = r.compatibleItemCodes.split(";").map((s) => s.trim()).filter(Boolean);
@@ -108,9 +121,10 @@ export async function POST(request: Request) {
         }
       }
 
-      // Phase 3: BOM 부모 연결
+      // Phase 3: BOM 부모 연결 (PRODUCT 는 BOM 자식 불가)
       for (const r of rows) {
         if (!r.parentItemCode) continue;
+        if (r.itemType === "PRODUCT") continue;
         const childId = codeToId.get((r.itemCode ?? "").trim());
         if (!childId) continue;
         let parentId = codeToId.get(r.parentItemCode.trim());

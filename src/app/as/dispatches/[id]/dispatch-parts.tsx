@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card, Field, ItemCombobox, Note, Row, Select, SerialCombobox, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -39,6 +39,19 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // BOM 자식 — itemId 가 A'ssy 일 때 표시.
+  const [bomTree, setBomTree] = useState<{ item: { id: string; itemCode: string; name: string; bomLevel: number | null }; children: BomNode[] } | null>(null);
+
+  useEffect(() => {
+    if (!itemId) { setBomTree(null); return; }
+    fetch(`/api/items/${itemId}/bom`, { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j?.children?.length > 0) setBomTree({ item: j.item, children: j.children });
+        else setBomTree(null);
+      })
+      .catch(() => setBomTree(null));
+  }, [itemId]);
 
   const partsCost = parts.reduce((s, p) => s + (p.totalCost ?? 0), 0);
   const totalCost = partsCost + transportCost;
@@ -147,6 +160,7 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
             <TextInput type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </Field>
         </Row>
+        {bomTree && <BomInfoCard tree={bomTree} lang={lang} />}
         <Row>
           <Field label={t("field.note", lang)}>
             <TextInput value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("placeholder.partNoteExample", lang)} />
@@ -195,5 +209,54 @@ export function DispatchPartsSection({ dispatchId, initialParts, defaultEquipmen
         <div className="text-[15px]">{t("label.dispatchTotalCost", lang)}: <span className="font-mono font-extrabold text-[color:var(--tts-primary)]">{fmt(totalCost)} ₫</span></div>
       </div>
     </Card>
+  );
+}
+
+// ─── BOM 정보 카드 (참고용) ─────────────────────────────────────
+// 선택한 부품이 A'ssy 일 때, 하위 구성 부품을 트리로 표시.
+type BomNode = {
+  item: { id: string; itemCode: string; name: string; itemType: string; description: string; bomLevel: number | null };
+  quantity: number;
+  note: string | null;
+  children: BomNode[];
+};
+
+function BomInfoCard({ tree, lang }: { tree: { item: { id: string; itemCode: string; name: string; bomLevel: number | null }; children: BomNode[] }; lang: Lang }) {
+  const headline = lang === "VI"
+    ? `Cụm lắp ráp này gồm các linh kiện sau:`
+    : lang === "EN"
+      ? `This assembly is composed of the following parts:`
+      : `이 어셈블리는 다음 부품으로 구성됩니다:`;
+  return (
+    <div className="mt-2 rounded-md border border-[color:var(--tts-accent)] bg-[color:var(--tts-accent-dim)]/30 p-3">
+      <div className="mb-1.5 text-[12px] font-bold text-[color:var(--tts-accent)]">📦 {headline}</div>
+      <ul className="space-y-1 font-mono text-[11px]">
+        {tree.children.map((c) => <BomItem key={c.item.id} node={c} depth={0} />)}
+      </ul>
+      <div className="mt-2 text-[10px] italic text-[color:var(--tts-muted)]">
+        {lang === "VI" ? "(Tham khảo — chỉ để xem cấu trúc, không tự động đưa vào kho)" : lang === "EN" ? "(Reference only — not auto-issued from stock)" : "(참고용 — 실제 출고는 위에서 선택한 품목만 처리됩니다)"}
+      </div>
+    </div>
+  );
+}
+
+function BomItem({ node, depth }: { node: BomNode; depth: number }) {
+  const indent = "  ".repeat(depth);
+  const branch = depth === 0 ? "🔧" : "⚙";
+  return (
+    <li>
+      <div className="flex items-center gap-2">
+        <span className="whitespace-pre text-[color:var(--tts-muted)]">{indent}{branch}</span>
+        <span className="text-[10px] text-[color:var(--tts-primary)]">{node.item.itemCode}</span>
+        <span className="font-semibold">{node.item.name}</span>
+        <span className="text-[10px] text-[color:var(--tts-muted)]">×{node.quantity}</span>
+        {node.note && <span className="text-[10px] text-[color:var(--tts-muted)]">— {node.note}</span>}
+      </div>
+      {node.children.length > 0 && (
+        <ul className="space-y-1">
+          {node.children.map((c) => <BomItem key={c.item.id} node={c} depth={depth + 1} />)}
+        </ul>
+      )}
+    </li>
   );
 }

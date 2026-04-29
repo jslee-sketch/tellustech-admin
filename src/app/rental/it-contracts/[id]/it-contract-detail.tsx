@@ -227,11 +227,11 @@ export function ItContractDetail({
   }
 
   async function handleTerminate() {
-    const dateStr = window.prompt("종료 일자 (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
+    const dateStr = window.prompt(t("rental.terminatePromptDate", lang), new Date().toISOString().slice(0, 10));
     if (!dateStr) return;
-    const reason = window.prompt("종료 사유 (필수)");
+    const reason = window.prompt(t("rental.terminatePromptReason", lang));
     if (!reason) return;
-    const status = window.confirm("정상 종료(COMPLETED) 면 OK, 중도 해지(CANCELED) 면 취소") ? "COMPLETED" : "CANCELED";
+    const status = window.confirm(t("rental.terminateNormalConfirm", lang)) ? "COMPLETED" : "CANCELED";
     setError(null);
     const res = await fetch(`/api/rental/it-contracts/${contractId}/terminate`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -239,17 +239,17 @@ export function ItContractDetail({
     });
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
-      setError(`종료 실패: ${j?.error ?? res.status}`);
+      setError(`${t("rental.terminateFailed", lang)}: ${j?.error ?? res.status}`);
       return;
     }
-    window.alert("계약이 종료되었습니다.");
+    window.alert(t("rental.terminated", lang));
     router.refresh();
   }
 
   return (
     <div>
       <div className="mb-3 flex justify-end">
-        <Button variant="danger" size="sm" onClick={handleTerminate}>🛑 계약 종료 (조기/정상)</Button>
+        <Button variant="danger" size="sm" onClick={handleTerminate}>🛑 {t("rental.terminateBtn", lang)}</Button>
       </div>
       <Tabs tabs={buildTabs(lang)} active={active} onChange={setActive} />
 

@@ -77,6 +77,7 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/finance/payables", labelKey: "nav.payables", icon: "💰", match: (p) => p.startsWith("/finance/payables") },
       { href: "/finance/expenses", labelKey: "nav.expenses", icon: "🧾", match: (p) => p.startsWith("/finance/expenses") },
+      { href: "/finance/sales-confirm", labelKey: "nav.salesConfirm", icon: "🔵", match: (p) => p.startsWith("/finance/sales-confirm") },
       { href: "/admin/closings", labelKey: "nav.closings", icon: "🔒", match: (p) => p.startsWith("/admin/closings") },
     ],
   },

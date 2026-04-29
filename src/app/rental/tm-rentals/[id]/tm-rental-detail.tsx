@@ -195,8 +195,31 @@ export function TmRentalDetail({
     }
   }
 
+  async function handleTerminate() {
+    const dateStr = window.prompt(t("rental.terminatePromptDate", lang), new Date().toISOString().slice(0, 10));
+    if (!dateStr) return;
+    const reason = window.prompt(t("rental.terminatePromptReason", lang));
+    if (!reason) return;
+    const status = window.confirm(t("rental.terminateNormalConfirm", lang)) ? "COMPLETED" : "CANCELED";
+    setError(null);
+    const res = await fetch(`/api/rental/tm-rentals/${rentalId}/terminate`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endDate: dateStr, reason, status }),
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setError(`${t("rental.terminateFailed", lang)}: ${j?.error ?? res.status}`);
+      return;
+    }
+    window.alert(t("rental.terminated", lang));
+    router.refresh();
+  }
+
   return (
     <div>
+      <div className="mb-3 flex justify-end">
+        <Button variant="danger" size="sm" onClick={handleTerminate}>🛑 {t("rental.terminateBtn", lang)}</Button>
+      </div>
       <Tabs tabs={buildTabs(lang)} active={active} onChange={setActive} />
 
       {error && (

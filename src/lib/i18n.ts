@@ -302,6 +302,7 @@ const DICT: Dict = {
   "nav.adminSnmp":                  { vi: "Quản lý SNMP",          en: "SNMP Admin",           ko: "SNMP 관리" },
   "nav.adminUsageConfirm":          { vi: "Xác nhận sản lượng",    en: "Usage Confirmations",  ko: "사용량 확인서" },
   "nav.adminYield":                 { vi: "Phân tích vật tư",      en: "Yield Analysis",       ko: "소모품 적정율" },
+  "nav.salesConfirm":               { vi: "Xác nhận DT (Tài chính)", en: "Finance Sales CFM",  ko: "매출 재경 CFM" },
 
   // ── 포털 메인 ──
   "portal.title":          { vi: "Cổng khách hàng TELLUSTECH",    en: "TELLUSTECH Customer Portal",  ko: "TELLUSTECH · 고객 포탈" },
@@ -2569,6 +2570,38 @@ const DICT: Dict = {
   "compat.productToParts":       { vi: "Thiết bị → Vật tư",    en: "Equipment → Parts",   ko: "장비 → 소모품/부품" },
   "compat.partsToProduct":       { vi: "Vật tư → Thiết bị",    en: "Parts → Equipment",   ko: "소모품/부품 → 장비" },
   "compat.recommendRegister":    { vi: "Khuyến nghị đăng ký tương thích tại màn hình đăng ký sản phẩm.", en: "Recommend registering compatibility on the item registration screen.", ko: "호환 등록은 품목 등록 화면에서 하는 것을 권장합니다." },
+
+  // ── Mock 매출 워크플로 (4단계 뱃지 + 영업/재경 발행) ──
+  "stage.tech":                  { vi: "Chờ kỹ thuật",     en: "Tech pending",      ko: "기술 대기" },
+  "stage.sales":                 { vi: "Chờ phát hành DT", en: "Sales pending",     ko: "영업 발행 대기" },
+  "stage.finance":               { vi: "Chờ XN tài chính", en: "Finance pending",   ko: "재경 CFM 대기" },
+  "stage.done":                  { vi: "Hoàn tất",         en: "Done",              ko: "완료" },
+  "sales.btnConfirm":            { vi: "🟠 Phát hành DT",  en: "🟠 Confirm sale",   ko: "🟠 매출 발행" },
+  "sales.btnFinanceConfirm":     { vi: "🔵 Xác nhận TC",   en: "🔵 Finance CFM",    ko: "🔵 재경 CFM" },
+  "sales.btnFinanceUnlock":      { vi: "Mở khóa TC",       en: "Unlock finance",    ko: "재경 잠금 해제" },
+  "sales.confirmPrompt":         { vi: "Phát hành doanh thu này? Sẽ tạo công nợ phải thu tự động.", en: "Confirm this sale? AR will be auto-created.", ko: "이 매출을 발행할까요? 미수금이 자동 생성됩니다." },
+  "sales.confirmFailed":         { vi: "Phát hành thất bại", en: "Confirm failed",  ko: "매출 발행 실패" },
+  "sales.financeConfirmPrompt":  { vi: "Xác nhận tài chính cho doanh thu này? Sẽ khóa chỉnh sửa.", en: "Confirm finance for this sale? Will lock editing.", ko: "이 매출을 재경 CFM 처리할까요? 수정이 잠깁니다." },
+  "sales.financeConfirmFailed":  { vi: "XN tài chính thất bại", en: "Finance CFM failed", ko: "재경 CFM 실패" },
+  "sales.financeUnlockPrompt":   { vi: "Mở khóa CFM tài chính? (chỉ ADMIN)", en: "Unlock finance CFM? (ADMIN only)", ko: "재경 CFM 잠금을 해제할까요? (ADMIN 전용)" },
+
+  // ── 렌탈 종료 (IT/TM 공용) ──
+  "rental.terminateBtn":             { vi: "Kết thúc hợp đồng (sớm/đúng hạn)", en: "Terminate (early/normal)", ko: "계약 종료 (조기/정상)" },
+  "rental.terminatePromptDate":      { vi: "Ngày kết thúc (YYYY-MM-DD)",       en: "End date (YYYY-MM-DD)",    ko: "종료 일자 (YYYY-MM-DD)" },
+  "rental.terminatePromptReason":    { vi: "Lý do kết thúc (bắt buộc)",        en: "Reason (required)",        ko: "종료 사유 (필수)" },
+  "rental.terminateNormalConfirm":   { vi: "OK = Kết thúc bình thường (COMPLETED), Cancel = Hủy giữa chừng (CANCELED)", en: "OK = COMPLETED, Cancel = CANCELED", ko: "정상 종료(COMPLETED) 면 OK, 중도 해지(CANCELED) 면 취소" },
+  "rental.terminateFailed":          { vi: "Kết thúc thất bại",                en: "Termination failed",       ko: "종료 실패" },
+  "rental.terminated":               { vi: "Hợp đồng đã được kết thúc.",       en: "Contract terminated.",     ko: "계약이 종료되었습니다." },
+
+  // ── 재경 매출 CFM 화면 ──
+  "page.salesConfirm.title":         { vi: "Xác nhận doanh thu (Tài chính)", en: "Sales Finance Confirmation", ko: "매출 재경 CFM" },
+  "salesConfirm.cardTitle":          { vi: "Doanh thu chờ XN tài chính",    en: "Sales pending finance CFM",   ko: "재경 CFM 대기 매출" },
+  "salesConfirm.searchPlaceholder":  { vi: "Tìm: số CT / mã KH / tên KH",    en: "Search: sales# / client",     ko: "검색: 전표번호 / 거래처" },
+  "salesConfirm.bulkBtn":            { vi: "✓ Xác nhận hàng loạt ({n})",    en: "✓ Bulk confirm ({n})",        ko: "✓ 일괄 CFM ({n})" },
+  "salesConfirm.bulkPrompt":         { vi: "Xác nhận {n} doanh thu cùng lúc?", en: "Confirm {n} sales at once?", ko: "{n}건 매출을 일괄 CFM 처리할까요?" },
+  "salesConfirm.empty":              { vi: "Không có doanh thu chờ.",       en: "No pending sales.",          ko: "대기 매출 없음." },
+  "salesConfirm.btnSingle":          { vi: "✓ XN",                          en: "✓ CFM",                       ko: "✓ CFM" },
+  "salesConfirm.colSalesConfirmed":  { vi: "Phát hành lúc",                 en: "Sales confirmed at",          ko: "영업 발행일" },
 };
 
 export function t(key: string, lang: Lang): string {

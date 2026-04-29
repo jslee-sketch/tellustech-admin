@@ -32,6 +32,11 @@ type SalesCore = {
   note: string;
   totalAmount: string;
   createdAt: string;
+  // Mock 매출 워크플로
+  isDraft: boolean;
+  technicianReady: boolean;
+  salesConfirmedAt: string | null;
+  financeConfirmedAt: string | null;
 };
 
 type ItemRow = {
@@ -154,8 +159,67 @@ export function SalesDetail({
     }
   }
 
+  const stage: "TECH"|"SALES"|"FINANCE"|"DONE" =
+    core.isDraft && !core.technicianReady ? "TECH"
+    : core.isDraft && core.technicianReady ? "SALES"
+    : !core.isDraft && !core.financeConfirmedAt ? "FINANCE"
+    : "DONE";
+
+  async function handleSalesConfirm() {
+    if (!window.confirm(t("sales.confirmPrompt", lang))) return;
+    setError(null);
+    const r = await fetch(`/api/sales/${salesId}/confirm`, { method: "POST" });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      setError(`${t("sales.confirmFailed", lang)}: ${j?.details?.message ?? j?.error ?? r.status}`);
+      return;
+    }
+    router.refresh();
+  }
+  async function handleFinanceConfirm() {
+    if (!window.confirm(t("sales.financeConfirmPrompt", lang))) return;
+    setError(null);
+    const r = await fetch(`/api/sales/${salesId}/finance-confirm`, { method: "POST" });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      setError(`${t("sales.financeConfirmFailed", lang)}: ${j?.error ?? r.status}`);
+      return;
+    }
+    router.refresh();
+  }
+  async function handleFinanceUnlock() {
+    if (!window.confirm(t("sales.financeUnlockPrompt", lang))) return;
+    setError(null);
+    const r = await fetch(`/api/sales/${salesId}/finance-confirm`, { method: "DELETE" });
+    if (r.ok) router.refresh();
+  }
+
   return (
     <div>
+      {/* 단계 뱃지 + 액션 버튼 */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className={`rounded px-2.5 py-1 text-[12px] font-bold ${
+          stage === "TECH" ? "bg-[color:var(--tts-warn-dim)] text-[color:var(--tts-warn)]" :
+          stage === "SALES" ? "bg-[color:var(--tts-accent-dim)] text-[color:var(--tts-accent)]" :
+          stage === "FINANCE" ? "bg-[color:var(--tts-primary-dim)] text-[color:var(--tts-primary)]" :
+          "bg-[color:var(--tts-success-dim)] text-[color:var(--tts-success)]"
+        }`}>
+          {stage === "TECH" && `🟡 ${t("stage.tech", lang)}`}
+          {stage === "SALES" && `🟠 ${t("stage.sales", lang)}`}
+          {stage === "FINANCE" && `🔵 ${t("stage.finance", lang)}`}
+          {stage === "DONE" && `🟢 ${t("stage.done", lang)}`}
+        </span>
+        {stage === "SALES" && (
+          <Button variant="accent" size="sm" onClick={handleSalesConfirm}>{t("sales.btnConfirm", lang)}</Button>
+        )}
+        {stage === "FINANCE" && (
+          <Button size="sm" onClick={handleFinanceConfirm}>{t("sales.btnFinanceConfirm", lang)}</Button>
+        )}
+        {stage === "DONE" && (
+          <Button variant="ghost" size="sm" onClick={handleFinanceUnlock}>{t("sales.btnFinanceUnlock", lang)}</Button>
+        )}
+      </div>
+
       <Tabs tabs={buildTabs(lang)} active={active} onChange={setActive} />
 
       {error && (

@@ -94,6 +94,10 @@ export default async function SalesDetailPage({ params }: PageProps) {
               note: sales.note ?? "",
               totalAmount: sales.totalAmount.toString(),
               createdAt: sales.createdAt.toISOString().slice(0, 10),
+              isDraft: sales.isDraft,
+              technicianReady: sales.technicianReady,
+              salesConfirmedAt: sales.salesConfirmedAt ? sales.salesConfirmedAt.toISOString() : null,
+              financeConfirmedAt: sales.financeConfirmedAt ? sales.financeConfirmedAt.toISOString() : null,
             }}
             items={sales.items.map((it) => ({
               id: it.id,

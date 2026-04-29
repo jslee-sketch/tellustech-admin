@@ -2605,6 +2605,27 @@ const DICT: Dict = {
   "filter.allCountSuffix":           { vi: "Tất cả",                        en: "All",                         ko: "전체" },
   "filter.allStages":                { vi: "Tất cả giai đoạn",              en: "All stages",                  ko: "전체 단계" },
   "col.stage":                       { vi: "Giai đoạn",                     en: "Stage",                       ko: "단계" },
+
+  // ── 거래처 포탈 계정 카드 ──
+  "portalAcc.cardTitle":     { vi: "Tài khoản cổng KH",            en: "Customer Portal Account",     ko: "고객 포탈 계정" },
+  "portalAcc.noAccount":     { vi: "Khách hàng này chưa có tài khoản cổng. Phát hành sẽ tạo ID = mã KH, mật khẩu mặc định '1234'.", en: "No portal account yet. Issuing creates ID = client code, default password '1234'.", ko: "이 거래처에 포탈 계정이 없습니다. 발급 시 ID = 거래처코드, 비밀번호 기본 '1234'." },
+  "portalAcc.issueBtn":      { vi: "+ Phát hành tài khoản (ID = {code})", en: "+ Issue account (ID = {code})", ko: "+ 계정 발급 (ID = {code})" },
+  "portalAcc.issueConfirm":  { vi: "Phát hành tài khoản cổng cho {code}? ID={code}, PW=1234.", en: "Issue portal account for {code}? ID={code}, PW=1234.", ko: "{code} 의 포탈 계정을 발급할까요? ID={code}, 비번=1234." },
+  "portalAcc.issued":        { vi: "Đã phát hành: ID={code}, PW=1234 (yêu cầu đổi).", en: "Issued: ID={code}, PW=1234 (must change).", ko: "발급 완료: ID={code}, PW=1234 (변경 요구)." },
+  "portalAcc.issueFailed":   { vi: "Phát hành thất bại",           en: "Issue failed",                ko: "발급 실패" },
+  "portalAcc.resetBtn":      { vi: "Đặt lại mật khẩu (1234)",      en: "Reset password to 1234",      ko: "비밀번호를 1234 로 리셋" },
+  "portalAcc.resetConfirm":  { vi: "Đặt lại mật khẩu về '1234'?",  en: "Reset password to '1234'?",   ko: "비밀번호를 '1234' 로 리셋할까요?" },
+  "portalAcc.resetTo":       { vi: "Đã đặt lại về {pw}",           en: "Reset to {pw}",               ko: "비밀번호 리셋 완료: {pw}" },
+  "portalAcc.resetFailed":   { vi: "Đặt lại thất bại",             en: "Reset failed",                ko: "리셋 실패" },
+  "portalAcc.activate":      { vi: "Kích hoạt",                    en: "Activate",                    ko: "활성화" },
+  "portalAcc.deactivate":    { vi: "Vô hiệu hóa",                  en: "Deactivate",                  ko: "비활성화" },
+  "portalAcc.username":      { vi: "ID đăng nhập",                 en: "Login ID",                    ko: "로그인 ID" },
+  "portalAcc.status":        { vi: "Trạng thái",                   en: "Status",                      ko: "상태" },
+  "portalAcc.active":        { vi: "Đang hoạt động",               en: "Active",                      ko: "활성" },
+  "portalAcc.inactive":      { vi: "Vô hiệu",                      en: "Inactive",                    ko: "비활성" },
+  "portalAcc.lastLogin":     { vi: "Đăng nhập gần nhất",           en: "Last login",                  ko: "마지막 로그인" },
+  "portalAcc.defaultPw":     { vi: "Đang dùng PW mặc định",        en: "Using default PW",            ko: "기본 비번 사용 중" },
+  "portalAcc.howTo":         { vi: "Hướng dẫn cho khách hàng:",    en: "Tell the customer:",          ko: "고객 안내:" },
 };
 
 export function t(key: string, lang: Lang): string {

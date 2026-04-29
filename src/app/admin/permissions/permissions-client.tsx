@@ -91,6 +91,18 @@ export function PermissionsClient({ users }: { users: User[] }) {
       <Card title={`권한 매트릭스 — ${users.find(u => u.id === selectedId)?.name ?? ""}`} className="col-span-9">
         <div className="mb-3 flex items-center gap-2">
           <Button onClick={save} disabled={!selectedId || saving}>{saving ? "저장 중…" : "저장"}</Button>
+          <Button
+            variant="ghost"
+            disabled={!selectedId}
+            onClick={async () => {
+              if (!selectedId) return;
+              if (!window.confirm("이 사용자의 비밀번호를 '1234' 로 리셋할까요?")) return;
+              const r = await fetch(`/api/admin/users/${selectedId}/reset-password`, { method: "POST" });
+              const j = await r.json();
+              if (r.ok) alert(`비밀번호 리셋 완료: ${j.resetTo} (다음 로그인 시 변경 요구)`);
+              else alert(`리셋 실패: ${j.error}`);
+            }}
+          >🔑 비번 리셋 (1234)</Button>
           {msg && <span className="text-[12px] text-[color:var(--tts-sub)]">{msg}</span>}
         </div>
         <div className="grid grid-cols-1 gap-1 text-[13px] md:grid-cols-2">

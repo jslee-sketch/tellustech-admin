@@ -5,6 +5,7 @@ import { getSession } from "@/lib/session";
 import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { ClientDetail } from "./client-detail";
+import { PortalAccountCard } from "./portal-account-card";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
       referrer: { select: { id: true, clientCode: true, companyNameVi: true } },
       referrerEmployee: { select: { id: true, employeeCode: true, nameVi: true } },
       salesPic: { select: { id: true, employeeCode: true, nameVi: true } },
+      portalUser: { select: { id: true, username: true, isActive: true, mustChangePassword: true, lastLoginAt: true } },
     },
   });
   if (!client) notFound();
@@ -106,6 +108,22 @@ export default async function ClientDetailPage({ params }: PageProps) {
             }))}
           />
         </Card>
+
+        {/* 고객 포탈 계정 카드 */}
+        <div className="mt-4">
+          <PortalAccountCard
+            clientId={client.id}
+            clientCode={client.clientCode}
+            portalUser={client.portalUser ? {
+              id: client.portalUser.id,
+              username: client.portalUser.username,
+              isActive: client.portalUser.isActive,
+              mustChangePassword: client.portalUser.mustChangePassword,
+              lastLoginAt: client.portalUser.lastLoginAt ? client.portalUser.lastLoginAt.toISOString() : null,
+            } : null}
+            lang={L}
+          />
+        </div>
       </div>
     </main>
   );

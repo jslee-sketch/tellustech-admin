@@ -1445,3 +1445,84 @@ curl -X POST "<host>/api/jobs/yield-analysis-monthly?sync=1&targetMonth=2026-04"
 | `YieldConfig` | 임계값 설정 (단일 row, id="default") |
 | `YieldBadge` enum | BLUE / GREEN / YELLOW / ORANGE / RED |
 | `NotificationType.YIELD_FRAUD_SUSPECT` | 부정 의심 알림 타입 |
+
+---
+
+# 14부. 다운로드 / 업로드 — 관리자 책임 영역
+
+A 매뉴얼 부록 D 가 일반 사용자 중심이라면, 본 장은 **관리자만 접근 가능한 다운로드/업로드** + **전체 일괄 작업의 운영 정책**을 다룹니다.
+
+## 14.1 ECOUNT 마이그레이션 import (`/admin/ecount-import` — 비공개 도구)
+
+**용도**: 기존 ECOUNT ERP 의 거래처/품목/매출/매입 마스터를 한 번 통째로 가져오기.
+
+**파일 형식**: ECOUNT export XLSX 그대로. 헤더 한국어 (`거래처코드`, `품목명`, `구분`, `카테고리` 등).
+
+⚠️ **1회 한정 도구**. 운영 중 정기 import 미지원 — ECOUNT 값을 수정한 후 재 import 해도 동기화 안 됨. 이미 import 된 거래처는 itemCode/clientCode 로 식별되어 PATCH 처럼 업데이트 가능하지만, 의도하지 않은 덮어쓰기 위험.
+
+⚠️ **회사코드 명시 필요**. ECOUNT 데이터가 TV/VR 어느 회사인지 import 직전에 선택. 잘못 선택하면 이후 정정에 시간 듬뿍.
+
+💡 **꿀팁**:
+- **데이터 정제 먼저**. ECOUNT 거래처 중 휴면·중복은 import 전에 ECOUNT 측에서 정리.
+- **dry-run** (3 행만) 으로 먼저 확인. 컬럼 매핑이 맞는지 (`구분=PRODUCT/CONSUMABLE/PART`, `카테고리=description`).
+- **순서 지키기**: 거래처 → 품목 → 매입 → 매출. 매출이 먼저 들어가면 거래처 미존재로 거절.
+
+## 14.2 SNMP 에이전트 패키지 다운로드 (`/admin/snmp` 탭3)
+
+**용도**: 고객사 PC 에 설치할 ZIP 묶음 만들기.
+
+⚠️ **`config-{contractCode}.json` 은 평문 토큰 포함**. USB 분실 시 즉시 그 계약의 모든 장비 토큰 [폐기].
+
+⚠️ **install.bat 은 끝에서 config.json 자동 삭제** — 그 PC 에서 재설치 필요 시 새로 패키지 받아야 함.
+
+⚠️ **에이전트 exe (~57MB)** 는 GitHub Releases 에서 별도 보관. 패키지 만들 때마다 매번 다운로드 X — 본사 PC 한 곳에 보관 후 재사용.
+
+💡 **꿀팁**:
+- **계약 단위로 ZIP 1개**. 한 거래처에 여러 PC 가 있으면 같은 ZIP 사본 사용 가능 (계약 토큰은 같음, 장비 토큰만 다름).
+- **체크섬 비교** 권장: GitHub Release 페이지의 SHA256 vs 내려받은 exe 비교.
+- **버전 표기**: ZIP 파일명에 `tellustech-agent-{고객사}-v1.0.0.zip` 처럼 버전 박아 두기.
+
+## 14.3 사용량 확인서 PDF (`/admin/usage-confirmations`)
+
+**용도**: 고객 서명용 월별 사용량 PDF + 매출 전표 첨부.
+
+⚠️ **PDF 생성 후에는 카운터 수정 불가**. PDF 생성 직전이 마지막 검토 기회.
+
+⚠️ **Noto Sans CJK 폰트 임베드**. 한국어·베트남어 모두 PDF 에 정상 표시되어야 함. 폰트 파일 누락 시 □□□ 박스로 출력 — 이 경우 IT 팀 호출.
+
+💡 **꿀팁**:
+- **2주마다 한 번 일괄 처리**: 월초 자동 cron → 5일 고객 컨펌 → 6일 일괄 [관리자 CFM] → [PDF 생성] → [매출 전표]. 업무 흐름이 깔끔.
+- **고객 미컨펌 처리**: 5일 이상 미컨펌 시 [재알림] 또는 전화 후 [수동CFM] (메모 필수). PDF 에 "전화 확인" 메모 노출.
+
+## 14.4 적정율 리포트 (`/admin/yield-analysis`)
+
+⚠️ 현재는 화면 조회만. CSV/엑셀 export 는 향후 추가 (백로그).
+
+💡 **꿀팁**: 화면에서 「부정 의심 관리」 탭 → 행 우클릭 → 페이지 인쇄 (사이드바 자동 숨김 — 12.1 참조) 로 임시 PDF 생성 가능.
+
+## 14.5 감사로그 export (`/admin/audit-logs`)
+
+⚠️ **대용량 주의**. 1년치는 수백만 행 가능. 검색 필터 적용 후 export 권장.
+
+⚠️ **export 권한 별도**. 일반 ADMIN 도 로그 조회는 가능하지만 export 는 별도 권한 부여 필요 (정보보호).
+
+💡 **꿀팁**:
+- **회계 마감 직후** 그 월의 감사로그를 백업 export. 외부 감사 대비.
+- **보관 기간**: 최소 5년 (베트남 회계법). DB 안에 무한 보관되지만, 30일치를 분기마다 별도 S3/외부 백업 저장소로 떼어 두기 권장.
+
+## 14.6 공통 운영 정책
+
+| 작업 | 권한 | 빈도 |
+|---|---|---|
+| ECOUNT import | ADMIN | 1회 (마이그레이션 시) |
+| 거래처/품목/매출 일괄 업로드 | MANAGER+ | 필요 시 |
+| 사용자 계정 일괄 등록 | ADMIN | 분기 1회 (신규 입사 일괄) |
+| 권한 매트릭스 일괄 변경 | ADMIN | 인사 발령 시 |
+| SNMP 에이전트 패키지 | MANAGER+ | 신규 거래처 도입 시 |
+| 사용량 확인서 PDF | MANAGER+ | 매월 1회 일괄 |
+| 감사로그 export | ADMIN (별도 권한) | 외부 감사 / 회계 마감 시 |
+| DB 전체 백업 (Railway 콘솔) | DevOps | 매일 자동 |
+
+⚠️ **모든 일괄 작업은 audit_log 에 자동 기록**. 누가 언제 무엇을 일괄 변경했는지 추적 가능.
+
+⚠️ **부분 실패 후 재업로드** 시: 같은 코드(`itemCode/clientCode/salesNumber`) 가 있으면 upsert 동작 (덮어쓰기). 의도치 않은 덮어쓰기 방지를 위해 import 전 백업 export 권장.

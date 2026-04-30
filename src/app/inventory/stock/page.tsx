@@ -5,6 +5,7 @@ import { companyScope } from "@/lib/api-utils";
 import { t } from "@/lib/i18n";
 import { StockClient } from "./stock-client";
 import { InventoryItemsSection } from "./inventory-items-section";
+import { StockTabs } from "./stock-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +85,7 @@ export default async function InventoryStockPage() {
 
   return (
     <main className="flex-1 p-8">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-screen-2xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <Link href="/" className="text-[11px] font-bold tracking-[0.15em] text-[color:var(--tts-accent)] hover:underline">
@@ -101,11 +102,11 @@ export default async function InventoryStockPage() {
             {t("link.transactionHistory", L)}
           </Link>
         </div>
-        <StockClient lang={L} initialData={stock} />
-
-        <div className="mt-6">
-          {await renderInventoryItems(session, L)}
-        </div>
+        <StockTabs
+          lang={L}
+          realtime={<StockClient lang={L} initialData={stock} />}
+          bySerial={await renderInventoryItems(session, L)}
+        />
       </div>
     </main>
   );

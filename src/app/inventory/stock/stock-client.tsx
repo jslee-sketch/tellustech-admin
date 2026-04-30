@@ -20,6 +20,8 @@ export type StockRow = {
 export function StockClient({ initialData, lang }: { initialData: StockRow[]; lang: Lang }) {
   const [q, setQ] = useState("");
   const [onHandOnly, setOnHandOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
@@ -34,6 +36,11 @@ export function StockClient({ initialData, lang }: { initialData: StockRow[]; la
       );
     });
   }, [initialData, q, onHandOnly]);
+
+  // 페이지 슬라이스
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paged = useMemo(() => filtered.slice((safePage - 1) * pageSize, safePage * pageSize), [filtered, safePage, pageSize]);
 
   const columns: DataTableColumn<StockRow>[] = [
     {
@@ -113,13 +120,39 @@ export function StockClient({ initialData, lang }: { initialData: StockRow[]; la
       />
     }>
       <div className="mb-3 flex flex-wrap gap-3">
-        <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchStock", lang)} />
+        <SearchBar value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder={t("placeholder.searchStock", lang)} />
         <label className="inline-flex items-center gap-2 text-[13px] text-[color:var(--tts-text)]">
-          <input type="checkbox" checked={onHandOnly} onChange={(e) => setOnHandOnly(e.target.checked)} />
+          <input type="checkbox" checked={onHandOnly} onChange={(e) => { setOnHandOnly(e.target.checked); setPage(1); }} />
           {t("label.onlyInStock", lang)}
         </label>
       </div>
-      <DataTable columns={columns} data={filtered} rowKey={(s) => `${s.warehouseId}|${s.itemId}`} emptyMessage={t("empty.stockData", lang)} />
+      <DataTable columns={columns} data={paged} rowKey={(s) => `${s.warehouseId}|${s.itemId}`} emptyMessage={t("empty.stockData", lang)} />
+      <div className="mt-3 flex items-center justify-between text-[12px]">
+        <div className="text-[color:var(--tts-muted)]">
+          {t("paging.showing", lang)
+            .replace("{from}", String(filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1))
+            .replace("{to}", String(Math.min(safePage * pageSize, filtered.length)))
+            .replace("{total}", String(filtered.length))}
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={pageSize}
+            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+            className="rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[12px]"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-[color:var(--tts-muted)]">{t("paging.perPage", lang)}</span>
+          <button onClick={() => setPage(1)} disabled={safePage === 1} className="rounded border border-[color:var(--tts-border)] px-2 py-1 disabled:opacity-30">«</button>
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1} className="rounded border border-[color:var(--tts-border)] px-2 py-1 disabled:opacity-30">‹</button>
+          <span className="font-mono">{safePage} / {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} className="rounded border border-[color:var(--tts-border)] px-2 py-1 disabled:opacity-30">›</button>
+          <button onClick={() => setPage(totalPages)} disabled={safePage === totalPages} className="rounded border border-[color:var(--tts-border)] px-2 py-1 disabled:opacity-30">»</button>
+        </div>
+      </div>
     </Card>
   );
 }

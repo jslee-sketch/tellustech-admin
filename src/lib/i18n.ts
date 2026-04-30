@@ -2659,6 +2659,20 @@ const DICT: Dict = {
   "inv.statusNeedsRepair":    { vi: "Cần sửa chữa",                 en: "Needs repair",               ko: "수리 필요" },
   "inv.statusPartsUsed":      { vi: "Đã dùng làm linh kiện",        en: "Parts used",                 ko: "부품 사용됨" },
   "inv.statusIrreparable":    { vi: "Không sửa được",               en: "Irreparable",                ko: "수리 불가" },
+
+  // ── 재고 화면 탭 + 페이징 ──
+  "stock.tab.realtime":       { vi: "Tồn kho thời gian thực",       en: "Real-time stock",            ko: "실시간 재고현황" },
+  "stock.tab.bySerial":       { vi: "Tồn kho theo S/N",             en: "Stock by S/N",               ko: "S/N별 재고현황" },
+  "paging.showing":           { vi: "Hiển thị {from}-{to} / {total}", en: "Showing {from}-{to} of {total}", ko: "{from}-{to} / {total} 건 표시" },
+  "paging.perPage":           { vi: "/ trang",                       en: "per page",                   ko: "/페이지" },
+
+  // ── 권한 모듈 라벨 (nav.* 재사용 + 신규) ──
+  "perm.calibrations":        { vi: "Hiệu chuẩn",                   en: "Calibrations",               ko: "교정" },
+  "perm.payroll":             { vi: "Tiền lương",                   en: "Payroll",                    ko: "급여" },
+  "perm.incentive":           { vi: "Thưởng",                       en: "Incentive",                  ko: "인센티브" },
+  "perm.payable":             { vi: "Phải trả",                     en: "Payable",                    ko: "미지급" },
+  "perm.receivable":          { vi: "Phải thu",                     en: "Receivable",                 ko: "미수금" },
+  "page.permissions.title":   { vi: "Quyền người dùng",             en: "User Permissions",           ko: "사용자 권한" },
 };
 
 export function t(key: string, lang: Lang): string {

@@ -2,45 +2,47 @@
 
 import { useEffect, useState } from "react";
 import { Card, Button } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type User = { id: string; username: string; role: string; empCode: string | null; name: string };
 type Level = "HIDDEN" | "VIEW" | "WRITE";
 
-const MODULES: { key: string; label: string }[] = [
-  { key: "CLIENTS", label: "거래처" },
-  { key: "ITEMS", label: "품목" },
-  { key: "WAREHOUSES", label: "창고" },
-  { key: "EMPLOYEES", label: "직원" },
-  { key: "DEPARTMENTS", label: "부서" },
-  { key: "PROJECTS", label: "프로젝트" },
-  { key: "LICENSES", label: "라이선스" },
-  { key: "SCHEDULES", label: "일정" },
-  { key: "SALES", label: "매출" },
-  { key: "PURCHASES", label: "매입" },
-  { key: "IT_CONTRACTS", label: "IT 계약" },
-  { key: "TM_RENTALS", label: "TM 렌탈" },
-  { key: "AS_TICKETS", label: "AS 접수" },
-  { key: "AS_DISPATCHES", label: "AS 출동" },
-  { key: "CALIBRATIONS", label: "교정" },
-  { key: "INVENTORY", label: "재고" },
-  { key: "HR_LEAVE", label: "연차" },
-  { key: "HR_ONBOARDING", label: "입사" },
-  { key: "HR_OFFBOARDING", label: "퇴사" },
-  { key: "HR_INCIDENT", label: "사건평가" },
-  { key: "HR_EVALUATION", label: "정기평가" },
-  { key: "HR_PAYROLL", label: "급여" },
-  { key: "HR_INCENTIVE", label: "인센티브" },
-  { key: "FINANCE_PAYABLE", label: "미지급" },
-  { key: "FINANCE_RECEIVABLE", label: "미수금" },
-  { key: "FINANCE_EXPENSE", label: "비용" },
-  { key: "STATS", label: "통계" },
-  { key: "CHAT", label: "채팅" },
-  { key: "CALENDAR", label: "캘린더" },
-  { key: "AUDIT", label: "감사로그" },
-  { key: "ADMIN", label: "관리" },
+// 32개 모듈 — 라벨은 i18n 키 매핑 (nav.* 재사용 + 일부 perm.* 신규)
+const MODULES: { key: string; i18nKey: string }[] = [
+  { key: "CLIENTS", i18nKey: "nav.clients" },
+  { key: "ITEMS", i18nKey: "nav.items" },
+  { key: "WAREHOUSES", i18nKey: "nav.warehouses" },
+  { key: "EMPLOYEES", i18nKey: "nav.employees" },
+  { key: "DEPARTMENTS", i18nKey: "nav.departments" },
+  { key: "PROJECTS", i18nKey: "nav.projects" },
+  { key: "LICENSES", i18nKey: "nav.licenses" },
+  { key: "SCHEDULES", i18nKey: "nav.schedules" },
+  { key: "SALES", i18nKey: "nav.salesOrder" },
+  { key: "PURCHASES", i18nKey: "nav.purchase" },
+  { key: "IT_CONTRACTS", i18nKey: "nav.itContract" },
+  { key: "TM_RENTALS", i18nKey: "nav.tmRental" },
+  { key: "AS_TICKETS", i18nKey: "nav.asTickets" },
+  { key: "AS_DISPATCHES", i18nKey: "nav.dispatches" },
+  { key: "CALIBRATIONS", i18nKey: "perm.calibrations" },
+  { key: "INVENTORY", i18nKey: "nav.stock" },
+  { key: "HR_LEAVE", i18nKey: "nav.leave" },
+  { key: "HR_ONBOARDING", i18nKey: "nav.onboarding" },
+  { key: "HR_OFFBOARDING", i18nKey: "nav.offboarding" },
+  { key: "HR_INCIDENT", i18nKey: "nav.incidents" },
+  { key: "HR_EVALUATION", i18nKey: "nav.evaluations" },
+  { key: "HR_PAYROLL", i18nKey: "perm.payroll" },
+  { key: "HR_INCENTIVE", i18nKey: "perm.incentive" },
+  { key: "FINANCE_PAYABLE", i18nKey: "perm.payable" },
+  { key: "FINANCE_RECEIVABLE", i18nKey: "perm.receivable" },
+  { key: "FINANCE_EXPENSE", i18nKey: "nav.expenses" },
+  { key: "STATS", i18nKey: "nav.stats" },
+  { key: "CHAT", i18nKey: "nav.chat" },
+  { key: "CALENDAR", i18nKey: "nav.calendar" },
+  { key: "AUDIT", i18nKey: "nav.audit" },
+  { key: "ADMIN", i18nKey: "nav.admin" },
 ];
 
-export function PermissionsClient({ users }: { users: User[] }) {
+export function PermissionsClient({ users, lang = "KO" as Lang }: { users: User[]; lang?: Lang }) {
   const [selectedId, setSelectedId] = useState(users[0]?.id ?? "");
   const [perms, setPerms] = useState<Record<string, Level>>({});
   const [saving, setSaving] = useState(false);
@@ -108,7 +110,7 @@ export function PermissionsClient({ users }: { users: User[] }) {
         <div className="grid grid-cols-1 gap-1 text-[13px] md:grid-cols-2">
           {MODULES.map((m) => (
             <label key={m.key} className="flex items-center justify-between rounded border border-[color:var(--tts-border)] px-3 py-2">
-              <span className="font-semibold">{m.label}</span>
+              <span className="font-semibold">{t(m.i18nKey, lang)}</span>
               <span className="flex gap-3">
                 {(["HIDDEN","VIEW","WRITE"] as Level[]).map((lv) => (
                   <span key={lv} className="flex items-center gap-1">

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
+import { t } from "@/lib/i18n";
 import { PermissionsClient } from "./permissions-client";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +20,15 @@ export default async function PermissionsPage() {
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-6xl">
-        <h1 className="mb-4 text-2xl font-extrabold">사용자 권한</h1>
-        <PermissionsClient users={users.map(u => ({
-          id: u.id, username: u.username, role: u.role,
-          empCode: u.employee?.employeeCode ?? null,
-          name: u.employee?.nameKo ?? u.employee?.nameVi ?? u.username,
-        }))} />
+        <h1 className="mb-4 text-2xl font-extrabold">{t("page.permissions.title", session.language)}</h1>
+        <PermissionsClient
+          lang={session.language}
+          users={users.map(u => ({
+            id: u.id, username: u.username, role: u.role,
+            empCode: u.employee?.employeeCode ?? null,
+            name: u.employee?.nameKo ?? u.employee?.nameVi ?? u.username,
+          }))}
+        />
       </div>
     </main>
   );

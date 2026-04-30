@@ -44,7 +44,7 @@ export default async function PortalHome() {
       where: { clientId: client.id },
       orderBy: { receivedAt: "desc" },
       take: 10,
-      select: { id: true, ticketNumber: true, kind: true, status: true, receivedAt: true },
+      select: { id: true, ticketNumber: true, kind: true, status: true, receivedAt: true, symptomKo: true, symptomVi: true, symptomEn: true, suppliesItems: true, serialNumber: true },
     }),
   ]);
 
@@ -103,21 +103,35 @@ export default async function PortalHome() {
                 <tr>
                   <th className="px-2 py-1 text-left">{t("portal.ticketNumber", L)}</th>
                   <th className="px-2 py-1 text-left">{t("portal.kindShort", L)}</th>
+                  <th className="px-2 py-1 text-left">{t("portal.req.summary", L)}</th>
                   <th className="px-2 py-1 text-left">{t("portal.receivedAt", L)}</th>
                   <th className="px-2 py-1 text-left">{t("col.statusShort", L)}</th>
                   <th className="px-2 py-1 text-right" />
                 </tr>
               </thead>
               <tbody>
-                {tickets.map((tk) => (
-                  <tr key={tk.id} className="border-b border-[color:var(--tts-border)]/50">
-                    <td className="px-2 py-2 font-mono">{tk.ticketNumber}</td>
-                    <td className="px-2 py-2">{tk.kind === "SUPPLIES_REQUEST" ? "📦" : "🛠"}</td>
-                    <td className="px-2 py-2">{tk.receivedAt.toISOString().slice(0, 10)}</td>
-                    <td className="px-2 py-2"><Badge tone={STATUS_TONE[tk.status] ?? "neutral"}>{STATUS_LABEL[tk.status] ?? tk.status}</Badge></td>
-                    <td className="px-2 py-2 text-right">{tk.status === "COMPLETED" && <ConfirmButton ticketId={tk.id} />}</td>
-                  </tr>
-                ))}
+                {tickets.map((tk) => {
+                  const symptom = (L === "KO" ? tk.symptomKo : L === "EN" ? tk.symptomEn : tk.symptomVi)
+                    ?? tk.symptomVi ?? tk.symptomEn ?? tk.symptomKo ?? "";
+                  const suppliesCount = Array.isArray(tk.suppliesItems) ? (tk.suppliesItems as unknown[]).length : 0;
+                  const summary = tk.kind === "SUPPLIES_REQUEST"
+                    ? `${suppliesCount} ${t("yield.consumableInput", L)}${tk.serialNumber ? ` · ${tk.serialNumber}` : ""}`
+                    : symptom.slice(0, 40) + (symptom.length > 40 ? "…" : "");
+                  return (
+                    <tr key={tk.id} className="border-b border-[color:var(--tts-border)]/50 hover:bg-[color:var(--tts-card-hover)]">
+                      <td className="px-2 py-2 font-mono">
+                        <Link href={`/portal/requests/${tk.id}`} className="text-[color:var(--tts-primary)] hover:underline">{tk.ticketNumber}</Link>
+                      </td>
+                      <td className="px-2 py-2">{tk.kind === "SUPPLIES_REQUEST" ? "📦" : "🛠"}</td>
+                      <td className="px-2 py-2 text-[11px] text-[color:var(--tts-sub)]">
+                        <Link href={`/portal/requests/${tk.id}`} className="hover:underline">{summary || "—"}</Link>
+                      </td>
+                      <td className="px-2 py-2">{tk.receivedAt.toISOString().slice(0, 10)}</td>
+                      <td className="px-2 py-2"><Badge tone={STATUS_TONE[tk.status] ?? "neutral"}>{STATUS_LABEL[tk.status] ?? tk.status}</Badge></td>
+                      <td className="px-2 py-2 text-right">{tk.status === "COMPLETED" && <ConfirmButton ticketId={tk.id} />}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

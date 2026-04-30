@@ -2626,6 +2626,24 @@ const DICT: Dict = {
   "portalAcc.lastLogin":     { vi: "Đăng nhập gần nhất",           en: "Last login",                  ko: "마지막 로그인" },
   "portalAcc.defaultPw":     { vi: "Đang dùng PW mặc định",        en: "Using default PW",            ko: "기본 비번 사용 중" },
   "portalAcc.howTo":         { vi: "Hướng dẫn cho khách hàng:",    en: "Tell the customer:",          ko: "고객 안내:" },
+
+  // ── 포탈 요청 상세 ──
+  "portal.req.kindAs":        { vi: "Yêu cầu hỗ trợ AS",            en: "AS Request",                 ko: "AS 요청" },
+  "portal.req.kindSupplies":  { vi: "Yêu cầu vật tư",               en: "Supplies Request",           ko: "소모품 요청" },
+  "portal.req.summary":       { vi: "Nội dung",                     en: "Summary",                    ko: "내용" },
+  "portal.req.symptom":       { vi: "Triệu chứng / mô tả",          en: "Symptom / description",      ko: "증상 / 내용" },
+  "portal.req.requestedItems":{ vi: "Vật tư yêu cầu",                en: "Requested items",            ko: "요청 품목" },
+  "portal.req.received":      { vi: "Tiếp nhận",                    en: "Received",                   ko: "접수일" },
+  "portal.req.assigned":      { vi: "Phụ trách",                    en: "Assigned to",                ko: "담당자" },
+  "portal.req.completed":     { vi: "Hoàn tất",                     en: "Completed",                  ko: "완료" },
+  "portal.req.targetSn":      { vi: "S/N thiết bị",                 en: "Target S/N",                 ko: "대상 장비 S/N" },
+  "portal.req.note":          { vi: "Ghi chú",                      en: "Note",                       ko: "메모" },
+  "portal.req.progress":      { vi: "Tiến trình xử lý",             en: "Progress timeline",          ko: "진행 상황" },
+  "portal.req.stepReceived":  { vi: "Đã tiếp nhận",                 en: "Received",                   ko: "접수 완료" },
+  "portal.req.stepDispatch":  { vi: "Đang xử lý / Đi công tác",     en: "In progress / Dispatch",     ko: "처리 중 / 출동" },
+  "portal.req.stepCompleted": { vi: "Hoàn tất",                     en: "Completed",                  ko: "완료" },
+  "portal.req.stepPending":   { vi: "Đang chờ xử lý",               en: "Awaiting processing",        ko: "처리 대기" },
+  "portal.req.departed":      { vi: "Xuất phát",                    en: "Departed",                   ko: "출발" },
 };
 
 export function t(key: string, lang: Lang): string {

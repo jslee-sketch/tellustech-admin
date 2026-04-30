@@ -2673,6 +2673,44 @@ const DICT: Dict = {
   "perm.payable":             { vi: "Phải trả",                     en: "Payable",                    ko: "미지급" },
   "perm.receivable":          { vi: "Phải thu",                     en: "Receivable",                 ko: "미수금" },
   "page.permissions.title":   { vi: "Quyền người dùng",             en: "User Permissions",           ko: "사용자 권한" },
+  "page.trash.title":         { vi: "Thùng rác (đã xóa mềm)",       en: "Trash (Soft-deleted)",       ko: "휴지통 (Soft-deleted)" },
+
+  // ── 통계 + 컬럼 보강 ──
+  "col.dateField":            { vi: "Ngày",                         en: "Date",                       ko: "일자" },
+  "col.repItem":              { vi: "Mặt hàng đại diện",            en: "Representative item",        ko: "대표 품목" },
+  "col.qtyShort":             { vi: "SL",                           en: "Qty",                        ko: "수량" },
+  "col.salesAmountVnd":       { vi: "Doanh thu (VND)",              en: "Sales (VND)",                ko: "매출액 (VND)" },
+  "col.purchaseAmountVnd":    { vi: "Mua hàng (VND)",               en: "Purchase (VND)",             ko: "매입액 (VND)" },
+  "stats.tab.sales":          { vi: "Doanh thu",                    en: "Sales",                      ko: "매출현황" },
+  "stats.tab.purchases":      { vi: "Mua hàng",                     en: "Purchases",                  ko: "매입현황" },
+  "stats.tab.profit":         { vi: "Lợi nhuận",                    en: "Profit",                     ko: "이익현황" },
+  "stats.tab.snProfit":       { vi: "Lợi nhuận theo S/N",           en: "Profit by S/N",              ko: "SN별 이익" },
+  "stats.salesShort":         { vi: "DT",                           en: "Sales",                      ko: "매출" },
+  "stats.purchaseShort":      { vi: "Mua",                          en: "Purchase",                   ko: "매입" },
+  "stats.costShort":          { vi: "CP",                           en: "Cost",                       ko: "비용" },
+
+  // ── 포탈 교정 성적서 ──
+  "portal.cert.issuedAt":     { vi: "Ngày phát hành",               en: "Issued at",                  ko: "발행일" },
+  "portal.cert.certNumber":   { vi: "Số chứng chỉ",                 en: "Cert No.",                   ko: "성적서번호" },
+  "portal.cert.nextDue":      { vi: "Hạn lần tới",                  en: "Next due",                   ko: "다음 기한" },
+  "portal.cert.download":     { vi: "Tải về",                       en: "Download",                   ko: "다운로드" },
+
+  // ── 권한 + 마감 + 통계 카드 ──
+  "permissions.userPick":     { vi: "Chọn người dùng",              en: "Select user",                ko: "사용자 선택" },
+  "closings.cardTitle":       { vi: "Khóa sổ theo tháng",           en: "Monthly closing",            ko: "월별 마감" },
+  "closings.targetMonth":     { vi: "Tháng đối tượng (YYYY-MM)",    en: "Target month (YYYY-MM)",     ko: "대상 월 (YYYY-MM)" },
+  "closings.btnLock":         { vi: "Khóa (lock)",                  en: "Lock",                       ko: "마감 (lock)" },
+  "closings.btnUnlock":       { vi: "Mở khóa (unlock)",             en: "Unlock",                     ko: "마감 해제 (unlock)" },
+  "closings.lockConfirm":     { vi: "Khóa sổ {ym}? DT/Mua/CP/PR sẽ bị khóa. Tiếp tục?", en: "Lock {ym}? Sales/Purchase/Expense/PR will be locked. Continue?", ko: "{ym} 회계 마감을 진행합니다. 매출/매입/비용/PR 행이 잠깁니다. 계속?" },
+  "closings.unlockConfirm":   { vi: "Mở khóa {ym} (chỉ ADMIN). Tiếp tục?", en: "Unlock {ym} (ADMIN only). Continue?", ko: "{ym} 마감 해제 (ADMIN 전용). 계속?" },
+  "closings.lockResult":      { vi: "Đã khóa: DT {s} / Mua {p} / CP {e} / PR {r}", en: "Locked: Sales {s} / Purchase {p} / Expense {e} / PR {r}", ko: "잠금 완료: 매출 {s} / 매입 {p} / 비용 {e} / PR {r}" },
+  "closings.unlockResult":    { vi: "Đã mở khóa: DT {s} / Mua {p} / CP {e} / PR {r}", en: "Unlocked: Sales {s} / Purchase {p} / Expense {e} / PR {r}", ko: "해제 완료: 매출 {s} / 매입 {p} / 비용 {e} / PR {r}" },
+  "closings.failed":          { vi: "Thất bại",                     en: "Failed",                     ko: "실패" },
+  "closings.note":            { vi: "Khóa sổ chặn PATCH/Adjustment/Amendment trên các giao dịch. Đăng ký giao dịch mới không bị chặn.", en: "Closing blocks PATCH/Adjustment/Amendment on transactions. New entries are not blocked.", ko: "마감은 거래 행의 PATCH/Adjustment/Amendment 를 차단합니다. 신규 등록은 차단하지 않음." },
+  "stats.searchCard":         { vi: "Điều kiện tìm kiếm",           en: "Search filters",             ko: "검색조건" },
+  "stats.resultCard":         { vi: "Kết quả",                      en: "Result",                     ko: "결과" },
+  "stats.pressSearch":        { vi: "Nhấn nút tìm kiếm.",           en: "Press search.",              ko: "조회를 눌러주세요." },
+  "stats.periodCard":         { vi: "Khoảng thời gian",             en: "Period",                     ko: "기간" },
 };
 
 export function t(key: string, lang: Lang): string {

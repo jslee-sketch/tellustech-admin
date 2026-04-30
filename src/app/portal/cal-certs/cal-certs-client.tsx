@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button, Card, Field, TextInput, DataTable } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
-import type { Lang } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 
 type Cert = {
   id: string;
@@ -16,7 +16,7 @@ type Cert = {
   item: { itemCode: string; name: string } | null;
 };
 
-export function CalCertsClient({ lang: _lang }: { lang: Lang }) {
+export function CalCertsClient({ lang }: { lang: Lang }) {
   const [sn, setSn] = useState("");
   const [cert, setCert] = useState("");
   const [item, setItem] = useState("");
@@ -42,17 +42,17 @@ export function CalCertsClient({ lang: _lang }: { lang: Lang }) {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const columns: DataTableColumn<Cert>[] = [
-    { key: "issuedAt", label: "발행일 / Ngày", width: "110px",
+    { key: "issuedAt", label: t("portal.cert.issuedAt", lang), width: "110px",
       render: (v) => v ? String(v).slice(0,10) : "-" },
-    { key: "certNumber", label: "성적서번호 / Số chứng chỉ", width: "180px",
+    { key: "certNumber", label: t("portal.cert.certNumber", lang), width: "180px",
       render: (v) => <span className="font-mono">{(v as string) ?? "-"}</span> },
     { key: "serialNumber", label: "S/N", width: "200px",
       render: (v) => <span className="font-mono text-[11px]">{(v as string) ?? "-"}</span> },
-    { key: "item", label: "품목 / Vật phẩm",
+    { key: "item", label: t("col.itemNameCol", lang),
       render: (_, r) => r.item ? `${r.item.itemCode} · ${r.item.name}` : "-" },
-    { key: "nextDueAt", label: "다음 기한", width: "110px",
+    { key: "nextDueAt", label: t("portal.cert.nextDue", lang), width: "110px",
       render: (v) => v ? String(v).slice(0,10) : "-" },
-    { key: "certFileId", label: "다운로드", width: "100px", align: "center",
+    { key: "certFileId", label: t("portal.cert.download", lang), width: "100px", align: "center",
       render: (v) => v ? (
         <Link href={`/api/files/${v}`} target="_blank" rel="noopener"
           className="inline-block rounded bg-[color:var(--tts-primary)] px-2.5 py-1 text-[11px] font-bold text-white hover:opacity-90">
@@ -63,7 +63,7 @@ export function CalCertsClient({ lang: _lang }: { lang: Lang }) {
 
   return (
     <div className="space-y-3">
-      <Card title="검색조건 / Tìm kiếm">
+      <Card title={t("stats.searchCard", lang)}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Field label="S/N"><TextInput value={sn} onChange={(e)=>setSn(e.target.value)} placeholder="SN-..."/></Field>
           <Field label="성적서번호 / Số CC"><TextInput value={cert} onChange={(e)=>setCert(e.target.value)} placeholder="CC-..."/></Field>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
+import { t } from "@/lib/i18n";
 import { TrashClient } from "./trash-client";
 
 export const dynamic = "force-dynamic";
@@ -19,18 +20,19 @@ export default async function TrashPage() {
     prisma.purchase.findMany({  where: { deletedAt: { not: null } }, take: 100, select: { id: true, purchaseNumber: true, totalAmount: true, deletedAt: true } }),
   ]);
 
+  const L = s.language;
   return (
     <main className="flex-1 p-8">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="mb-4 text-2xl font-extrabold">휴지통 (Soft-deleted)</h1>
+      <div className="mx-auto max-w-screen-2xl">
+        <h1 className="mb-4 text-2xl font-extrabold">{t("page.trash.title", L)}</h1>
         <TrashClient
           buckets={[
-            { model: "Client",    label: "거래처",  rows: clients.map(r => ({ id: r.id, label: `${r.clientCode} · ${r.companyNameVi}`, deletedAt: r.deletedAt })) },
-            { model: "Item",      label: "품목",    rows: items.map(r => ({ id: r.id, label: `${r.itemCode} · ${r.name}`, deletedAt: r.deletedAt })) },
-            { model: "Warehouse", label: "창고",    rows: warehouses.map(r => ({ id: r.id, label: `${r.code} · ${r.name}`, deletedAt: r.deletedAt })) },
-            { model: "Employee",  label: "직원",    rows: employees.map(r => ({ id: r.id, label: `${r.employeeCode} · ${r.nameVi}`, deletedAt: r.deletedAt })) },
-            { model: "Sales",     label: "매출",    rows: sales.map(r => ({ id: r.id, label: `${r.salesNumber} · ${r.totalAmount}`, deletedAt: r.deletedAt })) },
-            { model: "Purchase",  label: "매입",    rows: purchases.map(r => ({ id: r.id, label: `${r.purchaseNumber} · ${r.totalAmount}`, deletedAt: r.deletedAt })) },
+            { model: "Client",    label: t("nav.clients", L),     rows: clients.map(r => ({ id: r.id, label: `${r.clientCode} · ${r.companyNameVi}`, deletedAt: r.deletedAt })) },
+            { model: "Item",      label: t("nav.items", L),       rows: items.map(r => ({ id: r.id, label: `${r.itemCode} · ${r.name}`, deletedAt: r.deletedAt })) },
+            { model: "Warehouse", label: t("nav.warehouses", L),  rows: warehouses.map(r => ({ id: r.id, label: `${r.code} · ${r.name}`, deletedAt: r.deletedAt })) },
+            { model: "Employee",  label: t("nav.employees", L),   rows: employees.map(r => ({ id: r.id, label: `${r.employeeCode} · ${r.nameVi}`, deletedAt: r.deletedAt })) },
+            { model: "Sales",     label: t("nav.salesOrder", L),  rows: sales.map(r => ({ id: r.id, label: `${r.salesNumber} · ${r.totalAmount}`, deletedAt: r.deletedAt })) },
+            { model: "Purchase",  label: t("nav.purchase", L),    rows: purchases.map(r => ({ id: r.id, label: `${r.purchaseNumber} · ${r.totalAmount}`, deletedAt: r.deletedAt })) },
           ]}
         />
       </div>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, Field, TextInput, Tabs, Button, DataTable, Badge } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
-import type { Lang } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 
 type Props = { lang: Lang };
 
@@ -26,7 +26,7 @@ const fmtDate = (v: unknown) => {
   try { return new Date(s).toISOString().slice(0,10); } catch { return s; }
 };
 
-export function StatsClient({ lang: _lang }: Props) {
+export function StatsClient({ lang }: Props) {
   const init = defaultRange();
   const [from, setFrom] = useState(init.from);
   const [to, setTo] = useState(init.to);
@@ -57,46 +57,46 @@ export function StatsClient({ lang: _lang }: Props) {
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [tab]);
 
   const tabs = [
-    { key: "sales",     label: "💵 매출현황" },
-    { key: "purchases", label: "🛒 매입현황" },
-    { key: "profit",    label: "📈 이익현황" },
-    { key: "sn-profit", label: "🏷 SN별 이익" },
+    { key: "sales",     label: `💵 ${t("stats.tab.sales", lang)}` },
+    { key: "purchases", label: `🛒 ${t("stats.tab.purchases", lang)}` },
+    { key: "profit",    label: `📈 ${t("stats.tab.profit", lang)}` },
+    { key: "sn-profit", label: `🏷 ${t("stats.tab.snProfit", lang)}` },
   ];
 
   // ── 컬럼 정의 (탭별) ──
   const salesCols: DataTableColumn<any>[] = [
-    { key: "salesNumber", label: "매출번호", width: "140px", render: (v) => <span className="font-mono text-[color:var(--tts-primary)]">{String(v)}</span> },
-    { key: "salesDate",   label: "일자",     width: "100px", render: (v) => <span className="text-[color:var(--tts-sub)]">{fmtDate(v)}</span> },
-    { key: "client",      label: "거래처" },
-    { key: "repItem",     label: "대표 품목" },
-    { key: "project",     label: "프로젝트", width: "120px" },
-    { key: "quantity",    label: "수량", align: "right", width: "60px" },
-    { key: "amount",      label: "매출액 (VND)", align: "right", width: "140px",
+    { key: "salesNumber", label: t("col.salesNumber", lang), width: "140px", render: (v) => <span className="font-mono text-[color:var(--tts-primary)]">{String(v)}</span> },
+    { key: "salesDate",   label: t("col.dateField", lang),   width: "100px", render: (v) => <span className="text-[color:var(--tts-sub)]">{fmtDate(v)}</span> },
+    { key: "client",      label: t("col.client", lang) },
+    { key: "repItem",     label: t("col.repItem", lang) },
+    { key: "project",     label: t("col.project", lang), width: "120px" },
+    { key: "quantity",    label: t("col.qtyShort", lang), align: "right", width: "60px" },
+    { key: "amount",      label: t("col.salesAmountVnd", lang), align: "right", width: "140px",
       render: (v) => <span className="font-mono font-semibold text-[color:var(--tts-success)]">{fmtVnd(v)}</span> },
   ];
   const purchasesCols: DataTableColumn<any>[] = [
-    { key: "purchaseNumber", label: "매입번호", width: "140px", render: (v) => <span className="font-mono text-[color:var(--tts-primary)]">{String(v)}</span> },
-    { key: "purchaseDate",   label: "일자",     width: "100px", render: (v) => <span className="text-[color:var(--tts-sub)]">{fmtDate(v)}</span> },
-    { key: "supplier",       label: "공급처" },
-    { key: "repItem",        label: "대표 품목" },
-    { key: "project",        label: "프로젝트", width: "120px" },
-    { key: "quantity",       label: "수량", align: "right", width: "60px" },
-    { key: "amount",         label: "매입액 (VND)", align: "right", width: "140px",
+    { key: "purchaseNumber", label: t("col.purchaseNumber", lang), width: "140px", render: (v) => <span className="font-mono text-[color:var(--tts-primary)]">{String(v)}</span> },
+    { key: "purchaseDate",   label: t("col.dateField", lang),     width: "100px", render: (v) => <span className="text-[color:var(--tts-sub)]">{fmtDate(v)}</span> },
+    { key: "supplier",       label: t("col.supplier", lang) },
+    { key: "repItem",        label: t("col.repItem", lang) },
+    { key: "project",        label: t("col.project", lang), width: "120px" },
+    { key: "quantity",       label: t("col.qtyShort", lang), align: "right", width: "60px" },
+    { key: "amount",         label: t("col.purchaseAmountVnd", lang), align: "right", width: "140px",
       render: (v) => <span className="font-mono font-semibold text-[color:var(--tts-warn)]">{fmtVnd(v)}</span> },
   ];
   const snCols: DataTableColumn<any>[] = [
     { key: "sn",             label: "S/N", width: "200px", render: (v) => <span className="font-mono text-[11px]">{String(v)}</span> },
-    { key: "item",           label: "품목" },
-    { key: "contractNumber", label: "계약번호", width: "140px", render: (v) => v && v !== "-" ? <Badge tone="primary">{String(v)}</Badge> : <span className="text-[color:var(--tts-muted)]">-</span> },
-    { key: "client",         label: "고객" },
-    { key: "project",        label: "프로젝트" },
-    { key: "salesAmount",    label: "매출", align: "right", width: "100px",
+    { key: "item",           label: t("col.itemNameCol", lang) },
+    { key: "contractNumber", label: t("col.contractNumber", lang), width: "140px", render: (v) => v && v !== "-" ? <Badge tone="primary">{String(v)}</Badge> : <span className="text-[color:var(--tts-muted)]">-</span> },
+    { key: "client",         label: t("col.client", lang) },
+    { key: "project",        label: t("col.project", lang) },
+    { key: "salesAmount",    label: t("stats.salesShort", lang), align: "right", width: "100px",
       render: (v) => <span className="font-mono text-[color:var(--tts-success)]">{fmtVnd(v)}</span> },
-    { key: "purchaseAmount", label: "매입", align: "right", width: "100px",
+    { key: "purchaseAmount", label: t("stats.purchaseShort", lang), align: "right", width: "100px",
       render: (v) => <span className="font-mono text-[color:var(--tts-warn)]">{fmtVnd(v)}</span> },
-    { key: "cost",           label: "비용", align: "right", width: "100px",
+    { key: "cost",           label: t("stats.costShort", lang), align: "right", width: "100px",
       render: (v) => <span className="font-mono text-[color:var(--tts-danger)]">{fmtVnd(v)}</span> },
-    { key: "profit",         label: "이익", align: "right", width: "100px",
+    { key: "profit",         label: t("col.profit", lang), align: "right", width: "100px",
       render: (v) => {
         const n = Number(v ?? 0);
         const cls = n >= 0 ? "text-[color:var(--tts-primary)]" : "text-[color:var(--tts-danger)]";
@@ -107,7 +107,7 @@ export function StatsClient({ lang: _lang }: Props) {
   return (
     <div className="space-y-4">
       {/* 검색조건 */}
-      <Card title="검색조건">
+      <Card title={t("stats.searchCard", lang)}>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           <Field label="시작일"><TextInput type="date" value={from} onChange={(e)=>setFrom(e.target.value)} /></Field>
           <Field label="종료일"><TextInput type="date" value={to}   onChange={(e)=>setTo(e.target.value)} /></Field>
@@ -128,7 +128,7 @@ export function StatsClient({ lang: _lang }: Props) {
 
       {/* 결과 */}
       {!data ? (
-        <Card title="결과"><div className="text-[12px] text-[color:var(--tts-sub)]">조회를 눌러주세요.</div></Card>
+        <Card title={t("stats.resultCard", lang)}><div className="text-[12px] text-[color:var(--tts-sub)]">{t("stats.pressSearch", lang)}</div></Card>
       ) : tab === "profit" ? (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -143,7 +143,7 @@ export function StatsClient({ lang: _lang }: Props) {
               big
             />
           </div>
-          <Card title="기간">
+          <Card title={t("stats.periodCard", lang)}>
             <div className="text-[13px] text-[color:var(--tts-sub)]">
               {fmtDate(data.from)} ~ {fmtDate(data.to)} · 통화 단위: VND
             </div>

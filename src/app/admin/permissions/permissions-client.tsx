@@ -74,7 +74,7 @@ export function PermissionsClient({ users, lang = "KO" as Lang }: { users: User[
 
   return (
     <div className="grid grid-cols-12 gap-4">
-      <Card title="사용자 선택" className="col-span-3">
+      <Card title={t("permissions.userPick", lang)} className="col-span-3">
         <ul className="space-y-1 text-[13px]">
           {users.map((u) => (
             <li key={u.id}>

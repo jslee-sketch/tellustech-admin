@@ -16,13 +16,13 @@ const STATUS_TONE: Record<string, "primary" | "warn" | "success" | "accent" | "n
   CONFIRMED: "success",
   CANCELED: "neutral",
 };
-const STATUS_LABEL: Record<string, string> = {
-  RECEIVED: "요청 / Yêu cầu",
-  IN_PROGRESS: "진행중 / Đang xử lý",
-  DISPATCHED: "출동중 / Đang đến",
-  COMPLETED: "완료 / Hoàn tất",
-  CONFIRMED: "확인됨 / Đã xác nhận",
-  CANCELED: "취소 / Hủy",
+const STATUS_LABEL_KEY: Record<string, string> = {
+  RECEIVED: "portal.reqStatus.received",
+  IN_PROGRESS: "portal.reqStatus.inProgress",
+  DISPATCHED: "portal.reqStatus.dispatched",
+  COMPLETED: "portal.reqStatus.completed",
+  CONFIRMED: "portal.reqStatus.confirmed",
+  CANCELED: "portal.reqStatus.canceled",
 };
 
 export default async function PortalHome() {
@@ -127,8 +127,8 @@ export default async function PortalHome() {
                         <Link href={`/portal/requests/${tk.id}`} className="hover:underline">{summary || "—"}</Link>
                       </td>
                       <td className="px-2 py-2">{tk.receivedAt.toISOString().slice(0, 10)}</td>
-                      <td className="px-2 py-2"><Badge tone={STATUS_TONE[tk.status] ?? "neutral"}>{STATUS_LABEL[tk.status] ?? tk.status}</Badge></td>
-                      <td className="px-2 py-2 text-right">{tk.status === "COMPLETED" && <ConfirmButton ticketId={tk.id} />}</td>
+                      <td className="px-2 py-2"><Badge tone={STATUS_TONE[tk.status] ?? "neutral"}>{STATUS_LABEL_KEY[tk.status] ? t(STATUS_LABEL_KEY[tk.status], L) : tk.status}</Badge></td>
+                      <td className="px-2 py-2 text-right">{tk.status === "COMPLETED" && <ConfirmButton ticketId={tk.id} lang={L} />}</td>
                     </tr>
                   );
                 })}

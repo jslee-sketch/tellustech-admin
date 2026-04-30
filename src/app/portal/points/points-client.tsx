@@ -55,11 +55,11 @@ export function PointsClient({ lang }: { lang: Lang }) {
           </div>
           <div className="mb-3 text-[11px] text-[color:var(--tts-muted)]">{progress.toFixed(1)}% / {MIN_EXCHANGE.toLocaleString("vi-VN")}d ({t("portal.points.toExchange", lang)})</div>
           <Button onClick={() => setExchangeOpen(true)} disabled={!canExchange} variant={canExchange ? "accent" : undefined}>{t("portal.points.exchange", lang)}</Button>
-          {!policyAllowsExchange && <span className="ml-2 text-[11px] text-[color:var(--tts-warn)]">⚠ 포인트 사용 정책 미설정 — 영업담당에게 문의하세요</span>}
+          {!policyAllowsExchange && <span className="ml-2 text-[11px] text-[color:var(--tts-warn)]">{t("portal.points.policyMissing", lang)}</span>}
           {policyAllowsExchange && data.balance < MIN_EXCHANGE && <span className="ml-2 text-[11px] text-[color:var(--tts-muted)]">{t("portal.points.minimum", lang)}</span>}
           {policyAllowsExchange && (
             <div className="mt-2 text-[11px] text-[color:var(--tts-sub)]">
-              계약상 사용 방식: {data.pointPolicy === "INVOICE_DEDUCT_ONLY" ? "💰 청구액 차감만" : data.pointPolicy === "GIFT_CARD_ONLY" ? "🎫 상품권 수령만" : "💰 청구액 차감 또는 🎫 상품권 수령"}
+              {t("portal.points.policyLabel", lang)}: {data.pointPolicy === "INVOICE_DEDUCT_ONLY" ? t("portal.points.policyInvoice", lang) : data.pointPolicy === "GIFT_CARD_ONLY" ? t("portal.points.policyGift", lang) : t("portal.points.policyBoth", lang)}
             </div>
           )}
         </Card>
@@ -155,7 +155,7 @@ function ExchangeModal({ balance, lang, pointPolicy, onClose, onSuccess }: { bal
             )}
           </div>
           {(!allowInvoice || !allowGift) && (
-            <div className="mt-1 text-[10px] text-[color:var(--tts-muted)]">※ 계약상 결정된 사용 방식만 표시됩니다.</div>
+            <div className="mt-1 text-[10px] text-[color:var(--tts-muted)]">{t("portal.points.policyOnlyShow", lang)}</div>
           )}
         </div>
 

@@ -11,7 +11,7 @@ export default async function PortalAsRequestPage() {
   const session = await getSession();
   const L = session.language;
   const user = await prisma.user.findUnique({ where: { id: session.sub }, include: { clientAccount: true } });
-  if (!user?.clientAccount) return <div className="p-8">권한 없음</div>;
+  if (!user?.clientAccount) return <div className="p-8">{t("portal.asReq.noAuth", L)}</div>;
   const client = user.clientAccount;
   if (client.receivableStatus === "BLOCKED") {
     return (
@@ -20,7 +20,7 @@ export default async function PortalAsRequestPage() {
           <Link href="/portal" className="text-[11px] font-bold text-[color:var(--tts-accent)]">{t("page.portal.back", L)}</Link>
           <h1 className="mt-1 mb-3 text-2xl font-extrabold">{t("page.portal.asRequest", L)}</h1>
           <div className="rounded-md bg-[color:var(--tts-danger-dim)] p-4 text-[color:var(--tts-danger)]">
-            미수금 차단 상태입니다. 재경팀 확인 후 접수 가능합니다.
+            {t("portal.asReq.arBlocked", L)}
           </div>
         </div>
       </main>

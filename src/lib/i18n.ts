@@ -2711,6 +2711,102 @@ const DICT: Dict = {
   "stats.resultCard":         { vi: "Kết quả",                      en: "Result",                     ko: "결과" },
   "stats.pressSearch":        { vi: "Nhấn nút tìm kiếm.",           en: "Press search.",              ko: "조회를 눌러주세요." },
   "stats.periodCard":         { vi: "Khoảng thời gian",             en: "Period",                     ko: "기간" },
+
+  // ── 포탈 계정 화면 ──
+  "portal.acc.mustChangeBanner": { vi: "Vì lý do bảo mật, vui lòng đổi mật khẩu khởi tạo (1234).", en: "For security, please change the initial password (1234).", ko: "보안을 위해 초기 비밀번호(1234)를 변경해주세요." },
+  "portal.acc.mustChangeNow":    { vi: "⚠️ Vì lý do bảo mật, hãy đổi ngay mật khẩu khởi tạo (1234).", en: "⚠️ For security, change the initial password (1234) immediately.", ko: "⚠️ 보안을 위해 초기 비밀번호(1234)를 즉시 변경해주세요." },
+  "portal.acc.changeBtn":     { vi: "Đổi mật khẩu",                 en: "Change Password",            ko: "비밀번호 변경하기" },
+  "portal.acc.title":         { vi: "🔐 Tài khoản của tôi",         en: "🔐 My Account",              ko: "🔐 내 계정" },
+  "portal.acc.infoCard":      { vi: "Thông tin tài khoản",          en: "Account Info",               ko: "계정 정보" },
+  "portal.acc.client":        { vi: "Khách hàng",                   en: "Client",                     ko: "거래처" },
+  "portal.acc.portalId":      { vi: "ID Cổng KH",                   en: "Portal ID",                  ko: "포탈 ID" },
+  "portal.acc.statusLabel":   { vi: "Trạng thái",                   en: "Status",                     ko: "상태" },
+  "portal.acc.active":        { vi: "Hoạt động",                    en: "Active",                     ko: "활성" },
+  "portal.acc.inactive":      { vi: "Không hoạt động",              en: "Inactive",                   ko: "비활성" },
+  "portal.acc.lastLogin":     { vi: "Đăng nhập cuối",               en: "Last login",                 ko: "마지막 로그인" },
+  "portal.acc.changeCard":    { vi: "🔑 Đổi mật khẩu",              en: "🔑 Change Password",         ko: "🔑 비밀번호 변경" },
+  "portal.acc.currentPw":     { vi: "Mật khẩu hiện tại",            en: "Current password",           ko: "현재 비밀번호" },
+  "portal.acc.newPw":         { vi: "Mật khẩu mới (≥4 ký tự)",      en: "New password (≥4 chars)",    ko: "새 비밀번호 (4자 이상)" },
+  "portal.acc.newPwConfirm":  { vi: "Xác nhận mật khẩu mới",        en: "Confirm new password",       ko: "새 비밀번호 확인" },
+  "portal.acc.changing":      { vi: "Đang đổi…",                    en: "Changing…",                  ko: "변경중…" },
+  "portal.acc.submitBtn":     { vi: "Đổi mật khẩu",                 en: "Change Password",            ko: "비밀번호 변경" },
+  "portal.acc.loading":       { vi: "Đang tải…",                    en: "Loading…",                   ko: "로딩 중…" },
+  "portal.acc.pwMismatch":    { vi: "Mật khẩu mới không khớp.",     en: "New passwords do not match.", ko: "새 비밀번호가 일치하지 않습니다." },
+  "portal.acc.pwTooShort":    { vi: "Mật khẩu phải ít nhất 4 ký tự.", en: "Password must be at least 4 characters.", ko: "비밀번호는 최소 4자 이상이어야 합니다." },
+  "portal.acc.wrongCurrent":  { vi: "Mật khẩu hiện tại không đúng.", en: "Current password is incorrect.", ko: "현재 비밀번호가 올바르지 않습니다." },
+  "portal.acc.sameAsCurrent": { vi: "Trùng với mật khẩu cũ.",       en: "Same as current password.",  ko: "기존 비밀번호와 동일합니다." },
+  "portal.acc.changeFailed":  { vi: "Đổi mật khẩu thất bại.",       en: "Change failed.",             ko: "변경 실패" },
+  "portal.acc.changed":       { vi: "✅ Đã đổi mật khẩu.",          en: "✅ Password changed.",       ko: "✅ 비밀번호가 변경되었습니다." },
+
+  // ── 포탈 요청 상태 (티켓 status) ──
+  "portal.reqStatus.received":   { vi: "Yêu cầu",                   en: "Received",                   ko: "요청" },
+  "portal.reqStatus.inProgress": { vi: "Đang xử lý",                en: "In Progress",                ko: "진행중" },
+  "portal.reqStatus.dispatched": { vi: "Đang đến",                  en: "Dispatched",                 ko: "출동중" },
+  "portal.reqStatus.completed":  { vi: "Hoàn tất",                  en: "Completed",                  ko: "완료" },
+  "portal.reqStatus.confirmed":  { vi: "Đã xác nhận",               en: "Confirmed",                  ko: "확인됨" },
+  "portal.reqStatus.canceled":   { vi: "Hủy",                       en: "Canceled",                   ko: "취소" },
+
+  // ── 포탈 확인버튼 ──
+  "portal.confirm.confirmPrompt": { vi: "Xác nhận hoàn tất yêu cầu này?", en: "Confirm this request as completed?", ko: "이 요청을 완료 확인하시겠습니까?" },
+  "portal.confirm.pointsEarned":  { vi: "🏆 Cộng +{n}đ! (số dư: {b}đ)", en: "🏆 +{n}d earned! (balance: {b}d)", ko: "🏆 +{n}d 적립! (잔액: {b}d)" },
+  "portal.confirm.failed":        { vi: "Thất bại",                  en: "Failed",                     ko: "실패" },
+  "portal.confirm.btn":           { vi: "✓ Xác nhận",                en: "✓ Confirm",                  ko: "✓ 확인" },
+
+  // ── 포탈 사이드바 추가 ──
+  "portal.sidebar.menu":         { vi: "Menu",                      en: "Menu",                       ko: "메뉴" },
+  "portal.sidebar.expand":       { vi: "Mở rộng",                   en: "Expand",                     ko: "펼치기" },
+  "portal.sidebar.collapse":     { vi: "Thu gọn",                   en: "Collapse",                   ko: "접기" },
+  "portal.sidebar.staffLogin":   { vi: "🏢 Đăng nhập nhân viên",    en: "🏢 Staff Login",             ko: "🏢 사내 직원 로그인" },
+
+  // ── 포탈 AS 요청 ──
+  "portal.asReq.noAuth":         { vi: "Không có quyền",            en: "No permission",              ko: "권한 없음" },
+  "portal.asReq.arBlocked":      { vi: "Tài khoản bị chặn do nợ. Liên hệ phòng Tài chính để tiếp nhận.", en: "Account is blocked due to outstanding payment. Contact Finance to proceed.", ko: "미수금 차단 상태입니다. 재경팀 확인 후 접수 가능합니다." },
+  "portal.asReq.noEquipment":    { vi: "Không có thiết bị hoạt động", en: "No active equipment",      ko: "활성 장비가 없습니다" },
+  "portal.asReq.equipmentCount": { vi: "{n} thiết bị hoạt động",    en: "{n} active",                 ko: "{n}대 활성" },
+  "portal.asReq.symptomVi":      { vi: "Triệu chứng (VI)",          en: "Symptom (VI)",               ko: "증상 (VI)" },
+  "portal.asReq.symptomEn":      { vi: "Triệu chứng (EN)",          en: "Symptom (EN)",               ko: "증상 (EN)" },
+  "portal.asReq.symptomKo":      { vi: "Triệu chứng (KO)",          en: "Symptom (KO)",               ko: "증상 (KO)" },
+  "portal.asReq.done":           { vi: "Hoàn tất — số phiếu {n}",   en: "Done — ticket # {n}",        ko: "완료 — 접수번호 {n}" },
+  "portal.asReq.sending":        { vi: "Đang gửi…",                 en: "Sending…",                   ko: "전송 중…" },
+  "portal.asReq.submit":         { vi: "Tiếp nhận BH",              en: "Submit AS Request",          ko: "AS 접수" },
+
+  // ── 포탈 교정성적서 추가 ──
+  "portal.cert.back":            { vi: "← Cổng KH",                 en: "← Portal",                   ko: "← 포탈" },
+  "portal.cert.pageTitle":       { vi: "Chứng chỉ hiệu chuẩn",      en: "Calibration Certificates",   ko: "교정성적서" },
+  "portal.cert.itemFilter":      { vi: "Vật phẩm",                  en: "Item",                       ko: "품목" },
+  "portal.cert.fromDate":        { vi: "Từ ngày",                   en: "From",                       ko: "시작일" },
+  "portal.cert.toDate":          { vi: "Đến ngày",                  en: "To",                         ko: "종료일" },
+  "portal.cert.searching":       { vi: "Đang tìm…",                 en: "Searching…",                 ko: "조회 중…" },
+  "portal.cert.searchBtn":       { vi: "Tìm",                       en: "Search",                     ko: "조회" },
+  "portal.cert.resultTitle":     { vi: "Kết quả",                   en: "Result",                     ko: "결과" },
+  "portal.cert.empty":           { vi: "Không có kết quả",          en: "No results",                 ko: "결과 없음" },
+
+  // ── 포탈 포인트 추가 ──
+  "portal.points.policyMissing": { vi: "⚠ Chưa có chính sách dùng điểm — vui lòng liên hệ phụ trách kinh doanh", en: "⚠ Point usage policy not set — contact your sales rep", ko: "⚠ 포인트 사용 정책 미설정 — 영업담당에게 문의하세요" },
+  "portal.points.policyLabel":   { vi: "Phương thức theo hợp đồng",  en: "Contract usage method",     ko: "계약상 사용 방식" },
+  "portal.points.policyInvoice": { vi: "💰 Chỉ trừ vào hóa đơn",     en: "💰 Invoice deduction only", ko: "💰 청구액 차감만" },
+  "portal.points.policyGift":    { vi: "🎫 Chỉ nhận phiếu quà tặng", en: "🎫 Gift card only",         ko: "🎫 상품권 수령만" },
+  "portal.points.policyBoth":    { vi: "💰 Trừ vào hóa đơn hoặc 🎫 Phiếu quà tặng", en: "💰 Invoice deduction or 🎫 Gift card", ko: "💰 청구액 차감 또는 🎫 상품권 수령" },
+  "portal.points.policyOnlyShow":{ vi: "※ Chỉ hiển thị phương thức được chỉ định trong hợp đồng.", en: "※ Only methods allowed by contract are shown.", ko: "※ 계약상 결정된 사용 방식만 표시됩니다." },
+
+  // ── 포탈 소모품 요청 ──
+  "portal.supplies.guideKo":     { vi: "Chỉ hiển thị vật tư/phụ tùng tương thích với thiết bị bạn đang thuê.", en: "Only supplies/parts compatible with your rented equipment are shown.", ko: "본인 IT 계약/렌탈 장비에 호환되는 소모품·부품만 표시됩니다." },
+  "portal.supplies.filterByEq":  { vi: "Lọc theo thiết bị",          en: "Filter by equipment",        ko: "장비별 좁혀보기" },
+  "portal.supplies.allEq":       { vi: "Tất cả thiết bị",            en: "All equipment",              ko: "전체 장비" },
+  "portal.supplies.itemLabel":   { vi: "Vật tư",                    en: "Item",                       ko: "품목" },
+  "portal.supplies.qtyLabel":    { vi: "SL",                        en: "Qty",                        ko: "수량" },
+  "portal.supplies.noteLabel":   { vi: "Ghi chú",                   en: "Note",                       ko: "메모" },
+  "portal.supplies.removeRow":   { vi: "− Xóa dòng",                en: "− Remove row",               ko: "− 행 제거" },
+  "portal.supplies.addRow":      { vi: "+ Thêm vật tư",             en: "+ Add item",                 ko: "+ 품목 추가" },
+  "portal.supplies.minOne":      { vi: "Chọn ít nhất 1 vật tư",     en: "Choose at least 1 item",     ko: "품목을 최소 1개 선택" },
+  "portal.supplies.done":        { vi: "Hoàn tất — số phiếu {n}",   en: "Done — ticket # {n}",        ko: "완료 — 접수번호 {n}" },
+  "portal.supplies.sending":     { vi: "Đang gửi…",                 en: "Sending…",                   ko: "전송 중…" },
+  "portal.supplies.submit":      { vi: "Gửi yêu cầu",               en: "Submit Request",             ko: "요청 전송" },
+  "portal.supplies.emptyForEq":  { vi: "Không có vật tư tương thích cho thiết bị này.", en: "No compatible supplies for this equipment.", ko: "선택한 장비의 호환 소모품이 없습니다." },
+  "portal.supplies.emptyAll":    { vi: "Chưa có vật tư tương thích — vui lòng liên hệ quản trị viên.", en: "No compatible supplies — please contact admin.", ko: "현재 호환 소모품 매핑이 없습니다. 관리자에게 문의해 주세요." },
+
+  // ── 포탈 사용량 컨펌 ──
+  "portal.usage.signTitle":      { vi: "Ký tên",                    en: "Sign",                       ko: "서명" },
 };
 
 export function t(key: string, lang: Lang): string {

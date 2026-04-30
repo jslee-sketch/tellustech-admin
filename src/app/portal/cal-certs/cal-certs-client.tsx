@@ -66,15 +66,15 @@ export function CalCertsClient({ lang }: { lang: Lang }) {
       <Card title={t("stats.searchCard", lang)}>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Field label="S/N"><TextInput value={sn} onChange={(e)=>setSn(e.target.value)} placeholder="SN-..."/></Field>
-          <Field label="성적서번호 / Số CC"><TextInput value={cert} onChange={(e)=>setCert(e.target.value)} placeholder="CC-..."/></Field>
-          <Field label="품목 / Vật phẩm"><TextInput value={item} onChange={(e)=>setItem(e.target.value)} placeholder="ITM-..."/></Field>
-          <Field label="시작일 / Từ"><TextInput type="date" value={from} onChange={(e)=>setFrom(e.target.value)} /></Field>
-          <Field label="종료일 / Đến"><TextInput type="date" value={to} onChange={(e)=>setTo(e.target.value)} /></Field>
+          <Field label={t("portal.cert.certNumber", lang)}><TextInput value={cert} onChange={(e)=>setCert(e.target.value)} placeholder="CC-..."/></Field>
+          <Field label={t("portal.cert.itemFilter", lang)}><TextInput value={item} onChange={(e)=>setItem(e.target.value)} placeholder="ITM-..."/></Field>
+          <Field label={t("portal.cert.fromDate", lang)}><TextInput type="date" value={from} onChange={(e)=>setFrom(e.target.value)} /></Field>
+          <Field label={t("portal.cert.toDate", lang)}><TextInput type="date" value={to} onChange={(e)=>setTo(e.target.value)} /></Field>
         </div>
-        <div className="mt-3"><Button onClick={load} disabled={loading}>{loading ? "조회 중…" : "조회 / Tìm"}</Button></div>
+        <div className="mt-3"><Button onClick={load} disabled={loading}>{loading ? t("portal.cert.searching", lang) : t("portal.cert.searchBtn", lang)}</Button></div>
       </Card>
-      <Card title={`결과 / Kết quả (${rows.length})`}>
-        <DataTable columns={columns} data={rows} rowKey={(r) => r.id} emptyMessage="결과 없음 / Không có kết quả" />
+      <Card title={`${t("portal.cert.resultTitle", lang)} (${rows.length})`}>
+        <DataTable columns={columns} data={rows} rowKey={(r) => r.id} emptyMessage={t("portal.cert.empty", lang)} />
       </Card>
     </div>
   );

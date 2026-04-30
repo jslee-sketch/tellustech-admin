@@ -59,7 +59,7 @@ export function PortalAsRequestForm({ lang }: { clientId?: string; lang: Lang })
             ]}
           />
           <div className="mt-1 text-[11px] text-[color:var(--tts-muted)]">
-            {equipment.length === 0 ? "활성 장비가 없습니다 / Không có thiết bị hoạt động" : `${equipment.length} 대 활성 / ${equipment.length} active`}
+            {equipment.length === 0 ? t("portal.asReq.noEquipment", lang) : t("portal.asReq.equipmentCount", lang).replace("{n}", String(equipment.length))}
           </div>
         </Field>
 
@@ -68,13 +68,13 @@ export function PortalAsRequestForm({ lang }: { clientId?: string; lang: Lang })
           <Select required value={originalLang} onChange={(e)=>setOriginalLang(e.target.value as "VI"|"KO"|"EN")}
             options={[{value:"VI",label:"Tiếng Việt"},{value:"KO",label:"한국어"},{value:"EN",label:"English"}]} />
         </Field>
-        <Field label="Triệu chứng (VI)"><Textarea rows={2} value={symptomVi} onChange={(e)=>setSymptomVi(e.target.value)} /></Field>
-        <Field label="증상 (KO)"><Textarea rows={2} value={symptomKo} onChange={(e)=>setSymptomKo(e.target.value)} /></Field>
-        <Field label="Symptom (EN)"><Textarea rows={2} value={symptomEn} onChange={(e)=>setSymptomEn(e.target.value)} /></Field>
+        <Field label={t("portal.asReq.symptomVi", lang)}><Textarea rows={2} value={symptomVi} onChange={(e)=>setSymptomVi(e.target.value)} /></Field>
+        <Field label={t("portal.asReq.symptomKo", lang)}><Textarea rows={2} value={symptomKo} onChange={(e)=>setSymptomKo(e.target.value)} /></Field>
+        <Field label={t("portal.asReq.symptomEn", lang)}><Textarea rows={2} value={symptomEn} onChange={(e)=>setSymptomEn(e.target.value)} /></Field>
 
         {error && <div className="rounded bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
-        {done && <div className="rounded bg-[color:var(--tts-success-dim,rgba(34,197,94,.12))] px-3 py-2 text-[12px] text-[color:var(--tts-success)]">완료 / Hoàn tất — 접수번호 {done}</div>}
-        <Button type="submit" disabled={submitting}>{submitting ? "전송 중… / Đang gửi…" : "AS 접수 / Tiếp nhận BH"}</Button>
+        {done && <div className="rounded bg-[color:var(--tts-success-dim,rgba(34,197,94,.12))] px-3 py-2 text-[12px] text-[color:var(--tts-success)]">{t("portal.asReq.done", lang).replace("{n}", done)}</div>}
+        <Button type="submit" disabled={submitting}>{submitting ? t("portal.asReq.sending", lang) : t("portal.asReq.submit", lang)}</Button>
       </form>
     </Card>
   );

@@ -86,7 +86,7 @@ export function PortalUsageConfirmForm({ billings, lang }: { billings: Billing[]
         onSubmit={(dataUrl) => {
           if (signOpenFor) setSignaturePreview((prev) => ({ ...prev, [signOpenFor]: dataUrl }));
         }}
-        title={`서명 / Ký tên — ${signOpenFor ? billings.find(b => b.id === signOpenFor)?.serialNumber : ""}`}
+        title={`${t("portal.usage.signTitle", lang)} — ${signOpenFor ? billings.find(b => b.id === signOpenFor)?.serialNumber : ""}`}
       />
     </div>
   );

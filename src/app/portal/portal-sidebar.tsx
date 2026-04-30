@@ -103,7 +103,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
   // 모바일 햄버거 + drawer (md 미만에서만 보임)
   const mobileHeader = (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[color:var(--tts-border)] bg-[color:var(--tts-card)] px-4 py-2 md:hidden">
-      <button onClick={() => setMobileOpen(true)} className="rounded border border-[color:var(--tts-border)] px-2 py-1 text-[14px]" title="메뉴">☰</button>
+      <button onClick={() => setMobileOpen(true)} className="rounded border border-[color:var(--tts-border)] px-2 py-1 text-[14px]" title={t("portal.sidebar.menu", lang)}>☰</button>
       <Link href="/portal" className="text-[12px] font-bold tracking-wider text-[color:var(--tts-accent)]">TELLUSTECH</Link>
       <Link href="/portal/points" className="text-[11px] font-mono text-[color:var(--tts-warn)]">🏆 {new Intl.NumberFormat("vi-VN").format(balance)}d</Link>
     </header>
@@ -138,7 +138,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
             <button onClick={toggleTheme} className="ml-auto rounded border border-[color:var(--tts-border)] px-2 py-1 text-[11px]">{theme === "dark" ? "☀" : "🌙"}</button>
           </div>
           <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); router.replace("/login"); }} className="w-full rounded border border-[color:var(--tts-border)] px-3 py-1.5 text-[12px]">{t("nav.logout", lang)}</button>
-          <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-center text-[11px] text-[color:var(--tts-accent)]">🏢 사내 직원 로그인</Link>
+          <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-center text-[11px] text-[color:var(--tts-accent)]">{t("portal.sidebar.staffLogin", lang)}</Link>
         </div>
       </aside>
     </div>
@@ -158,7 +158,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
       {mobileHeader}
       {mobileDrawer}
       <aside className="hidden w-[64px] shrink-0 flex-col border-r border-[color:var(--tts-border)] bg-[color:var(--tts-card)] md:flex">
-        <button onClick={toggleCollapse} className="m-2 rounded border border-[color:var(--tts-border)] py-1.5 text-[14px] hover:bg-[color:var(--tts-card-hover)]" title="펼치기">▶</button>
+        <button onClick={toggleCollapse} className="m-2 rounded border border-[color:var(--tts-border)] py-1.5 text-[14px] hover:bg-[color:var(--tts-card-hover)]" title={t("portal.sidebar.expand", lang)}>▶</button>
         <Link href="/portal" className="mx-2 mb-2 block rounded text-center text-[10px] font-bold text-[color:var(--tts-accent)]">TTS</Link>
         <Link href="/portal/points" className="mx-2 mb-2 block text-center text-[14px]" title={`${balance.toLocaleString()}d`}>🏆</Link>
         <div className="flex-1 space-y-0.5 overflow-y-auto px-1">
@@ -188,7 +188,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
           <div className="mt-1 truncate text-[14px] font-bold">{clientName}</div>
           <Link href="/portal/points" className="mt-2 inline-flex items-center gap-1 text-[12px] font-mono text-[color:var(--tts-warn)] hover:underline">🏆 {new Intl.NumberFormat("vi-VN").format(balance)}d</Link>
         </div>
-        <button onClick={toggleCollapse} className="rounded border border-[color:var(--tts-border)] px-1.5 py-0.5 text-[12px] hover:bg-[color:var(--tts-card-hover)]" title="접기">◀</button>
+        <button onClick={toggleCollapse} className="rounded border border-[color:var(--tts-border)] px-1.5 py-0.5 text-[12px] hover:bg-[color:var(--tts-card-hover)]" title={t("portal.sidebar.collapse", lang)}>◀</button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-3">
@@ -253,7 +253,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
         <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); router.replace("/login?portal=1"); }} className="mt-2 w-full rounded border border-[color:var(--tts-border)] px-3 py-1.5 text-[12px] hover:bg-[color:var(--tts-card-hover)]">
           {t("nav.logout", lang)}
         </button>
-        <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-center text-[11px] text-[color:var(--tts-accent)]">🏢 사내 직원 로그인</Link>
+        <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-center text-[11px] text-[color:var(--tts-accent)]">{t("portal.sidebar.staffLogin", lang)}</Link>
       </div>
     </aside>
     </>

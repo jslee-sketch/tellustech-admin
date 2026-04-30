@@ -328,7 +328,7 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
                         onClick={() => setReviewingId(it.id)}
                         className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-[10px] text-white"
                       >
-                        {it.fraudNote ? "조사 결과" : "조사 메모"}
+                        {it.fraudNote ? t("yield.viewInvestigation", lang) : t("yield.investigation", lang)}
                       </button>
                     </td>
                   </tr>
@@ -374,6 +374,7 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
         <ReviewModal
           id={reviewingId}
           existing={items.find((i) => i.id === reviewingId)?.fraudNote ?? ""}
+          lang={lang}
           onClose={(refreshed) => {
             setReviewingId(null);
             if (refreshed) refetch(true);
@@ -405,7 +406,7 @@ function ConfigPanel({ config, onSaved, lang }: { config: YieldConfig; onSaved: 
         return;
       }
       onSaved(j.config);
-      alert("저장됨");
+      alert(t("common.saved", lang));
     } finally {
       setSaving(false);
     }
@@ -432,12 +433,12 @@ function ConfigPanel({ config, onSaved, lang }: { config: YieldConfig; onSaved: 
         </Field>
       </Row>
       {err && <div className="mt-2 text-[12px] text-[color:var(--tts-danger)]">{err}</div>}
-      <div className="mt-3"><Button onClick={save} disabled={saving} variant="accent">{saving ? "저장중..." : "저장"}</Button></div>
+      <div className="mt-3"><Button onClick={save} disabled={saving} variant="accent">{saving ? t("common.saving", lang) : t("common.save", lang)}</Button></div>
     </Card>
   );
 }
 
-function ReviewModal({ id, existing, onClose }: { id: string; existing: string; onClose: (refreshed: boolean) => void }) {
+function ReviewModal({ id, existing, onClose, lang }: { id: string; existing: string; onClose: (refreshed: boolean) => void; lang: Lang }) {
   const [note, setNote] = useState(existing);
   const [saving, setSaving] = useState(false);
 
@@ -478,7 +479,7 @@ function ReviewModal({ id, existing, onClose }: { id: string; existing: string; 
         />
         <div className="mt-3 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => onClose(false)}>취소</Button>
-          <Button variant="accent" onClick={save} disabled={saving}>{saving ? "저장중..." : "저장"}</Button>
+          <Button variant="accent" onClick={save} disabled={saving}>{saving ? t("common.saving", lang) : t("common.save", lang)}</Button>
         </div>
       </div>
     </div>

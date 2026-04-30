@@ -2644,6 +2644,21 @@ const DICT: Dict = {
   "portal.req.stepCompleted": { vi: "Hoàn tất",                     en: "Completed",                  ko: "완료" },
   "portal.req.stepPending":   { vi: "Đang chờ xử lý",               en: "Awaiting processing",        ko: "처리 대기" },
   "portal.req.departed":      { vi: "Xuất phát",                    en: "Departed",                   ko: "출발" },
+
+  // ── 공통 (saving 만 신규 — save/saved 는 기존 키 재사용) ──
+  "common.saving":            { vi: "Đang lưu...",                  en: "Saving...",                  ko: "저장중..." },
+  "yield.viewInvestigation":  { vi: "Xem điều tra",                 en: "View investigation",         ko: "조사 결과" },
+
+  // ── 재고 현상태 (양품/불량 + 자유 텍스트) ──
+  "inv.quality":              { vi: "Chất lượng",                   en: "Quality",                    ko: "양품/불량" },
+  "inv.qualityGood":          { vi: "Hàng tốt",                     en: "Good",                       ko: "양품" },
+  "inv.qualityDefective":     { vi: "Hàng lỗi",                     en: "Defective",                  ko: "불량" },
+  "inv.stateNote":            { vi: "Mô tả tình trạng hiện tại",    en: "Current state note",         ko: "현재 상태 메모" },
+  "inv.stateNoteHint":        { vi: "Tự do nhập (3 ngôn ngữ tự dịch khi lưu)", en: "Free text (auto 3-lang on save)", ko: "자유 입력 (저장 시 3국어 자동 번역)" },
+  "inv.statusNormal":         { vi: "Bình thường",                  en: "Normal",                     ko: "정상" },
+  "inv.statusNeedsRepair":    { vi: "Cần sửa chữa",                 en: "Needs repair",               ko: "수리 필요" },
+  "inv.statusPartsUsed":      { vi: "Đã dùng làm linh kiện",        en: "Parts used",                 ko: "부품 사용됨" },
+  "inv.statusIrreparable":    { vi: "Không sửa được",               en: "Irreparable",                ko: "수리 불가" },
 };
 
 export function t(key: string, lang: Lang): string {

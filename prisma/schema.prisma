@@ -576,10 +576,15 @@ model InventoryItem {
   warehouse    Warehouse   @relation("InventoryItemWarehouse", fields: [warehouseId], references: [id])
   companyCode  CompanyCode
 
-  status           InventoryStatus @default(NORMAL)
-  qrData           String?
-  acquiredAt       DateTime?
-  lastStatusChange DateTime?
+  status                InventoryStatus @default(NORMAL)
+  qrData                String?
+  acquiredAt            DateTime?
+  lastStatusChange      DateTime?
+  // ── 현상태 기술 (자유 텍스트 3국어 자동번역). 양품/불량 사유 등. ──
+  stateNoteVi           String?
+  stateNoteEn           String?
+  stateNoteKo           String?
+  stateNoteOriginalLang Language?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

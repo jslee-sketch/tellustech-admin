@@ -3,95 +3,47 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, SerialCombobox, TextInput, Textarea } from "@/components/ui";
-import { pickName, t, type Lang } from "@/lib/i18n";
-
-type Scope = "INTERNAL" | "EXTERNAL";
-
-type ActiveContract = {
-  kind: "IT" | "TM";
-  contractId?: string;
-  contractNumber?: string;
-  rentalId?: string;
-  rentalCode?: string;
-  status: string;
-  itemId: string;
-  item: { id: string; itemCode: string; name: string };
-  client: { id: string; clientCode: string; companyNameVi: string };
-  monthlyBaseFee?: string | null;
-  salesPrice?: string | null;
-  equipmentId?: string;
-  rentalItemId?: string;
-};
-
-type SnIntent = "RECOVER" | "REPLACE" | "NORMAL";
+import { t, type Lang } from "@/lib/i18n";
 
 type Props = {
   items: { value: string; label: string }[];
   warehouses: { value: string; label: string; warehouseType: string }[];
-  // Note: clients prop 은 더 이상 사용 안 함 (ClientCombobox 가 서버 검색)
   clients?: { value: string; label: string }[];
   lang: Lang;
 };
 
+type LineRow = {
+  key: string;
+  itemId: string;
+  serialNumber: string;
+  quantity: string;
+  targetEquipmentSN: string;
+  note: string;
+};
+
+let _key = 0;
+const newKey = () => `r${++_key}`;
+const blankLine = (): LineRow => ({ key: newKey(), itemId: "", serialNumber: "", quantity: "1", targetEquipmentSN: "", note: "" });
+
 export function TransactionNewForm({ items, warehouses, lang }: Props) {
   const router = useRouter();
-  const [itemId, setItemId] = useState("");
+
+  // ── 헤더 ──
   const [txnType, setTxnType] = useState<"IN" | "OUT" | "TRANSFER">("IN");
-  const [reason, setReason] = useState("PURCHASE");
-  // Scope (INTERNAL/EXTERNAL) 를 먼저 선택 → 그 안에서 창고 선택
-  const [fromScope, setFromScope] = useState<Scope>("INTERNAL");
-  const [toScope, setToScope] = useState<Scope>("INTERNAL");
+  const [reason, setReason] = useState<string>("RENTAL_IN");
   const [fromWarehouseId, setFromWarehouseId] = useState("");
   const [toWarehouseId, setToWarehouseId] = useState("");
-  // EXTERNAL 측은 창고 대신 거래처를 직접 선택 — INTERNAL ↔ EXTERNAL 한 트랜잭션에 한쪽만 EXTERNAL 이 일반적.
-  const [fromClientId, setFromClientId] = useState("");
-  const [toClientId, setToClientId] = useState("");
-  // OUT 의 납품처 (TRANSFER 에는 사용 안 함 — EXTERNAL 측이 곧 거래처)
-  const [clientId, setClientId] = useState("");
-  const [targetEquipmentSN, setTargetEquipmentSN] = useState("");
-  const [quantity, setQuantity] = useState("1");
-  const [serialNumber, setSerialNumber] = useState("");
-  const [note, setNote] = useState("");
+  const [clientId, setClientId] = useState("");          // OUT 납품처 / 외부IN 소유주
+  const [fromClientId, setFromClientId] = useState(""); // TRANSFER 출발 거래처
+  const [toClientId, setToClientId] = useState("");     // TRANSFER 도착 거래처
+  const [headerNote, setHeaderNote] = useState("");
+
+  // ── 라인 (다행) ──
+  const [lines, setLines] = useState<LineRow[]>([blankLine()]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [okMsg, setOkMsg] = useState<string | null>(null);
 
-  // S/N 활성 계약 lookup 결과 + 의도 모달
-  const [snContracts, setSnContracts] = useState<ActiveContract[] | null>(null);
-  const [snIntent, setSnIntent] = useState<SnIntent | null>(null);
-  const [replaceNewSn, setReplaceNewSn] = useState("");
-  const [replaceMonthlyFee, setReplaceMonthlyFee] = useState("");
-  const [showSnModal, setShowSnModal] = useState(false);
-
-  async function handleSerialBlur() {
-    const sn = serialNumber.trim();
-    if (!sn) {
-      setSnContracts(null);
-      setSnIntent(null);
-      setShowSnModal(false);
-      return;
-    }
-    try {
-      const r = await fetch(`/api/inventory/sn/${encodeURIComponent(sn)}/active-contracts`).then((r) => r.json());
-      const list: ActiveContract[] = r.contracts ?? [];
-      if (list.length > 0) {
-        setSnContracts(list);
-        setShowSnModal(true);
-        setSnIntent(null);
-      } else {
-        setSnContracts(null);
-        setSnIntent("NORMAL");
-        setShowSnModal(false);
-      }
-    } catch {
-      // ignore network — 서버측에서 다시 검사할 것
-    }
-  }
-
-  // A안 정책: 매입/매출/매입반품 사유는 별도 모듈(매입·매출·Adjustment)에서만 자동 생성.
-  // 입출고 폼에서 manual 선택 가능한 사유:
-  //   IN: 외부 자산 입고(렌탈/수리/데모/교정입고) + 기타입고
-  //   OUT: 외부 자산 반환(렌탈/수리/데모/교정반출) + 소모품출고
-  //   TRANSFER: 자사 내부 이동
   const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
     IN: [
       { value: "RENTAL_IN", label: t("reason.rentalInShort", lang) },
@@ -115,280 +67,163 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
     ],
   };
 
-  // 외부 자산 입출고 사유 — 거래처 필수 + S/N 필수
   const EXTERNAL_IN_SET = new Set(["RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN"]);
-  const EXTERNAL_OUT_SET = new Set(["RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT"]);
   const isExternalIn = txnType === "IN" && EXTERNAL_IN_SET.has(reason);
-  const isExternalOut = txnType === "OUT" && EXTERNAL_OUT_SET.has(reason);
+  const isConsumableOut = txnType === "OUT" && reason === "CONSUMABLE_OUT";
+  const snRequiredOnLines = txnType === "IN" || (txnType === "OUT" && !isConsumableOut);
 
   const internalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType !== "EXTERNAL"), [warehouses]);
-  const externalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType === "EXTERNAL"), [warehouses]);
+  const whOptions = internalWarehouses.map((w) => ({ value: w.value, label: w.label }));
 
-  function whOptionsFor(scope: Scope): { value: string; label: string }[] {
-    const list = scope === "EXTERNAL" ? externalWarehouses : internalWarehouses;
-    return list.map((w) => ({ value: w.value, label: w.label }));
-  }
-
-  // 유형 전환 시 사유 자동 리셋 + 창고/scope/거래처 초기화
   function selectType(type: "IN" | "OUT" | "TRANSFER") {
     setTxnType(type);
     setReason(type === "IN" ? "RENTAL_IN" : type === "OUT" ? "RENTAL_OUT" : "CALIBRATION");
-    setFromScope("INTERNAL");
-    setToScope("INTERNAL");
     setFromWarehouseId("");
     setToWarehouseId("");
     setFromClientId("");
     setToClientId("");
     setClientId("");
-    setTargetEquipmentSN("");
+    setError(null);
+    setOkMsg(null);
   }
 
-  function selectFromScope(scope: Scope) {
-    setFromScope(scope);
-    setFromWarehouseId("");
-    setFromClientId("");
+  function updateLine(idx: number, patch: Partial<LineRow>) {
+    setLines((cur) => cur.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   }
-  function selectToScope(scope: Scope) {
-    setToScope(scope);
-    setToWarehouseId("");
-    setToClientId("");
+  function addLine() { setLines((cur) => [...cur, blankLine()]); }
+  function addLines(n: number) { setLines((cur) => [...cur, ...Array.from({ length: n }, blankLine)]); }
+  function removeLine(idx: number) { setLines((cur) => (cur.length <= 1 ? cur : cur.filter((_, i) => i !== idx))); }
+  function clearLines() { setLines([blankLine()]); }
+
+  // 스프레드시트 붙여넣기 — Tab/Newline 분리. 컬럼: itemCode\tSN\tQty\ttargetSN\tnote
+  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const text = e.clipboardData.getData("text");
+    if (!text || !text.includes("\t") && !text.includes("\n")) return;
+    e.preventDefault();
+    const rows = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    const itemByCode = new Map(items.map((it) => {
+      // label 형식 "ITM-XXXX · 이름" 앞쪽 코드를 키로 사용
+      const code = it.label.split(" ")[0];
+      return [code, it.value];
+    }));
+    const next: LineRow[] = rows.map((row) => {
+      const cols = row.split("\t");
+      const code = (cols[0] ?? "").trim();
+      const sn = (cols[1] ?? "").trim();
+      const qty = (cols[2] ?? "1").trim() || "1";
+      const tgt = (cols[3] ?? "").trim();
+      const note = (cols[4] ?? "").trim();
+      return {
+        key: newKey(),
+        itemId: itemByCode.get(code) ?? "",
+        serialNumber: sn,
+        quantity: qty,
+        targetEquipmentSN: tgt,
+        note,
+      };
+    });
+    if (next.length > 0) setLines(next);
   }
-
-  // OUT 은 별도 client 필드 노출. TRANSFER 는 EXTERNAL 측이 곧 거래처라 별도 필드 불필요.
-  // 외부 자산 입고(RENTAL_IN/REPAIR_IN/DEMO_IN/CALIBRATION_IN)도 거래처 필수.
-  const showOutClient = txnType === "OUT" || isExternalIn;
-  const outClientRequired = txnType === "OUT" || isExternalIn;
-
-  const showTargetEquipment = reason === "CONSUMABLE_OUT";
-
-  // TRANSFER (External ↔ External 패스스루) 가이드 — 자사 재고에 영향 없음
-  const transferGuide = txnType === "TRANSFER" ? t("txnGuide.passthrough", lang) : null;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setOkMsg(null);
 
-    // 정책 (변경됨):
-    //  IN  → toWarehouseId (자사 내부 또는 외부 창고) + S/N 필수
-    //  OUT → fromWarehouseId (자사 창고) + S/N 필수 (CONSUMABLE_OUT 예외) + InventoryItem 마스터에 존재해야 함
-    //  TRANSFER → External(거래처) → External(거래처) 패스스루. 자사 창고 사용 금지. S/N 선택.
-    let txnFromWarehouseId: string | null = null;
-    let txnToWarehouseId: string | null = null;
-    let txnClientId: string | null = null;
-    let txnFromClientId: string | null = null;
-    let txnToClientId: string | null = null;
-
-    if (txnType === "IN") {
-      txnToWarehouseId = toWarehouseId || null;
-      // 외부 자산 입고면 clientId(소유주) 필수
-      if (isExternalIn) {
-        if (!clientId) { setError(t("msg.externalRequiresClient", lang)); setSubmitting(false); return; }
-        txnClientId = clientId;
-      }
-      if (!serialNumber.trim()) {
-        setError(t("msg.snRequired", lang));
+    // 클라이언트 사전 검증
+    const usable = lines.filter((l) => l.itemId);
+    if (usable.length === 0) {
+      setError(t("msg.atLeastOneLine", lang));
+      setSubmitting(false);
+      return;
+    }
+    if (snRequiredOnLines) {
+      const missing = usable.findIndex((l) => !l.serialNumber.trim());
+      if (missing >= 0) {
+        setError(t("msg.snMissingAtLine", lang).replace("{n}", String(missing + 1)));
         setSubmitting(false);
         return;
       }
-    } else if (txnType === "OUT") {
-      txnFromWarehouseId = fromWarehouseId || null;
-      if (!clientId) { setError(t("msg.externalRequiresClient", lang)); setSubmitting(false); return; }
-      txnClientId = clientId;
-      if (reason !== "CONSUMABLE_OUT" && !serialNumber.trim()) {
-        setError(t("msg.snRequired", lang));
-        setSubmitting(false);
-        return;
-      }
-    } else {
-      // TRANSFER External → External
-      if (!fromClientId || !toClientId) {
-        setError(t("msg.externalRequiresClient", lang));
-        setSubmitting(false);
-        return;
-      }
-      txnFromClientId = fromClientId;
-      txnToClientId = toClientId;
+    }
+    if (txnType === "IN" && !toWarehouseId) {
+      setError(t("msg.toWhRequired", lang));
+      setSubmitting(false);
+      return;
+    }
+    if (txnType === "OUT" && (!fromWarehouseId || !clientId)) {
+      setError(t("msg.fromWhAndClientRequired", lang));
+      setSubmitting(false);
+      return;
+    }
+    if (txnType === "TRANSFER" && (!fromClientId || !toClientId)) {
+      setError(t("msg.bothClientsRequired", lang));
+      setSubmitting(false);
+      return;
+    }
+    if (isExternalIn && !clientId) {
+      setError(t("msg.externalRequiresClient", lang));
+      setSubmitting(false);
+      return;
     }
 
     try {
-      const res = await fetch("/api/inventory/transactions", {
+      const res = await fetch("/api/inventory/transactions/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          itemId,
           txnType,
           reason,
-          fromWarehouseId: txnFromWarehouseId,
-          toWarehouseId: txnToWarehouseId,
-          clientId: txnClientId,
-          fromClientId: txnFromClientId,
-          toClientId: txnToClientId,
-          targetEquipmentSN: targetEquipmentSN || null,
-          quantity,
-          serialNumber: serialNumber || null,
-          note: note || null,
+          fromWarehouseId: fromWarehouseId || null,
+          toWarehouseId: toWarehouseId || null,
+          clientId: clientId || null,
+          fromClientId: fromClientId || null,
+          toClientId: toClientId || null,
+          note: headerNote || null,
+          items: usable.map((l) => ({
+            itemId: l.itemId,
+            serialNumber: l.serialNumber || null,
+            quantity: Number(l.quantity || 1),
+            targetEquipmentSN: l.targetEquipmentSN || null,
+            note: l.note || null,
+          })),
         }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ? `${data.error} ${JSON.stringify(data.details ?? "")}` : t("msg.saveFailedShort", lang));
+        setError(data.error ? `${data.error}: ${JSON.stringify(data.details ?? "")}` : t("msg.saveFailedShort", lang));
         return;
       }
-      const txnBody = (await res.json().catch(() => null)) as { transaction?: { id: string } } | null;
-      const txnId = txnBody?.transaction?.id ?? null;
-
-      // 경로 B — S/N 의도가 RECOVER/REPLACE 면 자동으로 Amendment 생성
-      if (snIntent && snIntent !== "NORMAL" && snContracts && snContracts.length > 0) {
-        const today = new Date().toISOString().slice(0, 10);
-        for (const c of snContracts) {
-          if (c.kind === "IT" && c.contractId) {
-            const items: Array<Record<string, unknown>> = [
-              {
-                action: snIntent === "RECOVER" ? "REMOVE" : "REPLACE_OUT",
-                serialNumber: serialNumber,
-                itemId: c.itemId,
-                originalEquipmentId: c.equipmentId,
-              },
-            ];
-            if (snIntent === "REPLACE" && replaceNewSn) {
-              items.push({
-                action: "REPLACE_IN",
-                serialNumber: replaceNewSn,
-                itemId: c.itemId,
-                monthlyBaseFee: replaceMonthlyFee || c.monthlyBaseFee || null,
-              });
-            }
-            await fetch(`/api/rental/it-contracts/${c.contractId}/amend`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type: snIntent === "RECOVER" ? "REMOVE_EQUIPMENT" : "REPLACE_EQUIPMENT",
-                source: "INVENTORY_TXN",
-                triggeredByTxnId: txnId,
-                effectiveDate: today,
-                warehouseId: txnToWarehouseId,
-                items,
-              }),
-            });
-          } else if (c.kind === "TM" && c.rentalId) {
-            const items: Array<Record<string, unknown>> = [
-              {
-                action: snIntent === "RECOVER" ? "REMOVE" : "REPLACE_OUT",
-                serialNumber: serialNumber,
-                itemId: c.itemId,
-                originalItemId: c.rentalItemId,
-              },
-            ];
-            if (snIntent === "REPLACE" && replaceNewSn) {
-              items.push({
-                action: "REPLACE_IN",
-                serialNumber: replaceNewSn,
-                itemId: c.itemId,
-                salesPrice: c.salesPrice ?? null,
-              });
-            }
-            await fetch(`/api/rental/tm-rentals/${c.rentalId}/amend`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type: snIntent === "RECOVER" ? "REMOVE_EQUIPMENT" : "REPLACE_EQUIPMENT",
-                source: "INVENTORY_TXN",
-                triggeredByTxnId: txnId,
-                effectiveDate: today,
-                warehouseId: txnToWarehouseId,
-                items,
-              }),
-            });
-          }
-        }
-      }
-
-      router.push("/inventory/transactions");
+      const body = (await res.json().catch(() => null)) as { count?: number } | null;
+      setOkMsg(t("msg.txnBulkDone", lang).replace("{n}", String(body?.count ?? usable.length)));
       router.refresh();
+      // 등록 후 라인 초기화 (헤더는 유지 — 동일 헤더로 추가 등록 편의)
+      clearLines();
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Note tone="info">
-        {t("note.txnTypePicker", lang)}<br/>
-        {t("note.txnTypeRules", lang)}<br/>
-        {t("note.txnConsumableRule", lang)}
-      </Note>
-
+    <form onSubmit={handleSubmit} className="space-y-3">
       <Row>
-        <Field label={t("field.txnType", lang)} required width="360px">
-          <div className="flex gap-1 rounded-md bg-[color:var(--tts-input)] p-1">
-            {(["IN", "OUT", "TRANSFER"] as const).map((type) => (
-              <button
-                type="button"
-                key={type}
-                onClick={() => selectType(type)}
-                className={`flex-1 rounded px-3 py-2 text-[13px] font-semibold transition ${txnType === type ? "bg-[color:var(--tts-primary)] text-white" : "text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"}`}
-              >
-                {type === "IN" ? t("txnType.in", lang) : type === "OUT" ? t("txnType.out", lang) : t("txnType.transfer", lang)}
-              </button>
-            ))}
-          </div>
-        </Field>
-        <Field label={t("field.reason", lang)} required width="180px">
-          <Select required value={reason} onChange={(e) => setReason(e.target.value)} options={REASONS_BY_TYPE[txnType]} />
-        </Field>
-        <Field label={t("field.qty", lang)} required width="100px">
-          <TextInput type="number" required value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-        </Field>
-      </Row>
-
-      <Row>
-        <Field label={t("field.item", lang)} required>
-          <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
-        </Field>
-        <Field label={t("field.serial", lang)} required={txnType === "IN" || (txnType === "OUT" && reason !== "CONSUMABLE_OUT")}>
-          <SerialCombobox
-            value={serialNumber}
-            onChange={setSerialNumber}
-            onBlur={handleSerialBlur}
-            itemId={itemId || undefined}
-            lang={lang}
-            required={txnType === "IN" || (txnType === "OUT" && reason !== "CONSUMABLE_OUT")}
+        <Field label={t("field.txnType", lang)} required width="160px">
+          <Select
+            value={txnType}
+            onChange={(e) => selectType(e.target.value as "IN" | "OUT" | "TRANSFER")}
+            options={[
+              { value: "IN", label: t("txnType.in", lang) },
+              { value: "OUT", label: t("txnType.out", lang) },
+              { value: "TRANSFER", label: t("txnType.transfer", lang) },
+            ]}
           />
         </Field>
+        <Field label={t("field.reason", lang)} required width="200px">
+          <Select required value={reason} onChange={(e) => setReason(e.target.value)} options={REASONS_BY_TYPE[txnType]} />
+        </Field>
       </Row>
 
-      {transferGuide && (
-        <Note tone="info">
-          <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
-          {transferGuide}<br/>
-          {t("txnGuide.externalNeedsClient", lang)}
-        </Note>
-      )}
-
-      {/* 출발 — OUT 자사 창고 / TRANSFER 외부 거래처 */}
-      {txnType === "OUT" && (
-        <Row>
-          <Field label={t("field.fromWh", lang)} required>
-            <Select
-              required
-              value={fromWarehouseId}
-              onChange={(e) => setFromWarehouseId(e.target.value)}
-              placeholder={t("placeholder.select", lang)}
-              options={whOptionsFor("INTERNAL")}
-            />
-          </Field>
-        </Row>
-      )}
-      {txnType === "TRANSFER" && (
-        <Row>
-          <Field label={t("field.fromClient", lang)} required>
-            <ClientCombobox value={fromClientId} onChange={setFromClientId} required lang={lang} />
-          </Field>
-        </Row>
-      )}
-
-      {/* 도착 — IN 자사 창고 / TRANSFER 외부 거래처 */}
+      {/* 헤더: 창고/거래처 */}
       {txnType === "IN" && (
         <Row>
           <Field label={t("field.toWh", lang)} required>
@@ -397,170 +232,154 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
               value={toWarehouseId}
               onChange={(e) => setToWarehouseId(e.target.value)}
               placeholder={t("placeholder.select", lang)}
-              options={whOptionsFor("INTERNAL")}
+              options={whOptions}
             />
+          </Field>
+          {isExternalIn && (
+            <Field label={t("field.ownerClient", lang)} required>
+              <ClientCombobox value={clientId} onChange={setClientId} required lang={lang} />
+            </Field>
+          )}
+        </Row>
+      )}
+      {txnType === "OUT" && (
+        <Row>
+          <Field label={t("field.fromWh", lang)} required>
+            <Select
+              required
+              value={fromWarehouseId}
+              onChange={(e) => setFromWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={whOptions}
+            />
+          </Field>
+          <Field label={t("field.clientCustomer", lang)} required>
+            <ClientCombobox value={clientId} onChange={setClientId} required lang={lang} />
           </Field>
         </Row>
       )}
       {txnType === "TRANSFER" && (
-        <Row>
-          <Field label={t("field.toClient", lang)} required>
-            <ClientCombobox value={toClientId} onChange={setToClientId} required lang={lang} />
-          </Field>
-        </Row>
-      )}
-
-      {/* OUT 의 납품처 — TRANSFER 와 무관. OUT 은 도착 창고가 없어 별도 client 필드 유지 */}
-      {showOutClient && (
-        <Row>
-          <Field label={t("field.clientCustomer", lang)} required={outClientRequired}>
-            <ClientCombobox
-              value={clientId}
-              onChange={setClientId}
-              required={outClientRequired}
-              lang={lang}
-            />
-          </Field>
-        </Row>
-      )}
-
-      {showTargetEquipment && (
-        <Row>
-          <Field label={t("field.targetEquipSN", lang)} required>
-            <SerialCombobox required value={targetEquipmentSN} onChange={setTargetEquipmentSN} lang={lang} />
-          </Field>
-        </Row>
+        <>
+          <Row>
+            <Field label={t("field.fromClient", lang)} required>
+              <ClientCombobox value={fromClientId} onChange={setFromClientId} required lang={lang} />
+            </Field>
+            <Field label={t("field.toClient", lang)} required>
+              <ClientCombobox value={toClientId} onChange={setToClientId} required lang={lang} />
+            </Field>
+          </Row>
+          <Note tone="info">
+            <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
+            {t("txnGuide.passthrough", lang)}
+          </Note>
+        </>
       )}
 
       <Row>
         <Field label={t("field.note", lang)}>
-          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          <TextInput value={headerNote} onChange={(e) => setHeaderNote(e.target.value)} placeholder={t("placeholder.headerNote", lang)} />
         </Field>
       </Row>
 
-      {error && <div className="mt-2 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">{error}</div>}
-
-      {/* S/N 활성 계약 알림 — 의도 표시 (RECOVER/REPLACE/NORMAL) */}
-      {snIntent && snIntent !== "NORMAL" && snContracts && snContracts.length > 0 && (
-        <Note tone="warn">
-          <div className="font-bold">{t("note.snDetectedActive", lang)}</div>
-          <ul className="mt-1 list-disc pl-4 text-[12px]">
-            {snContracts.map((c, i) => (
-              <li key={i}>
-                {c.kind === "IT" ? c.contractNumber : c.rentalCode} · {pickName(c.client, lang, "companyName")} · {c.item.name}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-1 text-[11px] text-[color:var(--tts-sub)]">
-            Intent: <span className="font-bold">{snIntent}</span>
-            {snIntent === "REPLACE" && replaceNewSn && <> → newSN: <span className="font-mono">{replaceNewSn}</span></>}
+      {/* 라인 테이블 */}
+      <div className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)]/40 p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="text-[14px] font-extrabold text-[color:var(--tts-text)]">
+            {t("txnBulk.linesTitle", lang)} <span className="ml-2 rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[12px] text-[color:var(--tts-primary)]">{lines.length}</span>
           </div>
-        </Note>
-      )}
-
-      <div className="mt-4 flex gap-2 border-t border-[color:var(--tts-border)] pt-3">
-        <Button type="submit" disabled={submitting}>{submitting ? t("action.saving", lang) : t("btn.txnRegister", lang)}</Button>
-        <Button type="button" variant="ghost" onClick={() => router.push("/inventory/transactions")}>{t("action.cancel", lang)}</Button>
-      </div>
-
-      {/* S/N 활성계약 모달 */}
-      {showSnModal && snContracts && snContracts.length > 0 && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setShowSnModal(false)}
-        >
-          <div
-            className="w-full max-w-lg rounded-lg border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-2 text-[14px] font-bold text-[color:var(--tts-text)]">
-              {t("modal.snContractTitle", lang)}
-            </div>
-            <div className="mb-3 max-h-[180px] overflow-auto rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] p-2 text-[12px]">
-              <ul className="list-disc pl-4">
-                {snContracts.map((c, i) => (
-                  <li key={i}>
-                    <span className="font-mono font-bold">
-                      {c.kind === "IT" ? c.contractNumber : c.rentalCode}
-                    </span>{" "}
-                    · {pickName(c.client, lang, "companyName")} · {c.item.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="space-y-2 text-[13px]">
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="snIntent"
-                  checked={snIntent === "RECOVER"}
-                  onChange={() => setSnIntent("RECOVER")}
-                />
-                {t("modal.snAction.recover", lang)}
-              </label>
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="snIntent"
-                  checked={snIntent === "REPLACE"}
-                  onChange={() => setSnIntent("REPLACE")}
-                />
-                {t("modal.snAction.replace", lang)}
-              </label>
-              {snIntent === "REPLACE" && (
-                <div className="ml-6 space-y-2 border-l-2 border-[color:var(--tts-border)] pl-3">
-                  <Field label={t("modal.newSnLabel", lang)} required>
-                    <TextInput
-                      value={replaceNewSn}
-                      onChange={(e) => setReplaceNewSn(e.target.value)}
-                      placeholder="SN-NEW-001"
-                    />
-                  </Field>
-                  <Field label={t("modal.newMonthlyFee", lang)}>
-                    <TextInput
-                      type="number"
-                      value={replaceMonthlyFee}
-                      onChange={(e) => setReplaceMonthlyFee(e.target.value)}
-                    />
-                  </Field>
-                </div>
-              )}
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="snIntent"
-                  checked={snIntent === "NORMAL"}
-                  onChange={() => setSnIntent("NORMAL")}
-                />
-                {t("modal.snAction.normal", lang)}
-              </label>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2 border-t border-[color:var(--tts-border)] pt-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSnIntent("NORMAL");
-                  setShowSnModal(false);
-                }}
-              >
-                {t("modal.skip", lang)}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={!snIntent || (snIntent === "REPLACE" && !replaceNewSn)}
-                onClick={() => setShowSnModal(false)}
-              >
-                {t("modal.proceed", lang)}
-              </Button>
-            </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" size="sm" variant="ghost" onClick={() => addLine()}>+ {t("txnBulk.addLine", lang)}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => addLines(10)}>+10</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => addLines(50)}>+50</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => addLines(100)}>+100</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={clearLines}>↻ {t("txnBulk.reset", lang)}</Button>
           </div>
         </div>
-      )}
+
+        <div className="mb-2 text-[11px] text-[color:var(--tts-sub)]">{t("txnBulk.pasteHint", lang)}</div>
+        <textarea
+          rows={2}
+          placeholder={t("txnBulk.pasteAreaPh", lang)}
+          onPaste={handlePaste}
+          className="mb-3 w-full rounded border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px] font-mono text-[color:var(--tts-sub)]"
+        />
+
+        <div className="overflow-auto">
+          <table className="w-full min-w-[1000px] text-[12px]">
+            <thead className="sticky top-0 z-10 bg-[color:var(--tts-card)] text-[11px] font-bold text-[color:var(--tts-sub)]">
+              <tr>
+                <th className="w-10 px-1 py-1 text-left">#</th>
+                <th className="px-1 py-1 text-left">{t("field.item", lang)} *</th>
+                <th className="w-[220px] px-1 py-1 text-left">{t("field.serial", lang)}{snRequiredOnLines ? " *" : ""}</th>
+                <th className="w-20 px-1 py-1 text-right">{t("field.qty", lang)}</th>
+                {isConsumableOut && <th className="w-[180px] px-1 py-1 text-left">{t("field.targetEquipSN", lang)} *</th>}
+                <th className="px-1 py-1 text-left">{t("field.note", lang)}</th>
+                <th className="w-10 px-1 py-1" />
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((row, idx) => (
+                <tr key={row.key} className="border-t border-[color:var(--tts-border)]/40 align-top">
+                  <td className="px-1 py-1 font-mono text-[11px] text-[color:var(--tts-muted)]">{idx + 1}</td>
+                  <td className="px-1 py-1">
+                    <ItemCombobox value={row.itemId} onChange={(v) => updateLine(idx, { itemId: v })} required lang={lang} />
+                  </td>
+                  <td className="px-1 py-1">
+                    <SerialCombobox
+                      value={row.serialNumber}
+                      onChange={(v) => updateLine(idx, { serialNumber: v })}
+                      itemId={row.itemId || undefined}
+                      lang={lang}
+                      required={snRequiredOnLines}
+                    />
+                  </td>
+                  <td className="px-1 py-1">
+                    <TextInput
+                      type="number"
+                      min={1}
+                      value={row.quantity}
+                      onChange={(e) => updateLine(idx, { quantity: e.target.value })}
+                      className="text-right"
+                    />
+                  </td>
+                  {isConsumableOut && (
+                    <td className="px-1 py-1">
+                      <SerialCombobox
+                        value={row.targetEquipmentSN}
+                        onChange={(v) => updateLine(idx, { targetEquipmentSN: v })}
+                        lang={lang}
+                        required
+                      />
+                    </td>
+                  )}
+                  <td className="px-1 py-1">
+                    <TextInput value={row.note} onChange={(e) => updateLine(idx, { note: e.target.value })} />
+                  </td>
+                  <td className="px-1 py-1 text-right">
+                    <button
+                      type="button"
+                      onClick={() => removeLine(idx)}
+                      disabled={lines.length <= 1}
+                      className="rounded border border-[color:var(--tts-border)] px-2 py-1 text-[11px] text-[color:var(--tts-danger)] hover:bg-[color:var(--tts-card-hover)] disabled:opacity-30"
+                      title={t("txnBulk.removeLine", lang)}
+                    >✕</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {error && <div className="rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] font-semibold text-[color:var(--tts-danger)]">{error}</div>}
+      {okMsg && <div className="rounded-md bg-[color:var(--tts-success-dim)] px-3 py-2 text-[12px] font-semibold text-[color:var(--tts-success)]">{okMsg}</div>}
+
+      <div className="mt-3 flex gap-2 border-t border-[color:var(--tts-border)] pt-3">
+        <Button type="submit" disabled={submitting}>
+          {submitting ? t("action.saving", lang) : `${t("btn.txnRegister", lang)} (${lines.filter((l) => l.itemId).length})`}
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => router.back()}>{t("action.back", lang)}</Button>
+      </div>
     </form>
   );
 }

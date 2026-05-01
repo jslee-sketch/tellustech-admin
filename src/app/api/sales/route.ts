@@ -251,6 +251,23 @@ export async function POST(request: Request) {
             }
             // TRADE 프로젝트 — 각 품목라인을 재고 OUT 으로 자동 생성 (fromWarehouseId=선택창고)
             if (projectType === "TRADE" && warehouseId && itemsData.length > 0) {
+              // Phase 1 정책: TRADE 매출 라인은 InventoryItem 마스터 매칭 검증
+              for (const it of itemsData) {
+                if (!it.serialNumber) continue;
+                const master = await tx.inventoryItem.findUnique({
+                  where: { serialNumber: it.serialNumber },
+                  select: { warehouseId: true, archivedAt: true },
+                });
+                if (!master) {
+                  throw new Error(`sn_not_in_inventory:${it.serialNumber}`);
+                }
+                if (master.archivedAt) {
+                  throw new Error(`sn_archived:${it.serialNumber}`);
+                }
+                if (master.warehouseId !== warehouseId) {
+                  throw new Error(`sn_warehouse_mismatch:${it.serialNumber}`);
+                }
+              }
               await tx.inventoryTransaction.createMany({
                 data: itemsData.map((it) => ({
                   companyCode: session.companyCode,
@@ -261,11 +278,22 @@ export async function POST(request: Request) {
                   serialNumber: it.serialNumber,
                   txnType: "OUT" as const,
                   reason: "SALE" as const,
+                  // Phase 1 신규 4축 분류
+                  referenceModule: "TRADE",
+                  subKind: "SALE",
                   quantity: Math.max(1, Math.round(Number(it.quantity))),
                   note: `[자동] 매출 ${sales.salesNumber}`,
                   performedById: session.sub,
                 })),
               });
+              // Phase 1: 매출 시 마스터 archive (소유권 이전)
+              for (const it of itemsData) {
+                if (!it.serialNumber) continue;
+                await tx.inventoryItem.update({
+                  where: { serialNumber: it.serialNumber },
+                  data: { archivedAt: new Date() },
+                }).catch(() => undefined);
+              }
             }
             // PayableReceivable 은 항상 VND 본위로 저장 (다른 모듈/리포트는 전부 VND 로 집계)
             const vndAmount = (Number(totalAmount) * Number(fxRate)).toFixed(2);

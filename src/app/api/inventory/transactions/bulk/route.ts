@@ -323,10 +323,41 @@ export async function POST(request: Request) {
             }
           }
 
-          // 자동 매입·매출 후보 — 본 단계에서는 DRAFT 행 생성은 보류 (별도 PR 모듈에서 처리).
-          // BASE_RULES 결과를 InventoryTransaction.note 또는 별도 테이블 ReceiptCandidate 로 남길지 후속 결정.
-          // Phase 1 에서는 InventoryTransaction 자체에 진리표 결과가 박혀있으므로,
-          // 매출/매입 모듈이 referenceModule + subKind + ownerType 기반으로 후보를 자동 picking 가능.
+          // Phase 2: 자동 매입·매출 후보 (PayableReceivable DRAFT) 생성
+          if (action) {
+            // 매입후보: clientId(외주처/공급처)와 자기 자신을 sourceInventoryTxn 으로 연결
+            if (action.autoPurchaseCandidate) {
+              const supplierCandidate = clientId ?? fromClientId ?? null;
+              if (supplierCandidate) {
+                await tx.payableReceivable.create({
+                  data: {
+                    companyCode: session.companyCode,
+                    kind: "PAYABLE",
+                    clientId: supplierCandidate,
+                    amount: "0", // 금액 미정 — 매입 발행 시점에 입력
+                    status: "DRAFT",
+                    sourceInventoryTxnId: txn.id,
+                  },
+                });
+              }
+            }
+            // 매출후보: clientId(고객) 또는 toClientId
+            if (action.autoSalesCandidate) {
+              const customerCandidate = clientId ?? toClientId ?? null;
+              if (customerCandidate) {
+                await tx.payableReceivable.create({
+                  data: {
+                    companyCode: session.companyCode,
+                    kind: "RECEIVABLE",
+                    clientId: customerCandidate,
+                    amount: "0",
+                    status: "DRAFT",
+                    sourceInventoryTxnId: txn.id,
+                  },
+                });
+              }
+            }
+          }
 
           txns.push({ id: txn.id, ruleScenario: action ? `${action.scenarioId}: ${action.scenarioLabel}` : null });
         }

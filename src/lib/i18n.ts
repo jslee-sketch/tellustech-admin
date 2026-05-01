@@ -3163,6 +3163,34 @@ const DICT: Dict = {
                                 en: "Paste Excel rows here to fill the table…",
                                 ko: "엑셀 데이터 여기에 붙여넣으면 표에 자동 입력됩니다…" },
   "placeholder.headerNote":   { vi: "Ghi chú chung cho cả lô (vd: phiếu nhập số XYZ)", en: "Common note for the batch (e.g. inbound slip XYZ)", ko: "일괄 공통 비고 (예: 입고전표 XYZ)" },
+
+  // ── Phase 2: 입출고 시나리오 라벨 (진리표 4축) ──
+  "txn.scenarioLabel":        { vi: "Kịch bản (tham chiếu / lý do)", en: "Scenario (reference / reason)", ko: "시나리오 (참조 / 사유)" },
+  // IN
+  "txn.combo.rentalInReturn":  { vi: "Cho thuê / Nhập / Kết thúc — Thu hồi tài sản TLS",  en: "Rental / IN / Return — Recover own asset", ko: "렌탈/입고/종료 — 자사 렌탈 회수" },
+  "txn.combo.rentalInBorrow":  { vi: "Cho thuê / Nhập / Mua — Mượn từ NCC ngoài",         en: "Rental / IN / Borrow — Borrow from outsourcer", ko: "렌탈/입고/매입 — 외주에서 빌림" },
+  "txn.combo.repairInRequest": { vi: "Sửa chữa / Nhập / Yêu cầu — KH gửi sửa",            en: "Repair / IN / Request — Customer drop-off", ko: "수리/입고/요청 — 고객 수리 의뢰" },
+  "txn.combo.repairInReturn":  { vi: "Sửa chữa / Nhập / Mua — Thu hồi sau sửa ngoài",     en: "Repair / IN / Return — Receive after external repair", ko: "수리/입고/매입 — 외부수리 후 회수" },
+  "txn.combo.calibInRequest":  { vi: "Hiệu chuẩn / Nhập / Yêu cầu — KH gửi hiệu chuẩn",   en: "Calibration / IN / Request — Customer drop-off", ko: "교정/입고/요청 — 고객 교정 의뢰" },
+  "txn.combo.calibInReturn":   { vi: "Hiệu chuẩn / Nhập / Mua — Thu hồi sau hiệu chuẩn ngoài", en: "Calibration / IN / Return — Receive after external calib", ko: "교정/입고/매입 — 외부교정 후 회수" },
+  "txn.combo.demoInBorrow":    { vi: "Demo / Nhập / Yêu cầu — Mượn từ ngoài",             en: "Demo / IN / Borrow — Borrow from external", ko: "데모/입고/요청 — 외부에서 빌림" },
+  "txn.combo.demoInReturn":    { vi: "Demo / Nhập / Kết thúc — Thu hồi demo TLS",         en: "Demo / IN / Return — Recover own demo unit", ko: "데모/입고/종료 — 자사 데모 회수" },
+  "txn.combo.tradeInPurchase": { vi: "Mua hàng — Tài sản TLS mới",                        en: "Purchase — New self-owned asset", ko: "매입 — 자사 자산 신규" },
+  // OUT
+  "txn.combo.rentalOutReturn": { vi: "Cho thuê / Xuất / Trả — Trả về NCC",                en: "Rental / OUT / Return — Return to outsourcer", ko: "렌탈/출고/반납 — 외주에 반납" },
+  "txn.combo.rentalOutLend":   { vi: "Cho thuê / Xuất / Bán — TLS → KH",                  en: "Rental / OUT / Lend — Self → Customer", ko: "렌탈/출고/매출 — 자사 → 고객" },
+  "txn.combo.repairOutRequest":{ vi: "Sửa chữa / Xuất / Yêu cầu — Gửi cho ngoài sửa",     en: "Repair / OUT / Request — Send to external repair", ko: "수리/출고/의뢰 — 외주 수리 위탁" },
+  "txn.combo.repairOutReturn": { vi: "Sửa chữa / Xuất / Bán — Trả KH + thu phí",          en: "Repair / OUT / Return — Customer return + invoice", ko: "수리/출고/매출 — 고객 반환 + 수리비 청구" },
+  "txn.combo.calibOutRequest": { vi: "Hiệu chuẩn / Xuất / Yêu cầu — Gửi cho ngoài hiệu chuẩn", en: "Calib / OUT / Request — Send to external calib", ko: "교정/출고/의뢰 — 외부 교정 위탁" },
+  "txn.combo.calibOutReturn":  { vi: "Hiệu chuẩn / Xuất / Bán — Trả KH + thu phí",        en: "Calib / OUT / Return — Customer return + invoice", ko: "교정/출고/매출 — 고객 반환 + 교정비 청구" },
+  "txn.combo.demoOutLend":     { vi: "Demo / Xuất / Yêu cầu — TLS → KH",                  en: "Demo / OUT / Lend — Self → Customer", ko: "데모/출고/요청 — 자사 → 고객" },
+  "txn.combo.demoOutReturn":   { vi: "Demo / Xuất / Kết thúc — Trả về ngoài",             en: "Demo / OUT / Return — Return to external", ko: "데모/출고/종료 — 외부에 반환" },
+  "txn.combo.consumableOut":   { vi: "Xuất vật tư (linh kiện AS, …)",                     en: "Consumable Out (AS parts, …)", ko: "소모품 출고 (AS 부품 등)" },
+  // TRANSFER
+  "txn.combo.transferRental":  { vi: "Cho thuê — Pass-through (KH A → KH B)",             en: "Rental — Pass-through (A → B)", ko: "렌탈 패스스루 (A 거래처 → B 거래처)" },
+  "txn.combo.transferRepair":  { vi: "Sửa chữa — Pass-through ủy thác",                   en: "Repair — Pass-through outsourcing", ko: "수리 위탁 패스스루" },
+  "txn.combo.transferCalib":   { vi: "Hiệu chuẩn — Pass-through ủy thác",                 en: "Calibration — Pass-through outsourcing", ko: "교정 위탁 패스스루" },
+  "txn.combo.transferDemo":    { vi: "Demo — Pass-through",                               en: "Demo — Pass-through", ko: "데모 패스스루" },
   "portal.autoTranslateHint": { vi: "ⓘ Nội dung sẽ được tự động dịch sang 3 ngôn ngữ.", en: "ⓘ Content will be auto-translated to 3 languages.", ko: "ⓘ 입력 내용은 자동으로 3언어로 번역됩니다." },
 
   // ── master items inline ──

@@ -26,40 +26,35 @@ const newKey = () => `r${++_key}`;
 const blankLine = (): LineRow => ({ key: newKey(), itemId: "", serialNumber: "", quantity: "1", targetEquipmentSN: "", note: "" });
 
 // 진리표 cascading: txnType → 가능한 (referenceModule, subKind) 조합
-type Combo = { refModule: string; subKind: string; label: string; ownerHint?: "COMPANY" | "EXTERNAL" | "AUTO" };
+type Combo = { refModule: string; subKind: string; labelKey: string; ownerHint?: "COMPANY" | "EXTERNAL" | "AUTO" };
 const COMBOS_BY_TYPE: Record<"IN" | "OUT" | "TRANSFER", Combo[]> = {
   IN: [
-    // 렌탈
-    { refModule: "RENTAL", subKind: "RETURN", label: "렌탈/입고/종료 — 자사 렌탈 회수", ownerHint: "COMPANY" },
-    { refModule: "RENTAL", subKind: "BORROW", label: "렌탈/입고/매입 — 외주에서 빌림", ownerHint: "EXTERNAL" },
-    // 수리
-    { refModule: "REPAIR", subKind: "REQUEST", label: "수리/입고/요청 — 고객 수리 의뢰", ownerHint: "EXTERNAL" },
-    { refModule: "REPAIR", subKind: "RETURN", label: "수리/입고/매입 — 외부수리 후 회수", ownerHint: "AUTO" },
-    // 교정
-    { refModule: "CALIB", subKind: "REQUEST", label: "교정/입고/요청 — 고객 교정 의뢰", ownerHint: "EXTERNAL" },
-    { refModule: "CALIB", subKind: "RETURN", label: "교정/입고/매입 — 외부교정 후 회수", ownerHint: "AUTO" },
-    // 데모
-    { refModule: "DEMO", subKind: "BORROW", label: "데모/입고/요청 — 외부에서 빌림", ownerHint: "EXTERNAL" },
-    { refModule: "DEMO", subKind: "RETURN", label: "데모/입고/종료 — 자사 데모 회수", ownerHint: "COMPANY" },
-    // 매입 (TRADE) - 일반적으로 Purchase 모듈 사용 권장
-    { refModule: "TRADE", subKind: "PURCHASE", label: "매입 — 자사 자산 신규", ownerHint: "COMPANY" },
+    { refModule: "RENTAL", subKind: "RETURN", labelKey: "txn.combo.rentalInReturn", ownerHint: "COMPANY" },
+    { refModule: "RENTAL", subKind: "BORROW", labelKey: "txn.combo.rentalInBorrow", ownerHint: "EXTERNAL" },
+    { refModule: "REPAIR", subKind: "REQUEST", labelKey: "txn.combo.repairInRequest", ownerHint: "EXTERNAL" },
+    { refModule: "REPAIR", subKind: "RETURN", labelKey: "txn.combo.repairInReturn", ownerHint: "AUTO" },
+    { refModule: "CALIB", subKind: "REQUEST", labelKey: "txn.combo.calibInRequest", ownerHint: "EXTERNAL" },
+    { refModule: "CALIB", subKind: "RETURN", labelKey: "txn.combo.calibInReturn", ownerHint: "AUTO" },
+    { refModule: "DEMO", subKind: "BORROW", labelKey: "txn.combo.demoInBorrow", ownerHint: "EXTERNAL" },
+    { refModule: "DEMO", subKind: "RETURN", labelKey: "txn.combo.demoInReturn", ownerHint: "COMPANY" },
+    { refModule: "TRADE", subKind: "PURCHASE", labelKey: "txn.combo.tradeInPurchase", ownerHint: "COMPANY" },
   ],
   OUT: [
-    { refModule: "RENTAL", subKind: "RETURN", label: "렌탈/출고/반납 — 외주에 반납", ownerHint: "EXTERNAL" },
-    { refModule: "RENTAL", subKind: "LEND", label: "렌탈/출고/매출 — 자사 → 고객", ownerHint: "COMPANY" },
-    { refModule: "REPAIR", subKind: "REQUEST", label: "수리/출고/의뢰 — 외주 수리 위탁", ownerHint: "AUTO" },
-    { refModule: "REPAIR", subKind: "RETURN", label: "수리/출고/매출 — 고객 반환 + 수리비 청구", ownerHint: "EXTERNAL" },
-    { refModule: "CALIB", subKind: "REQUEST", label: "교정/출고/의뢰 — 외부 교정 위탁", ownerHint: "AUTO" },
-    { refModule: "CALIB", subKind: "RETURN", label: "교정/출고/매출 — 고객 반환 + 교정비 청구", ownerHint: "EXTERNAL" },
-    { refModule: "DEMO", subKind: "LEND", label: "데모/출고/요청 — 자사 → 고객", ownerHint: "COMPANY" },
-    { refModule: "DEMO", subKind: "RETURN", label: "데모/출고/종료 — 외부에 반환", ownerHint: "EXTERNAL" },
-    { refModule: "CONSUMABLE", subKind: "CONSUMABLE", label: "소모품 출고 (AS 부품 등)", ownerHint: "COMPANY" },
+    { refModule: "RENTAL", subKind: "RETURN", labelKey: "txn.combo.rentalOutReturn", ownerHint: "EXTERNAL" },
+    { refModule: "RENTAL", subKind: "LEND", labelKey: "txn.combo.rentalOutLend", ownerHint: "COMPANY" },
+    { refModule: "REPAIR", subKind: "REQUEST", labelKey: "txn.combo.repairOutRequest", ownerHint: "AUTO" },
+    { refModule: "REPAIR", subKind: "RETURN", labelKey: "txn.combo.repairOutReturn", ownerHint: "EXTERNAL" },
+    { refModule: "CALIB", subKind: "REQUEST", labelKey: "txn.combo.calibOutRequest", ownerHint: "AUTO" },
+    { refModule: "CALIB", subKind: "RETURN", labelKey: "txn.combo.calibOutReturn", ownerHint: "EXTERNAL" },
+    { refModule: "DEMO", subKind: "LEND", labelKey: "txn.combo.demoOutLend", ownerHint: "COMPANY" },
+    { refModule: "DEMO", subKind: "RETURN", labelKey: "txn.combo.demoOutReturn", ownerHint: "EXTERNAL" },
+    { refModule: "CONSUMABLE", subKind: "CONSUMABLE", labelKey: "txn.combo.consumableOut", ownerHint: "COMPANY" },
   ],
   TRANSFER: [
-    { refModule: "RENTAL", subKind: "OTHER", label: "렌탈 패스스루 (A 거래처 → B 거래처)" },
-    { refModule: "REPAIR", subKind: "OTHER", label: "수리 위탁 패스스루" },
-    { refModule: "CALIB", subKind: "OTHER", label: "교정 위탁 패스스루" },
-    { refModule: "DEMO", subKind: "OTHER", label: "데모 패스스루" },
+    { refModule: "RENTAL", subKind: "OTHER", labelKey: "txn.combo.transferRental" },
+    { refModule: "REPAIR", subKind: "OTHER", labelKey: "txn.combo.transferRepair" },
+    { refModule: "CALIB", subKind: "OTHER", labelKey: "txn.combo.transferCalib" },
+    { refModule: "DEMO", subKind: "OTHER", labelKey: "txn.combo.transferDemo" },
   ],
 };
 
@@ -237,12 +232,12 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
             ]}
           />
         </Field>
-        <Field label="시나리오 (참조 / 사유)" required width="100%">
+        <Field label={t("txn.scenarioLabel", lang)} required width="100%">
           <Select
             required
             value={comboKey}
             onChange={(e) => setComboKey(e.target.value)}
-            options={combos.map((c) => ({ value: `${c.refModule}|${c.subKind}`, label: c.label }))}
+            options={combos.map((c) => ({ value: `${c.refModule}|${c.subKind}`, label: t(c.labelKey, lang) }))}
           />
         </Field>
       </Row>

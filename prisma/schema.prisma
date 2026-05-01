@@ -252,6 +252,7 @@ enum PayableReceivableKind {
 }
 
 enum PayableReceivableStatus {
+  DRAFT // Phase 2: 입출고에서 자동 생성된 후보. 거래처별 묶기·확정 후 OPEN 으로 전환.
   OPEN
   PARTIAL
   PAID
@@ -1003,6 +1004,7 @@ model InventoryTransaction {
   toWarehouse   Warehouse?      @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
   client        Client?         @relation("InventoryTxnClient", fields: [clientId], references: [id])
   dispatchPart  AsDispatchPart? @relation("DispatchPartTxn")
+  prDrafts      PayableReceivable[] @relation("PrFromInvTxn")
 
   @@index([companyCode, performedAt])
   @@index([serialNumber])
@@ -1554,6 +1556,11 @@ model PayableReceivable {
 
   // 완료 추적 — 모두 입금/지급되면 자동 set
   completedAt DateTime?
+
+  // Phase 2: 입출고에서 자동 생성된 DRAFT 후보가 어떤 InventoryTransaction 라인을 참조하는지.
+  // 같은 거래처 DRAFT 끼리 묶어 정식 발행할 때 이 링크로 트레이스.
+  sourceInventoryTxnId String?
+  sourceInventoryTxn   InventoryTransaction? @relation("PrFromInvTxn", fields: [sourceInventoryTxnId], references: [id])
 
   sales          Sales?         @relation("SalesReceivable", fields: [salesId], references: [id])
   purchase       Purchase?      @relation("PurchasePayable", fields: [purchaseId], references: [id])

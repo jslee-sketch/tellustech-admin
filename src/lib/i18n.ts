@@ -3186,6 +3186,7 @@ const DICT: Dict = {
   "txn.combo.demoOutLend":     { vi: "Demo / Xuất / Yêu cầu — TLS → KH",                  en: "Demo / OUT / Lend — Self → Customer", ko: "데모/출고/요청 — 자사 → 고객" },
   "txn.combo.demoOutReturn":   { vi: "Demo / Xuất / Kết thúc — Trả về ngoài",             en: "Demo / OUT / Return — Return to external", ko: "데모/출고/종료 — 외부에 반환" },
   "txn.combo.consumableOut":   { vi: "Xuất vật tư (linh kiện AS, …)",                     en: "Consumable Out (AS parts, …)", ko: "소모품 출고 (AS 부품 등)" },
+  "txn.combo.tradeOutSale":    { vi: "Bán hàng — Xuất hàng tài sản TLS",                  en: "Sale — Outbound own asset", ko: "매출 — 자사 자산 출고" },
   // TRANSFER
   "txn.combo.transferRental":  { vi: "Cho thuê — Pass-through (KH A → KH B)",             en: "Rental — Pass-through (A → B)", ko: "렌탈 패스스루 (A 거래처 → B 거래처)" },
   "txn.combo.transferRepair":  { vi: "Sửa chữa — Pass-through ủy thác",                   en: "Repair — Pass-through outsourcing", ko: "수리 위탁 패스스루" },
@@ -3202,6 +3203,26 @@ const DICT: Dict = {
   // ── 포털 — QR 매칭 메시지 ──
   "portal.asReq.snNotInContract": { vi: "S/N {sn} không có trong các thiết bị thuê của bạn.", en: "S/N {sn} not found among your rented equipment.", ko: "S/N {sn} 은(는) 회원님의 렌탈 장비에 없습니다." },
   "portal.supplies.snNotMatched": { vi: "Không tìm thấy thiết bị khớp với {sn}.", en: "No equipment matched {sn}.", ko: "{sn} 에 해당하는 장비를 찾을 수 없습니다." },
+  "scan.guideMulti":          { vi: "📷 Quét nhiều mã QR liên tục — mỗi lần quét sẽ thêm 1 vật phẩm vào danh sách. Sau khi quét xong, chọn kịch bản (gợi ý tự động) và đăng ký 1 lần cho tất cả.",
+                                en: "📷 Scan multiple QR codes in a row — each scan adds an item to the list. When done, pick a scenario (auto-suggested) and submit all at once.",
+                                ko: "📷 여러 QR 을 연속 스캔하면 항목으로 누적됩니다. 다 끝난 뒤 시나리오 (자동 추천) 선택 → 일괄 등록." },
+  "scan.scannedCount":        { vi: "Đã quét: {n}",                en: "Scanned: {n}",               ko: "스캔: {n}건" },
+  "scan.scannedListTitle":    { vi: "Vật phẩm đã quét",            en: "Scanned items",              ko: "스캔된 항목" },
+  "scan.added":               { vi: "Đã thêm: {sn} (tổng {n})",     en: "Added: {sn} (total {n})",   ko: "추가됨: {sn} (총 {n}건)" },
+  "scan.alreadyAdded":        { vi: "{sn} đã có trong danh sách.", en: "{sn} already in list.",      ko: "{sn} 은(는) 이미 목록에 있습니다." },
+  "scan.archived":            { vi: "{sn} đã lưu trữ — không xử lý.", en: "{sn} is archived — skipped.", ko: "{sn} 은(는) archive 되어 처리 불가." },
+  "scan.newSnUseForm":        { vi: "{sn} chưa có trong kho — dùng màn hình đăng ký nhập kho.", en: "{sn} not in stock yet — use the new-IN form.", ko: "{sn} 마스터에 없음 — 입출고 등록 페이지에서 신규 IN 으로 등록 필요." },
+  "scan.clearAll":            { vi: "Xóa tất cả",                  en: "Clear all",                  ko: "전체 삭제" },
+  "scan.noScannedItems":      { vi: "Chưa có vật phẩm nào.",       en: "No scanned items yet.",      ko: "스캔된 항목이 없습니다." },
+  "scan.selectScenario":      { vi: "Chọn kịch bản",                en: "Select a scenario",          ko: "시나리오를 선택하세요" },
+  "scan.noRecForType":        { vi: "Loại đã chọn không khớp với gợi ý của vật phẩm đã quét.",
+                                en: "Selected type has no matching recommendation for the scanned items.",
+                                ko: "선택한 유형에 맞는 추천 시나리오가 없습니다 — 스캔 항목들의 상태와 일치하지 않습니다." },
+  "scan.guide.purchaseSalesBlocked": {
+    vi: "Mua hàng / Bán hàng / Trả hàng được xử lý trong module Mua / Bán. Màn hình này dành cho nhập khác, xuất vật tư, và chuyển kho.",
+    en: "Purchase / Sale / Purchase-return are handled in their own modules. This screen is for other-IN, consumable-OUT, and transfer flows.",
+    ko: "매입/매출/매입반품은 매입·매출 모듈에서 처리. 이 화면은 기타입고·소모품출고·이동(교정/수리/렌탈/시연) 전용.",
+  },
   "portal.autoTranslateHint": { vi: "ⓘ Nội dung sẽ được tự động dịch sang 3 ngôn ngữ.", en: "ⓘ Content will be auto-translated to 3 languages.", ko: "ⓘ 입력 내용은 자동으로 3언어로 번역됩니다." },
 
   // ── master items inline ──

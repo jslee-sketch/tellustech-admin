@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, Badge } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 export function SurveysAdminClient({ lang }: { lang: Lang }) {
   const [items, setItems] = useState<any[]>([]);
@@ -75,7 +75,7 @@ export function SurveysAdminClient({ lang }: { lang: Lang }) {
                 {items.map((s) => (
                   <tr key={s.id} className="border-b border-[color:var(--tts-border)]/50">
                     <td className="px-2 py-1.5 font-mono">{s.surveyCode}</td>
-                    <td className="px-2 py-1.5">{s.titleKo || s.titleVi || s.titleEn}</td>
+                    <td className="px-2 py-1.5">{pickName(s, lang, "title")}</td>
                     <td className="px-2 py-1.5">{String(s.startDate).slice(0, 10)} ~ {String(s.endDate).slice(0, 10)}</td>
                     <td className="px-2 py-1.5 text-right font-mono">{s.rewardPoints.toLocaleString()}d</td>
                     <td className="px-2 py-1.5 text-right">{s._count.responses}</td>

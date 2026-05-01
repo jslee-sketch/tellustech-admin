@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, ClientCombobox } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 type Tab = "config" | "grant" | "rewards" | "history" | "policies";
 
@@ -123,7 +123,7 @@ function PoliciesTab({ lang }: { lang: Lang }) {
           {filtered.map((c) => (
             <tr key={c.id} className="border-b border-[color:var(--tts-border)]/50">
               <td className="px-2 py-1.5 font-mono">{c.clientCode}</td>
-              <td className="px-2 py-1.5">{c.companyNameKo ?? c.companyNameVi}</td>
+              <td className="px-2 py-1.5">{pickName(c, lang, "companyName")}</td>
               <td className="px-2 py-1.5 text-[11px]">
                 {c.portalUsername ? (
                   <span className={c.portalActive ? "font-mono" : "font-mono text-[color:var(--tts-muted)] line-through"}>

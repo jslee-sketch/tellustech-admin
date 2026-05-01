@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { t } from "@/lib/i18n";
+import { pickName, t } from "@/lib/i18n";
 import { SalesConfirmClient } from "./sales-confirm-client";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +34,7 @@ export default async function SalesConfirmPage() {
             id: x.id,
             salesNumber: x.salesNumber,
             clientCode: x.client.clientCode,
-            clientName: x.client.companyNameKo ?? x.client.companyNameVi,
+            clientName: pickName(x.client, s.language, "companyName"),
             projectCode: x.project?.projectCode ?? null,
             totalAmount: (Number(x.totalAmount) * Number(x.fxRate)).toFixed(2),
             billingMonth: x.billingMonth ? x.billingMonth.toISOString().slice(0, 7) : null,

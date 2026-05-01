@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 type Question = { id: string; type: "RATING" | "CHOICE" | "TEXT"; textKo?: string; textVi?: string; textEn?: string; options?: { value: string; textKo?: string; textVi?: string; textEn?: string }[] };
 
@@ -44,7 +44,7 @@ export function SurveysClient({ lang }: { lang: Lang }) {
         ) : (
           <div className="space-y-3">
             {items.map((s) => (
-              <Card key={s.id} title={s.titleKo || s.titleVi || s.titleEn}>
+              <Card key={s.id} title={pickName(s, lang, "title")}>
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[color:var(--tts-sub)]">{String(s.startDate).slice(0, 10)} ~ {String(s.endDate).slice(0, 10)}</span>
                   <span className="font-bold text-[color:var(--tts-warn)]">🏆 +{s.rewardPoints}d</span>
@@ -64,11 +64,11 @@ export function SurveysClient({ lang }: { lang: Lang }) {
         {openSurvey && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setOpenSurvey(null)}>
             <div className="w-full max-w-lg rounded-lg bg-[color:var(--tts-card)] p-5" onClick={(e) => e.stopPropagation()}>
-              <h2 className="mb-3 text-lg font-bold">{openSurvey.titleKo || openSurvey.titleVi || openSurvey.titleEn}</h2>
+              <h2 className="mb-3 text-lg font-bold">{pickName(openSurvey, lang, "title")}</h2>
               <div className="max-h-96 space-y-3 overflow-y-auto">
                 {(openSurvey.questions as Question[]).map((q) => (
                   <div key={q.id}>
-                    <div className="mb-1 text-[13px] font-bold">{q.textKo || q.textVi || q.textEn}</div>
+                    <div className="mb-1 text-[13px] font-bold">{pickName(q, lang, "text")}</div>
                     {q.type === "RATING" && (
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((n) => (
@@ -81,7 +81,7 @@ export function SurveysClient({ lang }: { lang: Lang }) {
                         {q.options.map((o) => (
                           <label key={o.value} className="flex items-center gap-2 text-[12px]">
                             <input type="radio" name={q.id} checked={answers[q.id] === o.value} onChange={() => setAnswers({ ...answers, [q.id]: o.value })} />
-                            {o.textKo || o.textVi || o.textEn}
+                            {pickName(o, lang, "text")}
                           </label>
                         ))}
                       </div>

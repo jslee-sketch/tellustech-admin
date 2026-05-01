@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, Badge } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 const CATEGORIES = ["MARKETING", "COMPANY_NEWS", "KOREA_NEWS", "VIETNAM_NEWS", "INDUSTRY_NEWS", "TIP", "COMMUNITY"] as const;
 type Status = "all" | "draft" | "published";
@@ -145,8 +145,8 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 function PostRow({ post, lang, onClick, onTogglePublish, onTogglePinned, onDelete, onCleanup }: { post: Post; lang: Lang; onClick: () => void; onTogglePublish: () => void; onTogglePinned: () => void; onDelete: () => void; onCleanup: () => void }) {
-  const title = post.titleKo || post.titleVi || post.titleEn || `(${t("post.noTitle", lang)})`;
-  const preview = (post.bodyKo || post.bodyVi || post.bodyEn || "").slice(0, 100);
+  const title = pickName(post, lang, "title") || `(${t("post.noTitle", lang)})`;
+  const preview = pickName(post, lang, "body").slice(0, 100);
   // 본문에 ```json 또는 reasoning 흔적이 있으면 정리 권장
   const needsCleanup = post.isAiGenerated && (post.bodyKo?.includes("```json") || post.bodyKo?.includes("\"title\":\""));
   return (

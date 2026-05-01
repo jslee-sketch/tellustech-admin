@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { t } from "@/lib/i18n";
+import { pickName, t } from "@/lib/i18n";
 import { PermissionsClient } from "./permissions-client";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export default async function PermissionsPage() {
           users={users.map(u => ({
             id: u.id, username: u.username, role: u.role,
             empCode: u.employee?.employeeCode ?? null,
-            name: u.employee?.nameKo ?? u.employee?.nameVi ?? u.username,
+            name: u.employee ? (pickName(u.employee, session.language) || u.username) : u.username,
           }))}
         />
       </div>

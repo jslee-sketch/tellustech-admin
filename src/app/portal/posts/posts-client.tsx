@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { Card, Badge } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 const CATEGORIES = ["", "MARKETING", "COMPANY_NEWS", "KOREA_NEWS", "VIETNAM_NEWS", "INDUSTRY_NEWS", "TIP", "COMMUNITY"] as const;
 
@@ -65,13 +65,13 @@ export function PostsClient({ lang }: { lang: Lang }) {
                     <span className="flex items-center gap-2 text-[13px]">
                       {p.isPinned && <span className="text-[color:var(--tts-warn)]">📌</span>}
                       <Badge tone="primary">{p.category}</Badge>
-                      <span className="font-bold">{p.titleKo || p.titleVi || p.titleEn}</span>
+                      <span className="font-bold">{pickName(p, lang, "title")}</span>
                       {p.bonusPoints > 0 && <Badge tone="warn">{t("portal.posts.bonusBadge", lang).replace("{n}", String(p.bonusPoints))}</Badge>}
                     </span>
                     <span className="text-[11px] text-[color:var(--tts-muted)]">{String(p.publishedAt ?? p.createdAt).slice(0, 10)} · {p.viewCount} {t("portal.posts.viewCount", lang)}</span>
                   </button>
                   {openId === p.id && openContent && (
-                    <div className="mt-2 rounded bg-[color:var(--tts-card-hover)] p-3 text-[13px] whitespace-pre-wrap">{renderWithLinks(openContent.bodyKo || openContent.bodyVi || openContent.bodyEn || "")}</div>
+                    <div className="mt-2 rounded bg-[color:var(--tts-card-hover)] p-3 text-[13px] whitespace-pre-wrap">{renderWithLinks(pickName(openContent, lang, "body"))}</div>
                   )}
                 </li>
               ))}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Field, TextInput, Textarea, Badge } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 type ContactLog = {
   id: string;
@@ -221,7 +221,7 @@ export function PrDetailClient(props: Props) {
                   <td className="px-2 py-1">{p.method ?? "-"}</td>
                   <td className="px-2 py-1 font-mono text-[11px]">{p.reference ?? "-"}</td>
                   <td className="px-2 py-1">{p.note ?? "-"}</td>
-                  <td className="px-2 py-1">{p.recordedBy ? `${p.recordedBy.employeeCode} ${p.recordedBy.nameKo ?? p.recordedBy.nameVi}` : "-"}</td>
+                  <td className="px-2 py-1">{p.recordedBy ? `${p.recordedBy.employeeCode} ${pickName(p.recordedBy, lang)}` : "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -247,7 +247,7 @@ export function PrDetailClient(props: Props) {
               <li key={l.id} className="rounded border border-[color:var(--tts-border)] p-3 text-[12px]">
                 <div className="mb-1 flex items-center justify-between text-[11px] text-[color:var(--tts-sub)]">
                   <span>{new Date(l.recordedAt).toISOString().slice(0,16).replace('T',' ')}</span>
-                  {l.contactedBy && <span>{l.contactedBy.employeeCode} {l.contactedBy.nameKo ?? l.contactedBy.nameVi}</span>}
+                  {l.contactedBy && <span>{l.contactedBy.employeeCode} {pickName(l.contactedBy, lang)}</span>}
                 </div>
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   {(() => {

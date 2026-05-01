@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, Field, Note, Row, TextInput } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 type YieldBadgeT = "BLUE" | "GREEN" | "YELLOW" | "ORANGE" | "RED";
 
@@ -238,7 +238,7 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
                           >
                             <td className="px-2 py-1.5 text-center text-[color:var(--tts-muted)]">{expanded ? "▾" : "▸"}</td>
                             <td className="px-2 py-1.5 font-mono font-bold text-[color:var(--tts-primary)]">{grp.contract.contractNumber}</td>
-                            <td className="px-2 py-1.5">{grp.contract.client.companyNameKo ?? grp.contract.client.companyNameVi ?? grp.contract.client.clientCode}</td>
+                            <td className="px-2 py-1.5">{pickName(grp.contract.client, lang, "companyName") || grp.contract.client.clientCode}</td>
                             <td className="px-2 py-1.5 text-right font-mono">{grp.equipments.length}</td>
                             <td className="px-2 py-1.5 text-right font-mono font-bold">{minRate}%</td>
                             <td className="px-2 py-1.5">
@@ -315,7 +315,7 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
                   <tr key={it.id} className="border-b border-[color:var(--tts-border)]/50">
                     <td className="px-2 py-1.5 font-mono text-[11px]">{it.contract.contractNumber}</td>
                     <td className="px-2 py-1.5 text-[11px]">{it.periodStart.slice(0, 10)} ~ {it.periodEnd.slice(0, 10)}</td>
-                    <td className="px-2 py-1.5">{it.contract.client.companyNameKo ?? it.contract.client.companyNameVi ?? it.contract.client.clientCode}</td>
+                    <td className="px-2 py-1.5">{pickName(it.contract.client, lang, "companyName") || it.contract.client.clientCode}</td>
                     <td className="px-2 py-1.5 font-mono text-[11px]">{it.equipment.serialNumber} · <span className="text-[color:var(--tts-sub)]">{it.equipment.item.name}</span></td>
                     <td className="px-2 py-1.5 text-right font-mono font-bold text-[color:var(--tts-danger)]">{it.yieldRateBw}%</td>
                     <td className="px-2 py-1.5 text-[11px]">

@@ -10,11 +10,23 @@ const KINDS = [
   { v: "SUGGEST", emoji: "💡" },
 ] as const;
 
+function pick3<T extends Record<string, unknown>>(rec: T | null | undefined, lang: Lang, base: string): string {
+  if (!rec) return "";
+  const order: Lang[] = lang === "VI" ? ["VI", "EN", "KO"] : lang === "EN" ? ["EN", "VI", "KO"] : ["KO", "VI", "EN"];
+  for (const l of order) {
+    const k = `${base}${l[0]}${l[1].toLowerCase()}`;
+    const v = rec[k as keyof T];
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return "";
+}
+
 export function FeedbackClient({ lang }: { lang: Lang }) {
   const [items, setItems] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [form, setForm] = useState({ kind: "PRAISE" as "PRAISE" | "IMPROVE" | "SUGGEST", contentKo: "", contentVi: "", contentEn: "", originalLang: lang, targetEmployeeId: "" });
+  const [kind, setKind] = useState<"PRAISE" | "IMPROVE" | "SUGGEST">("PRAISE");
+  const [content, setContent] = useState("");
 
   async function refetch() {
     const r = await fetch("/api/portal/feedback", { credentials: "same-origin" });
@@ -24,20 +36,23 @@ export function FeedbackClient({ lang }: { lang: Lang }) {
   useEffect(() => { refetch(); }, []);
 
   async function submit() {
+    if (!content.trim()) return;
     setSubmitting(true); setMsg(null);
     try {
+      const body: Record<string, unknown> = {
+        kind,
+        originalLang: lang,
+        contentKo: lang === "KO" ? content : null,
+        contentVi: lang === "VI" ? content : null,
+        contentEn: lang === "EN" ? content : null,
+      };
       const r = await fetch("/api/portal/feedback", {
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
-        body: JSON.stringify({
-          kind: form.kind,
-          contentKo: form.contentKo || null, contentVi: form.contentVi || null, contentEn: form.contentEn || null,
-          originalLang: form.originalLang,
-          targetEmployeeId: form.targetEmployeeId || null,
-        }),
+        body: JSON.stringify(body),
       });
       const j = await r.json();
       if (!r.ok) { setMsg(j?.error ?? "fail"); return; }
-      setForm({ ...form, contentKo: "", contentVi: "", contentEn: "" });
+      setContent("");
       if (j.pointsEarned) setMsg(`🏆 +${j.pointsEarned}d`);
       refetch();
     } finally { setSubmitting(false); }
@@ -54,19 +69,16 @@ export function FeedbackClient({ lang }: { lang: Lang }) {
             <div className="flex gap-3">
               {KINDS.map((k) => (
                 <label key={k.v} className="flex cursor-pointer items-center gap-1 text-[13px]">
-                  <input type="radio" checked={form.kind === k.v} onChange={() => setForm({ ...form, kind: k.v })} />
+                  <input type="radio" checked={kind === k.v} onChange={() => setKind(k.v)} />
                   {k.emoji} {t(`portal.feedback.${k.v.toLowerCase()}`, lang)}
                 </label>
               ))}
             </div>
           </div>
-          <div className="space-y-1">
-            <textarea rows={2} value={form.contentKo} placeholder={"KO " + t("portal.feedback.placeholder", lang)} onChange={(e) => setForm({ ...form, contentKo: e.target.value })} className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
-            <textarea rows={2} value={form.contentVi} placeholder="VI" onChange={(e) => setForm({ ...form, contentVi: e.target.value })} className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
-            <textarea rows={2} value={form.contentEn} placeholder="EN" onChange={(e) => setForm({ ...form, contentEn: e.target.value })} className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
-          </div>
+          <textarea rows={3} value={content} placeholder={t("portal.feedback.placeholder", lang)} onChange={(e) => setContent(e.target.value)} className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
+          <div className="mt-1 text-[10px] text-[color:var(--tts-muted)]">{t("portal.autoTranslateHint", lang)}</div>
           <div className="mt-3 flex items-center gap-3">
-            <button onClick={submit} disabled={submitting || !(form.contentKo || form.contentVi || form.contentEn)} className="rounded bg-[color:var(--tts-accent)] px-4 py-1.5 text-[12px] font-bold text-white disabled:opacity-50">{submitting ? "..." : t("portal.feedback.submit", lang)}</button>
+            <button onClick={submit} disabled={submitting || !content.trim()} className="rounded bg-[color:var(--tts-accent)] px-4 py-1.5 text-[12px] font-bold text-white disabled:opacity-50">{submitting ? "..." : t("portal.feedback.submit", lang)}</button>
             {msg && <span className="text-[12px] text-[color:var(--tts-success)]">{msg}</span>}
           </div>
         </Card>
@@ -81,8 +93,8 @@ export function FeedbackClient({ lang }: { lang: Lang }) {
                       <Badge tone={f.kind === "PRAISE" ? "success" : f.kind === "IMPROVE" ? "warn" : "primary"}>{KINDS.find((k) => k.v === f.kind)?.emoji} {f.kind}</Badge>
                       <span className="text-[10px] text-[color:var(--tts-muted)]">{f.feedbackCode} · {String(f.createdAt).slice(0, 10)}</span>
                     </div>
-                    <div className="text-[12px]">{f.contentKo || f.contentVi || f.contentEn}</div>
-                    {f.replyKo && <div className="mt-2 rounded bg-[color:var(--tts-card-hover)] p-2 text-[12px]"><span className="text-[10px] font-bold text-[color:var(--tts-muted)]">{t("portal.feedback.reply", lang)}:</span> {f.replyKo}</div>}
+                    <div className="text-[12px]">{pick3(f, lang, "content")}</div>
+                    {(f.replyKo || f.replyVi || f.replyEn) && <div className="mt-2 rounded bg-[color:var(--tts-card-hover)] p-2 text-[12px]"><span className="text-[10px] font-bold text-[color:var(--tts-muted)]">{t("portal.feedback.reply", lang)}:</span> {pick3(f, lang, "reply")}</div>}
                   </li>
                 ))}
               </ul>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui";
-import { t, type Lang } from "@/lib/i18n";
+import { pickName, t, type Lang } from "@/lib/i18n";
 
 export function AccountClient({ lang }: { lang: Lang }) {
   const [me, setMe] = useState<any>(null);
@@ -54,7 +54,7 @@ export function AccountClient({ lang }: { lang: Lang }) {
 
         <Card title={t("portal.acc.infoCard", lang)}>
           <div className="space-y-1 text-[13px]">
-            <div><span className="text-[color:var(--tts-muted)]">{t("portal.acc.client", lang)}:</span> <span className="font-bold">{me.clientAccount?.companyNameKo ?? me.clientAccount?.companyNameVi}</span> <span className="text-[color:var(--tts-muted)]">({me.clientAccount?.clientCode})</span></div>
+            <div><span className="text-[color:var(--tts-muted)]">{t("portal.acc.client", lang)}:</span> <span className="font-bold">{pickName(me.clientAccount, lang, "companyName")}</span> <span className="text-[color:var(--tts-muted)]">({me.clientAccount?.clientCode})</span></div>
             <div><span className="text-[color:var(--tts-muted)]">{t("portal.acc.portalId", lang)}:</span> <span className="font-mono">{me.username}</span></div>
             <div><span className="text-[color:var(--tts-muted)]">{t("portal.acc.statusLabel", lang)}:</span> {me.isActive ? <span className="text-[color:var(--tts-success)]">{t("portal.acc.active", lang)}</span> : <span className="text-[color:var(--tts-danger)]">{t("portal.acc.inactive", lang)}</span>}</div>
             <div><span className="text-[color:var(--tts-muted)]">{t("portal.acc.lastLogin", lang)}:</span> {me.lastLoginAt ? new Date(me.lastLoginAt).toLocaleString(lang === "VI" ? "vi-VN" : lang === "EN" ? "en-US" : "ko-KR") : "—"}</div>

@@ -53,6 +53,7 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
   const [editing, setEditing] = useState<string | null>(null); // inv item id
   const [newRemark, setNewRemark] = useState("");
   const [newStatus, setNewStatus] = useState<string>("NORMAL");
+  const [newStateNote, setNewStateNote] = useState("");
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
@@ -89,13 +90,19 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
     const res = await fetch(`/api/inventory/items/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus, remarkContent: newRemark || null, remarkLang: "KO" }),
+      body: JSON.stringify({
+        status: newStatus,
+        remarkContent: newRemark || null,
+        remarkLang: lang,
+        stateNote: newStateNote || null,
+      }),
     });
     if (res.ok) {
       const { item } = await res.json();
       setItems((cur) => cur.map((it) => it.id === id ? { ...it, status: item.status, lastRemark: { date: item.remarks?.[0]?.date ?? new Date().toISOString(), content: newRemark || `${t("invItem.statusChange", lang)}${newStatus}` } } : it));
       setEditing(null);
       setNewRemark("");
+      setNewStateNote("");
     }
   }
 
@@ -203,6 +210,9 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
                                 <option value="IRREPARABLE">{t("status.irreparable", lang)}</option>
                               </select>
                               <input type="text" value={newRemark} onChange={(e) => setNewRemark(e.target.value)} placeholder={t("placeholder.remarkAuto", lang)} className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[11px]" />
+                            </div>
+                            <textarea value={newStateNote} onChange={(e) => setNewStateNote(e.target.value)} placeholder={t("invItem.stateNotePh", lang)} rows={2} className="mt-2 w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[11px]" />
+                            <div className="mt-2 flex justify-end gap-2">
                               <button onClick={() => changeStatus(editing)} className="rounded bg-[color:var(--tts-primary)] px-3 py-1 text-[11px] font-bold text-white">{t("action.save", lang)}</button>
                               <button onClick={() => setEditing(null)} className="text-[11px] text-[color:var(--tts-sub)]">{t("action.cancel", lang)}</button>
                             </div>

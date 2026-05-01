@@ -1547,7 +1547,11 @@ model PrPayment {
   method              String? // 송금/현금/수표 등
   reference           String? // 거래번호/은행
   recordedById        String? // 기록 직원 (Employee.id)
-  note                String?
+  note                String? // legacy 단일 컬럼 (호환용 — 신규 입력은 noteVi/En/Ko 로 저장)
+  noteVi              String?
+  noteEn              String?
+  noteKo              String?
+  noteOriginalLang    Language?
   createdAt           DateTime @default(now())
 
   payableReceivable PayableReceivable @relation(fields: [payableReceivableId], references: [id], onDelete: Cascade)
@@ -2584,7 +2588,11 @@ model Referral {
   contactName         String
   contactPhone        String
   contactEmail        String?
-  note                String?
+  note                String? // legacy 단일 컬럼 (호환용)
+  noteVi              String?
+  noteEn              String?
+  noteKo              String?
+  noteOriginalLang    Language?
   status              ReferralStatus @default(SUBMITTED)
   assignedToId        String?
   assignedTo          Employee?      @relation("ReferralAssignee", fields: [assignedToId], references: [id])

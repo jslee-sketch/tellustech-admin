@@ -3128,6 +3128,7 @@ const DICT: Dict = {
   "invItem.allStatuses":      { vi: "Tất cả trạng thái",            en: "All statuses",               ko: "전체 상태" },
   "invItem.changeStatusAddNote": { vi: "Đổi trạng thái + Thêm ghi chú", en: "Change Status + Add Note", ko: "상태 변경 + 비고 추가" },
   "invItem.ownerCustomer":    { vi: "KH",                           en: "Customer",                   ko: "고객" },
+  "invItem.stateNotePh":      { vi: "Mô tả tình trạng (tự động dịch sang 3 ngôn ngữ)", en: "State description (auto-translated to 3 languages)", ko: "현상태 기술 (3언어 자동번역)" },
 
   // ── master items inline ──
   "item.descriptionPh":       { vi: "VD: Mực đen tương thích D330/D320", en: "e.g. Black toner for D330/D320", ko: "예: D330/D320 호환 흑백 토너" },

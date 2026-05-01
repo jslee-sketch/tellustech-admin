@@ -10,7 +10,9 @@ const LANGS: readonly Language[] = ["VI", "EN", "KO"] as const;
 type RouteContext = { params: Promise<{ id: string }> };
 
 // PATCH /api/inventory/items/[id]/status
-// body: { status, remarkContent?, remarkLang? }
+// body: { status, remarkContent?, remarkLang?, stateNote? }
+//   - status: NORMAL | NEEDS_REPAIR | PARTS_USED | IRREPARABLE
+//   - stateNote (선택): 자유서술 현상태 기술. remarkLang 으로 원문 언어 → 3언어 자동번역해 InventoryItem.stateNoteVi/En/Ko 에 저장.
 // 처리: 상태변경 + 자동 비고 생성 + Claude 자동번역
 export async function PATCH(request: Request, context: RouteContext) {
   return withSessionContext(async () => {
@@ -27,11 +29,36 @@ export async function PATCH(request: Request, context: RouteContext) {
       const remarkContent = trimNonEmpty(p.remarkContent);
       const remarkLang = (trimNonEmpty(p.remarkLang) as Language | undefined) ?? "KO";
       if (!LANGS.includes(remarkLang)) return badRequest("invalid_input", { field: "remarkLang" });
+      const stateNoteInput = trimNonEmpty(p.stateNote);
 
       await prisma.$transaction(async (tx) => {
+        // stateNote 가 있으면 3언어 번역 후 동시 업데이트
+        let stateNoteData: {
+          stateNoteVi: string | null; stateNoteEn: string | null;
+          stateNoteKo: string | null; stateNoteOriginalLang: Language;
+        } | null = null;
+        if (stateNoteInput) {
+          const filledState = await fillTranslations({
+            vi: remarkLang === "VI" ? stateNoteInput : null,
+            en: remarkLang === "EN" ? stateNoteInput : null,
+            ko: remarkLang === "KO" ? stateNoteInput : null,
+            originalLang: remarkLang,
+          });
+          stateNoteData = {
+            stateNoteVi: filledState.vi,
+            stateNoteEn: filledState.en,
+            stateNoteKo: filledState.ko ?? (remarkLang === "KO" ? stateNoteInput : null),
+            stateNoteOriginalLang: remarkLang,
+          };
+        }
+
         await tx.inventoryItem.update({
           where: { id },
-          data: { status, lastStatusChange: new Date() },
+          data: {
+            status,
+            lastStatusChange: new Date(),
+            ...(stateNoteData ?? {}),
+          },
         });
 
         if (remarkContent) {

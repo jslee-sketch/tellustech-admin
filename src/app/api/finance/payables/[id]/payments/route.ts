@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, notFound, ok, requireString, serverError, trimNonEmpty } from "@/lib/api-utils";
+import { fillTranslations } from "@/lib/translate";
+import type { Language } from "@/generated/prisma/client";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -44,6 +46,18 @@ export async function POST(request: Request, context: Ctx) {
         ? (await prisma.employee.findUnique({ where: { companyCode_employeeCode: { companyCode: session.companyCode, employeeCode: session.empCode } }, select: { id: true } }))?.id ?? null
         : null;
 
+      // 3언어 자동번역 (note 입력시)
+      const noteRaw = trimNonEmpty(p.note);
+      const noteOriginalLang = (trimNonEmpty(p.noteOriginalLang) as Language | undefined) ?? "KO";
+      const filledNote = noteRaw
+        ? await fillTranslations({
+            vi: noteOriginalLang === "VI" ? noteRaw : null,
+            en: noteOriginalLang === "EN" ? noteRaw : null,
+            ko: noteOriginalLang === "KO" ? noteRaw : null,
+            originalLang: noteOriginalLang,
+          })
+        : { vi: null, en: null, ko: null };
+
       const result = await prisma.$transaction(async (tx) => {
         const payment = await tx.prPayment.create({
           data: {
@@ -52,7 +66,11 @@ export async function POST(request: Request, context: Ctx) {
             paidAt,
             method: trimNonEmpty(p.method),
             reference: trimNonEmpty(p.reference),
-            note: trimNonEmpty(p.note),
+            note: noteRaw, // legacy 단일 컬럼 (호환)
+            noteVi: filledNote.vi,
+            noteEn: filledNote.en,
+            noteKo: filledNote.ko,
+            noteOriginalLang: noteRaw ? noteOriginalLang : null,
             recordedById,
           },
         });

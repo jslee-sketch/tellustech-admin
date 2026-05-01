@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
-import { badRequest, ok, serverError } from "@/lib/api-utils";
+import { badRequest, ok, serverError, trimNonEmpty } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
+import { fillTranslations } from "@/lib/translate";
+import type { Language } from "@/generated/prisma/client";
 
 export async function GET() {
   return withSessionContext(async (session) => {
@@ -34,6 +36,18 @@ export async function POST(request: Request) {
     // 자기 거래처 추천 차단
     if (companyName.toLowerCase() === user.clientAccount.companyNameVi.toLowerCase()) return badRequest("self_referral");
 
+    // 3언어 자동번역 (note 입력시)
+    const noteRaw = trimNonEmpty(p.note);
+    const noteOriginalLang = (trimNonEmpty(p.noteOriginalLang) as Language | undefined) ?? (session.language as Language);
+    const filledNote = noteRaw
+      ? await fillTranslations({
+          vi: noteOriginalLang === "VI" ? noteRaw : null,
+          en: noteOriginalLang === "EN" ? noteRaw : null,
+          ko: noteOriginalLang === "KO" ? noteRaw : null,
+          originalLang: noteOriginalLang,
+        })
+      : { vi: null, en: null, ko: null };
+
     try {
       const created = await withUniqueRetry(
         () => generateDatedCode({
@@ -48,7 +62,11 @@ export async function POST(request: Request) {
             referrerClientId: user.clientAccount!.id,
             companyName, contactName, contactPhone,
             contactEmail: String(p.contactEmail ?? "") || null,
-            note: String(p.note ?? "") || null,
+            note: noteRaw,
+            noteVi: filledNote.vi,
+            noteEn: filledNote.en,
+            noteKo: filledNote.ko,
+            noteOriginalLang: noteRaw ? noteOriginalLang : null,
             status: "SUBMITTED",
           },
         })),

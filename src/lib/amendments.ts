@@ -342,6 +342,7 @@ export async function createTmAmendment(
         });
       }
       if (params.warehouseId) {
+        // TM 렌탈 회수 → IN/RENTAL/RETURN/COMPANY
         await tx.inventoryTransaction.create({
           data: {
             companyCode,
@@ -350,8 +351,10 @@ export async function createTmAmendment(
             toWarehouseId: params.warehouseId,
             clientId: rental.clientId,
             serialNumber: it.serialNumber,
-            txnType: "TRANSFER",
-            reason: "RENTAL",
+            txnType: "IN",
+            reason: "RENTAL_IN",
+            referenceModule: "RENTAL",
+            subKind: "RETURN",
             quantity: 1,
             note: `[자동] TM 렌탈 변경 ${amendmentCode} (${it.action} ${rental.rentalCode})`,
             performedById: params.performedById,
@@ -362,7 +365,17 @@ export async function createTmAmendment(
           serialNumber: it.serialNumber,
           warehouseId: params.warehouseId,
           companyCode,
+          ownerType: "COMPANY",
         });
+        // 회수 시 currentLocation 초기화
+        await tx.inventoryItem.update({
+          where: { serialNumber: it.serialNumber },
+          data: {
+            warehouseId: params.warehouseId,
+            currentLocationClientId: null,
+            currentLocationSinceAt: new Date(),
+          },
+        }).catch(() => undefined);
       }
     } else if (it.action === "ADD" || it.action === "REPLACE_IN") {
       const salesPrice = decimalOrNull(it.salesPrice) ?? "0";
@@ -377,6 +390,7 @@ export async function createTmAmendment(
         },
       });
       if (params.warehouseId) {
+        // TM 렌탈 출고 → OUT/RENTAL/LEND/COMPANY
         await tx.inventoryTransaction.create({
           data: {
             companyCode,
@@ -385,13 +399,23 @@ export async function createTmAmendment(
             toWarehouseId: null,
             clientId: rental.clientId,
             serialNumber: it.serialNumber,
-            txnType: "TRANSFER",
-            reason: "RENTAL",
+            txnType: "OUT",
+            reason: "RENTAL_OUT",
+            referenceModule: "RENTAL",
+            subKind: "LEND",
             quantity: 1,
             note: `[자동] TM 렌탈 변경 ${amendmentCode} (${it.action} ${rental.rentalCode})`,
             performedById: params.performedById,
           },
         });
+        // 마스터에 currentLocation 갱신
+        await tx.inventoryItem.update({
+          where: { serialNumber: it.serialNumber },
+          data: {
+            currentLocationClientId: rental.clientId,
+            currentLocationSinceAt: new Date(),
+          },
+        }).catch(() => undefined);
       }
     }
   }

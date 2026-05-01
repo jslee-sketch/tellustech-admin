@@ -146,7 +146,7 @@ export async function createSalesAdjustment(
     for (const it of params.items) {
       // S/N 검증 — RETURN 은 이미 OUT 된 S/N 이어야 자연스러우나, 외부 구매처 혼합 가능 → 경고만 (LOOSE)
       if (it.action === "RETURN") {
-        // 매출 반품 → 자사 창고로 IN
+        // 매출 반품 → 자사 창고로 IN (4축: TRADE/RETURN/COMPANY)
         await tx.inventoryTransaction.create({
           data: {
             companyCode: params.companyCode,
@@ -157,6 +157,8 @@ export async function createSalesAdjustment(
             serialNumber: it.serialNumber,
             txnType: "IN",
             reason: "RETURN_IN",
+            referenceModule: "TRADE",
+            subKind: "RETURN",
             quantity: 1,
             note: `[자동] 매출조정 ${adjustCode} (RETURN ${sales.salesNumber})`,
             performedById: params.performedById,
@@ -167,9 +169,15 @@ export async function createSalesAdjustment(
           serialNumber: it.serialNumber,
           warehouseId: params.warehouseId,
           companyCode: params.companyCode,
+          ownerType: "COMPANY",
         });
+        // 반품 받았으므로 archive 해제 (다시 자사 재고)
+        await tx.inventoryItem.update({
+          where: { serialNumber: it.serialNumber },
+          data: { archivedAt: null, warehouseId: params.warehouseId },
+        }).catch(() => undefined);
       } else if (it.action === "EXCHANGE_OUT") {
-        // 새 출고 — 이중 출고 차단(LOOSE 정책 — 외부 S/N 혼용 가능, 경고만)
+        // 새 출고 (4축: TRADE/SALE/COMPANY)
         const lastTxn = await tx.inventoryTransaction.findFirst({
           where: { serialNumber: it.serialNumber },
           orderBy: { performedAt: "desc" },
@@ -188,11 +196,18 @@ export async function createSalesAdjustment(
             serialNumber: it.serialNumber,
             txnType: "OUT",
             reason: "SALE",
+            referenceModule: "TRADE",
+            subKind: "SALE",
             quantity: 1,
             note: `[자동] 매출조정 ${adjustCode} (EXCHANGE_OUT ${sales.salesNumber})`,
             performedById: params.performedById,
           },
         });
+        // 매출 시 archive
+        await tx.inventoryItem.update({
+          where: { serialNumber: it.serialNumber },
+          data: { archivedAt: new Date() },
+        }).catch(() => undefined);
       }
     }
   }
@@ -303,7 +318,7 @@ export async function createPurchaseAdjustment(
   if (params.type !== "PRICE_ADJUST" && params.warehouseId) {
     for (const it of params.items) {
       if (it.action === "RETURN") {
-        // 매입 반품 → 자사 창고에서 OUT (외부 supplier 로 회수)
+        // 매입 반품 → 자사 창고에서 OUT (4축: TRADE/RETURN/COMPANY — 매입반품 의미)
         await tx.inventoryTransaction.create({
           data: {
             companyCode: params.companyCode,
@@ -313,14 +328,21 @@ export async function createPurchaseAdjustment(
             clientId: purchase.supplierId,
             serialNumber: it.serialNumber,
             txnType: "OUT",
-            reason: "SALE", // 사유 enum 에 PURCHASE_RETURN 없음 — 가장 가까운 SALE 로 표시 + note 로 구분
+            reason: "SALE", // legacy enum (PURCHASE_RETURN 미정의)
+            referenceModule: "TRADE",
+            subKind: "RETURN",
             quantity: 1,
             note: `[자동] 매입조정 ${adjustCode} (RETURN ${purchase.purchaseNumber})`,
             performedById: params.performedById,
           },
         });
+        // 반품 출고 시 archive
+        await tx.inventoryItem.update({
+          where: { serialNumber: it.serialNumber },
+          data: { archivedAt: new Date() },
+        }).catch(() => undefined);
       } else if (it.action === "EXCHANGE_IN") {
-        // 새 입고 (교환 받은 신품)
+        // 새 입고 (교환 받은 신품) — 4축: TRADE/PURCHASE/COMPANY
         await tx.inventoryTransaction.create({
           data: {
             companyCode: params.companyCode,
@@ -331,6 +353,8 @@ export async function createPurchaseAdjustment(
             serialNumber: it.serialNumber,
             txnType: "IN",
             reason: "PURCHASE",
+            referenceModule: "TRADE",
+            subKind: "PURCHASE",
             quantity: 1,
             note: `[자동] 매입조정 ${adjustCode} (EXCHANGE_IN ${purchase.purchaseNumber})`,
             performedById: params.performedById,
@@ -341,6 +365,7 @@ export async function createPurchaseAdjustment(
           serialNumber: it.serialNumber,
           warehouseId: params.warehouseId,
           companyCode: params.companyCode,
+          ownerType: "COMPANY",
         });
       }
     }

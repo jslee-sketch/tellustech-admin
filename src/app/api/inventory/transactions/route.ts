@@ -39,6 +39,54 @@ const REASON_BY_TYPE: Record<InventoryTxnType, readonly InventoryReason[]> = {
   TRANSFER: ["CALIBRATION", "REPAIR", "RENTAL", "DEMO"],
 };
 
+// Phase 1: legacy reason → 4축 (referenceModule, subKind) 파생 — single endpoint 호환용.
+function deriveRefModule(reason: InventoryReason): string {
+  switch (reason) {
+    case "PURCHASE":
+    case "SALE":
+    case "RETURN_IN":
+      return "TRADE";
+    case "RENTAL_IN":
+    case "RENTAL_OUT":
+    case "RENTAL":
+      return "RENTAL";
+    case "REPAIR_IN":
+    case "REPAIR_OUT":
+    case "REPAIR":
+      return "REPAIR";
+    case "CALIBRATION_IN":
+    case "CALIBRATION_OUT":
+    case "CALIBRATION":
+      return "CALIB";
+    case "DEMO_IN":
+    case "DEMO_OUT":
+    case "DEMO":
+      return "DEMO";
+    case "CONSUMABLE_OUT":
+      return "CONSUMABLE";
+    default:
+      return "TRADE";
+  }
+}
+function deriveSubKind(reason: InventoryReason): string {
+  switch (reason) {
+    case "PURCHASE": return "PURCHASE";
+    case "SALE": return "SALE";
+    case "RETURN_IN": return "RETURN";
+    case "RENTAL_IN": return "BORROW";
+    case "REPAIR_IN":
+    case "CALIBRATION_IN": return "REQUEST";
+    case "DEMO_IN": return "BORROW";
+    case "RENTAL_OUT":
+    case "REPAIR_OUT":
+    case "CALIBRATION_OUT":
+    case "DEMO_OUT": return "RETURN";
+    case "CONSUMABLE_OUT": return "CONSUMABLE";
+    case "OTHER_IN": return "OTHER";
+    default: return "OTHER";
+  }
+}
+
 function parseIntOrNull(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
@@ -228,6 +276,12 @@ export async function POST(request: Request) {
         : trimNonEmpty(p.note);
 
       const created = await prisma.$transaction(async (tx) => {
+        // Phase 1 4축 분류 — body 에 referenceModule/subKind 가 있으면 그대로, 없으면 legacy reason 으로부터 파생
+        const refModuleFromBody = trimNonEmpty(p.referenceModule);
+        const subKindFromBody = trimNonEmpty(p.subKind);
+        const refModuleDerived = refModuleFromBody ?? deriveRefModule(reason);
+        const subKindDerived = subKindFromBody ?? deriveSubKind(reason);
+
         const txn = await tx.inventoryTransaction.create({
           data: {
             companyCode: session.companyCode,
@@ -238,6 +292,8 @@ export async function POST(request: Request) {
             serialNumber: sn,
             txnType,
             reason,
+            referenceModule: refModuleDerived,
+            subKind: subKindDerived,
             quantity,
             scannedBarcode: trimNonEmpty(p.scannedBarcode),
             note: transferNote,

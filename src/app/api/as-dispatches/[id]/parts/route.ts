@@ -107,6 +107,9 @@ export async function POST(request: Request, context: RouteContext) {
             serialNumber: serialNumber ?? null,
             txnType: "OUT" as const,
             reason: "CONSUMABLE_OUT" as const,
+            // Phase 1 4축 분류
+            referenceModule: "CONSUMABLE",
+            subKind: "CONSUMABLE",
             quantity,
             targetEquipmentSN,
             targetContractId,

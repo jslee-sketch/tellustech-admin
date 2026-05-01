@@ -3141,6 +3141,10 @@ const DICT: Dict = {
   "invItem.ownerCustomer":    { vi: "KH",                           en: "Customer",                   ko: "고객" },
   "invItem.stateNotePh":      { vi: "Mô tả tình trạng (tự động dịch sang 3 ngôn ngữ)", en: "State description (auto-translated to 3 languages)", ko: "현상태 기술 (3언어 자동번역)" },
   "invItem.externalAsset":    { vi: "Tài sản KH",                   en: "External",                   ko: "외부 자산" },
+  "msg.snRequired":           { vi: "Cần nhập S/N",                 en: "Serial number required",     ko: "S/N 입력 필요" },
+  "txnGuide.passthrough":     { vi: "Chuyển hàng giữa hai bên ngoài. Không tác động đến tồn kho nội bộ. S/N tùy chọn.",
+                                en: "Pass-through between two external parties. Does not touch internal stock. S/N optional.",
+                                ko: "외부 → 외부 패스스루 거래. 자사 재고는 변동 없음. S/N 선택." },
   "portal.autoTranslateHint": { vi: "ⓘ Nội dung sẽ được tự động dịch sang 3 ngôn ngữ.", en: "ⓘ Content will be auto-translated to 3 languages.", ko: "ⓘ 입력 내용은 자동으로 3언어로 번역됩니다." },
 
   // ── master items inline ──

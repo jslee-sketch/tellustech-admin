@@ -161,61 +161,54 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
 
   const showTargetEquipment = reason === "CONSUMABLE_OUT";
 
-  // TRANSFER 사유별 가이드 텍스트
-  const transferGuide = txnType === "TRANSFER"
-    ? (reason === "REPAIR" ? t("txnGuide.repair", lang)
-      : reason === "CALIBRATION" ? t("txnGuide.calib", lang)
-      : reason === "RENTAL" ? t("txnGuide.rental", lang)
-      : reason === "DEMO" ? t("txnGuide.demo", lang)
-      : null)
-    : null;
+  // TRANSFER (External ↔ External 패스스루) 가이드 — 자사 재고에 영향 없음
+  const transferGuide = txnType === "TRANSFER" ? t("txnGuide.passthrough", lang) : null;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
-    // TRANSFER 의 EXTERNAL 측은 창고 대신 거래처 1건이 destination/source.
-    // 단일 clientId 로 압축: to 우선, 없으면 from.
+    // 정책 (변경됨):
+    //  IN  → toWarehouseId (자사 내부 또는 외부 창고) + S/N 필수
+    //  OUT → fromWarehouseId (자사 창고) + S/N 필수 (CONSUMABLE_OUT 예외) + InventoryItem 마스터에 존재해야 함
+    //  TRANSFER → External(거래처) → External(거래처) 패스스루. 자사 창고 사용 금지. S/N 선택.
     let txnFromWarehouseId: string | null = null;
     let txnToWarehouseId: string | null = null;
     let txnClientId: string | null = null;
+    let txnFromClientId: string | null = null;
+    let txnToClientId: string | null = null;
 
     if (txnType === "IN") {
       txnToWarehouseId = toWarehouseId || null;
+      // 외부 자산 입고면 clientId(소유주) 필수
+      if (isExternalIn) {
+        if (!clientId) { setError(t("msg.externalRequiresClient", lang)); setSubmitting(false); return; }
+        txnClientId = clientId;
+      }
+      if (!serialNumber.trim()) {
+        setError(t("msg.snRequired", lang));
+        setSubmitting(false);
+        return;
+      }
     } else if (txnType === "OUT") {
       txnFromWarehouseId = fromWarehouseId || null;
-      txnClientId = clientId || null;
+      if (!clientId) { setError(t("msg.externalRequiresClient", lang)); setSubmitting(false); return; }
+      txnClientId = clientId;
+      if (reason !== "CONSUMABLE_OUT" && !serialNumber.trim()) {
+        setError(t("msg.snRequired", lang));
+        setSubmitting(false);
+        return;
+      }
     } else {
-      // TRANSFER
-      if (fromScope === "INTERNAL") {
-        txnFromWarehouseId = fromWarehouseId || null;
-      } else {
-        // EXTERNAL → warehouse null + client 사용
-        txnClientId = fromClientId || null;
-      }
-      if (toScope === "INTERNAL") {
-        txnToWarehouseId = toWarehouseId || null;
-      } else {
-        txnClientId = toClientId || txnClientId;
-      }
-      // 양측 모두 INTERNAL 이면 client 필요 없음
-      if (fromScope === "EXTERNAL" && !fromClientId) {
+      // TRANSFER External → External
+      if (!fromClientId || !toClientId) {
         setError(t("msg.externalRequiresClient", lang));
         setSubmitting(false);
         return;
       }
-      if (toScope === "EXTERNAL" && !toClientId) {
-        setError(t("msg.externalRequiresClient", lang));
-        setSubmitting(false);
-        return;
-      }
-    }
-
-    if (txnType === "OUT" && outClientRequired && !clientId) {
-      setError(t("msg.externalRequiresClient", lang));
-      setSubmitting(false);
-      return;
+      txnFromClientId = fromClientId;
+      txnToClientId = toClientId;
     }
 
     try {
@@ -229,6 +222,8 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
           fromWarehouseId: txnFromWarehouseId,
           toWarehouseId: txnToWarehouseId,
           clientId: txnClientId,
+          fromClientId: txnFromClientId,
+          toClientId: txnToClientId,
           targetEquipmentSN: targetEquipmentSN || null,
           quantity,
           serialNumber: serialNumber || null,
@@ -351,13 +346,14 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
         <Field label={t("field.item", lang)} required>
           <ItemCombobox value={itemId} onChange={setItemId} required lang={lang} />
         </Field>
-        <Field label={t("field.serial", lang)}>
+        <Field label={t("field.serial", lang)} required={txnType === "IN" || (txnType === "OUT" && reason !== "CONSUMABLE_OUT")}>
           <SerialCombobox
             value={serialNumber}
             onChange={setSerialNumber}
             onBlur={handleSerialBlur}
             itemId={itemId || undefined}
             lang={lang}
+            required={txnType === "IN" || (txnType === "OUT" && reason !== "CONSUMABLE_OUT")}
           />
         </Field>
       </Row>
@@ -370,69 +366,47 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
         </Note>
       )}
 
-      {/* 출발 — OUT/TRANSFER 시 노출. TRANSFER 의 EXTERNAL 은 거래처가 곧 출발지 */}
-      {(txnType === "OUT" || txnType === "TRANSFER") && (
+      {/* 출발 — OUT 자사 창고 / TRANSFER 외부 거래처 */}
+      {txnType === "OUT" && (
         <Row>
-          {txnType === "TRANSFER" && (
-            <Field label={t("field.fromScope", lang)} required width="200px">
-              <Select
-                value={fromScope}
-                onChange={(e) => selectFromScope(e.target.value as Scope)}
-                options={[
-                  { value: "INTERNAL", label: t("scope.internal", lang) },
-                  { value: "EXTERNAL", label: t("scope.external", lang) },
-                ]}
-              />
-            </Field>
-          )}
-          {txnType === "TRANSFER" && fromScope === "EXTERNAL" ? (
-            <Field label={t("field.fromClient", lang)} required>
-              <ClientCombobox value={fromClientId} onChange={setFromClientId} required lang={lang} />
-            </Field>
-          ) : (
-            <Field label={t("field.fromWh", lang)} required>
-              <Select
-                required
-                value={fromWarehouseId}
-                onChange={(e) => setFromWarehouseId(e.target.value)}
-                placeholder={t("placeholder.select", lang)}
-                options={whOptionsFor("INTERNAL")}
-              />
-            </Field>
-          )}
+          <Field label={t("field.fromWh", lang)} required>
+            <Select
+              required
+              value={fromWarehouseId}
+              onChange={(e) => setFromWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={whOptionsFor("INTERNAL")}
+            />
+          </Field>
+        </Row>
+      )}
+      {txnType === "TRANSFER" && (
+        <Row>
+          <Field label={t("field.fromClient", lang)} required>
+            <ClientCombobox value={fromClientId} onChange={setFromClientId} required lang={lang} />
+          </Field>
         </Row>
       )}
 
-      {/* 도착 — IN/TRANSFER 시 노출. TRANSFER 의 EXTERNAL 은 거래처가 곧 도착지 */}
-      {(txnType === "IN" || txnType === "TRANSFER") && (
+      {/* 도착 — IN 자사 창고 / TRANSFER 외부 거래처 */}
+      {txnType === "IN" && (
         <Row>
-          {txnType === "TRANSFER" && (
-            <Field label={t("field.toScope", lang)} required width="200px">
-              <Select
-                value={toScope}
-                onChange={(e) => selectToScope(e.target.value as Scope)}
-                options={[
-                  { value: "INTERNAL", label: t("scope.internal", lang) },
-                  { value: "EXTERNAL", label: t("scope.external", lang) },
-                ]}
-              />
-            </Field>
-          )}
-          {txnType === "TRANSFER" && toScope === "EXTERNAL" ? (
-            <Field label={t("field.toClient", lang)} required>
-              <ClientCombobox value={toClientId} onChange={setToClientId} required lang={lang} />
-            </Field>
-          ) : (
-            <Field label={t("field.toWh", lang)} required>
-              <Select
-                required
-                value={toWarehouseId}
-                onChange={(e) => setToWarehouseId(e.target.value)}
-                placeholder={t("placeholder.select", lang)}
-                options={whOptionsFor("INTERNAL")}
-              />
-            </Field>
-          )}
+          <Field label={t("field.toWh", lang)} required>
+            <Select
+              required
+              value={toWarehouseId}
+              onChange={(e) => setToWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={whOptionsFor("INTERNAL")}
+            />
+          </Field>
+        </Row>
+      )}
+      {txnType === "TRANSFER" && (
+        <Row>
+          <Field label={t("field.toClient", lang)} required>
+            <ClientCombobox value={toClientId} onChange={setToClientId} required lang={lang} />
+          </Field>
         </Row>
       )}
 

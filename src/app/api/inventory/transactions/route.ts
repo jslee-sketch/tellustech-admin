@@ -137,34 +137,41 @@ export async function POST(request: Request) {
       const targetContractId = trimNonEmpty(p.targetContractId);
 
       // 유형별 창고 필수성 검증
+      // IN: toWarehouse(자사 내부 또는 외부) 필수 + S/N 필수 (CONSUMABLE 만 예외)
+      // OUT: fromWarehouse 필수 + S/N 필수 + InventoryItem 마스터 매칭 검증 (CONSUMABLE_OUT 예외)
+      // TRANSFER: External(고객/외주처) ↔ External 패스스루. 양쪽 endpoint 모두 거래처. S/N 선택. 자사 창고 사용 금지.
       if (txnType === "IN" && !toWarehouseId) {
         return badRequest("invalid_input", { field: "toWarehouseId", reason: "required_for_IN" });
       }
       if (txnType === "OUT" && !fromWarehouseId) {
         return badRequest("invalid_input", { field: "fromWarehouseId", reason: "required_for_OUT" });
       }
-      // TRANSFER: 출발/도착 각각 warehouseId 또는 clientId 중 하나 필수.
-      // EXTERNAL 측은 거래처가 곧 출발/도착지이므로 warehouseId 가 null 이고 clientId 가 있어야 함.
-      const clientIdForGuard = trimNonEmpty(p.clientId);
+      const sn = trimNonEmpty(p.serialNumber);
+      // S/N 필수 (CONSUMABLE_OUT 예외 — 토너/소모품은 lot 단위 가능)
+      if (txnType === "IN" && !sn) {
+        return badRequest("invalid_input", { field: "serialNumber", reason: "required_for_IN" });
+      }
+      if (txnType === "OUT" && reason !== "CONSUMABLE_OUT" && !sn) {
+        return badRequest("invalid_input", { field: "serialNumber", reason: "required_for_OUT" });
+      }
+      // TRANSFER (External ↔ External): 양쪽 모두 거래처여야 함. 자사 창고 지정 금지.
+      const fromClientId = trimNonEmpty(p.fromClientId);
+      const toClientId = trimNonEmpty(p.toClientId);
       if (txnType === "TRANSFER") {
-        const fromOk = !!fromWarehouseId || !!clientIdForGuard;
-        const toOk   = !!toWarehouseId   || !!clientIdForGuard;
-        if (!fromOk || !toOk) {
-          return badRequest("invalid_input", { field: "transferEndpoints", reason: "from_and_to_required" });
+        if (fromWarehouseId || toWarehouseId) {
+          return badRequest("invalid_input", { field: "warehouse", reason: "transfer_must_be_external_only" });
+        }
+        if (!fromClientId || !toClientId) {
+          return badRequest("invalid_input", { field: "transferEndpoints", reason: "external_clients_required" });
         }
       }
       // 소모품출고 시 대상장비 S/N 필수
       if (reason === "CONSUMABLE_OUT" && !targetEquipmentSN) {
         return badRequest("invalid_input", { field: "targetEquipmentSN", reason: "required_for_consumable" });
       }
-      // 외부 자산 입고 (수리/데모/교정/렌탈입고) — 소유주 거래처 필수, S/N 필수
+      // 외부 자산 입고 (수리/데모/교정/렌탈입고) — 소유주 거래처 필수
       if (EXTERNAL_IN_REASONS.includes(reason)) {
         if (!clientId) return badRequest("invalid_input", { field: "clientId", reason: "owner_required_for_external_in" });
-        if (!trimNonEmpty(p.serialNumber)) return badRequest("invalid_input", { field: "serialNumber", reason: "required_for_external_in" });
-      }
-      // 외부 자산 반환 (수리/데모/교정/렌탈반출) — S/N 필수, 마스터에서 ownerType 검증은 후속 처리
-      if (EXTERNAL_OUT_REASONS.includes(reason)) {
-        if (!trimNonEmpty(p.serialNumber)) return badRequest("invalid_input", { field: "serialNumber", reason: "required_for_external_out" });
       }
 
       // 존재성 검증
@@ -183,13 +190,26 @@ export async function POST(request: Request) {
         const cl = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true } });
         if (!cl) return badRequest("invalid_client");
       }
-      // TRANSFER 의 한쪽이 창고 없이 거래처만 있다면 EXTERNAL 측 — clientId 강제됨 (위 가드).
       // OUT 도 clientId 강제 (납품처).
       if (txnType === "OUT" && !clientId) {
         return badRequest("invalid_input", { field: "clientId", reason: "required_for_OUT" });
       }
 
-      const sn = trimNonEmpty(p.serialNumber);
+      // OUT 일반 케이스: S/N 이 InventoryItem 마스터에 존재해야 출고 가능 (CONSUMABLE_OUT 예외)
+      if (txnType === "OUT" && reason !== "CONSUMABLE_OUT" && sn) {
+        const masterItem = await prisma.inventoryItem.findUnique({
+          where: { serialNumber: sn },
+          select: { id: true, warehouseId: true },
+        });
+        if (!masterItem) {
+          return badRequest("invalid_input", { field: "serialNumber", reason: "sn_not_in_inventory" });
+        }
+        // 출고 창고와 마스터가 위치한 창고가 일치해야 함
+        if (fromWarehouseId && masterItem.warehouseId !== fromWarehouseId) {
+          return badRequest("invalid_input", { field: "serialNumber", reason: "sn_warehouse_mismatch" });
+        }
+      }
+
       // 정합성: targetEquipmentSN 이 활성 IT 계약 장비라면 targetContractId 자동매핑
       // (소모품/부품 비용을 IT 계약별로 집계하기 위함 — AS dispatch parts 와 동일 정책)
       let resolvedTargetContractId = targetContractId ?? null;
@@ -200,6 +220,13 @@ export async function POST(request: Request) {
         });
         if (eq) resolvedTargetContractId = eq.itContractId;
       }
+      // TRANSFER 의 경우 clientId 컬럼에 fromClientId 를 사용하고, note 에 toClientId 표시
+      // (DB 스키마는 단일 clientId 만 보유 — 향후 fromClientId/toClientId 컬럼 추가 가능)
+      const txnClientId = txnType === "TRANSFER" ? fromClientId : clientId;
+      const transferNote = txnType === "TRANSFER" && toClientId
+        ? `${trimNonEmpty(p.note) ?? ""}${trimNonEmpty(p.note) ? " · " : ""}→ client:${toClientId}`
+        : trimNonEmpty(p.note);
+
       const created = await prisma.$transaction(async (tx) => {
         const txn = await tx.inventoryTransaction.create({
           data: {
@@ -207,13 +234,13 @@ export async function POST(request: Request) {
             itemId,
             fromWarehouseId: fromWarehouseId ?? null,
             toWarehouseId: toWarehouseId ?? null,
-            clientId: clientId ?? null,
+            clientId: txnClientId ?? null,
             serialNumber: sn,
             txnType,
             reason,
             quantity,
             scannedBarcode: trimNonEmpty(p.scannedBarcode),
-            note: trimNonEmpty(p.note),
+            note: transferNote,
             targetEquipmentSN: targetEquipmentSN ?? null,
             targetContractId: resolvedTargetContractId,
             performedAt: new Date(),
@@ -221,28 +248,22 @@ export async function POST(request: Request) {
         });
 
         // S/N 단위 InventoryItem 마스터 자동 관리
-        if (sn) {
-          if (txnType === "IN" && toWarehouseId) {
-            // 외부 자산 입고는 ownerType=EXTERNAL_CLIENT, ownerClientId 로 출처 추적
-            const isExternalIn = EXTERNAL_IN_REASONS.includes(reason);
-            await ensureInventoryItemOnReceipt(tx, {
-              itemId,
-              serialNumber: sn,
-              warehouseId: toWarehouseId,
-              companyCode: session.companyCode,
-              ownerType: isExternalIn ? "EXTERNAL_CLIENT" : "COMPANY",
-              ownerClientId: isExternalIn ? (clientId ?? null) : null,
-              inboundReason: reason,
-            });
-          } else if (txnType === "TRANSFER" && toWarehouseId) {
-            await tx.inventoryItem.update({
-              where: { serialNumber: sn },
-              data: { warehouseId: toWarehouseId },
-            }).catch(() => undefined);
-          } else if (txnType === "OUT" && EXTERNAL_OUT_REASONS.includes(reason)) {
-            // 외부 자산 반환 — InventoryItem 에서 ownership 정리. 마스터는 보존(이력) 또는 archive.
-            // 단순화: ownerType 을 그대로 두되 warehouseId 을 EXTERNAL 창고로 옮기지 않고 유지.
-            // 실제 출고 흐름은 별도 회수 모듈에서 정밀 처리. 여기서는 검증만.
+        if (txnType === "IN" && toWarehouseId && sn) {
+          // IN: 항상 마스터 등록 (외부/자사 구분은 ownerType 으로)
+          const isExternalIn = EXTERNAL_IN_REASONS.includes(reason);
+          await ensureInventoryItemOnReceipt(tx, {
+            itemId,
+            serialNumber: sn,
+            warehouseId: toWarehouseId,
+            companyCode: session.companyCode,
+            ownerType: isExternalIn ? "EXTERNAL_CLIENT" : "COMPANY",
+            ownerClientId: isExternalIn ? (clientId ?? null) : null,
+            inboundReason: reason,
+          });
+        } else if (txnType === "OUT" && sn && reason !== "CONSUMABLE_OUT") {
+          // OUT: 마스터는 보존하지만 outbound 표시를 위해 lastStatusChange 만 갱신.
+          // 외부 자산 반환은 ownerType 검증.
+          if (EXTERNAL_OUT_REASONS.includes(reason)) {
             const owned = await tx.inventoryItem.findUnique({
               where: { serialNumber: sn },
               select: { ownerType: true },
@@ -251,8 +272,9 @@ export async function POST(request: Request) {
               throw new Error("not_external_owned");
             }
           }
-          // 일반 OUT (SALE, CONSUMABLE_OUT) 은 InventoryItem 마스터를 유지
         }
+        // TRANSFER (External ↔ External 패스스루): InventoryItem 마스터 변경 없음.
+        // 우리는 거래의 양 끝점이 모두 외부이므로 자사 재고에 영향이 없음.
         return txn;
       });
 

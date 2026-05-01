@@ -181,7 +181,7 @@ export function AsTicketNewForm({ defaultLanguage, clients, itemOptions, employe
             rows={3}
             value={symptomKo}
             onChange={(e) => setSymptomKo(e.target.value)}
-            placeholder="용지가 걸림 ..."
+            placeholder={t("asTicket.symptomPh", lang)}
           />
         </Field>
         <Field label={t("field.symptomEnLong", lang)}>

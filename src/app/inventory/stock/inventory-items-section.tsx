@@ -93,7 +93,7 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
     });
     if (res.ok) {
       const { item } = await res.json();
-      setItems((cur) => cur.map((it) => it.id === id ? { ...it, status: item.status, lastRemark: { date: item.remarks?.[0]?.date ?? new Date().toISOString(), content: newRemark || `${lang === "VI" ? "Đổi trạng thái → " : lang === "EN" ? "Status → " : "상태 변경 → "}${newStatus}` } } : it));
+      setItems((cur) => cur.map((it) => it.id === id ? { ...it, status: item.status, lastRemark: { date: item.remarks?.[0]?.date ?? new Date().toISOString(), content: newRemark || `${t("invItem.statusChange", lang)}${newStatus}` } } : it));
       setEditing(null);
       setNewRemark("");
     }
@@ -105,7 +105,7 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
   }
 
   return (
-    <Card title={`${lang === "VI" ? "Tồn kho theo S/N" : lang === "EN" ? "Stock by S/N" : "S/N별 재고"} (${filtered.length}${lang === "VI" ? " mục" : lang === "EN" ? " items" : "개"})`} action={
+    <Card title={`${t("invItem.bySn", lang)} (${filtered.length}${t("invItem.itemsUnit", lang) === "개" ? "" : " "}${t("invItem.itemsUnit", lang)})`} action={
       <ExcelDownload
         rows={filtered}
         columns={[
@@ -122,12 +122,12 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
       <div className="mb-3 flex flex-wrap gap-2">
         <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchInv", lang)} />
         <select value={whFilter} onChange={(e) => setWhFilter(e.target.value as "all" | "INTERNAL" | "EXTERNAL")} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px]">
-          <option value="all">{lang === "VI" ? "Tất cả kho" : lang === "EN" ? "All warehouses" : "전체 창고"}</option>
+          <option value="all">{t("invItem.allWarehouses", lang)}</option>
           <option value="INTERNAL">Internal</option>
           <option value="EXTERNAL">External</option>
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px]">
-          <option value="all">{lang === "VI" ? "Tất cả trạng thái" : lang === "EN" ? "All statuses" : "전체 상태"}</option>
+          <option value="all">{t("invItem.allStatuses", lang)}</option>
           <option value="NORMAL">{t("status.normalPlain", lang)}</option>
           <option value="NEEDS_REPAIR">{t("status.needsRepair", lang)}</option>
           <option value="PARTS_USED">{t("status.partsUsed", lang)}</option>
@@ -152,7 +152,7 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
           <tbody>
             {grouped.map(([key, g]) => {
               const isOpen = expanded === key;
-              const owner = g.warehouse.type === "EXTERNAL" ? (lang === "VI" ? "(KH)" : lang === "EN" ? "(Customer)" : "(고객)") : companyName;
+              const owner = g.warehouse.type === "EXTERNAL" ? `(${t("invItem.ownerCustomer", lang)})` : companyName;
               return (
                 <>
                   <tr key={key} className="border-b border-[color:var(--tts-border)]/50 cursor-pointer hover:bg-[color:var(--tts-card-hover)]" onClick={() => setExpanded(isOpen ? null : key)}>
@@ -194,7 +194,7 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
                         </table>
                         {editing && g.entries.find((e) => e.id === editing) && (
                           <div className="mt-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-3">
-                            <div className="mb-2 text-[11px] font-bold">{lang === "VI" ? "Đổi trạng thái + Thêm ghi chú" : lang === "EN" ? "Change Status + Add Note" : "상태 변경 + 비고 추가"}</div>
+                            <div className="mb-2 text-[11px] font-bold">{t("invItem.changeStatusAddNote", lang)}</div>
                             <div className="flex gap-2">
                               <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[11px]">
                                 <option value="NORMAL">{t("status.normalPlain", lang)}</option>

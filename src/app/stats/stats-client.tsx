@@ -109,18 +109,15 @@ export function StatsClient({ lang }: Props) {
       {/* 검색조건 */}
       <Card title={t("stats.searchCard", lang)}>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          <Field label="시작일"><TextInput type="date" value={from} onChange={(e)=>setFrom(e.target.value)} /></Field>
-          <Field label="종료일"><TextInput type="date" value={to}   onChange={(e)=>setTo(e.target.value)} /></Field>
-          <Field label="거래처 (id, 쉼표)"><TextInput value={clients} onChange={(e)=>setClients(e.target.value)} placeholder="cuid"/></Field>
-          <Field label="품목 (id, 쉼표)"><TextInput value={items} onChange={(e)=>setItems(e.target.value)} placeholder="cuid"/></Field>
-          <Field label="프로젝트 (id, 쉼표)"><TextInput value={projects} onChange={(e)=>setProjects(e.target.value)} placeholder="cuid"/></Field>
-          <Field label="영업사원 (id, 쉼표)"><TextInput value={employees} onChange={(e)=>setEmployees(e.target.value)} placeholder="cuid"/></Field>
+          <Field label={t("stats.fromDate", lang)}><TextInput type="date" value={from} onChange={(e)=>setFrom(e.target.value)} /></Field>
+          <Field label={t("stats.toDate", lang)}><TextInput type="date" value={to}   onChange={(e)=>setTo(e.target.value)} /></Field>
+          <Field label={t("stats.clientFilter", lang)}><TextInput value={clients} onChange={(e)=>setClients(e.target.value)} placeholder="cuid"/></Field>
+          <Field label={t("stats.itemFilter", lang)}><TextInput value={items} onChange={(e)=>setItems(e.target.value)} placeholder="cuid"/></Field>
+          <Field label={t("stats.projectFilter", lang)}><TextInput value={projects} onChange={(e)=>setProjects(e.target.value)} placeholder="cuid"/></Field>
+          <Field label={t("stats.empFilter", lang)}><TextInput value={employees} onChange={(e)=>setEmployees(e.target.value)} placeholder="cuid"/></Field>
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <Button onClick={load} disabled={loading}>{loading ? "조회 중…" : "조회"}</Button>
-          <span className="text-[11px] text-[color:var(--tts-muted)]">
-            기본은 당월 1일 ~ 말일. 검색조건 변경 후 조회 버튼을 눌러주세요.
-          </span>
+          <Button onClick={load} disabled={loading}>{loading ? t("stats.searching", lang) : t("stats.searchBtn", lang)}</Button>
         </div>
       </Card>
 
@@ -132,13 +129,13 @@ export function StatsClient({ lang }: Props) {
       ) : tab === "profit" ? (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard label="총 매출" value={fmtVnd(data.totalSales)} sub={`${data.counts?.sales ?? 0} 건`} accent="success" />
-            <KpiCard label="총 매입" value={fmtVnd(data.totalPurchase)} sub={`${data.counts?.purchases ?? 0} 건`} accent="warn" />
-            <KpiCard label="총 비용" value={fmtVnd(data.totalExpense)} sub={`${data.counts?.expenses ?? 0} 건`} accent="danger" />
+            <KpiCard label={t("stats.totalSales", lang)} value={fmtVnd(data.totalSales)} sub={`${data.counts?.sales ?? 0} ${t("stats.casesShort", lang)}`} accent="success" />
+            <KpiCard label={t("stats.totalPurchase", lang)} value={fmtVnd(data.totalPurchase)} sub={`${data.counts?.purchases ?? 0} ${t("stats.casesShort", lang)}`} accent="warn" />
+            <KpiCard label={t("stats.totalExpense", lang)} value={fmtVnd(data.totalExpense)} sub={`${data.counts?.expenses ?? 0} ${t("stats.casesShort", lang)}`} accent="danger" />
             <KpiCard
-              label="순이익 (매출 − 매입 − 비용)"
+              label={t("stats.profit", lang)}
               value={fmtVnd(data.profit)}
-              sub={Number(data.profit ?? 0) >= 0 ? "흑자" : "적자"}
+              sub={Number(data.profit ?? 0) >= 0 ? t("stats.profitPositive", lang) : t("stats.profitNegative", lang)}
               accent={Number(data.profit ?? 0) >= 0 ? "primary" : "danger"}
               big
             />
@@ -159,7 +156,7 @@ export function StatsClient({ lang }: Props) {
             columns={tab === "sales" ? salesCols : tab === "purchases" ? purchasesCols : snCols}
             data={data.rows ?? []}
             rowKey={(r: any, i) => r.id ?? r.sn ?? String(i)}
-            emptyMessage="조회 결과가 없습니다."
+            emptyMessage={t("stats.noResult", lang)}
           />
         </Card>
       )}

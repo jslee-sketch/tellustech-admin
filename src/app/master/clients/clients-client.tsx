@@ -186,7 +186,7 @@ export function ClientsClient({ initialData, lang }: { initialData: ClientRow[];
               // Dependents preview for the first selected
               const r = await fetch(`/api/master/clients/${ids[0]}?preview=1`, { method: 'DELETE' }).then(r => r.json());
               const lines = Object.entries(r?.dependents ?? {}).map(([k,v]) => `${k}: ${v}`).join('\n');
-              if (!confirm(`첫 항목 의존성 미리보기:\n${lines}\n\n선택된 ${ids.length}건 모두 삭제(soft)? 회복 가능.`)) return;
+              if (!confirm(t("bulk.confirmDeleteWithDeps", lang).replace("{lines}", lines).replace("{n}", String(ids.length)))) return;
               setBusy(true);
               for (const id of ids) {
                 await fetch(`/api/master/clients/${id}`, { method: 'DELETE' });
@@ -194,7 +194,7 @@ export function ClientsClient({ initialData, lang }: { initialData: ClientRow[];
               setBusy(false);
               clear();
               location.reload();
-            }} disabled={busy}>{busy ? '삭제 중…' : `선택 삭제 (${ids.length})`}</Button>
+            }} disabled={busy}>{busy ? t("bulk.deleting", lang) : t("bulk.deleteSelected", lang).replace("{n}", String(ids.length))}</Button>
           </>
         )}
       />

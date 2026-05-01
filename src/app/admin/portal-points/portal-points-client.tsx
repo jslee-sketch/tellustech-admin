@@ -6,12 +6,12 @@ import { t, type Lang } from "@/lib/i18n";
 
 type Tab = "config" | "grant" | "rewards" | "history" | "policies";
 
-const TAB_LABEL: Record<Tab, string> = {
-  config: "단가 설정",
-  grant: "수동 지급",
-  rewards: "교환 승인",
-  history: "이력",
-  policies: "거래처별 정책",
+const TAB_LABEL_KEY: Record<Tab, string> = {
+  config: "pp.tabConfig",
+  grant: "pp.tabGrant",
+  rewards: "pp.tabRewards",
+  history: "pp.tabHistory",
+  policies: "pp.tabPolicies",
 };
 
 export function PortalPointsAdminClient({ lang, canEditConfig }: { lang: Lang; canEditConfig: boolean }) {
@@ -23,7 +23,7 @@ export function PortalPointsAdminClient({ lang, canEditConfig }: { lang: Lang; c
         <div className="mb-4 flex gap-1 border-b border-[color:var(--tts-border)]">
           {(["policies", "config", "grant", "rewards", "history"] as const).map((k) => (
             <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 text-[13px] font-bold ${tab === k ? "border-b-2 border-[color:var(--tts-accent)] text-[color:var(--tts-accent)]" : "text-[color:var(--tts-muted)] hover:text-[color:var(--tts-text)]"}`}>
-              {TAB_LABEL[k]}
+              {t(TAB_LABEL_KEY[k], lang)}
             </button>
           ))}
         </div>
@@ -37,11 +37,11 @@ export function PortalPointsAdminClient({ lang, canEditConfig }: { lang: Lang; c
   );
 }
 
-const POLICY_LABEL: Record<string, string> = {
-  NONE: "❌ 미설정 (교환 불가)",
-  INVOICE_DEDUCT_ONLY: "💰 청구액 차감만",
-  GIFT_CARD_ONLY: "🎫 상품권만",
-  BOTH: "✅ 둘 다 가능",
+const POLICY_LABEL_KEY: Record<string, string> = {
+  NONE: "pp.policyNone",
+  INVOICE_DEDUCT_ONLY: "pp.policyInvoiceOnly",
+  GIFT_CARD_ONLY: "pp.policyGiftOnly",
+  BOTH: "pp.policyBoth",
 };
 
 function PoliciesTab({ lang }: { lang: Lang }) {
@@ -67,19 +67,19 @@ function PoliciesTab({ lang }: { lang: Lang }) {
   // 단순화: ID = clientCode 자동, PW = 1234 기본. 신규 거래처는 등록 시 자동 발급되므로
   // 보통 「미발급」 케이스가 없음. 만약 누락된 경우만 수동 [발급] 버튼 노출.
   async function issueAccount(clientId: string) {
-    if (!confirm("이 거래처에 포탈 계정이 없습니다. ID = 거래처코드, 비밀번호 = 1234 로 발급할까요?")) return;
+    if (!confirm(t("pp.issueAccountConfirm", lang))) return;
     setSavingId(clientId);
     try {
       const r = await fetch(`/api/admin/clients/${clientId}/portal-account`, { method: "POST", credentials: "same-origin" });
       const j = await r.json();
-      if (!r.ok) { alert("발급 실패: " + (j?.error ?? "")); return; }
-      alert(`✅ 발급 완료\n\nID: ${j.user.username}\n비밀번호: 1234\n\n고객은 포탈에서 비밀번호를 변경할 수 있습니다.`);
+      if (!r.ok) { alert(t("pp.issueFailed", lang).replace("{e}", j?.error ?? "")); return; }
+      alert(t("pp.issueDone", lang).replace("{u}", j.user.username));
       await refetch();
     } finally { setSavingId(null); }
   }
 
   async function resetTo1234(clientId: string) {
-    if (!confirm("비밀번호를 1234 로 리셋합니다. 기존 비밀번호는 즉시 무효화됩니다.")) return;
+    if (!confirm(t("pp.resetConfirm", lang))) return;
     setSavingId(clientId);
     try {
       const r = await fetch(`/api/admin/clients/${clientId}/portal-account`, {
@@ -87,8 +87,8 @@ function PoliciesTab({ lang }: { lang: Lang }) {
         body: JSON.stringify({ action: "reset_password" }),
       });
       const j = await r.json();
-      if (!r.ok) { alert("리셋 실패: " + (j?.error ?? "")); return; }
-      alert(`✅ 비밀번호가 1234 로 리셋되었습니다.`);
+      if (!r.ok) { alert(t("pp.resetFailed", lang).replace("{e}", j?.error ?? "")); return; }
+      alert(t("pp.resetDone", lang));
     } finally { setSavingId(null); }
   }
 
@@ -97,28 +97,26 @@ function PoliciesTab({ lang }: { lang: Lang }) {
     : items;
 
   return (
-    <Card title="거래처별 포인트 사용 정책" count={items.length}>
+    <Card title={t("pp.policyTitle", lang)} count={items.length}>
       <div className="mb-3 rounded bg-[color:var(--tts-warn-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-warn)]">
-        ⚠️ 계약 시점에 결정된 정책에 따라 거래처가 포인트를 어떻게 사용할 수 있는지 정합니다.
-        <br />
-        대기업 컴플라이언스 (개인 상품권 수령 금지 등) 대응을 위해 신중히 설정하세요.
+        ⚠️ {t("pp.policyNote", lang)}
       </div>
       <input
         type="text"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
-        placeholder="거래처 검색 (코드 / 이름)"
+        placeholder={t("pp.searchPlaceholder", lang)}
         className="mb-3 w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px]"
       />
       <table className="w-full text-[12px]">
         <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
           <tr>
-            <th className="px-2 py-1 text-left">코드</th>
-            <th className="px-2 py-1 text-left">거래처명</th>
-            <th className="px-2 py-1 text-left">포탈 ID</th>
-            <th className="px-2 py-1 text-right">포인트 잔액</th>
-            <th className="px-2 py-1 text-left">사용 정책</th>
-            <th className="px-2 py-1 text-right">계정 액션</th>
+            <th className="px-2 py-1 text-left">{t("pp.colCode", lang)}</th>
+            <th className="px-2 py-1 text-left">{t("pp.colName", lang)}</th>
+            <th className="px-2 py-1 text-left">{t("pp.colPortalId", lang)}</th>
+            <th className="px-2 py-1 text-right">{t("pp.colBalance", lang)}</th>
+            <th className="px-2 py-1 text-left">{t("pp.colPolicy", lang)}</th>
+            <th className="px-2 py-1 text-right">{t("pp.colActions", lang)}</th>
           </tr>
         </thead>
         <tbody>
@@ -129,10 +127,10 @@ function PoliciesTab({ lang }: { lang: Lang }) {
               <td className="px-2 py-1.5 text-[11px]">
                 {c.portalUsername ? (
                   <span className={c.portalActive ? "font-mono" : "font-mono text-[color:var(--tts-muted)] line-through"}>
-                    {c.portalUsername} {!c.portalActive && "(비활성)"}
+                    {c.portalUsername} {!c.portalActive && `(${t("pp.inactive", lang)})`}
                   </span>
                 ) : (
-                  <span className="text-[color:var(--tts-danger)] font-bold">⚠ 미발급</span>
+                  <span className="text-[color:var(--tts-danger)] font-bold">{t("pp.notIssued", lang)}</span>
                 )}
               </td>
               <td className="px-2 py-1.5 text-right font-mono font-bold text-[color:var(--tts-warn)]">{new Intl.NumberFormat("vi-VN").format(c.balance)}d</td>
@@ -143,14 +141,14 @@ function PoliciesTab({ lang }: { lang: Lang }) {
                   onChange={(e) => setPolicy(c.id, e.target.value)}
                   className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1 text-[12px]"
                 >
-                  {Object.entries(POLICY_LABEL).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                  {Object.entries(POLICY_LABEL_KEY).map(([v, key]) => <option key={v} value={v}>{t(key, lang)}</option>)}
                 </select>
               </td>
               <td className="px-2 py-1.5 text-right whitespace-nowrap">
                 {c.portalUsername ? (
-                  <button onClick={() => resetTo1234(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-warn)] px-2 py-0.5 text-[10px] font-bold text-white" title="비밀번호를 1234 로 리셋">🔑 1234 리셋</button>
+                  <button onClick={() => resetTo1234(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-warn)] px-2 py-0.5 text-[10px] font-bold text-white" title={t("pp.resetTitle", lang)}>{t("pp.reset1234Btn", lang)}</button>
                 ) : (
-                  <button onClick={() => issueAccount(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-[10px] font-bold text-white">+ 발급</button>
+                  <button onClick={() => issueAccount(c.id)} disabled={savingId === c.id} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-[10px] font-bold text-white">{t("pp.issueBtn", lang)}</button>
                 )}
               </td>
             </tr>

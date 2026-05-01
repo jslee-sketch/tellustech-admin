@@ -119,7 +119,7 @@ export default async function Home() {
                 href="/login?portal=1"
                 target="_blank"
                 rel="noopener"
-                title="고객 포탈 로그인 / Đăng nhập cổng khách hàng"
+                title={t("page.home.portalLoginTitle", L)}
                 className="ml-2 inline-block rounded-lg border border-[color:var(--tts-accent)] bg-[color:var(--tts-accent-dim)] px-3 py-1 align-middle text-[14px] font-extrabold text-[color:var(--tts-accent)] hover:bg-[color:var(--tts-accent)] hover:text-white"
               >
                 🛒 고객포탈 / Cổng KH

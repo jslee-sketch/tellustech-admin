@@ -142,7 +142,7 @@ export function PurchasesClient({ initialData, lang }: { initialData: PurchaseRo
           <div className="text-[13px] font-bold">{formatVnd(v as string)}</div>
           {r.currency !== "VND" && (
             <div className="text-[10px] text-[color:var(--tts-muted)]">
-              {lang === "VI" ? "Gốc" : lang === "EN" ? "Orig" : "원화"} {r.currency} · {lang === "VI" ? "Tỷ giá" : lang === "EN" ? "Rate" : "환율"} {r.fxRate}
+              {t("purchase.origShort", lang)} {r.currency} · {t("purchase.fxRateShort", lang)} {r.fxRate}
             </div>
           )}
         </div>
@@ -215,13 +215,13 @@ export function PurchasesClient({ initialData, lang }: { initialData: PurchaseRo
         onSelectionChange={setSelectedIds}
         bulkActionBar={(ids, clear) => (
           <Button type="button" size="sm" variant="ghost" onClick={async () => {
-            if (!confirm(`선택된 ${ids.length}건 (purchase) 삭제(soft)?`)) return;
+            if (!confirm(t("bulk.confirmDelete", lang).replace("{n}", String(ids.length)).replace("{type}", "purchase"))) return;
             setBusy(true);
             for (const id of ids) {
               await fetch(`/api/purchases/${id}`, { method: "DELETE" });
             }
             setBusy(false); clear(); location.reload();
-          }} disabled={busy}>{busy ? "삭제 중…" : `선택 삭제 (${ids.length})`}</Button>
+          }} disabled={busy}>{busy ? t("bulk.deleting", lang) : t("bulk.deleteSelected", lang).replace("{n}", String(ids.length))}</Button>
         )}
       />
     </Card>

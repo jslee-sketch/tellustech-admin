@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Field, Select, Badge } from "@/components/ui";
+import { t, type Lang } from "@/lib/i18n";
 
 type Item = { id: string; itemCode: string; name: string; itemType: string; description: string };
 type Compat = { id: string; productItemId: string; consumableItemId: string; product: Item; consumable: Item };
 
-export function ItemCompatClient({ items }: { items: Item[] }) {
+export function ItemCompatClient({ items, lang = "KO" as Lang }: { items: Item[]; lang?: Lang }) {
   const products = useMemo(() => items.filter(i => i.itemType === "PRODUCT"), [items]);
   const consumables = useMemo(() => items.filter(i => i.itemType === "CONSUMABLE" || i.itemType === "PART"), [items]);
   const [productId, setProductId] = useState(products[0]?.id ?? "");
@@ -34,7 +35,7 @@ export function ItemCompatClient({ items }: { items: Item[] }) {
     } finally { setBusy(false); }
   }
   async function remove(consId: string) {
-    if (!confirm("이 매핑 제거?")) return;
+    if (!confirm(t("compat.removeMappingConfirm", lang))) return;
     setBusy(true);
     try {
       await fetch(`/api/admin/item-compatibility?productItemId=${productId}&consumableItemId=${consId}`, { method:'DELETE' });
@@ -47,29 +48,29 @@ export function ItemCompatClient({ items }: { items: Item[] }) {
 
   return (
     <div className="grid grid-cols-12 gap-4">
-      <Card title="본체 장비 선택 / Chọn thiết bị" className="col-span-4">
-        <Field label="장비 (PRODUCT)" required>
+      <Card title={t("compat.pickProductTitle", lang)} className="col-span-4">
+        <Field label={t("compat.equipmentLabel", lang)} required>
           <Select value={productId} onChange={(e)=>setProductId(e.target.value)}
             options={products.map(p => ({ value: p.id, label: `${p.itemCode} · ${p.name}` }))} />
         </Field>
       </Card>
 
-      <Card title={`호환 소모품/부품 (${list.length})`} className="col-span-8">
+      <Card title={`${t("compat.compatPartsTitle", lang)} (${list.length})`} className="col-span-8">
         <div className="mb-3 flex items-end gap-2">
           <div className="flex-1">
-            <Field label="추가할 소모품/부품 / Thêm vật tư">
+            <Field label={t("compat.addPartLabel", lang)}>
               <Select value={adding} onChange={(e)=>setAdding(e.target.value)}
                 options={[
-                  { value:"", label:"선택 / Chọn" },
+                  { value:"", label: t("compat.selectShort", lang) },
                   ...candidates.map(c => ({ value: c.id, label: `[${c.itemType}] ${c.itemCode} · ${c.name}${c.description ? ` (${c.description})` : ""}` })),
                 ]} />
             </Field>
           </div>
-          <Button onClick={add} disabled={!adding || busy}>+ 추가 / Thêm</Button>
+          <Button onClick={add} disabled={!adding || busy}>+ {t("compat.addBtn", lang)}</Button>
         </div>
 
         {list.length === 0 ? (
-          <div className="text-[12px] text-[color:var(--tts-sub)]">아직 매핑 없음 — 위에서 추가</div>
+          <div className="text-[12px] text-[color:var(--tts-sub)]">{t("compat.noMappings", lang)}</div>
         ) : (
           <ul className="space-y-1.5">
             {list.map((c) => (
@@ -80,7 +81,7 @@ export function ItemCompatClient({ items }: { items: Item[] }) {
                   <span className="ml-2">{c.consumable.name}</span>
                   {c.consumable.description && <span className="ml-2 text-[11px] text-[color:var(--tts-muted)]">[{c.consumable.description}]</span>}
                 </span>
-                <Button size="sm" variant="ghost" onClick={()=>remove(c.consumableItemId)} disabled={busy}>제거</Button>
+                <Button size="sm" variant="ghost" onClick={()=>remove(c.consumableItemId)} disabled={busy}>{t("compat.removeBtn", lang)}</Button>
               </li>
             ))}
           </ul>

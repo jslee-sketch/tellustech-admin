@@ -146,20 +146,20 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
         <div className="print-header" style={{ fontFamily: "system-ui, sans-serif", color: "#000", borderBottom: "1.5pt solid #000", paddingBottom: "3mm", marginBottom: "4mm" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2mm" }}>
             <div style={{ fontSize: "14pt", fontWeight: 800, letterSpacing: "0.05em" }}>TELLUSTECH VINA</div>
-            <div style={{ fontSize: "9pt" }}>QR 자산 라벨 시트</div>
+            <div style={{ fontSize: "9pt" }}>{t("labels.qrAssetSheet", lang)}</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto 1fr", gap: "1mm 4mm", fontSize: "9pt" }}>
-            <div style={{ fontWeight: 700 }}>매입처</div>
+            <div style={{ fontWeight: 700 }}>{t("labels.purchaseSource", lang)}</div>
             <div>{printHeader?.supplierName ?? "-"}</div>
-            <div style={{ fontWeight: 700 }}>매입번호</div>
+            <div style={{ fontWeight: 700 }}>{t("labels.purchaseNumber", lang)}</div>
             <div style={{ fontFamily: "monospace" }}>{printHeader?.purchaseNumber ?? "-"}</div>
-            <div style={{ fontWeight: 700 }}>매입일자</div>
+            <div style={{ fontWeight: 700 }}>{t("labels.purchaseDate", lang)}</div>
             <div>{printHeader?.purchaseDate ?? "-"}</div>
-            <div style={{ fontWeight: 700 }}>출력일자</div>
+            <div style={{ fontWeight: 700 }}>{t("labels.printDate", lang)}</div>
             <div>{new Date().toISOString().slice(0, 10)}</div>
-            <div style={{ fontWeight: 700 }}>총 라벨</div>
-            <div>{allLabels.length} 매</div>
-            <div style={{ fontWeight: 700 }}>라벨 사이즈</div>
+            <div style={{ fontWeight: 700 }}>{t("labels.totalLabels", lang)}</div>
+            <div>{allLabels.length} {t("labels.labelsUnit", lang)}</div>
+            <div style={{ fontWeight: 700 }}>{t("labels.labelSize", lang)}</div>
             <div>{spec.label}</div>
           </div>
         </div>

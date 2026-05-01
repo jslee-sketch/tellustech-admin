@@ -91,16 +91,14 @@ export function ClientNewForm({ lang }: { lang: Lang }) {
       </Row>
 
       <Row>
-        <Field label="거래처포탈 ID" width="240px">
-          <TextInput value="(거래처코드 자동 발급)" readOnly disabled />
+        <Field label={t("client.portalId", lang)} width="240px">
+          <TextInput value={`(${t("client.autoIssue", lang)})`} readOnly disabled />
         </Field>
-        <Field label="거래처포탈 비밀번호" width="240px">
+        <Field label={t("client.portalPw", lang)} width="240px">
           <TextInput value="1234" readOnly disabled />
         </Field>
       </Row>
-      <Note tone="info">
-        ⓘ 거래처 등록 시 포탈 계정이 자동 발급됩니다 — <b>ID = 거래처코드</b>, <b>비밀번호 = 1234</b>. 고객은 첫 로그인 시 비밀번호 변경 안내가 표시되며, 포탈에서 직접 변경할 수 있습니다. 분실 시 포인트 관리 → 거래처별 정책 탭에서 [🔑 1234 리셋] 가능.
-      </Note>
+      <Note tone="info">{t("client.portalAutoNote", lang)}</Note>
 
       {error && (
         <div className="mt-3 rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] text-[color:var(--tts-danger)]">

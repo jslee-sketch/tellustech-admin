@@ -26,6 +26,7 @@ export default async function TrashPage() {
       <div className="mx-auto max-w-screen-2xl">
         <h1 className="mb-4 text-2xl font-extrabold">{t("page.trash.title", L)}</h1>
         <TrashClient
+          lang={L}
           buckets={[
             { model: "Client",    label: t("nav.clients", L),     rows: clients.map(r => ({ id: r.id, label: `${r.clientCode} · ${r.companyNameVi}`, deletedAt: r.deletedAt })) },
             { model: "Item",      label: t("nav.items", L),       rows: items.map(r => ({ id: r.id, label: `${r.itemCode} · ${r.name}`, deletedAt: r.deletedAt })) },

@@ -3,10 +3,10 @@
 // 로그인 화면 — 사내(내부 직원) + 고객 포탈 토글.
 // 사내: 회사코드 + 아이디 + 비밀번호 + 언어
 // 포탈: clientCode + 비밀번호 (회사코드/언어 생략, 성공 시 /portal)
-// 라벨: 베트남어 / 한국어 동시 표기.
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { t, type Lang } from "@/lib/i18n";
 
 const LANG_STORAGE_KEY = "tts_preferred_lang";
 
@@ -22,20 +22,19 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const nextPath = params.get("next") || "/";
-  // ?portal=1 또는 ?mode=portal 로 외부 링크 진입 시 포탈 모드 자동 활성화
   const initialMode = (params.get("portal") === "1" || params.get("mode") === "portal") ? "portal" : "staff";
 
   const [mode, setMode] = useState<"staff" | "portal">(initialMode);
   const [companyCode, setCompanyCode] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [language, setLanguage] = useState("VI");
+  const [language, setLanguage] = useState<Lang>("VI");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(LANG_STORAGE_KEY) : null;
-    if (stored && ["VI", "EN", "KO"].includes(stored)) setLanguage(stored);
+    if (stored && ["VI", "EN", "KO"].includes(stored)) setLanguage(stored as Lang);
   }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -44,7 +43,7 @@ function LoginForm() {
     setSubmitting(true);
     try {
       const body = mode === "portal"
-        ? { username, password, language }                           // 포탈도 사용자 언어 선택 사용
+        ? { username, password, language }
         : { companyCode, username, password, language };
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -53,7 +52,7 @@ function LoginForm() {
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(mapError(data.error));
+        setError(mapError(data.error, language));
         return;
       }
       if (typeof window !== "undefined") {
@@ -62,7 +61,7 @@ function LoginForm() {
       router.push(mode === "portal" ? "/portal" : nextPath);
       router.refresh();
     } catch {
-      setError("네트워크 오류 / Lỗi mạng / Network error");
+      setError(t("login.networkError", language));
     } finally {
       setSubmitting(false);
     }
@@ -82,17 +81,17 @@ function LoginForm() {
             TELLUSTECH VINA
           </div>
           <div className="mt-1 text-[22px] font-extrabold text-[color:var(--tts-text)]">
-            {mode === "portal" ? "고객 포탈 / Cổng khách hàng / Customer Portal" : "ERP 로그인 / Đăng nhập / Sign in"}
+            {mode === "portal" ? t("login.titlePortal", language) : t("login.titleErp", language)}
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           {mode === "staff" && (
-            <Field label="회사코드 / Mã công ty / Company" required>
+            <Field label={t("login.companyLabel", language)} required>
               <Select
                 value={companyCode}
                 onChange={setCompanyCode}
-                placeholder="선택 / Chọn / Select"
+                placeholder={t("login.companySelect", language)}
                 options={[
                   { v: "TV", l: "TV — Tellustech Vina" },
                   { v: "VR", l: "VR — Vietrental" },
@@ -102,7 +101,7 @@ function LoginForm() {
             </Field>
           )}
 
-          <Field label={mode === "portal" ? "고객코드 / Mã khách hàng / Client Code" : "아이디 / Tên đăng nhập / Username"} required>
+          <Field label={mode === "portal" ? t("login.clientCode", language) : t("login.username", language)} required>
             <TextInput
               value={username}
               onChange={setUsername}
@@ -112,7 +111,7 @@ function LoginForm() {
             />
           </Field>
 
-          <Field label="비밀번호 / Mật khẩu / Password" required>
+          <Field label={t("login.password", language)} required>
             <TextInput
               type="password"
               value={password}
@@ -123,10 +122,10 @@ function LoginForm() {
             />
           </Field>
 
-          <Field label="언어 / Ngôn ngữ / Language">
+          <Field label={t("login.language", language)}>
             <Select
               value={language}
-              onChange={setLanguage}
+              onChange={(v) => setLanguage(v as Lang)}
               options={[
                 { v: "VI", l: "Tiếng Việt" },
                 { v: "KO", l: "한국어" },
@@ -146,11 +145,10 @@ function LoginForm() {
             disabled={submitting}
             className="mt-2 w-full rounded-lg bg-[color:var(--tts-primary)] py-3 text-[15px] font-bold text-white disabled:opacity-60"
           >
-            {submitting ? "로그인 중… / Đang đăng nhập… / Signing in…" : "로그인 / Đăng nhập / Sign in"}
+            {submitting ? t("login.signingIn", language) : t("login.signIn", language)}
           </button>
         </form>
 
-        {/* 모드 토글 — 구분선 + 반대 모드 진입 버튼 */}
         <div className="mt-6 border-t border-[color:var(--tts-border)] pt-5">
           {mode === "staff" ? (
             <button
@@ -158,7 +156,7 @@ function LoginForm() {
               onClick={() => switchMode("portal")}
               className="w-full rounded-lg border border-[color:var(--tts-border)] py-2.5 text-[13px] font-semibold text-[color:var(--tts-sub)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
             >
-              🛒 고객 포탈 로그인 / Đăng nhập cổng khách hàng / Customer Portal
+              🛒 {t("login.titlePortal", language)}
             </button>
           ) : (
             <button
@@ -166,7 +164,7 @@ function LoginForm() {
               onClick={() => switchMode("staff")}
               className="w-full rounded-lg border border-[color:var(--tts-border)] py-2.5 text-[13px] font-semibold text-[color:var(--tts-sub)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
             >
-              🏢 사내 직원 로그인 / Đăng nhập nội bộ / Staff Login
+              🏢 {t("portal.sidebar.staffLogin", language).replace("🏢 ", "")}
             </button>
           )}
         </div>
@@ -175,16 +173,16 @@ function LoginForm() {
   );
 }
 
-function mapError(code: string | undefined): string {
+function mapError(code: string | undefined, lang: Lang): string {
   switch (code) {
     case "invalid_credentials":
-      return "아이디 또는 비밀번호가 올바르지 않습니다 / Tên đăng nhập hoặc mật khẩu sai / Invalid credentials";
+      return t("login.errInvalidCreds", lang);
     case "company_not_allowed":
-      return "이 회사 접근 권한이 없습니다 / Không có quyền truy cập công ty này / Not allowed for this company";
+      return t("login.errCompanyForbidden", lang);
     case "invalid_input":
-      return "입력값이 올바르지 않습니다 / Đầu vào không hợp lệ / Invalid input";
+      return t("login.errInvalidInput", lang);
     default:
-      return "로그인 실패 / Đăng nhập thất bại / Login failed";
+      return t("login.errLoginFailed", lang);
   }
 }
 

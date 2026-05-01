@@ -222,11 +222,7 @@ type BomNode = {
 };
 
 function BomInfoCard({ tree, lang }: { tree: { item: { id: string; itemCode: string; name: string; bomLevel: number | null }; children: BomNode[] }; lang: Lang }) {
-  const headline = lang === "VI"
-    ? `Cụm lắp ráp này gồm các linh kiện sau:`
-    : lang === "EN"
-      ? `This assembly is composed of the following parts:`
-      : `이 어셈블리는 다음 부품으로 구성됩니다:`;
+  const headline = t("dispatch.assemblyChildren", lang);
   return (
     <div className="mt-2 rounded-md border border-[color:var(--tts-accent)] bg-[color:var(--tts-accent-dim)]/30 p-3">
       <div className="mb-1.5 text-[12px] font-bold text-[color:var(--tts-accent)]">📦 {headline}</div>

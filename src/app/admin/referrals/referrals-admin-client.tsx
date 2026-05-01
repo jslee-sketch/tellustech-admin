@@ -20,10 +20,10 @@ export function ReferralsAdminClient({ lang }: { lang: Lang }) {
     refetch();
   }
   async function firstPayment(id: string) {
-    if (!confirm("첫 입금 발생 처리 → 추천인에게 100,000d 적립?")) return;
+    if (!confirm(t("ref.firstPaidConfirm", lang))) return;
     const r = await fetch(`/api/admin/referrals/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ action: "first_payment" }) });
     const j = await r.json();
-    if (r.ok && j.pointsEarned) alert(`+${j.pointsEarned}d 적립`);
+    if (r.ok && j.pointsEarned) alert(t("ref.pointsEarned", lang).replace("{n}", String(j.pointsEarned)));
     refetch();
   }
 

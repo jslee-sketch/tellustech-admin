@@ -486,10 +486,7 @@ export function ClientDetail({
               </Badge>
             </div>
           </Row>
-          <Note tone="warn">
-            "차단" 상태에서는 Phase 3 AS 접수가 자동 차단됩니다. 미수금 자동 생성·지연 사유
-            이력은 Phase 4 재경 모듈 구현 후 이 탭에서 조회 가능합니다.
-          </Note>
+          <Note tone="warn">{t("client.blockedNote", lang)}</Note>
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingAr}>
               {savingAr ? t("action.saving", lang) : t("btn.saveArStatus", lang)}
@@ -639,7 +636,7 @@ function ContactsTab({
       render: (v, row) => (
         <span className="flex items-center gap-2 font-semibold">
           {v as string}
-          {row.isPrimary && <Badge tone="success">{lang === "VI" ? "Chính" : lang === "EN" ? "Main" : "주"}</Badge>}
+          {row.isPrimary && <Badge tone="success">{t("client.mainContact", lang)}</Badge>}
         </span>
       ),
     },

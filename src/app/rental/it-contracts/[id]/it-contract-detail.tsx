@@ -1592,7 +1592,7 @@ function CalcYieldButton({
       });
       const j = await r.json();
       if (!r.ok) {
-        alert("계산 실패: " + (j?.error ?? "unknown"));
+        alert(t("rental.calcFailed", lang).replace("{e}", String(j?.error ?? "unknown")));
         return;
       }
       const first = j?.results?.[0];

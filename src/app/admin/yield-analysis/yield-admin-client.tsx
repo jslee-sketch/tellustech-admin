@@ -444,7 +444,7 @@ function ReviewModal({ id, existing, onClose, lang }: { id: string; existing: st
 
   async function save() {
     if (!note.trim()) {
-      alert("조사 메모를 입력하세요");
+      alert(t("yield.investNoteRequired", lang));
       return;
     }
     setSaving(true);
@@ -457,7 +457,7 @@ function ReviewModal({ id, existing, onClose, lang }: { id: string; existing: st
       });
       if (!r.ok) {
         const j = await r.json();
-        alert("저장 실패: " + (j?.error ?? "unknown"));
+        alert(t("yield.saveFailed", lang).replace("{e}", String(j?.error ?? "unknown")));
         return;
       }
       onClose(true);
@@ -469,16 +469,16 @@ function ReviewModal({ id, existing, onClose, lang }: { id: string; existing: st
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-lg rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-4">
-        <div className="mb-3 text-[14px] font-bold">부정 의심 건 — 조사 메모</div>
+        <div className="mb-3 text-[14px] font-bold">{t("yield.fraudInvestTitle", lang)}</div>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={6}
           className="w-full rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] p-2 text-[13px]"
-          placeholder="예: 04-26 전화 확인. 기사 Khang 이 토너 2개 과다 지급. 재고 조정 완료."
+          placeholder={t("yield.investNotePh", lang)}
         />
         <div className="mt-3 flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => onClose(false)}>취소</Button>
+          <Button variant="ghost" onClick={() => onClose(false)}>{t("common.cancel", lang)}</Button>
           <Button variant="accent" onClick={save} disabled={saving}>{saving ? t("common.saving", lang) : t("common.save", lang)}</Button>
         </div>
       </div>
@@ -511,19 +511,19 @@ function FilterBar({
     <Card className="mb-3">
       <div className="flex flex-wrap items-end gap-2">
         <div>
-          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">계약번호</div>
+          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">{t("yield.contractNumberLabel", lang)}</div>
           <input value={filterContract} onChange={(e) => setFilterContract(e.target.value)} placeholder="TLS-..." className={`${inputCls} w-32 font-mono`} />
         </div>
         <div>
-          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">거래처</div>
-          <input value={filterClient} onChange={(e) => setFilterClient(e.target.value)} placeholder="이름/코드" className={`${inputCls} w-36`} />
+          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">{t("nav.clients", lang)}</div>
+          <input value={filterClient} onChange={(e) => setFilterClient(e.target.value)} placeholder={t("yield.clientNamePh", lang)} className={`${inputCls} w-36`} />
         </div>
         <div>
-          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">장비 S/N</div>
+          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">{t("yield.equipmentSnLabel", lang)}</div>
           <input value={filterSn} onChange={(e) => setFilterSn(e.target.value)} placeholder="SN-..." className={`${inputCls} w-32 font-mono`} />
         </div>
         <div>
-          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">기간 시작</div>
+          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">{t("yield.periodFromLabel", lang)}</div>
           <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} className={`${inputCls} w-36`} />
         </div>
         <div>

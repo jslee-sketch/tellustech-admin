@@ -32,10 +32,10 @@ export function SurveysAdminClient({ lang }: { lang: Lang }) {
         <h1 className="mb-4 text-2xl font-extrabold">📊 {t("admin.surveys.title", lang)}</h1>
 
         <Card>
-          <button onClick={() => setOpen(!open)} className="rounded bg-[color:var(--tts-accent)] px-3 py-1.5 text-[12px] font-bold text-white">+ 서베이 생성</button>
+          <button onClick={() => setOpen(!open)} className="rounded bg-[color:var(--tts-accent)] px-3 py-1.5 text-[12px] font-bold text-white">+ {t("survey.createBtn", lang)}</button>
           {open && (
             <div className="mt-3 space-y-2 border-t border-[color:var(--tts-border)] pt-3">
-              <input value={form.titleKo} onChange={(e) => setForm({ ...form, titleKo: e.target.value })} placeholder="제목 (KO)" className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
+              <input value={form.titleKo} onChange={(e) => setForm({ ...form, titleKo: e.target.value })} placeholder={t("survey.titleKoPh", lang)} className="w-full rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
               <div className="flex gap-2">
                 <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
                 <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[13px]" />
@@ -49,12 +49,12 @@ export function SurveysAdminClient({ lang }: { lang: Lang }) {
                       <option value="CHOICE">CHOICE</option>
                       <option value="TEXT">TEXT</option>
                     </select>
-                    <input value={q.textKo} onChange={(e) => setForm({ ...form, questions: form.questions.map((x, i) => i === idx ? { ...x, textKo: e.target.value } : x) })} placeholder="질문 (KO)" className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px]" />
+                    <input value={q.textKo} onChange={(e) => setForm({ ...form, questions: form.questions.map((x, i) => i === idx ? { ...x, textKo: e.target.value } : x) })} placeholder={t("survey.questionKoPh", lang)} className="flex-1 rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px]" />
                   </div>
                 ))}
-                <button onClick={() => setForm({ ...form, questions: [...form.questions, { id: `q${form.questions.length + 1}`, type: "RATING", textKo: "" }] })} className="text-[11px] text-[color:var(--tts-accent)]">+ 질문 추가</button>
+                <button onClick={() => setForm({ ...form, questions: [...form.questions, { id: `q${form.questions.length + 1}`, type: "RATING", textKo: "" }] })} className="text-[11px] text-[color:var(--tts-accent)]">+ {t("survey.addQuestion", lang)}</button>
               </div>
-              <button onClick={create} className="rounded bg-[color:var(--tts-accent)] px-3 py-1 text-[12px] font-bold text-white">생성</button>
+              <button onClick={create} className="rounded bg-[color:var(--tts-accent)] px-3 py-1 text-[12px] font-bold text-white">{t("survey.createBtnShort", lang)}</button>
             </div>
           )}
         </Card>

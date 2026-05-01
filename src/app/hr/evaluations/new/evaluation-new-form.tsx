@@ -21,9 +21,9 @@ export function EvaluationNewForm({ employees, lang }: { employees: { value: str
   const [subjectId, setSubjectId] = useState("");
   const [deadline, setDeadline] = useState("");
   const [questions, setQuestions] = useState<Q[]>([
-    { id: "q1", question: "업무 역량", score: 6 },
-    { id: "q2", question: "협업 태도", score: 6 },
-    { id: "q3", question: "책임감", score: 6 },
+    { id: "q1", question: t("evalDefault.q1", lang), score: 6 },
+    { id: "q2", question: t("evalDefault.q2", lang), score: 6 },
+    { id: "q3", question: t("evalDefault.q3", lang), score: 6 },
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

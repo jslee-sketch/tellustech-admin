@@ -25,15 +25,15 @@ export function Card({ title, subtitle, count, countLabel, action, children, cla
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             {title !== undefined && (
-              <h3 className="text-[15px] font-extrabold text-[color:var(--tts-text)]">
+              <h3 className="text-[16px] font-extrabold text-[color:var(--tts-text)]">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <span className="text-[11px] text-[color:var(--tts-muted)]">{subtitle}</span>
+              <span className="text-[12px] font-medium text-[color:var(--tts-sub)]">{subtitle}</span>
             )}
             {count !== undefined && (
-              <span className="rounded bg-[color:var(--tts-primary-dim)] px-2 py-0.5 text-[11px] font-semibold text-[color:var(--tts-primary)]">
+              <span className="rounded bg-[color:var(--tts-primary-dim)] px-2.5 py-0.5 text-[12px] font-bold text-[color:var(--tts-primary)]">
                 {count}{countLabel !== undefined ? countLabel : " items"}
               </span>
             )}
@@ -60,8 +60,8 @@ export function SectionTitle({ title, icon, className }: SectionTitleProps) {
         (className ? " " + className : "")
       }
     >
-      {icon && <span className="text-[14px]">{icon}</span>}
-      <span className="text-[13px] font-bold text-[color:var(--tts-primary)]">{title}</span>
+      {icon && <span className="text-[16px]">{icon}</span>}
+      <span className="text-[14px] font-extrabold text-[color:var(--tts-primary)]">{title}</span>
     </div>
   );
 }
@@ -89,9 +89,9 @@ export function Note({ children, tone = "info", className }: NoteProps) {
       ? "bg-[color:var(--tts-warn-dim)] text-[color:var(--tts-warn)]"
       : tone === "danger"
       ? "bg-[color:var(--tts-danger-dim)] text-[color:var(--tts-danger)]"
-      : "bg-[color:var(--tts-primary-dim)] text-[color:var(--tts-sub)]";
+      : "bg-[color:var(--tts-primary-dim)] text-[color:var(--tts-text)]";
   return (
-    <div className={`mt-2 rounded-md ${bg} px-3 py-2 text-[11px]` + (className ? " " + className : "")}>
+    <div className={`mt-2 rounded-md ${bg} px-3 py-2 text-[12px] font-medium` + (className ? " " + className : "")}>
       {children}
     </div>
   );

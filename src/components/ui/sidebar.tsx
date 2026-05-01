@@ -266,7 +266,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
       {/* 언어 선택 — 상단, 동그란 국기, 활성 시 발광 테두리 */}
       <div className="border-b border-[color:var(--tts-border)] px-2 py-3">
         {!collapsed && (
-          <div className="mb-2 px-1 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-muted)]">
+          <div className="mb-2 px-1 text-center text-[12px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-sub)]">
             {t("sidebar.langSelect", currentLang)}
           </div>
         )}
@@ -303,7 +303,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
       {allowedCompanies.length >= 2 && (
         <div className="border-b border-[color:var(--tts-border)] px-2 py-2">
           {!collapsed && (
-            <div className="mb-1 px-1 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-muted)]">
+            <div className="mb-1 px-1 text-center text-[12px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-sub)]">
               회사
             </div>
           )}
@@ -341,8 +341,8 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
             <div className={collapsed ? "mt-2 border-t border-[color:var(--tts-border)] pt-2" : "mt-3"}>
               {!collapsed && (
                 <div className="mb-1 flex items-center gap-2 px-3">
-                  <span className="h-3.5 w-1 rounded-full bg-[color:var(--tts-danger)]" aria-hidden />
-                  <span className="text-[13px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
+                  <span className="h-4 w-1.5 rounded-full bg-[color:var(--tts-danger)]" aria-hidden />
+                  <span className="text-[14px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
                     ❤ 즐겨찾기
                   </span>
                 </div>
@@ -368,9 +368,9 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
             }
           >
             {!collapsed && (
-              <div className="mb-1 flex items-center gap-2 px-3">
-                <span className="h-3.5 w-1 rounded-full bg-[color:var(--tts-accent)]" aria-hidden />
-                <span className="text-[13px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
+              <div className="mb-1.5 flex items-center gap-2 px-3">
+                <span className="h-4 w-1.5 rounded-full bg-[color:var(--tts-accent)]" aria-hidden />
+                <span className="text-[14px] font-extrabold tracking-[0.05em] text-[color:var(--tts-text)]">
                   {t(g.labelKey, currentLang)}
                 </span>
               </div>
@@ -389,12 +389,12 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
         <button
           type="button"
           onClick={toggleTheme}
-          className="w-full rounded px-2 py-1 text-[11px] font-bold text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
+          className="w-full rounded px-2 py-1.5 text-[12px] font-bold text-[color:var(--tts-sub)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
           title={theme === "dark" ? t("sidebar.toLightMode", currentLang) : t("sidebar.toDarkMode", currentLang)}
         >
           {theme === "dark" ? (collapsed ? "☀" : `☀ ${t("sidebar.lightShort", currentLang)}`) : (collapsed ? "🌙" : `🌙 ${t("sidebar.darkShort", currentLang)}`)}
         </button>
-        {!collapsed && <div className="mt-1 text-center text-[9px] text-[color:var(--tts-muted)]">TELLUSTECH ERP</div>}
+        {!collapsed && <div className="mt-1 text-center text-[10px] font-semibold tracking-wider text-[color:var(--tts-sub)]">TELLUSTECH ERP</div>}
       </div>
     </aside>
   );
@@ -418,7 +418,7 @@ function NavItem({
           href={entry.href}
           title={label}
           className={`flex flex-1 items-center gap-2 rounded-md px-2 py-2 text-[13px] font-semibold transition ${
-            active ? "text-[color:var(--tts-primary)]" : "text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"
+            active ? "text-[color:var(--tts-primary)]" : "text-[color:var(--tts-text)] hover:text-[color:var(--tts-accent)]"
           }`}
         >
           <span className="text-[18px] leading-none">{entry.icon}</span>

@@ -9,9 +9,9 @@
   --tts-input: #1e1e24;
   --tts-border: #2a2a30;
   --tts-border-focus: #5b9bd5;
-  --tts-text: #e8e6e1;
-  --tts-sub: #8a8a8a;
-  --tts-muted: #555;
+  --tts-text: #f5f3ee;
+  --tts-sub: #b5b5b5;
+  --tts-muted: #8c8c8c;
   --tts-primary: #5b9bd5;
   --tts-primary-dim: #2a3a4a;
   --tts-accent: #e8943a;
@@ -36,9 +36,9 @@ html.light {
   --tts-input: #ffffff;
   --tts-border: #d8d8e0;
   --tts-border-focus: #3b82f6;
-  --tts-text: #1a1a1f;
-  --tts-sub: #52525b;
-  --tts-muted: #a1a1aa;
+  --tts-text: #15151a;
+  --tts-sub: #3f3f46;
+  --tts-muted: #6b6b73;
   --tts-primary: #2563eb;
   --tts-primary-dim: #dbeafe;
   --tts-accent: #d97706;

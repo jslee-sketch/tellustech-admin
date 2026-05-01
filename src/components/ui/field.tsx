@@ -27,14 +27,14 @@ export function Field({ label, required, hint, error, width, children, className
       style={widthStyle}
     >
       {label !== undefined && (
-        <label className="text-[12px] font-semibold text-[color:var(--tts-sub)]">
+        <label className="text-[13px] font-bold text-[color:var(--tts-text)]">
           {label}
           {required && <span className="text-[color:var(--tts-danger)]"> *</span>}
         </label>
       )}
       {children}
-      {hint && <span className="text-[10px] text-[color:var(--tts-muted)]">{hint}</span>}
-      {error && <span className="text-[10px] text-[color:var(--tts-danger)]">{error}</span>}
+      {hint && <span className="text-[11px] text-[color:var(--tts-sub)]">{hint}</span>}
+      {error && <span className="text-[11px] font-semibold text-[color:var(--tts-danger)]">{error}</span>}
     </div>
   );
 }
@@ -121,8 +121,8 @@ export function FileUpload({
         }}
       />
       <div className="text-[18px]">📎</div>
-      <div className="text-[11px] text-[color:var(--tts-sub)]">{label}</div>
-      <div className="text-[10px] text-[color:var(--tts-muted)]">{accept}</div>
+      <div className="text-[12px] font-semibold text-[color:var(--tts-text)]">{label}</div>
+      <div className="text-[11px] text-[color:var(--tts-sub)]">{accept}</div>
     </label>
   );
 }

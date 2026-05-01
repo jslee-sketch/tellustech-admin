@@ -84,22 +84,22 @@ export default async function PortalHome() {
           </div>
         )}
 
-        <h2 className="mb-2 text-[14px] font-bold">{t("portal.serviceSummary", L)}</h2>
+        <h2 className="mb-3 text-[16px] font-extrabold text-[color:var(--tts-text)]">{t("portal.serviceSummary", L)}</h2>
         <div className="mb-6 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
-          <Link href="/portal/oa/rentals" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">OA</div><div className="text-[16px] font-bold">{oaContracts.length}</div><div className="text-[11px] text-[color:var(--tts-sub)]">{oaEqCount} {t("portal.units", L)}</div></Link>
-          <Link href="/portal/tm/rentals" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">TM</div><div className="text-[16px] font-bold">{tmRentals.length}</div><div className="text-[11px] text-[color:var(--tts-sub)]">{tmEqCount} {t("portal.units", L)}</div></Link>
-          <Link href="/portal/tm/calibrations" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.calibration", L)}</div><div className="text-[16px] font-bold">{calibrations}</div></Link>
-          <Link href="/portal/tm/repairs" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.repair", L)}</div><div className="text-[16px] font-bold">{repairs}</div></Link>
-          <Link href="/portal/tm/maintenance" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.maintenance", L)}</div><div className="text-[16px] font-bold">{maintenance}</div></Link>
-          <Link href="/portal/tm/purchases" className={cardCls}><div className="text-[10px] uppercase tracking-wider text-[color:var(--tts-muted)]">{t("portal.purchase", L)}</div><div className="text-[16px] font-bold">{purchases}</div></Link>
+          <Link href="/portal/oa/rentals" className={cardCls}><div className="text-[12px] font-bold uppercase tracking-wider text-[color:var(--tts-accent)]">OA</div><div className="text-[20px] font-extrabold">{oaContracts.length}</div><div className="text-[12px] font-medium text-[color:var(--tts-text)]">{oaEqCount} {t("portal.units", L)}</div></Link>
+          <Link href="/portal/tm/rentals" className={cardCls}><div className="text-[12px] font-bold uppercase tracking-wider text-[color:var(--tts-accent)]">TM</div><div className="text-[20px] font-extrabold">{tmRentals.length}</div><div className="text-[12px] font-medium text-[color:var(--tts-text)]">{tmEqCount} {t("portal.units", L)}</div></Link>
+          <Link href="/portal/tm/calibrations" className={cardCls}><div className="text-[12px] font-bold uppercase tracking-wider text-[color:var(--tts-accent)]">{t("portal.calibration", L)}</div><div className="text-[20px] font-extrabold">{calibrations}</div></Link>
+          <Link href="/portal/tm/repairs" className={cardCls}><div className="text-[12px] font-bold uppercase tracking-wider text-[color:var(--tts-accent)]">{t("portal.repair", L)}</div><div className="text-[20px] font-extrabold">{repairs}</div></Link>
+          <Link href="/portal/tm/maintenance" className={cardCls}><div className="text-[12px] font-bold uppercase tracking-wider text-[color:var(--tts-accent)]">{t("portal.maintenance", L)}</div><div className="text-[20px] font-extrabold">{maintenance}</div></Link>
+          <Link href="/portal/tm/purchases" className={cardCls}><div className="text-[12px] font-bold uppercase tracking-wider text-[color:var(--tts-accent)]">{t("portal.purchase", L)}</div><div className="text-[20px] font-extrabold">{purchases}</div></Link>
         </div>
 
         <Card title={t("portal.requestStatus", L)} count={tickets.length}>
           {tickets.length === 0 ? (
-            <p className="text-[13px] text-[color:var(--tts-muted)]">{t("portal.noRequests", L)}</p>
+            <p className="text-[14px] font-medium text-[color:var(--tts-sub)]">{t("portal.noRequests", L)}</p>
           ) : (
-            <table className="w-full text-[12px]">
-              <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
+            <table className="w-full text-[13px]">
+              <thead className="border-b border-[color:var(--tts-border)] text-[12px] font-bold text-[color:var(--tts-sub)]">
                 <tr>
                   <th className="px-2 py-1 text-left">{t("portal.ticketNumber", L)}</th>
                   <th className="px-2 py-1 text-left">{t("portal.kindShort", L)}</th>
@@ -123,8 +123,8 @@ export default async function PortalHome() {
                         <Link href={`/portal/requests/${tk.id}`} className="text-[color:var(--tts-primary)] hover:underline">{tk.ticketNumber}</Link>
                       </td>
                       <td className="px-2 py-2">{tk.kind === "SUPPLIES_REQUEST" ? "📦" : "🛠"}</td>
-                      <td className="px-2 py-2 text-[11px] text-[color:var(--tts-sub)]">
-                        <Link href={`/portal/requests/${tk.id}`} className="hover:underline">{summary || "—"}</Link>
+                      <td className="px-2 py-2 text-[12px] text-[color:var(--tts-text)]">
+                        <Link href={`/portal/requests/${tk.id}`} className="hover:underline hover:text-[color:var(--tts-primary)]">{summary || "—"}</Link>
                       </td>
                       <td className="px-2 py-2">{tk.receivedAt.toISOString().slice(0, 10)}</td>
                       <td className="px-2 py-2"><Badge tone={STATUS_TONE[tk.status] ?? "neutral"}>{STATUS_LABEL_KEY[tk.status] ? t(STATUS_LABEL_KEY[tk.status], L) : tk.status}</Badge></td>

@@ -98,7 +98,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
   const tmBanner = banners.find((b) => b.slot === "TM");
 
   function isActive(href: string) { return pathname === href || (href !== "/" && pathname.startsWith(href)); }
-  const itemCls = (active: boolean) => `flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition ${active ? "bg-[color:var(--tts-accent)] text-white font-bold" : "text-[color:var(--tts-text)] hover:bg-[color:var(--tts-card-hover)]"}`;
+  const itemCls = (active: boolean) => `flex items-center gap-2 rounded-md px-3 py-2 text-[14px] font-semibold transition ${active ? "bg-[color:var(--tts-accent)] text-white" : "text-[color:var(--tts-text)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-accent)]"}`;
 
   // 모바일 햄버거 + drawer (md 미만에서만 보임)
   const mobileHeader = (
@@ -121,11 +121,11 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
           <button onClick={() => setMobileOpen(false)} className="text-[18px] text-[color:var(--tts-muted)]">✕</button>
         </div>
         <div className="px-2 pb-3">
-          <SectionTab label={t("portal.sidebar.oaDivision", lang)} open={openGroups.oa} onToggle={() => toggleGroup("oa")} />
+          <SectionTab label={t("portal.sidebar.oaDivision", lang)} icon="📠" open={openGroups.oa} onToggle={() => toggleGroup("oa")} />
           {openGroups.oa && (<ul className="space-y-0.5">{OA_ITEMS.map((it) => <li key={it.href}><Link href={it.href} onClick={() => setMobileOpen(false)} className={itemCls(isActive(it.href))}>{t(it.labelKey, lang)}</Link></li>)}</ul>)}
-          <SectionTab label={t("portal.sidebar.tmDivision", lang)} open={openGroups.tm} onToggle={() => toggleGroup("tm")} />
+          <SectionTab label={t("portal.sidebar.tmDivision", lang)} icon="🔬" open={openGroups.tm} onToggle={() => toggleGroup("tm")} />
           {openGroups.tm && (<ul className="space-y-0.5">{TM_ITEMS.map((it) => <li key={it.href}><Link href={it.href} onClick={() => setMobileOpen(false)} className={itemCls(isActive(it.href))}>{t(it.labelKey, lang)}</Link></li>)}</ul>)}
-          <SectionTab label={t("portal.sidebar.communication", lang)} open={openGroups.comm} onToggle={() => toggleGroup("comm")} />
+          <SectionTab label={t("portal.sidebar.communication", lang)} icon="💬" open={openGroups.comm} onToggle={() => toggleGroup("comm")} />
           {openGroups.comm && (<ul className="space-y-0.5">{COMM_ITEMS.map((it) => <li key={it.href}><Link href={it.href} onClick={() => setMobileOpen(false)} className={itemCls(isActive(it.href))}><span>{it.icon}</span><span>{t(it.labelKey, lang)}</span></Link></li>)}</ul>)}
         </div>
         <div className="border-t border-[color:var(--tts-border)] p-3">
@@ -192,7 +192,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-3">
-        <SectionTab label={t("portal.sidebar.oaDivision", lang)} open={openGroups.oa} onToggle={() => toggleGroup("oa")} />
+        <SectionTab label={t("portal.sidebar.oaDivision", lang)} icon="📠" open={openGroups.oa} onToggle={() => toggleGroup("oa")} />
         {openGroups.oa && (
           <>
             {oaBanner && (
@@ -206,7 +206,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
           </>
         )}
 
-        <SectionTab label={t("portal.sidebar.tmDivision", lang)} open={openGroups.tm} onToggle={() => toggleGroup("tm")} />
+        <SectionTab label={t("portal.sidebar.tmDivision", lang)} icon="🔬" open={openGroups.tm} onToggle={() => toggleGroup("tm")} />
         {openGroups.tm && (
           <>
             {tmBanner && (
@@ -220,7 +220,7 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
           </>
         )}
 
-        <SectionTab label={t("portal.sidebar.communication", lang)} open={openGroups.comm} onToggle={() => toggleGroup("comm")} />
+        <SectionTab label={t("portal.sidebar.communication", lang)} icon="💬" open={openGroups.comm} onToggle={() => toggleGroup("comm")} />
         {openGroups.comm && (
           <ul className="space-y-0.5">
             {COMM_ITEMS.map((it) => (
@@ -242,31 +242,33 @@ export function PortalSidebar({ initialLang = "KO", clientName }: { initialLang?
               const active = lang === l;
               const flagSrc = l === "VI" ? "/flags/vn.svg" : l === "EN" ? "/flags/us.svg" : "/flags/kr.svg";
               return (
-                <button key={l} type="button" onClick={() => changeLang(l)} className={`flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border-2 p-0 ${active ? "border-[color:var(--tts-accent)]" : "border-[color:var(--tts-border)] opacity-60 hover:opacity-100"}`}>
+                <button key={l} type="button" onClick={() => changeLang(l)} className={`flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border-2 p-0 ${active ? "border-[color:var(--tts-accent)]" : "border-[color:var(--tts-border)] opacity-90 hover:opacity-100"}`}>
                   <img src={flagSrc} alt={l} className="h-full w-full rounded-full object-cover" />
                 </button>
               );
             })}
           </div>
-          <button type="button" onClick={toggleTheme} className="rounded border border-[color:var(--tts-border)] px-2 py-1 text-[11px] hover:bg-[color:var(--tts-card-hover)]">{theme === "dark" ? "☀" : "🌙"}</button>
+          <button type="button" onClick={toggleTheme} className="rounded border border-[color:var(--tts-border)] px-2 py-1.5 text-[14px] font-bold hover:bg-[color:var(--tts-card-hover)]">{theme === "dark" ? "☀" : "🌙"}</button>
         </div>
-        <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); router.replace("/login?portal=1"); }} className="mt-2 w-full rounded border border-[color:var(--tts-border)] px-3 py-1.5 text-[12px] hover:bg-[color:var(--tts-card-hover)]">
+        <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); router.replace("/login?portal=1"); }} className="mt-2 w-full rounded border border-[color:var(--tts-border)] px-3 py-2 text-[13px] font-semibold hover:bg-[color:var(--tts-card-hover)]">
           {t("nav.logout", lang)}
         </button>
-        <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-1.5 text-center text-[11px] text-[color:var(--tts-accent)]">{t("portal.sidebar.staffLogin", lang)}</Link>
+        <Link href="/login" onClick={async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }} className="mt-2 block w-full rounded border border-[color:var(--tts-accent)] px-3 py-2 text-center text-[12px] font-bold text-[color:var(--tts-accent)] hover:bg-[color:var(--tts-accent-dim)]">{t("portal.sidebar.staffLogin", lang)}</Link>
       </div>
     </aside>
     </>
   );
 }
 
-function SectionTab({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
+function SectionTab({ label, icon, open, onToggle }: { label: string; icon?: string; open: boolean; onToggle: () => void }) {
   return (
-    <button onClick={onToggle} className="mt-3 mb-1 flex w-full items-center gap-2 px-3 hover:opacity-80">
-      <div className="h-px flex-1 bg-[color:var(--tts-border)]" />
-      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-muted)]">{label}</div>
-      <div className="h-px flex-1 bg-[color:var(--tts-border)]" />
-      <span className="text-[10px] text-[color:var(--tts-muted)]">{open ? "▼" : "▶"}</span>
+    <button
+      onClick={onToggle}
+      className="mt-4 mb-2 flex w-full items-center gap-2 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] px-3 py-2 text-left transition hover:border-[color:var(--tts-accent)] hover:bg-[color:var(--tts-accent-dim)]"
+    >
+      {icon && <span className="text-[18px] leading-none">{icon}</span>}
+      <span className="flex-1 text-[14px] font-extrabold tracking-wide text-[color:var(--tts-text)]">{label}</span>
+      <span className={`flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--tts-accent)] text-[11px] font-black text-white transition-transform ${open ? "rotate-0" : "-rotate-90"}`} aria-hidden>▼</span>
     </button>
   );
 }

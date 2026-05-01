@@ -323,70 +323,62 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
           className="mb-3 w-full rounded border border-dashed border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1.5 text-[12px] font-mono text-[color:var(--tts-sub)]"
         />
 
-        <div className="overflow-auto">
-          <table className="w-full min-w-[1000px] text-[12px]">
-            <thead className="sticky top-0 z-10 bg-[color:var(--tts-card)] text-[11px] font-bold text-[color:var(--tts-sub)]">
-              <tr>
-                <th className="w-10 px-1 py-1 text-left">#</th>
-                <th className="px-1 py-1 text-left">{t("field.item", lang)} *</th>
-                <th className="w-[220px] px-1 py-1 text-left">{t("field.serial", lang)}{snRequiredOnLines ? " *" : ""}</th>
-                <th className="w-20 px-1 py-1 text-right">{t("field.qty", lang)}</th>
-                {isConsumable && <th className="w-[180px] px-1 py-1 text-left">{t("field.targetEquipSN", lang)} *</th>}
-                <th className="px-1 py-1 text-left">{t("field.note", lang)}</th>
-                <th className="w-10 px-1 py-1" />
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((row, idx) => (
-                <tr key={row.key} className="border-t border-[color:var(--tts-border)]/40 align-top">
-                  <td className="px-1 py-1 font-mono text-[11px] text-[color:var(--tts-muted)]">{idx + 1}</td>
-                  <td className="px-1 py-1">
-                    <ItemCombobox value={row.itemId} onChange={(v) => updateLine(idx, { itemId: v })} required lang={lang} />
-                  </td>
-                  <td className="px-1 py-1">
-                    <SerialCombobox
-                      value={row.serialNumber}
-                      onChange={(v) => updateLine(idx, { serialNumber: v })}
-                      itemId={row.itemId || undefined}
-                      lang={lang}
-                      required={snRequiredOnLines}
-                    />
-                  </td>
-                  <td className="px-1 py-1">
-                    <TextInput
-                      type="number"
-                      min={1}
-                      value={row.quantity}
-                      onChange={(e) => updateLine(idx, { quantity: e.target.value })}
-                      className="text-right"
-                    />
-                  </td>
-                  {isConsumable && (
-                    <td className="px-1 py-1">
-                      <SerialCombobox
-                        value={row.targetEquipmentSN}
-                        onChange={(v) => updateLine(idx, { targetEquipmentSN: v })}
-                        lang={lang}
-                        required
-                      />
-                    </td>
-                  )}
-                  <td className="px-1 py-1">
-                    <TextInput value={row.note} onChange={(e) => updateLine(idx, { note: e.target.value })} />
-                  </td>
-                  <td className="px-1 py-1 text-right">
-                    <button
-                      type="button"
-                      onClick={() => removeLine(idx)}
-                      disabled={lines.length <= 1}
-                      className="rounded border border-[color:var(--tts-border)] px-2 py-1 text-[11px] text-[color:var(--tts-danger)] hover:bg-[color:var(--tts-card-hover)] disabled:opacity-30"
-                      title={t("txnBulk.removeLine", lang)}
-                    >✕</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* 라인 카드 — overflow 없음, dropdown 시각 차단 없음. required 는 JS 에서 검증. */}
+        <div className="space-y-2">
+          {/* 헤더 라벨 */}
+          <div className="hidden gap-2 px-2 text-[11px] font-bold text-[color:var(--tts-sub)] md:flex">
+            <span className="w-8 shrink-0">#</span>
+            <span className="flex-1 min-w-0">{t("field.item", lang)} *</span>
+            <span className="w-[220px] shrink-0">{t("field.serial", lang)}{snRequiredOnLines ? " *" : ""}</span>
+            <span className="w-20 shrink-0 text-right">{t("field.qty", lang)}</span>
+            {isConsumable && <span className="w-[200px] shrink-0">{t("field.targetEquipSN", lang)} *</span>}
+            <span className="flex-1 min-w-0">{t("field.note", lang)}</span>
+            <span className="w-10 shrink-0" />
+          </div>
+          {lines.map((row, idx) => (
+            <div key={row.key} className="flex flex-wrap items-start gap-2 rounded border border-[color:var(--tts-border)]/40 bg-[color:var(--tts-card)] p-2 md:flex-nowrap">
+              <span className="w-8 shrink-0 pt-2 font-mono text-[12px] font-bold text-[color:var(--tts-muted)]">{idx + 1}</span>
+              <div className="flex-1 min-w-[280px]">
+                <ItemCombobox value={row.itemId} onChange={(v) => updateLine(idx, { itemId: v })} lang={lang} />
+              </div>
+              <div className="w-full md:w-[220px] shrink-0">
+                <SerialCombobox
+                  value={row.serialNumber}
+                  onChange={(v) => updateLine(idx, { serialNumber: v })}
+                  itemId={row.itemId || undefined}
+                  lang={lang}
+                />
+              </div>
+              <div className="w-20 shrink-0">
+                <TextInput
+                  type="number"
+                  min={1}
+                  value={row.quantity}
+                  onChange={(e) => updateLine(idx, { quantity: e.target.value })}
+                  className="text-right"
+                />
+              </div>
+              {isConsumable && (
+                <div className="w-full md:w-[200px] shrink-0">
+                  <SerialCombobox
+                    value={row.targetEquipmentSN}
+                    onChange={(v) => updateLine(idx, { targetEquipmentSN: v })}
+                    lang={lang}
+                  />
+                </div>
+              )}
+              <div className="flex-1 min-w-[140px]">
+                <TextInput value={row.note} onChange={(e) => updateLine(idx, { note: e.target.value })} />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeLine(idx)}
+                disabled={lines.length <= 1}
+                className="h-9 w-10 shrink-0 rounded border border-[color:var(--tts-danger)] bg-[color:var(--tts-danger-dim)] text-[14px] font-bold text-[color:var(--tts-danger)] hover:bg-[color:var(--tts-danger)] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                title={t("txnBulk.removeLine", lang)}
+              >✕</button>
+            </div>
+          ))}
         </div>
       </div>
 

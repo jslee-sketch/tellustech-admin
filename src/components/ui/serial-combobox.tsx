@@ -144,7 +144,7 @@ export function SerialCombobox({
       />
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[260px] overflow-y-auto rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-[100] mt-1 max-h-[440px] overflow-y-auto rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] shadow-2xl">
           {hits.length === 0 ? (
             <div className="px-3 py-2 text-[12px] text-[color:var(--tts-muted)]">
               {emptyHint}

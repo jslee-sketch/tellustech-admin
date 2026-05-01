@@ -26,3 +26,4 @@ export { SerialCombobox } from "./serial-combobox";
 export type { SerialOption } from "./serial-combobox";
 export { Sidebar } from "./sidebar";
 export { Multilingual } from "./multilingual";
+export { QrScanModal } from "./qr-scan-modal";

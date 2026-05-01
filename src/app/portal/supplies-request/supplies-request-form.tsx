@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Field, Note, Select, TextInput } from "@/components/ui";
+import { Button, Card, Field, Note, QrScanModal, Select, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type Supply = { id: string; itemCode: string; name: string; unit: string|null; description: string; itemType: string; colorChannel?: string|null };
@@ -19,6 +19,37 @@ export function SuppliesRequestForm({ lang }: { clientId?: string; lang: Lang })
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<string|null>(null);
   const [error, setError] = useState<string|null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
+
+  function handleScanned(text: string) {
+    // QR 디코딩: itemCode 또는 S/N. 자사 장비(products) 에 매칭되는 product 가 있으면 productFilter 자동 설정.
+    let code = text;
+    try {
+      const parsed = JSON.parse(text) as { itemCode?: string; serialNumber?: string };
+      if (parsed.itemCode) code = parsed.itemCode;
+      else if (parsed.serialNumber) code = parsed.serialNumber;
+    } catch { /* plain text */ }
+    // 1) products 의 itemCode 매칭
+    const byCode = products.find((p) => p.itemCode === code);
+    if (byCode) {
+      setProductFilter(byCode.id);
+      setError(null);
+      return;
+    }
+    // 2) S/N 으로 my-equipment 조회 → itemCode → product 매핑
+    fetch(`/api/portal/my-equipment`).then((r) => r.json()).then((j) => {
+      const eq = (j?.equipment ?? []).find((e: { sn: string }) => e.sn === code);
+      if (eq) {
+        const p = products.find((pp) => pp.itemCode === eq.itemCode);
+        if (p) {
+          setProductFilter(p.id);
+          setError(null);
+          return;
+        }
+      }
+      setError(t("portal.supplies.snNotMatched", lang).replace("{sn}", code));
+    }).catch(() => setError(t("portal.supplies.snNotMatched", lang).replace("{sn}", code)));
+  }
 
   useEffect(() => {
     fetch("/api/portal/my-supplies").then(r => r.json()).then(j => {
@@ -80,19 +111,32 @@ export function SuppliesRequestForm({ lang }: { clientId?: string; lang: Lang })
     <Card title={t("page.portal.supplies", lang)}>
       <Note tone="info">{t("portal.supplies.guideKo", lang)}</Note>
 
-      {/* 장비별 좁히기 */}
+      {/* 장비별 좁히기 — QR 스캔 버튼 포함 */}
       {products.length > 0 && (
         <div className="mt-3">
           <Field label={t("portal.supplies.filterByEq", lang)}>
-            <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}
-              options={[
-                { value: "", label: t("portal.supplies.allEq", lang) },
-                ...products.map((p) => ({ value: p.id, label: `${p.itemCode} · ${p.name}` })),
-              ]}
-            />
+            <div className="flex gap-2">
+              <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)}
+                options={[
+                  { value: "", label: t("portal.supplies.allEq", lang) },
+                  ...products.map((p) => ({ value: p.id, label: `${p.itemCode} · ${p.name}` })),
+                ]}
+              />
+              <Button type="button" variant="accent" onClick={() => setScanOpen(true)}>
+                📷 {t("qr.scanBtn", lang)}
+              </Button>
+            </div>
           </Field>
         </div>
       )}
+
+      <QrScanModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onDecoded={handleScanned}
+        lang={lang}
+        title={t("qr.scanTitleEquipment", lang)}
+      />
 
       <form onSubmit={handleSubmit} className="mt-3 space-y-3">
         {items.map((row, i) => (

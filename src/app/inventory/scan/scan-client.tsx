@@ -80,10 +80,10 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
         formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
         verbose: false,
       });
-      // qrbox 를 viewport 비례로 — 모바일에서 카메라 영상이 작아도 QR 박스가 화면을 거의 덮도록.
+      // qrbox 를 viewport 비례로 — 정사각형 컨테이너에서 더 넓게 (88%) 인식.
       const qrboxFn = (vw: number, vh: number) => {
         const minEdge = Math.min(vw, vh);
-        const size = Math.floor(minEdge * 0.78);
+        const size = Math.floor(minEdge * 0.88);
         return { width: size, height: size };
       };
       await scanner.start(
@@ -270,8 +270,8 @@ export function ScanClient({ items, warehouses, clients, lang }: Props) {
 
       <div
         id={SCANNER_ELEMENT_ID}
-        className="mx-auto my-3 aspect-video w-full max-w-lg overflow-hidden rounded-md border border-[color:var(--tts-border)] bg-black"
-        style={{ minHeight: 240 }}
+        className="mx-auto my-3 aspect-square w-full max-w-2xl overflow-hidden rounded-md border-2 border-[color:var(--tts-accent)] bg-black"
+        style={{ minHeight: 360 }}
       />
 
       <div className="mb-3 flex items-center gap-2">

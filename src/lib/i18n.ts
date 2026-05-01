@@ -3191,6 +3191,17 @@ const DICT: Dict = {
   "txn.combo.transferRepair":  { vi: "Sửa chữa — Pass-through ủy thác",                   en: "Repair — Pass-through outsourcing", ko: "수리 위탁 패스스루" },
   "txn.combo.transferCalib":   { vi: "Hiệu chuẩn — Pass-through ủy thác",                 en: "Calibration — Pass-through outsourcing", ko: "교정 위탁 패스스루" },
   "txn.combo.transferDemo":    { vi: "Demo — Pass-through",                               en: "Demo — Pass-through", ko: "데모 패스스루" },
+
+  // ── QR 스캐너 (모바일·고객포털 공유) ──
+  "qr.scanBtn":               { vi: "Quét QR",                      en: "Scan QR",                    ko: "QR 스캔" },
+  "qr.scanTitle":             { vi: "Quét mã QR",                   en: "Scan QR Code",               ko: "QR 코드 스캔" },
+  "qr.scanTitleEquipment":    { vi: "Quét mã QR thiết bị",          en: "Scan equipment QR",          ko: "장비 QR 스캔" },
+  "qr.aimAtCode":             { vi: "Hướng camera vào mã QR",       en: "Aim camera at QR code",      ko: "카메라를 QR 코드에 맞춰주세요" },
+  "qr.initializing":          { vi: "Đang khởi tạo camera…",        en: "Initializing camera…",       ko: "카메라 초기화 중…" },
+
+  // ── 포털 — QR 매칭 메시지 ──
+  "portal.asReq.snNotInContract": { vi: "S/N {sn} không có trong các thiết bị thuê của bạn.", en: "S/N {sn} not found among your rented equipment.", ko: "S/N {sn} 은(는) 회원님의 렌탈 장비에 없습니다." },
+  "portal.supplies.snNotMatched": { vi: "Không tìm thấy thiết bị khớp với {sn}.", en: "No equipment matched {sn}.", ko: "{sn} 에 해당하는 장비를 찾을 수 없습니다." },
   "portal.autoTranslateHint": { vi: "ⓘ Nội dung sẽ được tự động dịch sang 3 ngôn ngữ.", en: "ⓘ Content will be auto-translated to 3 languages.", ko: "ⓘ 입력 내용은 자동으로 3언어로 번역됩니다." },
 
   // ── master items inline ──

@@ -153,6 +153,26 @@ enum AssetOwnerType {
   EXTERNAL_CLIENT // 외부 고객/외주처 자산 (수리/데모/교정/렌탈입고)
 }
 
+// Phase 1: 자동 매입·매출 후보 룰의 거래처별 예외만 저장.
+// 기본 16개 룰은 코드 상수 (lib/inventory-rules.ts) 에 BASE_RULES 로 박힘.
+// 이 테이블은 "이 거래처는 위탁 거래처라 자동 매입 안 잡음" 같은 운영 예외용.
+model ClientRuleOverride {
+  id                  String   @id @default(cuid())
+  clientId            String
+  client              Client   @relation("ClientRuleOverride", fields: [clientId], references: [id], onDelete: Cascade)
+  referenceModule     String   // RENTAL | REPAIR | CALIB | DEMO | TRADE
+  // override 동작 — null 이면 BASE_RULES 무시 (후보 생성 안 함). 객체면 BASE_RULES 덮어씀.
+  // ex: { autoPurchaseCandidate: false, autoSalesCandidate: false }
+  overrideJson        Json?
+  note                String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([clientId, referenceModule])
+  @@index([clientId])
+  @@map("client_rule_overrides")
+}
+
 enum DepreciationMethod {
   STRAIGHT_LINE
   DECLINING_BALANCE
@@ -473,6 +493,7 @@ model Client {
   campaigns        MarketingCampaign[]    @relation("CampaignClient")
   inventoryTxns    InventoryTransaction[] @relation("InventoryTxnClient")
   ownedInventoryItems InventoryItem[]     @relation("InvItemOwnerClient")
+  ruleOverrides    ClientRuleOverride[]   @relation("ClientRuleOverride")
   weeklyBacklogs   WeeklyBacklog[]
 
   // Phase A 포탈 확장
@@ -610,6 +631,14 @@ model InventoryItem {
   ownerClient      Client?         @relation("InvItemOwnerClient", fields: [ownerClientId], references: [id])
   inboundReason    InventoryReason?
   inboundAt        DateTime?
+
+  // ── Phase 1 추가 — 외부 위탁 위치 추적 + archive ──
+  // currentLocationClientId NOT NULL = 자산이 외부 거래처(수리처/교정처/외주)에 위탁 중.
+  // currentLocationSinceAt = 해당 위치 진입 시각 (장기 미회수 알림용).
+  // archivedAt = 외부자산이 원소유주에게 반환된 시점. NOT NULL 이면 활성 재고에서 제외.
+  currentLocationClientId String?
+  currentLocationSinceAt  DateTime?
+  archivedAt              DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -950,7 +979,11 @@ model InventoryTransaction {
   clientId          String? // External 창고 연관 고객
   serialNumber      String?
   txnType           InventoryTxnType
-  reason            InventoryReason
+  reason            InventoryReason  // 레거시 — 점진 폐기. 신규 필드는 referenceModule+subKind.
+  // ── Phase 1 신규 3축 분류 (referenceModule + subKind + ownerType (마스터에서 조회)) ──
+  // 진리표 키 = (txnType, referenceModule, subKind, masterOwnerType). 자동 매입·매출 후보 결정.
+  referenceModule   String?  // RENTAL | REPAIR | CALIB | DEMO | TRADE | CONSUMABLE | null
+  subKind           String?  // REQUEST | RETURN | PURCHASE | SALE | BORROW | LEND | null (신규 NOT NULL 예정 — 백필 후 enforce)
   quantity          Int
   scannedBarcode    String?
   note              String?
@@ -959,6 +992,9 @@ model InventoryTransaction {
   // 소모품출고 시 대상 장비 추적
   targetEquipmentSN String?
   targetContractId  String?
+  // TRANSFER External↔External 패스스루 시 양 끝점 거래처 (단일 clientId 외에 명시)
+  fromClientId      String?
+  toClientId        String?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 

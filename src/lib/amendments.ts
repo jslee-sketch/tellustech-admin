@@ -156,7 +156,7 @@ export async function createItAmendment(
           data: { removedAt: params.effectiveDate },
         });
       }
-      // 회수 창고 지정시 재고 IN(TRANSFER → 자사 입고)
+      // 회수 창고 지정시 재고 IN/RENTAL/RETURN/COMPANY (자사 자산 회수)
       if (params.warehouseId) {
         await tx.inventoryTransaction.create({
           data: {
@@ -166,8 +166,10 @@ export async function createItAmendment(
             toWarehouseId: params.warehouseId,
             clientId: contract.clientId,
             serialNumber: it.serialNumber,
-            txnType: "TRANSFER",
-            reason: "RENTAL",
+            txnType: "IN",
+            reason: "RENTAL_IN", // legacy 호환
+            referenceModule: "RENTAL",
+            subKind: "RETURN",
             quantity: 1,
             note: `[자동] IT계약 변경 ${amendmentCode} (${it.action} ${contract.contractNumber})`,
             performedById: params.performedById,
@@ -178,7 +180,17 @@ export async function createItAmendment(
           serialNumber: it.serialNumber,
           warehouseId: params.warehouseId,
           companyCode,
+          ownerType: "COMPANY",
         });
+        // 회수 시 마스터의 currentLocation 초기화
+        await tx.inventoryItem.update({
+          where: { serialNumber: it.serialNumber },
+          data: {
+            warehouseId: params.warehouseId,
+            currentLocationClientId: null,
+            currentLocationSinceAt: new Date(),
+          },
+        }).catch(() => undefined);
       }
     } else if (it.action === "ADD" || it.action === "REPLACE_IN") {
       // 신규 ItContractEquipment 추가 (같은 sn 이면 upsert 무방)
@@ -208,7 +220,7 @@ export async function createItAmendment(
           manufacturer: it.manufacturer ?? null,
         },
       });
-      // 자사 창고에서 출고 → 고객 (TRANSFER)
+      // 자사 창고에서 출고 → 고객 (OUT/RENTAL/LEND/COMPANY)
       if (params.warehouseId) {
         await tx.inventoryTransaction.create({
           data: {
@@ -218,13 +230,23 @@ export async function createItAmendment(
             toWarehouseId: null,
             clientId: contract.clientId,
             serialNumber: it.serialNumber,
-            txnType: "TRANSFER",
-            reason: "RENTAL",
+            txnType: "OUT",
+            reason: "RENTAL_OUT", // legacy 호환
+            referenceModule: "RENTAL",
+            subKind: "LEND",
             quantity: 1,
             note: `[자동] IT계약 변경 ${amendmentCode} (${it.action} ${contract.contractNumber})`,
             performedById: params.performedById,
           },
         });
+        // 마스터 위치 갱신 — 고객 거래처로 이동 표시
+        await tx.inventoryItem.update({
+          where: { serialNumber: it.serialNumber },
+          data: {
+            currentLocationClientId: contract.clientId,
+            currentLocationSinceAt: new Date(),
+          },
+        }).catch(() => undefined);
       }
     }
   }

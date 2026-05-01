@@ -60,6 +60,8 @@ export async function ensureInventoryItemOnReceipt(
         ownerClientId: ownerClientId ?? null,
         inboundReason: inboundReason ?? null,
         inboundAt: new Date(),
+        currentLocationClientId: null,
+        currentLocationSinceAt: new Date(),
       },
     })
     .catch(() => undefined);

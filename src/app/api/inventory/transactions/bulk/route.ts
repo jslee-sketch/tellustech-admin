@@ -4,43 +4,58 @@ import {
   badRequest, handleFieldError, ok, requireEnum, serverError, trimNonEmpty,
 } from "@/lib/api-utils";
 import { ensureInventoryItemOnReceipt } from "@/lib/inventory-receipt";
-import type { InventoryReason, InventoryTxnType } from "@/generated/prisma/client";
+import {
+  lookupBaseRule,
+  inferOwnerTypeForNewIn,
+  type RefModule,
+  type SubKind,
+  type TxnTypeNew,
+} from "@/lib/inventory-rules";
+import type { InventoryReason, InventoryTxnType, AssetOwnerType } from "@/generated/prisma/client";
 
-// Bulk 입출고 — 헤더(유형/사유/창고·거래처) 공유 + N 개 라인을 단일 트랜잭션으로 등록.
-// 정책 (단건 POST 와 동일):
-//   IN  → toWarehouseId 필수, 라인별 S/N 필수, 마스터 자동 생성
-//   OUT → fromWarehouseId + clientId 필수, 라인별 S/N 필수 (CONSUMABLE_OUT 예외) +
-//         InventoryItem 마스터에 존재 + 마스터의 warehouseId 가 fromWarehouseId 와 일치
-//   TRANSFER → fromClientId + toClientId 필수, 자사 창고 사용 금지, S/N 선택, 마스터 변경 없음
-// Body:
-//   { txnType, reason, fromWarehouseId?, toWarehouseId?, clientId?, fromClientId?, toClientId?, note?,
-//     items: [{ itemId, serialNumber?, quantity?, targetEquipmentSN?, targetContractId?, note? }, ...] }
+// Phase 1: 진리표 기반 입출고 bulk endpoint.
+// 헤더 = txnType + referenceModule + subKind + 창고/거래처 (공통).
+// 라인 = itemId + S/N + qty (+소모품: targetEquipmentSN).
+// 라인별로 BASE_RULES 룩업 → masterAction 실행 + 자동 매입·매출 후보 생성.
+// 구 reason 컬럼은 호환을 위해 backfill 매핑으로 채움.
 
 const TXN_TYPES: readonly InventoryTxnType[] = ["IN", "OUT", "TRANSFER"] as const;
-const REASONS: readonly InventoryReason[] = [
-  "PURCHASE", "RETURN_IN", "OTHER_IN",
-  "RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN",
-  "SALE", "CONSUMABLE_OUT",
-  "RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT",
-  "CALIBRATION", "REPAIR", "RENTAL", "DEMO",
-] as const;
+const REF_MODULES: readonly RefModule[] = ["RENTAL", "REPAIR", "CALIB", "DEMO", "TRADE", "CONSUMABLE"] as const;
+const SUB_KINDS: readonly SubKind[] = ["REQUEST", "RETURN", "BORROW", "LEND", "PURCHASE", "SALE", "OTHER", "CONSUMABLE"] as const;
 
-const EXTERNAL_IN_REASONS: readonly InventoryReason[] = [
-  "RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN",
-] as const;
-const EXTERNAL_OUT_REASONS: readonly InventoryReason[] = [
-  "RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT",
-] as const;
+// 기존 호출자(매입·매출 모듈, AS dispatch, amendments) 호환을 위한 legacy reason 매핑.
+function deriveLegacyReason(
+  txnType: TxnTypeNew,
+  refModule: RefModule | null,
+  subKind: SubKind | null,
+): InventoryReason {
+  if (txnType === "IN") {
+    if (refModule === "TRADE" && subKind === "PURCHASE") return "PURCHASE";
+    if (refModule === "TRADE" && subKind === "RETURN") return "RETURN_IN";
+    if (refModule === "RENTAL") return "RENTAL_IN";
+    if (refModule === "REPAIR") return "REPAIR_IN";
+    if (refModule === "CALIB") return "CALIBRATION_IN";
+    if (refModule === "DEMO") return "DEMO_IN";
+    return "OTHER_IN";
+  }
+  if (txnType === "OUT") {
+    if (refModule === "CONSUMABLE" || subKind === "CONSUMABLE") return "CONSUMABLE_OUT";
+    if (refModule === "TRADE" && subKind === "SALE") return "SALE";
+    if (refModule === "RENTAL") return "RENTAL_OUT";
+    if (refModule === "REPAIR") return "REPAIR_OUT";
+    if (refModule === "CALIB") return "CALIBRATION_OUT";
+    if (refModule === "DEMO") return "DEMO_OUT";
+    return "SALE";
+  }
+  // TRANSFER
+  if (refModule === "RENTAL") return "RENTAL";
+  if (refModule === "REPAIR") return "REPAIR";
+  if (refModule === "CALIB") return "CALIBRATION";
+  if (refModule === "DEMO") return "DEMO";
+  return "RENTAL";
+}
 
-const REASON_BY_TYPE: Record<InventoryTxnType, readonly InventoryReason[]> = {
-  IN: ["PURCHASE", "RETURN_IN", "OTHER_IN", "RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN"],
-  OUT: ["SALE", "CONSUMABLE_OUT", "RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT"],
-  TRANSFER: ["CALIBRATION", "REPAIR", "RENTAL", "DEMO"],
-};
-
-const MANUAL_FORBIDDEN: readonly InventoryReason[] = ["PURCHASE", "SALE", "RETURN_IN"];
-
-const MAX_LINES = 1000; // 안전 가드 — 단일 요청 라인 수 상한
+const MAX_LINES = 1000;
 
 function parseQty(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return 1;
@@ -65,14 +80,18 @@ export async function POST(request: Request) {
     try { body = await request.json(); } catch { return badRequest("invalid_body"); }
     const p = body as Record<string, unknown>;
     try {
-      const txnType = requireEnum(p.txnType, TXN_TYPES, "txnType");
-      const reason = requireEnum(p.reason, REASONS, "reason");
-      if (!REASON_BY_TYPE[txnType].includes(reason)) {
-        return badRequest("invalid_input", { field: "reason", reason: `not_allowed_for_${txnType}` });
+      const txnType = requireEnum(p.txnType, TXN_TYPES, "txnType") as TxnTypeNew;
+      // referenceModule + subKind 신규 헤더
+      const refModuleRaw = trimNonEmpty(p.referenceModule);
+      const subKindRaw = trimNonEmpty(p.subKind);
+      if (!refModuleRaw || !REF_MODULES.includes(refModuleRaw as RefModule)) {
+        return badRequest("invalid_input", { field: "referenceModule" });
       }
-      if (MANUAL_FORBIDDEN.includes(reason)) {
-        return badRequest("invalid_input", { field: "reason", reason: "use_purchase_or_sales_module" });
+      if (!subKindRaw || !SUB_KINDS.includes(subKindRaw as SubKind)) {
+        return badRequest("invalid_input", { field: "subKind" });
       }
+      const refModule = refModuleRaw as RefModule;
+      const subKind = subKindRaw as SubKind;
 
       const fromWarehouseId = trimNonEmpty(p.fromWarehouseId);
       const toWarehouseId = trimNonEmpty(p.toWarehouseId);
@@ -97,11 +116,8 @@ export async function POST(request: Request) {
           return badRequest("invalid_input", { field: "transferEndpoints", reason: "external_clients_required" });
         }
       }
-      if (EXTERNAL_IN_REASONS.includes(reason) && !clientId) {
-        return badRequest("invalid_input", { field: "clientId", reason: "owner_required_for_external_in" });
-      }
 
-      // 창고 / 거래처 존재성 검증
+      // 거래처/창고 존재성 검증
       if (fromWarehouseId) {
         const wh = await prisma.warehouse.findUnique({ where: { id: fromWarehouseId }, select: { id: true } });
         if (!wh) return badRequest("invalid_warehouse", { field: "fromWarehouseId" });
@@ -129,16 +145,13 @@ export async function POST(request: Request) {
         const sn = trimNonEmpty(r.serialNumber);
         const qty = parseQty(r.quantity);
         if (!qty) return badRequest("invalid_input", { field: `items[${i}].quantity` });
-        // S/N 필수성 — IN 항상, OUT 일반 (CONSUMABLE_OUT 예외)
-        if (txnType === "IN" && !sn) {
-          return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "required_for_IN" });
+        // S/N 필수성은 BASE_RULES 의 requireSerialNumber 로 일괄 결정 (CONSUMABLE 만 false)
+        // 단 OUT 마스터 매칭은 OUT + sn 있을 때만 검증.
+        if (subKind !== "CONSUMABLE" && txnType !== "TRANSFER" && !sn) {
+          return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "required" });
         }
-        if (txnType === "OUT" && reason !== "CONSUMABLE_OUT" && !sn) {
-          return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "required_for_OUT" });
-        }
-        // 소모품 출고 시 대상장비 S/N 필수
         const targetEquipmentSN = trimNonEmpty(r.targetEquipmentSN);
-        if (reason === "CONSUMABLE_OUT" && !targetEquipmentSN) {
+        if (subKind === "CONSUMABLE" && !targetEquipmentSN) {
           return badRequest("invalid_input", { field: `items[${i}].targetEquipmentSN`, reason: "required_for_consumable" });
         }
         lines.push({
@@ -164,38 +177,37 @@ export async function POST(request: Request) {
         return badRequest("invalid_input", { field: "items", reason: "duplicate_serial_in_request" });
       }
 
-      // OUT 검증 — InventoryItem 마스터 존재 + 창고 일치 (CONSUMABLE_OUT 예외)
-      if (txnType === "OUT" && reason !== "CONSUMABLE_OUT") {
-        const masters = await prisma.inventoryItem.findMany({
+      // OUT 검증 — 마스터 존재 + 창고 일치 (CONSUMABLE 예외)
+      const masters = sns.length > 0
+        ? await prisma.inventoryItem.findMany({
           where: { serialNumber: { in: sns } },
-          select: { serialNumber: true, warehouseId: true },
-        });
-        const byMasterSn = new Map(masters.map((m) => [m.serialNumber, m]));
+          select: { serialNumber: true, warehouseId: true, ownerType: true, archivedAt: true },
+        })
+        : [];
+      const masterBySn = new Map(masters.map((m) => [m.serialNumber, m]));
+
+      if (txnType === "OUT" && subKind !== "CONSUMABLE") {
         for (let i = 0; i < lines.length; i++) {
           const sn = lines[i].serialNumber;
           if (!sn) continue;
-          const m = byMasterSn.get(sn);
+          const m = masterBySn.get(sn);
           if (!m) return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "sn_not_in_inventory" });
+          if (m.archivedAt) return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "sn_archived" });
           if (fromWarehouseId && m.warehouseId !== fromWarehouseId) {
             return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "sn_warehouse_mismatch" });
           }
         }
       }
 
-      // 외부 자산 반환 검증 — ownerType=EXTERNAL_CLIENT
-      if (EXTERNAL_OUT_REASONS.includes(reason)) {
-        const masters = await prisma.inventoryItem.findMany({
-          where: { serialNumber: { in: sns } },
-          select: { serialNumber: true, ownerType: true },
-        });
-        for (const m of masters) {
-          if (m.ownerType !== "EXTERNAL_CLIENT") {
-            return badRequest("invalid_input", { field: "items", reason: "not_external_owned", sn: m.serialNumber });
-          }
-        }
-      }
+      // 거래처 ClientRuleOverride 1회 룩업 (옵션)
+      const overrideClient = clientId ?? fromClientId ?? toClientId ?? null;
+      const ruleOverride = overrideClient
+        ? await prisma.clientRuleOverride.findUnique({
+          where: { clientId_referenceModule: { clientId: overrideClient, referenceModule: refModule } },
+        })
+        : null;
 
-      // targetContractId 자동 매핑 (CONSUMABLE_OUT)
+      // targetContractId 자동 매핑 (CONSUMABLE)
       const targetSns = Array.from(new Set(lines.map((l) => l.targetEquipmentSN).filter((s): s is string => !!s)));
       const eqMap = new Map<string, string>();
       if (targetSns.length > 0) {
@@ -206,16 +218,37 @@ export async function POST(request: Request) {
         for (const eq of eqs) eqMap.set(eq.serialNumber, eq.itContractId);
       }
 
-      // TRANSFER: 단일 clientId 컬럼에 from 사용, note 에 → toClientId 표시
+      // 라인별 처리
       const txnSharedClientId = txnType === "TRANSFER" ? fromClientId : clientId;
       const transferTail = txnType === "TRANSFER" && toClientId ? ` → client:${toClientId}` : "";
 
       const created = await prisma.$transaction(async (tx) => {
-        const txns = [];
+        const txns: { id: string; ruleScenario: string | null }[] = [];
         for (const line of lines) {
+          // ownerType 결정: 마스터 있으면 그대로, 없으면 IN-신규 추론
+          const masterRow = line.serialNumber ? masterBySn.get(line.serialNumber) : null;
+          let ownerType: AssetOwnerType;
+          if (masterRow) {
+            ownerType = masterRow.ownerType;
+          } else if (txnType === "IN") {
+            ownerType = inferOwnerTypeForNewIn(subKind);
+          } else {
+            // OUT/TRANSFER 인데 마스터 없으면 (CONSUMABLE_OUT 만 가능) — 회사 기본
+            ownerType = "COMPANY";
+          }
+
+          // BASE_RULES 룩업
+          const baseAction = lookupBaseRule(txnType, refModule, subKind, ownerType);
+          // override 적용 (예외 거래처 — autoPurchaseCandidate/autoSalesCandidate 만 덮어씀)
+          const action = baseAction
+            ? { ...baseAction, ...((ruleOverride?.overrideJson as Record<string, unknown>) ?? {}) }
+            : null;
+
           const lineNoteFinal = [headerNote, line.note, transferTail].filter(Boolean).join(" · ");
           const resolvedTargetContractId = line.targetContractId
             ?? (line.targetEquipmentSN ? eqMap.get(line.targetEquipmentSN) ?? null : null);
+
+          const legacyReason = deriveLegacyReason(txnType, refModule, subKind);
           const txn = await tx.inventoryTransaction.create({
             data: {
               companyCode: session.companyCode,
@@ -223,9 +256,13 @@ export async function POST(request: Request) {
               fromWarehouseId: fromWarehouseId ?? null,
               toWarehouseId: toWarehouseId ?? null,
               clientId: txnSharedClientId ?? null,
+              fromClientId: fromClientId ?? null,
+              toClientId: toClientId ?? null,
               serialNumber: line.serialNumber,
               txnType,
-              reason,
+              reason: legacyReason,
+              referenceModule: refModule,
+              subKind,
               quantity: line.quantity,
               scannedBarcode: line.scannedBarcode,
               note: lineNoteFinal || null,
@@ -235,19 +272,63 @@ export async function POST(request: Request) {
               performedAt: new Date(),
             },
           });
-          if (txnType === "IN" && toWarehouseId && line.serialNumber) {
-            const isExternalIn = EXTERNAL_IN_REASONS.includes(reason);
-            await ensureInventoryItemOnReceipt(tx, {
-              itemId: line.itemId,
-              serialNumber: line.serialNumber,
-              warehouseId: toWarehouseId,
-              companyCode: session.companyCode,
-              ownerType: isExternalIn ? "EXTERNAL_CLIENT" : "COMPANY",
-              ownerClientId: isExternalIn ? (clientId ?? null) : null,
-              inboundReason: reason,
-            });
+
+          // 마스터 동작 (BASE_RULES 결정)
+          if (action && line.serialNumber) {
+            switch (action.masterAction) {
+              case "NEW":
+                if (txnType === "IN" && toWarehouseId) {
+                  await ensureInventoryItemOnReceipt(tx, {
+                    itemId: line.itemId,
+                    serialNumber: line.serialNumber,
+                    warehouseId: toWarehouseId,
+                    companyCode: session.companyCode,
+                    ownerType,
+                    ownerClientId: ownerType === "EXTERNAL_CLIENT" ? (clientId ?? null) : null,
+                    inboundReason: legacyReason,
+                  });
+                }
+                break;
+              case "MOVE":
+                if (txnType === "IN" && toWarehouseId) {
+                  await tx.inventoryItem.update({
+                    where: { serialNumber: line.serialNumber },
+                    data: {
+                      warehouseId: toWarehouseId,
+                      currentLocationClientId: null,
+                      currentLocationSinceAt: new Date(),
+                    },
+                  }).catch(() => undefined);
+                }
+                break;
+              case "TRANSFER_LOC":
+                // 외부 위탁 — 거래처 위치로 마스터 이동 표시 (자사창고는 그대로 둠 — 회수 시점에 복원)
+                await tx.inventoryItem.update({
+                  where: { serialNumber: line.serialNumber },
+                  data: {
+                    currentLocationClientId: clientId ?? null,
+                    currentLocationSinceAt: new Date(),
+                  },
+                }).catch(() => undefined);
+                break;
+              case "ARCHIVE":
+                await tx.inventoryItem.update({
+                  where: { serialNumber: line.serialNumber },
+                  data: { archivedAt: new Date() },
+                }).catch(() => undefined);
+                break;
+              case "NONE":
+              default:
+                break;
+            }
           }
-          txns.push(txn);
+
+          // 자동 매입·매출 후보 — 본 단계에서는 DRAFT 행 생성은 보류 (별도 PR 모듈에서 처리).
+          // BASE_RULES 결과를 InventoryTransaction.note 또는 별도 테이블 ReceiptCandidate 로 남길지 후속 결정.
+          // Phase 1 에서는 InventoryTransaction 자체에 진리표 결과가 박혀있으므로,
+          // 매출/매입 모듈이 referenceModule + subKind + ownerType 기반으로 후보를 자동 picking 가능.
+
+          txns.push({ id: txn.id, ruleScenario: action ? `${action.scenarioId}: ${action.scenarioLabel}` : null });
         }
         return txns;
       }, { timeout: 30_000 });

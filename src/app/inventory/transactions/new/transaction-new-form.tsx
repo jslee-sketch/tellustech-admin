@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, SerialCombobox, TextInput, Textarea } from "@/components/ui";
+import { Button, ClientCombobox, Field, ItemCombobox, Note, Row, Select, SerialCombobox, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type Props = {
@@ -25,59 +25,86 @@ let _key = 0;
 const newKey = () => `r${++_key}`;
 const blankLine = (): LineRow => ({ key: newKey(), itemId: "", serialNumber: "", quantity: "1", targetEquipmentSN: "", note: "" });
 
-export function TransactionNewForm({ items, warehouses, lang }: Props) {
+// 진리표 cascading: txnType → 가능한 (referenceModule, subKind) 조합
+type Combo = { refModule: string; subKind: string; label: string; ownerHint?: "COMPANY" | "EXTERNAL" | "AUTO" };
+const COMBOS_BY_TYPE: Record<"IN" | "OUT" | "TRANSFER", Combo[]> = {
+  IN: [
+    // 렌탈
+    { refModule: "RENTAL", subKind: "RETURN", label: "렌탈/입고/종료 — 자사 렌탈 회수", ownerHint: "COMPANY" },
+    { refModule: "RENTAL", subKind: "BORROW", label: "렌탈/입고/매입 — 외주에서 빌림", ownerHint: "EXTERNAL" },
+    // 수리
+    { refModule: "REPAIR", subKind: "REQUEST", label: "수리/입고/요청 — 고객 수리 의뢰", ownerHint: "EXTERNAL" },
+    { refModule: "REPAIR", subKind: "RETURN", label: "수리/입고/매입 — 외부수리 후 회수", ownerHint: "AUTO" },
+    // 교정
+    { refModule: "CALIB", subKind: "REQUEST", label: "교정/입고/요청 — 고객 교정 의뢰", ownerHint: "EXTERNAL" },
+    { refModule: "CALIB", subKind: "RETURN", label: "교정/입고/매입 — 외부교정 후 회수", ownerHint: "AUTO" },
+    // 데모
+    { refModule: "DEMO", subKind: "BORROW", label: "데모/입고/요청 — 외부에서 빌림", ownerHint: "EXTERNAL" },
+    { refModule: "DEMO", subKind: "RETURN", label: "데모/입고/종료 — 자사 데모 회수", ownerHint: "COMPANY" },
+    // 매입 (TRADE) - 일반적으로 Purchase 모듈 사용 권장
+    { refModule: "TRADE", subKind: "PURCHASE", label: "매입 — 자사 자산 신규", ownerHint: "COMPANY" },
+  ],
+  OUT: [
+    { refModule: "RENTAL", subKind: "RETURN", label: "렌탈/출고/반납 — 외주에 반납", ownerHint: "EXTERNAL" },
+    { refModule: "RENTAL", subKind: "LEND", label: "렌탈/출고/매출 — 자사 → 고객", ownerHint: "COMPANY" },
+    { refModule: "REPAIR", subKind: "REQUEST", label: "수리/출고/의뢰 — 외주 수리 위탁", ownerHint: "AUTO" },
+    { refModule: "REPAIR", subKind: "RETURN", label: "수리/출고/매출 — 고객 반환 + 수리비 청구", ownerHint: "EXTERNAL" },
+    { refModule: "CALIB", subKind: "REQUEST", label: "교정/출고/의뢰 — 외부 교정 위탁", ownerHint: "AUTO" },
+    { refModule: "CALIB", subKind: "RETURN", label: "교정/출고/매출 — 고객 반환 + 교정비 청구", ownerHint: "EXTERNAL" },
+    { refModule: "DEMO", subKind: "LEND", label: "데모/출고/요청 — 자사 → 고객", ownerHint: "COMPANY" },
+    { refModule: "DEMO", subKind: "RETURN", label: "데모/출고/종료 — 외부에 반환", ownerHint: "EXTERNAL" },
+    { refModule: "CONSUMABLE", subKind: "CONSUMABLE", label: "소모품 출고 (AS 부품 등)", ownerHint: "COMPANY" },
+  ],
+  TRANSFER: [
+    { refModule: "RENTAL", subKind: "OTHER", label: "렌탈 패스스루 (A 거래처 → B 거래처)" },
+    { refModule: "REPAIR", subKind: "OTHER", label: "수리 위탁 패스스루" },
+    { refModule: "CALIB", subKind: "OTHER", label: "교정 위탁 패스스루" },
+    { refModule: "DEMO", subKind: "OTHER", label: "데모 패스스루" },
+  ],
+};
+
+export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
   const router = useRouter();
 
   // ── 헤더 ──
   const [txnType, setTxnType] = useState<"IN" | "OUT" | "TRANSFER">("IN");
-  const [reason, setReason] = useState<string>("RENTAL_IN");
+  // 진리표 1줄 선택 — refModule + subKind 묶음
+  const [comboKey, setComboKey] = useState<string>(() => {
+    const c = COMBOS_BY_TYPE.IN[0];
+    return `${c.refModule}|${c.subKind}`;
+  });
   const [fromWarehouseId, setFromWarehouseId] = useState("");
   const [toWarehouseId, setToWarehouseId] = useState("");
-  const [clientId, setClientId] = useState("");          // OUT 납품처 / 외부IN 소유주
-  const [fromClientId, setFromClientId] = useState(""); // TRANSFER 출발 거래처
-  const [toClientId, setToClientId] = useState("");     // TRANSFER 도착 거래처
+  const [clientId, setClientId] = useState("");
+  const [fromClientId, setFromClientId] = useState("");
+  const [toClientId, setToClientId] = useState("");
   const [headerNote, setHeaderNote] = useState("");
 
-  // ── 라인 (다행) ──
+  // ── 라인 ──
   const [lines, setLines] = useState<LineRow[]>([blankLine()]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
 
-  const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
-    IN: [
-      { value: "RENTAL_IN", label: t("reason.rentalInShort", lang) },
-      { value: "REPAIR_IN", label: t("reason.repairInShort", lang) },
-      { value: "DEMO_IN", label: t("reason.demoInShort", lang) },
-      { value: "CALIBRATION_IN", label: t("reason.calibrationInShort", lang) },
-      { value: "OTHER_IN", label: t("reason.otherInShort", lang) },
-    ],
-    OUT: [
-      { value: "RENTAL_OUT", label: t("reason.rentalOutShort", lang) },
-      { value: "REPAIR_OUT", label: t("reason.repairOutShort", lang) },
-      { value: "DEMO_OUT", label: t("reason.demoOutShort", lang) },
-      { value: "CALIBRATION_OUT", label: t("reason.calibrationOutShort", lang) },
-      { value: "CONSUMABLE_OUT", label: t("reason.consumableOutShort", lang) },
-    ],
-    TRANSFER: [
-      { value: "CALIBRATION", label: t("reason.calibrationShort", lang) },
-      { value: "REPAIR", label: t("reason.repairShort", lang) },
-      { value: "RENTAL", label: t("reason.rentalShort", lang) },
-      { value: "DEMO", label: t("reason.demoShort", lang) },
-    ],
-  };
+  const combos = COMBOS_BY_TYPE[txnType];
+  const currentCombo = combos.find((c) => `${c.refModule}|${c.subKind}` === comboKey) ?? combos[0];
+  const refModule = currentCombo.refModule;
+  const subKind = currentCombo.subKind;
 
-  const EXTERNAL_IN_SET = new Set(["RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN"]);
-  const isExternalIn = txnType === "IN" && EXTERNAL_IN_SET.has(reason);
-  const isConsumableOut = txnType === "OUT" && reason === "CONSUMABLE_OUT";
-  const snRequiredOnLines = txnType === "IN" || (txnType === "OUT" && !isConsumableOut);
+  const isExternalIn = txnType === "IN" && (currentCombo.ownerHint === "EXTERNAL");
+  const isConsumable = subKind === "CONSUMABLE";
+  const snRequiredOnLines = !isConsumable && txnType !== "TRANSFER";
+  // ownerHint=AUTO → 마스터 조회로 결정. 사용자가 거래처 입력하면 외주처(EXTERNAL_CLIENT)로 추론.
+  // 단순화: AUTO 케이스에서도 거래처 picker 노출.
+  const showOwnerClient = txnType === "IN" && (currentCombo.ownerHint === "EXTERNAL" || currentCombo.ownerHint === "AUTO");
 
   const internalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType !== "EXTERNAL"), [warehouses]);
   const whOptions = internalWarehouses.map((w) => ({ value: w.value, label: w.label }));
 
   function selectType(type: "IN" | "OUT" | "TRANSFER") {
     setTxnType(type);
-    setReason(type === "IN" ? "RENTAL_IN" : type === "OUT" ? "RENTAL_OUT" : "CALIBRATION");
+    const first = COMBOS_BY_TYPE[type][0];
+    setComboKey(`${first.refModule}|${first.subKind}`);
     setFromWarehouseId("");
     setToWarehouseId("");
     setFromClientId("");
@@ -95,31 +122,24 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
   function removeLine(idx: number) { setLines((cur) => (cur.length <= 1 ? cur : cur.filter((_, i) => i !== idx))); }
   function clearLines() { setLines([blankLine()]); }
 
-  // 스프레드시트 붙여넣기 — Tab/Newline 분리. 컬럼: itemCode\tSN\tQty\ttargetSN\tnote
   function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     const text = e.clipboardData.getData("text");
-    if (!text || !text.includes("\t") && !text.includes("\n")) return;
+    if (!text || (!text.includes("\t") && !text.includes("\n"))) return;
     e.preventDefault();
     const rows = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-    const itemByCode = new Map(items.map((it) => {
-      // label 형식 "ITM-XXXX · 이름" 앞쪽 코드를 키로 사용
+    const itemByCode = new Map(_items.map((it) => {
       const code = it.label.split(" ")[0];
       return [code, it.value];
     }));
     const next: LineRow[] = rows.map((row) => {
       const cols = row.split("\t");
-      const code = (cols[0] ?? "").trim();
-      const sn = (cols[1] ?? "").trim();
-      const qty = (cols[2] ?? "1").trim() || "1";
-      const tgt = (cols[3] ?? "").trim();
-      const note = (cols[4] ?? "").trim();
       return {
         key: newKey(),
-        itemId: itemByCode.get(code) ?? "",
-        serialNumber: sn,
-        quantity: qty,
-        targetEquipmentSN: tgt,
-        note,
+        itemId: itemByCode.get((cols[0] ?? "").trim()) ?? "",
+        serialNumber: (cols[1] ?? "").trim(),
+        quantity: ((cols[2] ?? "1").trim() || "1"),
+        targetEquipmentSN: (cols[3] ?? "").trim(),
+        note: (cols[4] ?? "").trim(),
       };
     });
     if (next.length > 0) setLines(next);
@@ -131,7 +151,6 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
     setError(null);
     setOkMsg(null);
 
-    // 클라이언트 사전 검증
     const usable = lines.filter((l) => l.itemId);
     if (usable.length === 0) {
       setError(t("msg.atLeastOneLine", lang));
@@ -161,7 +180,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
       setSubmitting(false);
       return;
     }
-    if (isExternalIn && !clientId) {
+    if (showOwnerClient && txnType === "IN" && !clientId) {
       setError(t("msg.externalRequiresClient", lang));
       setSubmitting(false);
       return;
@@ -173,7 +192,8 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           txnType,
-          reason,
+          referenceModule: refModule,
+          subKind,
           fromWarehouseId: fromWarehouseId || null,
           toWarehouseId: toWarehouseId || null,
           clientId: clientId || null,
@@ -197,7 +217,6 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
       const body = (await res.json().catch(() => null)) as { count?: number } | null;
       setOkMsg(t("msg.txnBulkDone", lang).replace("{n}", String(body?.count ?? usable.length)));
       router.refresh();
-      // 등록 후 라인 초기화 (헤더는 유지 — 동일 헤더로 추가 등록 편의)
       clearLines();
     } finally {
       setSubmitting(false);
@@ -218,12 +237,17 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
             ]}
           />
         </Field>
-        <Field label={t("field.reason", lang)} required width="200px">
-          <Select required value={reason} onChange={(e) => setReason(e.target.value)} options={REASONS_BY_TYPE[txnType]} />
+        <Field label="시나리오 (참조 / 사유)" required width="100%">
+          <Select
+            required
+            value={comboKey}
+            onChange={(e) => setComboKey(e.target.value)}
+            options={combos.map((c) => ({ value: `${c.refModule}|${c.subKind}`, label: c.label }))}
+          />
         </Field>
       </Row>
 
-      {/* 헤더: 창고/거래처 */}
+      {/* 헤더 */}
       {txnType === "IN" && (
         <Row>
           <Field label={t("field.toWh", lang)} required>
@@ -235,9 +259,9 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
               options={whOptions}
             />
           </Field>
-          {isExternalIn && (
-            <Field label={t("field.ownerClient", lang)} required>
-              <ClientCombobox value={clientId} onChange={setClientId} required lang={lang} />
+          {showOwnerClient && (
+            <Field label={t("field.ownerClient", lang)} required={isExternalIn}>
+              <ClientCombobox value={clientId} onChange={setClientId} required={isExternalIn} lang={lang} />
             </Field>
           )}
         </Row>
@@ -312,7 +336,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
                 <th className="px-1 py-1 text-left">{t("field.item", lang)} *</th>
                 <th className="w-[220px] px-1 py-1 text-left">{t("field.serial", lang)}{snRequiredOnLines ? " *" : ""}</th>
                 <th className="w-20 px-1 py-1 text-right">{t("field.qty", lang)}</th>
-                {isConsumableOut && <th className="w-[180px] px-1 py-1 text-left">{t("field.targetEquipSN", lang)} *</th>}
+                {isConsumable && <th className="w-[180px] px-1 py-1 text-left">{t("field.targetEquipSN", lang)} *</th>}
                 <th className="px-1 py-1 text-left">{t("field.note", lang)}</th>
                 <th className="w-10 px-1 py-1" />
               </tr>
@@ -342,7 +366,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
                       className="text-right"
                     />
                   </td>
-                  {isConsumableOut && (
+                  {isConsumable && (
                     <td className="px-1 py-1">
                       <SerialCombobox
                         value={row.targetEquipmentSN}

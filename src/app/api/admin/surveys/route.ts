@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, forbidden, ok, serverError } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
+import { fillTranslations } from "@/lib/translate";
 
 export async function GET() {
   return withSessionContext(async (session) => {
@@ -28,6 +29,26 @@ export async function POST(request: Request) {
     if (!startDate || !endDate) return badRequest("invalid_dates");
 
     try {
+      // 제목 3언어 자동 번역
+      const titleOriginalLang = titleKo ? "KO" : titleVi ? "VI" : "EN";
+      const filledTitle = await fillTranslations({
+        vi: titleVi || null, en: titleEn || null, ko: titleKo || null,
+        originalLang: titleOriginalLang,
+      });
+
+      // 질문 텍스트 3언어 자동 번역
+      const enrichedQuestions = await Promise.all(questions.map(async (q: any) => {
+        const tKo = String(q.textKo ?? "").trim();
+        const tVi = String(q.textVi ?? "").trim();
+        const tEn = String(q.textEn ?? "").trim();
+        if (!tKo && !tVi && !tEn) return q;
+        const src = tKo ? "KO" : tVi ? "VI" : "EN";
+        const filled = await fillTranslations({
+          vi: tVi || null, en: tEn || null, ko: tKo || null, originalLang: src,
+        });
+        return { ...q, textVi: filled.vi, textEn: filled.en, textKo: filled.ko, originalLang: src };
+      }));
+
       const created = await withUniqueRetry(
         () => generateDatedCode({
           prefix: "SRV", digits: 3,
@@ -37,8 +58,8 @@ export async function POST(request: Request) {
           },
         }).then((surveyCode) => prisma.survey.create({
           data: {
-            surveyCode, titleKo: titleKo || null, titleVi: titleVi || null, titleEn: titleEn || null,
-            questions, startDate, endDate, rewardPoints,
+            surveyCode, titleKo: filledTitle.ko, titleVi: filledTitle.vi, titleEn: filledTitle.en,
+            questions: enrichedQuestions, startDate, endDate, rewardPoints,
             isActive: true, companyCode: "TV",
           },
         })),

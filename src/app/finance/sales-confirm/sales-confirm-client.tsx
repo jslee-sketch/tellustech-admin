@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Card, SearchBar } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
@@ -22,8 +22,11 @@ export function SalesConfirmClient({ rows, lang }: { rows: Row[]; lang: Lang }) 
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Optimistic local copy — drops rows immediately on CFM, then syncs from props on next server fetch.
+  const [localRows, setLocalRows] = useState<Row[]>(rows);
+  useEffect(() => { setLocalRows(rows); }, [rows]);
 
-  const filtered = rows.filter((r) => {
+  const filtered = localRows.filter((r) => {
     const ql = q.trim().toLowerCase();
     if (!ql) return true;
     return r.salesNumber.toLowerCase().includes(ql) || r.clientCode.toLowerCase().includes(ql) || r.clientName.toLowerCase().includes(ql);
@@ -43,8 +46,11 @@ export function SalesConfirmClient({ rows, lang }: { rows: Row[]; lang: Lang }) 
   async function confirmOne(id: string) {
     setBusy(id);
     try {
-      await fetch(`/api/sales/${id}/finance-confirm`, { method: "POST" });
-      router.refresh();
+      const r = await fetch(`/api/sales/${id}/finance-confirm`, { method: "POST" });
+      if (r.ok) {
+        setLocalRows((cur) => cur.filter((x) => x.id !== id));
+        router.refresh();
+      }
     } finally { setBusy(null); }
   }
   async function confirmBulk() {
@@ -52,7 +58,13 @@ export function SalesConfirmClient({ rows, lang }: { rows: Row[]; lang: Lang }) 
     if (!window.confirm(t("salesConfirm.bulkPrompt", lang).replace("{n}", String(selected.size)))) return;
     setBusy("bulk");
     try {
-      await Promise.all(Array.from(selected).map((id) => fetch(`/api/sales/${id}/finance-confirm`, { method: "POST" })));
+      const ids = Array.from(selected);
+      const results = await Promise.all(ids.map(async (id) => {
+        const r = await fetch(`/api/sales/${id}/finance-confirm`, { method: "POST" });
+        return r.ok ? id : null;
+      }));
+      const done = new Set(results.filter((x): x is string => !!x));
+      setLocalRows((cur) => cur.filter((x) => !done.has(x.id)));
       setSelected(new Set());
       router.refresh();
     } finally { setBusy(null); }

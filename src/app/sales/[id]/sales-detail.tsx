@@ -160,9 +160,9 @@ export function SalesDetail({
   }
 
   const stage: "TECH"|"SALES"|"FINANCE"|"DONE" =
-    core.isDraft && !core.technicianReady ? "TECH"
-    : core.isDraft && core.technicianReady ? "SALES"
-    : !core.isDraft && !core.financeConfirmedAt ? "FINANCE"
+    initial.isDraft && !initial.technicianReady ? "TECH"
+    : initial.isDraft && initial.technicianReady ? "SALES"
+    : !initial.isDraft && !initial.financeConfirmedAt ? "FINANCE"
     : "DONE";
 
   async function handleSalesConfirm() {

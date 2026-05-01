@@ -242,6 +242,7 @@ export function ItContractDetail({
       setError(`${t("rental.terminateFailed", lang)}: ${j?.error ?? res.status}`);
       return;
     }
+    setCore((c) => ({ ...c, status, endDate: dateStr }));
     window.alert(t("rental.terminated", lang));
     router.refresh();
   }

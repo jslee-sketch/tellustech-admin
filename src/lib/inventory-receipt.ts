@@ -1,9 +1,14 @@
-import type { CompanyCode } from "@/generated/prisma/client";
+import type { CompanyCode, InventoryReason, AssetOwnerType } from "@/generated/prisma/client";
 import type { TxClient } from "@/lib/prisma";
 import { encodeQr } from "@/lib/qr-label";
 
 // S/N 입고 시 InventoryItem 마스터를 보장하고 qrData(PNG data URL)를 채움.
-// 이미 존재하면 창고만 갱신하고 qrData 는 건드리지 않음.
+// 이미 존재하면 창고만 갱신하고 qrData/소유주는 유지.
+//
+// ownership 옵션:
+//   ownerType=COMPANY (default) → 자사 자산 (매입)
+//   ownerType=EXTERNAL_CLIENT + ownerClientId → 타사 자산 (수리/데모/교정/렌탈입고).
+// inboundReason 은 입고 사유를 보존해 추후 출고/반환 시 매칭에 사용.
 export async function ensureInventoryItemOnReceipt(
   tx: TxClient,
   params: {
@@ -11,12 +16,19 @@ export async function ensureInventoryItemOnReceipt(
     serialNumber: string;
     warehouseId: string;
     companyCode: CompanyCode;
+    ownerType?: AssetOwnerType;
+    ownerClientId?: string | null;
+    inboundReason?: InventoryReason;
   },
 ): Promise<void> {
-  const { itemId, serialNumber, warehouseId, companyCode } = params;
+  const {
+    itemId, serialNumber, warehouseId, companyCode,
+    ownerType, ownerClientId, inboundReason,
+  } = params;
 
   const exists = await tx.inventoryItem.findUnique({ where: { serialNumber } });
   if (exists) {
+    // 이미 마스터 존재 — 창고만 변경, 소유주 정보는 보존 (재입고 시 owner 가 바뀔 수 있다면 별도 정책 필요)
     await tx.inventoryItem
       .update({ where: { serialNumber }, data: { warehouseId } })
       .catch(() => undefined);
@@ -44,6 +56,10 @@ export async function ensureInventoryItemOnReceipt(
         status: "NORMAL",
         acquiredAt: new Date(),
         qrData,
+        ownerType: ownerType ?? "COMPANY",
+        ownerClientId: ownerClientId ?? null,
+        inboundReason: inboundReason ?? null,
+        inboundAt: new Date(),
       },
     })
     .catch(() => undefined);

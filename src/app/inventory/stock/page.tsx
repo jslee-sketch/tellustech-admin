@@ -118,6 +118,7 @@ async function renderInventoryItems(session: { companyCode: "TV" | "VR" }, lang:
     include: {
       item: { select: { itemCode: true, name: true, itemType: true } },
       warehouse: { select: { code: true, name: true, warehouseType: true } },
+      ownerClient: { select: { clientCode: true, companyNameVi: true, companyNameKo: true, companyNameEn: true } },
       remarks: { orderBy: { date: "desc" }, take: 1 },
     },
     take: 1000,
@@ -143,6 +144,11 @@ async function renderInventoryItems(session: { companyCode: "TV" | "VR" }, lang:
         lastRemark: it.remarks[0]
           ? { date: it.remarks[0].date.toISOString(), content: it.remarks[0].contentKo ?? it.remarks[0].contentVi ?? it.remarks[0].contentEn ?? "" }
           : null,
+        ownerType: it.ownerType,
+        ownerClientLabel: it.ownerClient
+          ? `${it.ownerClient.clientCode} · ${it.ownerClient.companyNameKo ?? it.ownerClient.companyNameVi}`
+          : null,
+        inboundReason: it.inboundReason ?? null,
       }))}
     />
   );

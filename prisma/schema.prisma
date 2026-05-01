@@ -124,18 +124,33 @@ enum InventoryTxnType {
 }
 
 enum InventoryReason {
-  // IN 사유
+  // IN 사유 — 자사 자산 매입
   PURCHASE // 매입
   RETURN_IN // 반품입고
   OTHER_IN // 기타입고
+  // IN 사유 — 타사 자산 입고 (서비스 목적, ownerClientId 필수)
+  RENTAL_IN // 렌탈입고 (외주 렌탈로 빌려온 자산)
+  REPAIR_IN // 수리입고 (고객 자산 수리 의뢰)
+  DEMO_IN // 데모입고 (고객이 잠깐 사용 권한 부여)
+  CALIBRATION_IN // 교정입고 (고객 자산 교정 의뢰)
   // OUT 사유
   SALE // 매출
   CONSUMABLE_OUT // 소모품출고 (IT 장비 대상)
-  // TRANSFER 사유
+  RENTAL_OUT // 렌탈반환 (RENTAL_IN 자산을 외주처에 반환)
+  REPAIR_OUT // 수리완료반출 (REPAIR_IN 자산을 고객에게 반환)
+  DEMO_OUT // 데모반환 (DEMO_IN 자산을 고객에게 반환)
+  CALIBRATION_OUT // 교정완료반출 (CALIBRATION_IN 자산을 고객에게 반환)
+  // TRANSFER 사유 (자사 내부 이동)
   CALIBRATION
   REPAIR
   RENTAL
   DEMO
+}
+
+// 자산 소유주 — 자사 vs 외부(고객/외주처)
+enum AssetOwnerType {
+  COMPANY // 자사 자산 (매입한 것)
+  EXTERNAL_CLIENT // 외부 고객/외주처 자산 (수리/데모/교정/렌탈입고)
 }
 
 enum DepreciationMethod {
@@ -457,6 +472,7 @@ model Client {
   purchases        Purchase[]
   campaigns        MarketingCampaign[]    @relation("CampaignClient")
   inventoryTxns    InventoryTransaction[] @relation("InventoryTxnClient")
+  ownedInventoryItems InventoryItem[]     @relation("InvItemOwnerClient")
   weeklyBacklogs   WeeklyBacklog[]
 
   // Phase A 포탈 확장
@@ -585,6 +601,15 @@ model InventoryItem {
   stateNoteEn           String?
   stateNoteKo           String?
   stateNoteOriginalLang Language?
+
+  // ── 자산 소유주 추적 ──
+  // COMPANY = 자사 자산 (매입). EXTERNAL_CLIENT = 외부 자산 (수리/데모/교정/렌탈입고).
+  // ownerClientId 는 EXTERNAL_CLIENT 일 때 거래처/외주처 ID. inboundReason 으로 입고 사유 보존.
+  ownerType        AssetOwnerType  @default(COMPANY)
+  ownerClientId    String?
+  ownerClient      Client?         @relation("InvItemOwnerClient", fields: [ownerClientId], references: [id])
+  inboundReason    InventoryReason?
+  inboundAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

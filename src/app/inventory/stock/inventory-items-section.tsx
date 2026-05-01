@@ -19,6 +19,9 @@ type InvItem = {
   status: "NORMAL" | "NEEDS_REPAIR" | "PARTS_USED" | "IRREPARABLE";
   acquiredAt: string | null;
   lastRemark: { date: string; content: string } | null;
+  ownerType?: "COMPANY" | "EXTERNAL_CLIENT";
+  ownerClientLabel?: string | null;
+  inboundReason?: string | null;
 };
 
 type Props = {
@@ -187,7 +190,15 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
                           <tbody>
                             {g.entries.map((e) => (
                               <tr key={e.id} className="border-t border-[color:var(--tts-border)]/30">
-                                <td className="py-1 font-mono">{e.serialNumber}</td>
+                                <td className="py-1 font-mono">
+                                  {e.serialNumber}
+                                  {e.ownerType === "EXTERNAL_CLIENT" && (
+                                    <Badge tone="warn" className="ml-1">🏷 {t("invItem.externalAsset", lang)}</Badge>
+                                  )}
+                                  {e.ownerType === "EXTERNAL_CLIENT" && e.ownerClientLabel && (
+                                    <div className="text-[10px] font-normal text-[color:var(--tts-warn)]">{e.ownerClientLabel}{e.inboundReason ? ` · ${e.inboundReason}` : ""}</div>
+                                  )}
+                                </td>
                                 <td className="py-1"><Badge tone={STATUS_TONE[e.status]}>{statusLabel(e.status, lang)}</Badge></td>
                                 <td className="py-1"><button onClick={(ev) => { ev.stopPropagation(); printQR(e); }} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-white">🏷</button></td>
                                 <td className="py-1 text-[color:var(--tts-sub)]">{e.lastRemark ? `${e.lastRemark.date.slice(0, 10)}: ${e.lastRemark.content.slice(0, 50)}` : "—"}</td>

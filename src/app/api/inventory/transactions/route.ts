@@ -17,14 +17,25 @@ import type { InventoryReason, InventoryTxnType } from "@/generated/prisma/clien
 const TXN_TYPES: readonly InventoryTxnType[] = ["IN", "OUT", "TRANSFER"] as const;
 const REASONS: readonly InventoryReason[] = [
   "PURCHASE", "RETURN_IN", "OTHER_IN",
+  "RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN",
   "SALE", "CONSUMABLE_OUT",
+  "RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT",
   "CALIBRATION", "REPAIR", "RENTAL", "DEMO",
+] as const;
+
+// 외부 자산 입고 사유 — ownerClientId 필수 + 자동으로 EXTERNAL_CLIENT 소유주 처리
+const EXTERNAL_IN_REASONS: readonly InventoryReason[] = [
+  "RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN",
+] as const;
+// 외부 자산 반환 사유 — InventoryItem.ownerType=EXTERNAL_CLIENT 인 S/N 만 허용
+const EXTERNAL_OUT_REASONS: readonly InventoryReason[] = [
+  "RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT",
 ] as const;
 
 // 유형-사유 매핑 (잘못된 조합 차단)
 const REASON_BY_TYPE: Record<InventoryTxnType, readonly InventoryReason[]> = {
-  IN: ["PURCHASE", "RETURN_IN", "OTHER_IN"],
-  OUT: ["SALE", "CONSUMABLE_OUT"],
+  IN: ["PURCHASE", "RETURN_IN", "OTHER_IN", "RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN"],
+  OUT: ["SALE", "CONSUMABLE_OUT", "RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT"],
   TRANSFER: ["CALIBRATION", "REPAIR", "RENTAL", "DEMO"],
 };
 
@@ -146,6 +157,15 @@ export async function POST(request: Request) {
       if (reason === "CONSUMABLE_OUT" && !targetEquipmentSN) {
         return badRequest("invalid_input", { field: "targetEquipmentSN", reason: "required_for_consumable" });
       }
+      // 외부 자산 입고 (수리/데모/교정/렌탈입고) — 소유주 거래처 필수, S/N 필수
+      if (EXTERNAL_IN_REASONS.includes(reason)) {
+        if (!clientId) return badRequest("invalid_input", { field: "clientId", reason: "owner_required_for_external_in" });
+        if (!trimNonEmpty(p.serialNumber)) return badRequest("invalid_input", { field: "serialNumber", reason: "required_for_external_in" });
+      }
+      // 외부 자산 반환 (수리/데모/교정/렌탈반출) — S/N 필수, 마스터에서 ownerType 검증은 후속 처리
+      if (EXTERNAL_OUT_REASONS.includes(reason)) {
+        if (!trimNonEmpty(p.serialNumber)) return badRequest("invalid_input", { field: "serialNumber", reason: "required_for_external_out" });
+      }
 
       // 존재성 검증
       const item = await prisma.item.findUnique({ where: { id: itemId }, select: { id: true } });
@@ -203,21 +223,35 @@ export async function POST(request: Request) {
         // S/N 단위 InventoryItem 마스터 자동 관리
         if (sn) {
           if (txnType === "IN" && toWarehouseId) {
-            // S/N 입고 — 없으면 생성(QR 자동발급), 있으면 창고만 변경
+            // 외부 자산 입고는 ownerType=EXTERNAL_CLIENT, ownerClientId 로 출처 추적
+            const isExternalIn = EXTERNAL_IN_REASONS.includes(reason);
             await ensureInventoryItemOnReceipt(tx, {
               itemId,
               serialNumber: sn,
               warehouseId: toWarehouseId,
               companyCode: session.companyCode,
+              ownerType: isExternalIn ? "EXTERNAL_CLIENT" : "COMPANY",
+              ownerClientId: isExternalIn ? (clientId ?? null) : null,
+              inboundReason: reason,
             });
           } else if (txnType === "TRANSFER" && toWarehouseId) {
             await tx.inventoryItem.update({
               where: { serialNumber: sn },
               data: { warehouseId: toWarehouseId },
             }).catch(() => undefined);
+          } else if (txnType === "OUT" && EXTERNAL_OUT_REASONS.includes(reason)) {
+            // 외부 자산 반환 — InventoryItem 에서 ownership 정리. 마스터는 보존(이력) 또는 archive.
+            // 단순화: ownerType 을 그대로 두되 warehouseId 을 EXTERNAL 창고로 옮기지 않고 유지.
+            // 실제 출고 흐름은 별도 회수 모듈에서 정밀 처리. 여기서는 검증만.
+            const owned = await tx.inventoryItem.findUnique({
+              where: { serialNumber: sn },
+              select: { ownerType: true },
+            });
+            if (owned && owned.ownerType !== "EXTERNAL_CLIENT") {
+              throw new Error("not_external_owned");
+            }
           }
-          // OUT 시엔 InventoryItem 마스터를 유지하되 (외부로 나간 후 추적 가능)
-          // 단순화를 위해 상태 변경은 별도 API로
+          // 일반 OUT (SALE, CONSUMABLE_OUT) 은 InventoryItem 마스터를 유지
         }
         return txn;
       });

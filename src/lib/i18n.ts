@@ -1377,6 +1377,14 @@ const DICT: Dict = {
   "reason.repairShort":    { vi: "Sửa chữa",            en: "Repair",           ko: "수리" },
   "reason.rentalShort":    { vi: "Cho thuê",            en: "Rental",           ko: "렌탈" },
   "reason.demoShort":      { vi: "Demo",                en: "Demo",             ko: "데모" },
+  "reason.rentalInShort":      { vi: "Nhập thuê (từ NCC)",        en: "Rental In",       ko: "렌탈입고" },
+  "reason.repairInShort":      { vi: "Nhập sửa chữa (KH)",        en: "Repair In",       ko: "수리입고" },
+  "reason.demoInShort":        { vi: "Nhập demo (KH)",            en: "Demo In",         ko: "데모입고" },
+  "reason.calibrationInShort": { vi: "Nhập hiệu chuẩn (KH)",      en: "Calibration In",  ko: "교정입고" },
+  "reason.rentalOutShort":     { vi: "Trả thuê (về NCC)",         en: "Rental Out",      ko: "렌탈반출" },
+  "reason.repairOutShort":     { vi: "Trả sửa (về KH)",           en: "Repair Out",      ko: "수리반출" },
+  "reason.demoOutShort":       { vi: "Trả demo (về KH)",          en: "Demo Out",        ko: "데모반출" },
+  "reason.calibrationOutShort":{ vi: "Trả hiệu chuẩn (về KH)",    en: "Calibration Out", ko: "교정반출" },
   "btn.txnRegister":       { vi: "Đăng ký",             en: "Register",         ko: "등록" },
 
   // IT Contract new form
@@ -3132,6 +3140,7 @@ const DICT: Dict = {
   "invItem.changeStatusAddNote": { vi: "Đổi trạng thái + Thêm ghi chú", en: "Change Status + Add Note", ko: "상태 변경 + 비고 추가" },
   "invItem.ownerCustomer":    { vi: "KH",                           en: "Customer",                   ko: "고객" },
   "invItem.stateNotePh":      { vi: "Mô tả tình trạng (tự động dịch sang 3 ngôn ngữ)", en: "State description (auto-translated to 3 languages)", ko: "현상태 기술 (3언어 자동번역)" },
+  "invItem.externalAsset":    { vi: "Tài sản KH",                   en: "External",                   ko: "외부 자산" },
   "portal.autoTranslateHint": { vi: "ⓘ Nội dung sẽ được tự động dịch sang 3 ngôn ngữ.", en: "ⓘ Content will be auto-translated to 3 languages.", ko: "ⓘ 입력 내용은 자동으로 3언어로 번역됩니다." },
 
   // ── master items inline ──

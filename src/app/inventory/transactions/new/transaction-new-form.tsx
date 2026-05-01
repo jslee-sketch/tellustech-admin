@@ -88,12 +88,23 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
   }
 
   // A안 정책: 매입/매출/매입반품 사유는 별도 모듈(매입·매출·Adjustment)에서만 자동 생성.
-  // 입출고 폼에서 manual 선택 사유는 OTHER_IN / CONSUMABLE_OUT / TRANSFER 4종.
+  // 입출고 폼에서 manual 선택 가능한 사유:
+  //   IN: 외부 자산 입고(렌탈/수리/데모/교정입고) + 기타입고
+  //   OUT: 외부 자산 반환(렌탈/수리/데모/교정반출) + 소모품출고
+  //   TRANSFER: 자사 내부 이동
   const REASONS_BY_TYPE: Record<string, { value: string; label: string }[]> = {
     IN: [
+      { value: "RENTAL_IN", label: t("reason.rentalInShort", lang) },
+      { value: "REPAIR_IN", label: t("reason.repairInShort", lang) },
+      { value: "DEMO_IN", label: t("reason.demoInShort", lang) },
+      { value: "CALIBRATION_IN", label: t("reason.calibrationInShort", lang) },
       { value: "OTHER_IN", label: t("reason.otherInShort", lang) },
     ],
     OUT: [
+      { value: "RENTAL_OUT", label: t("reason.rentalOutShort", lang) },
+      { value: "REPAIR_OUT", label: t("reason.repairOutShort", lang) },
+      { value: "DEMO_OUT", label: t("reason.demoOutShort", lang) },
+      { value: "CALIBRATION_OUT", label: t("reason.calibrationOutShort", lang) },
       { value: "CONSUMABLE_OUT", label: t("reason.consumableOutShort", lang) },
     ],
     TRANSFER: [
@@ -103,6 +114,12 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
       { value: "DEMO", label: t("reason.demoShort", lang) },
     ],
   };
+
+  // 외부 자산 입출고 사유 — 거래처 필수 + S/N 필수
+  const EXTERNAL_IN_SET = new Set(["RENTAL_IN", "REPAIR_IN", "DEMO_IN", "CALIBRATION_IN"]);
+  const EXTERNAL_OUT_SET = new Set(["RENTAL_OUT", "REPAIR_OUT", "DEMO_OUT", "CALIBRATION_OUT"]);
+  const isExternalIn = txnType === "IN" && EXTERNAL_IN_SET.has(reason);
+  const isExternalOut = txnType === "OUT" && EXTERNAL_OUT_SET.has(reason);
 
   const internalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType !== "EXTERNAL"), [warehouses]);
   const externalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType === "EXTERNAL"), [warehouses]);
@@ -115,7 +132,7 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
   // 유형 전환 시 사유 자동 리셋 + 창고/scope/거래처 초기화
   function selectType(type: "IN" | "OUT" | "TRANSFER") {
     setTxnType(type);
-    setReason(REASONS_BY_TYPE[type][0].value);
+    setReason(type === "IN" ? "RENTAL_IN" : type === "OUT" ? "RENTAL_OUT" : "CALIBRATION");
     setFromScope("INTERNAL");
     setToScope("INTERNAL");
     setFromWarehouseId("");
@@ -138,8 +155,9 @@ export function TransactionNewForm({ items, warehouses, lang }: Props) {
   }
 
   // OUT 은 별도 client 필드 노출. TRANSFER 는 EXTERNAL 측이 곧 거래처라 별도 필드 불필요.
-  const showOutClient = txnType === "OUT";
-  const outClientRequired = txnType === "OUT";
+  // 외부 자산 입고(RENTAL_IN/REPAIR_IN/DEMO_IN/CALIBRATION_IN)도 거래처 필수.
+  const showOutClient = txnType === "OUT" || isExternalIn;
+  const outClientRequired = txnType === "OUT" || isExternalIn;
 
   const showTargetEquipment = reason === "CONSUMABLE_OUT";
 

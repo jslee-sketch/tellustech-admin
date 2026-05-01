@@ -6,6 +6,7 @@ export function ConfirmButton({ ticketId, lang }: { ticketId: string; lang: Lang
   return (
     <button
       type="button"
+      title={t("portal.confirm.btnHint", lang)}
       className="rounded bg-[color:var(--tts-success,#22c55e)] px-2.5 py-1 text-[11px] font-bold text-white hover:opacity-90"
       onClick={async () => {
         if (!confirm(t("portal.confirm.confirmPrompt", lang))) return;

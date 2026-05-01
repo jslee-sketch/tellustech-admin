@@ -2753,10 +2753,13 @@ const DICT: Dict = {
   "portal.reqStatus.canceled":   { vi: "Hủy",                       en: "Canceled",                   ko: "취소" },
 
   // ── 포탈 확인버튼 ──
-  "portal.confirm.confirmPrompt": { vi: "Xác nhận hoàn tất yêu cầu này?", en: "Confirm this request as completed?", ko: "이 요청을 완료 확인하시겠습니까?" },
+  "portal.confirm.confirmPrompt": { vi: "Xác nhận đã xử lý thoả đáng? (Cộng điểm thưởng)", en: "Confirm the work was satisfactory? (Earn reward points)", ko: "처리 결과에 만족하시면 확인해주세요. (포인트 적립)" },
   "portal.confirm.pointsEarned":  { vi: "🏆 Cộng +{n}đ! (số dư: {b}đ)", en: "🏆 +{n}d earned! (balance: {b}d)", ko: "🏆 +{n}d 적립! (잔액: {b}d)" },
   "portal.confirm.failed":        { vi: "Thất bại",                  en: "Failed",                     ko: "실패" },
-  "portal.confirm.btn":           { vi: "✓ Xác nhận",                en: "✓ Confirm",                  ko: "✓ 확인" },
+  "portal.confirm.btn":           { vi: "✓ Đã xử lý tốt",            en: "✓ Confirm Resolved",         ko: "✓ 처리 만족 확인" },
+  "portal.confirm.btnHint":       { vi: "Xác nhận khách đã hài lòng với kết quả xử lý — nhận điểm thưởng",
+                                    en: "Confirm the work was satisfactory — earn reward points",
+                                    ko: "기사 처리 결과에 만족하면 확인 → 포인트 적립" },
 
   // ── 포탈 사이드바 추가 ──
   "portal.sidebar.menu":         { vi: "Menu",                      en: "Menu",                       ko: "메뉴" },

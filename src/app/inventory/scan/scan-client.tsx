@@ -275,6 +275,19 @@ export function ScanClient({ items, warehouses, lang }: Props) {
           className="absolute inset-0 overflow-hidden rounded-md border-2 border-[color:var(--tts-accent)] bg-black"
           style={{ minHeight: 360 }}
         />
+        {/* 시작 전 상태 — 중앙 큰 탭 타겟 오버레이 (PC/모바일 동일하게 보임) */}
+        {!scanning && (
+          <button
+            type="button"
+            onClick={startScan}
+            className="absolute inset-0 flex flex-col items-center justify-center rounded-md bg-black/60 text-white transition hover:bg-black/70"
+          >
+            <span className="text-[64px] leading-none">📷</span>
+            <span className="mt-3 rounded-md bg-[color:var(--tts-accent)] px-5 py-2 text-[15px] font-extrabold shadow-lg">
+              {t("action.scanCamera", lang)}
+            </span>
+          </button>
+        )}
         {/* 성공 플래시 — 800ms */}
         {flashSn && (
           <div
@@ -290,9 +303,7 @@ export function ScanClient({ items, warehouses, lang }: Props) {
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        {!scanning ? (
-          <Button onClick={startScan} variant="accent">📷 {t("action.scanCamera", lang)}</Button>
-        ) : (
+        {scanning && (
           <Button onClick={stopScan} variant="danger">⏹ {t("action.scanStop", lang)}</Button>
         )}
         <Badge tone="primary">{t("scan.scannedCount", lang).replace("{n}", String(scanned.length))}</Badge>

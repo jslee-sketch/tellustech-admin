@@ -585,8 +585,8 @@ const DICT: Dict = {
   "action.start":          { vi: "Bắt đầu",           en: "Start",            ko: "시작" },
   "action.stop":           { vi: "Dừng",              en: "Stop",             ko: "중지" },
   "action.replace":        { vi: "Thay thế",          en: "Replace",          ko: "교체" },
-  "action.scanCamera":     { vi: "📷 Bật camera",     en: "📷 Start camera",  ko: "📷 카메라 시작" },
-  "action.scanStop":       { vi: "⏹ Dừng",           en: "⏹ Stop",          ko: "⏹ 중지" },
+  "action.scanCamera":     { vi: "Bật camera",        en: "Start camera",    ko: "카메라 시작" },
+  "action.scanStop":       { vi: "Dừng",              en: "Stop",            ko: "중지" },
 
   // ── 공통 필드 라벨 ──
   "field.code":            { vi: "Mã",                en: "Code",             ko: "코드" },

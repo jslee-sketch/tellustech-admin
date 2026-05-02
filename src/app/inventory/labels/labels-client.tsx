@@ -122,6 +122,9 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
         <div className="mb-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-3 text-[12px] text-[color:var(--tts-sub)]">
           <div className="font-bold text-[color:var(--tts-text)]">{t("label.unifiedSpecTitle", lang)}</div>
           <div className="mt-1">{t("label.unifiedSpecDesc", lang)}</div>
+          <div className="mt-2 rounded border border-[color:var(--tts-warn)]/40 bg-[color:var(--tts-warn)]/10 px-2 py-1.5 text-[11px] text-[color:var(--tts-text)]">
+            <span className="font-bold">⚠ {t("label.printSetupTitle", lang)}</span> {t("label.printSetupHint", lang)}
+          </div>
         </div>
 
         <div className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-3">
@@ -214,12 +217,16 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
               print-color-adjust: exact !important;
             }
             #print-area .label-box {
-              page-break-after: always;
-              break-after: page;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            #print-area .label-box:last-child { page-break-after: auto; break-after: auto; }
+            /* 라벨 사이에만 페이지 분할 — 첫 라벨 앞이나 마지막 라벨 뒤에는 분할 없음.
+               (page-break-after: always + :last-child auto 조합은 일부 PDF 드라이버에서
+               빈 페이지를 남기므로 page-break-before + :not(:first-child) 사용) */
+            #print-area .label-box + .label-box {
+              page-break-before: always;
+              break-before: page;
+            }
             .print\\:hidden { display: none !important; }
             #print-area { display: block !important; }
             /* 인쇄 헤더(시트형)는 NIIMBOT 라벨에서는 숨김 — 라벨 = 1 페이지 */

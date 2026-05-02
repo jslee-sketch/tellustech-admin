@@ -116,7 +116,9 @@ export function ScanClient({ items, warehouses, lang }: Props) {
 
   // 디코드 → S/N 추출 → state lookup → 항목 추가
   async function handleDecoded(text: string) {
-    let sn = text.trim().replace(/[ -​-‏﻿]/g, "");
+    // 보이지 않는 unicode 문자(zero-width / BOM / 양방향 마커)만 제거.
+    // ⚠ 과거 버그: /[ -​-‏﻿]/ 는 U+0020~U+200B 의 범위로 해석되어 모든 ASCII 를 통째로 지움.
+    let sn = text.trim().replace(/[​-‏﻿]/g, "");
     try {
       const parsed = JSON.parse(sn) as { serialNumber?: string; itemCode?: string };
       if (parsed.serialNumber) sn = parsed.serialNumber;

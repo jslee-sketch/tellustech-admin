@@ -23,17 +23,18 @@ export type QrPayload = {
 };
 
 // 단일 규격 — 라벨 크기/QR 크기/폰트 모두 고정.
+// 세로형 50mm(가로) × 70mm(세로). 상단 정사각 QR + 하단 설명.
 export const LABEL_SPEC = {
-  widthMm: 70,
-  heightMm: 50,
-  qrMm: 38,
+  widthMm: 50,
+  heightMm: 70,
+  qrMm: 44,
   paddingMm: 3,
   // 정보 영역 폰트
   itemCodeFontPt: 9,
   itemNameFontPt: 10,
-  snFontPt: 9,
+  snFontPt: 8,
   metaFontPt: 7,
-  label: "70×50mm (NIIMBOT B21)",
+  label: "50×70mm (세로형)",
 } as const;
 
 // QR 인코딩 — JSON 페이로드 (요구사항 유지).

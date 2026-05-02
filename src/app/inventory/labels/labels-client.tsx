@@ -88,6 +88,117 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
     setRows((r) => r.filter((_, i) => i !== idx));
   }
 
+  // 모바일 대응: 라벨을 캔버스로 그려 PNG 다운로드.
+  // PC는 window.print() 직접 인쇄, 모바일은 PNG 저장 후 갤러리에서 인쇄/공유.
+  // 200dpi 가정 (NIIMBOT B21 = 203dpi · 8dot/mm 근사).
+  async function downloadPng(row: LabelRow) {
+    const dpm = 8; // dots per mm (≈200dpi)
+    const W = LABEL_SPEC.widthMm * dpm;
+    const H = LABEL_SPEC.heightMm * dpm;
+    const pad = LABEL_SPEC.paddingMm * dpm;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, W, H);
+
+    // QR — 상단 정사각 (44mm)
+    if (row.qrUrl) {
+      const img = new Image();
+      img.src = row.qrUrl;
+      await new Promise<void>((r) => { img.onload = () => r(); img.onerror = () => r(); });
+      const qrSize = LABEL_SPEC.qrMm * dpm;
+      const qrX = (W - qrSize) / 2;
+      const qrY = pad;
+      ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+    }
+
+    // 정보 영역 — 하단
+    const infoTop = pad + LABEL_SPEC.qrMm * dpm + 1 * dpm;
+    let y = infoTop;
+    ctx.fillStyle = "#000";
+    ctx.textBaseline = "top";
+
+    // 라인 1: itemCode + 컬러배지 + 소유배지 (오른쪽 정렬)
+    ctx.font = `700 ${LABEL_SPEC.itemCodeFontPt * 1.6}px monospace`;
+    ctx.fillText(row.itemCode || "", pad, y);
+
+    // 우측 배지 (오른쪽 → 왼쪽 그리기)
+    let badgeX = W - pad;
+    const badgeH = 5 * dpm;
+    const drawBadge = (text: string, fill: string, fg: string, bordered: boolean) => {
+      ctx.font = `800 ${7 * 1.6}px system-ui, sans-serif`;
+      const padX = 1.5 * dpm;
+      const w = ctx.measureText(text).width + padX * 2;
+      const x = badgeX - w;
+      if (fill !== "transparent") {
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, w, badgeH);
+      }
+      if (bordered) {
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 0.4 * dpm;
+        ctx.strokeRect(x + 0.2 * dpm, y + 0.2 * dpm, w - 0.4 * dpm, badgeH - 0.4 * dpm);
+      }
+      ctx.fillStyle = fg;
+      ctx.font = `800 ${7 * 1.6}px system-ui, sans-serif`;
+      ctx.fillText(text, x + padX, y + badgeH / 2 - 4.5 * 1.6);
+      badgeX = x - 1 * dpm;
+    };
+    if (row.ownerType === "EXTERNAL_CLIENT") drawBadge("EX", "#000", "#fff", false);
+    else drawBadge("TLS", "#fff", "#000", true);
+    const ch = row.colorChannel && row.colorChannel !== "NONE" ? CHANNEL_META[row.colorChannel] : null;
+    if (ch) drawBadge(ch.code, ch.fill, ch.text, true);
+
+    y += badgeH + 1 * dpm;
+
+    // 라인 2: itemName (bold)
+    ctx.fillStyle = "#000";
+    ctx.font = `700 ${LABEL_SPEC.itemNameFontPt * 1.6}px system-ui, sans-serif`;
+    const nameMax = W - pad * 2;
+    let name = row.itemName || "";
+    while (ctx.measureText(name).width > nameMax && name.length > 0) name = name.slice(0, -1);
+    if (name !== row.itemName && name.length > 1) name = name.slice(0, -1) + "…";
+    ctx.fillText(name, pad, y);
+    y += LABEL_SPEC.itemNameFontPt * 2 + 1 * dpm;
+
+    // 라인 3: S/N
+    if (row.serialNumber) {
+      ctx.font = `600 ${LABEL_SPEC.snFontPt * 1.6}px monospace`;
+      ctx.fillText(`S/N: ${row.serialNumber}`, pad, y);
+      y += LABEL_SPEC.snFontPt * 2 + 0.5 * dpm;
+    }
+
+    // 라인 4: 위치/소유주/매입처
+    const meta =
+      row.ownerType === "EXTERNAL_CLIENT" && row.ownerLabel
+        ? row.ownerLabel
+        : row.warehouseCode
+          ? `${row.warehouseCode}${row.warehouseName ? " · " + row.warehouseName : ""}`
+          : row.source || "";
+    if (meta) {
+      ctx.font = `400 ${LABEL_SPEC.metaFontPt * 1.6}px system-ui, sans-serif`;
+      let m = meta;
+      while (ctx.measureText(m).width > nameMax && m.length > 0) m = m.slice(0, -1);
+      if (m !== meta && m.length > 1) m = m.slice(0, -1) + "…";
+      ctx.fillText(m, pad, y);
+    }
+
+    const link = document.createElement("a");
+    link.download = `label-${row.serialNumber || row.itemCode}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
+  async function downloadAllPng() {
+    for (const row of allLabels) {
+      await downloadPng(row);
+      await new Promise((r) => setTimeout(r, 60));
+    }
+  }
+
   useEffect(() => {
     (async () => {
       const updated = await Promise.all(
@@ -175,15 +286,19 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
                     {r.ownerLabel && <span className="ml-1 text-[color:var(--tts-sub)]">{r.ownerLabel}</span>}
                   </td>
                   <td className="py-2 text-right font-mono">{r.copies}</td>
-                  <td className="py-2 text-right"><button onClick={() => removeRow(i)} className="text-[color:var(--tts-danger)] hover:underline">{t("action.delete", lang)}</button></td>
+                  <td className="py-2 text-right">
+                    <button onClick={() => downloadPng(r)} title={t("label.savePng", lang)} className="mr-2 text-[color:var(--tts-primary)] hover:underline">📸</button>
+                    <button onClick={() => removeRow(i)} className="text-[color:var(--tts-danger)] hover:underline">{t("action.delete", lang)}</button>
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
 
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex items-center gap-3 flex-wrap">
           <Button onClick={() => window.print()}>{t("btn.print", lang)}</Button>
+          <Button type="button" variant="ghost" onClick={downloadAllPng}>📸 {t("label.savePngAll", lang)}</Button>
           <div className="text-[11px] text-[color:var(--tts-muted)]">
             {t("label.totalLabels50x70", lang).replace("{count}", String(allLabels.length))}
           </div>
@@ -199,26 +314,31 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
         <style>{`
           @media print {
             @page { size: ${LABEL_SPEC.widthMm}mm ${LABEL_SPEC.heightMm}mm; margin: 0; }
-            html, body { background: #fff !important; color: #000 !important; margin: 0 !important; padding: 0 !important; }
-            #print-area, #print-area * {
+            html, body {
+              background: #fff !important;
               color: #000 !important;
-              background: transparent !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            /* 다크모드 토큰만 무력화 — 명시적으로 색칠한 배지(.ex-badge / .ch-badge)는 보존 */
+            #print-area, #print-area > div, #print-area .label-box {
+              color: #000 !important;
+              background: #fff !important;
               border-color: #000 !important;
               box-shadow: none !important;
               text-shadow: none !important;
-            }
-            #print-area .ex-badge {
-              background: #000 !important;
-              color: #fff !important;
-            }
-            /* 컬러 채널 배지 — 컬러 전사지에서는 그대로 인쇄, 흑백 전사지에서는 OS 가 자동 grayscale 변환 */
-            #print-area .ch-badge {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            #print-area .label-box {
+            /* EX/TLS/컬러채널 배지: 자체 inline style 의 색상 그대로 사용. 모든 print 드라이버에서 색상 강제 출력 */
+            #print-area .ex-badge,
+            #print-area .ch-badge,
+            #print-area span[style*="background"] {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
+              color-adjust: exact !important;
             }
             /* 라벨 사이에만 페이지 분할 — 첫 라벨 앞이나 마지막 라벨 뒤에는 분할 없음.
                (page-break-after: always + :last-child auto 조합은 일부 PDF 드라이버에서
@@ -315,6 +435,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
                       fontFamily: "system-ui, sans-serif",
                       background: ch.fill,
                       color: ch.text,
+                      border: "0.3mm solid #000",
                       borderRadius: "0.5mm",
                       letterSpacing: "0.05em",
                     }}
@@ -324,7 +445,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
                   </span>
                 )}
                 {l.ownerType === "EXTERNAL_CLIENT" ? (
-                  <span className="ex-badge" style={{ padding: "0.4mm 1.2mm", fontSize: "7pt", fontWeight: 800, background: "#000", color: "#fff", borderRadius: "0.5mm" }}>EX</span>
+                  <span className="ex-badge" style={{ padding: "0.4mm 1.2mm", fontSize: "7pt", fontWeight: 800, background: "#000", color: "#fff", border: "0.3mm solid #000", borderRadius: "0.5mm" }}>EX</span>
                 ) : (
                   <span style={{ padding: "0.4mm 1.2mm", fontSize: "7pt", fontWeight: 700, border: "0.3mm solid #000", borderRadius: "0.5mm" }}>TLS</span>
                 )}

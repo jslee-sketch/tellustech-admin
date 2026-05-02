@@ -174,6 +174,35 @@ export const BASE_RULES: Partial<Record<RuleKey, RuleAction>> = {
     requireSerialNumber: false, setExternalLocation: false, externalAssetLabel: false,
     scenarioLabel: "소모품 출고 (AS 출동·로트 단위)", scenarioId: 20,
   },
+
+  // === 7) 이동 (TRANSFER) ===
+  // 자사 ↔ 자사 창고 이동 — fromWarehouseId/toWarehouseId 둘 다 INTERNAL.
+  "TRANSFER|TRADE|OTHER|COMPANY": {
+    masterAction: "MOVE", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
+    scenarioLabel: "이동 — 자사 창고 ↔ 자사 창고 (내부재고이동)", scenarioId: 21,
+  },
+  // 외주 ↔ 외주 이동 (자사 창고 거치지 않음) — fromClientId/toClientId 사용.
+  "TRANSFER|RENTAL|OTHER|EXTERNAL_CLIENT": {
+    masterAction: "TRANSFER_LOC", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: true, externalAssetLabel: true,
+    scenarioLabel: "이동 — 외부 ↔ 외부 (렌탈)", scenarioId: 22,
+  },
+  "TRANSFER|REPAIR|OTHER|EXTERNAL_CLIENT": {
+    masterAction: "TRANSFER_LOC", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: true, externalAssetLabel: true,
+    scenarioLabel: "이동 — 외부 ↔ 외부 (수리)", scenarioId: 22,
+  },
+  "TRANSFER|CALIB|OTHER|EXTERNAL_CLIENT": {
+    masterAction: "TRANSFER_LOC", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: true, externalAssetLabel: true,
+    scenarioLabel: "이동 — 외부 ↔ 외부 (교정)", scenarioId: 22,
+  },
+  "TRANSFER|DEMO|OTHER|EXTERNAL_CLIENT": {
+    masterAction: "TRANSFER_LOC", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: true, externalAssetLabel: true,
+    scenarioLabel: "이동 — 외부 ↔ 외부 (데모)", scenarioId: 22,
+  },
 };
 
 // 거래처별 예외 — DB 의 ClientRuleOverride 테이블 룩업.

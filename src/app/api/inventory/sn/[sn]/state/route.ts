@@ -79,6 +79,7 @@ export async function GET(
           { txnType: "OUT", refModule: "CALIB", subKind: "REQUEST", labelKey: "txn.combo.calibOutRequest", reason: "외주에 교정 의뢰" },
           { txnType: "OUT", refModule: "DEMO", subKind: "LEND", labelKey: "txn.combo.demoOutLend", reason: "고객 데모 대여" },
           { txnType: "OUT", refModule: "TRADE", subKind: "SALE", labelKey: "txn.combo.tradeOutSale", reason: "매출" },
+          { txnType: "TRANSFER", refModule: "TRADE", subKind: "OTHER", labelKey: "txn.combo.transferInternal", reason: "자사 창고 ↔ 자사 창고 이동" },
         );
       }
     } else {

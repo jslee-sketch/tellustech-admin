@@ -51,10 +51,13 @@ const COMBOS_BY_TYPE: Record<"IN" | "OUT" | "TRANSFER", Combo[]> = {
     { refModule: "CONSUMABLE", subKind: "CONSUMABLE", labelKey: "txn.combo.consumableOut", ownerHint: "COMPANY" },
   ],
   TRANSFER: [
-    { refModule: "RENTAL", subKind: "OTHER", labelKey: "txn.combo.transferRental" },
-    { refModule: "REPAIR", subKind: "OTHER", labelKey: "txn.combo.transferRepair" },
-    { refModule: "CALIB", subKind: "OTHER", labelKey: "txn.combo.transferCalib" },
-    { refModule: "DEMO", subKind: "OTHER", labelKey: "txn.combo.transferDemo" },
+    // 자사 ↔ 자사 (기본값) — fromWarehouseId/toWarehouseId 사용
+    { refModule: "TRADE", subKind: "OTHER", labelKey: "txn.combo.transferInternal", ownerHint: "COMPANY" },
+    // 외부 ↔ 외부 — fromClientId/toClientId 사용
+    { refModule: "RENTAL", subKind: "OTHER", labelKey: "txn.combo.transferRental", ownerHint: "EXTERNAL" },
+    { refModule: "REPAIR", subKind: "OTHER", labelKey: "txn.combo.transferRepair", ownerHint: "EXTERNAL" },
+    { refModule: "CALIB", subKind: "OTHER", labelKey: "txn.combo.transferCalib", ownerHint: "EXTERNAL" },
+    { refModule: "DEMO", subKind: "OTHER", labelKey: "txn.combo.transferDemo", ownerHint: "EXTERNAL" },
   ],
 };
 
@@ -88,7 +91,9 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
 
   const isExternalIn = txnType === "IN" && (currentCombo.ownerHint === "EXTERNAL");
   const isConsumable = subKind === "CONSUMABLE";
-  const snRequiredOnLines = !isConsumable && txnType !== "TRANSFER";
+  // 자사 ↔ 자사 이동(TRADE/OTHER) 도 S/N 필수. 외주 ↔ 외주 이동도 마스터 위치 갱신을 위해 필수.
+  const isInternalTransfer = txnType === "TRANSFER" && refModule === "TRADE";
+  const snRequiredOnLines = !isConsumable;
   // ownerHint=AUTO → 마스터 조회로 결정. 사용자가 거래처 입력하면 외주처(EXTERNAL_CLIENT)로 추론.
   // 단순화: AUTO 케이스에서도 거래처 picker 노출.
   const showOwnerClient = txnType === "IN" && (currentCombo.ownerHint === "EXTERNAL" || currentCombo.ownerHint === "AUTO");
@@ -170,10 +175,30 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
       setSubmitting(false);
       return;
     }
-    if (txnType === "TRANSFER" && (!fromClientId || !toClientId)) {
-      setError(t("msg.bothClientsRequired", lang));
-      setSubmitting(false);
-      return;
+    if (txnType === "TRANSFER") {
+      if (isInternalTransfer) {
+        if (!fromWarehouseId || !toWarehouseId) {
+          setError(t("msg.bothWarehousesRequired", lang));
+          setSubmitting(false);
+          return;
+        }
+        if (fromWarehouseId === toWarehouseId) {
+          setError(t("msg.transferSameEndpoint", lang));
+          setSubmitting(false);
+          return;
+        }
+      } else {
+        if (!fromClientId || !toClientId) {
+          setError(t("msg.bothClientsRequired", lang));
+          setSubmitting(false);
+          return;
+        }
+        if (fromClientId === toClientId) {
+          setError(t("msg.transferSameEndpoint", lang));
+          setSubmitting(false);
+          return;
+        }
+      }
     }
     if (showOwnerClient && txnType === "IN" && !clientId) {
       setError(t("msg.externalRequiresClient", lang));
@@ -277,7 +302,23 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
           </Field>
         </Row>
       )}
-      {txnType === "TRANSFER" && (
+      {txnType === "TRANSFER" && isInternalTransfer && (
+        <>
+          <Row>
+            <Field label={t("field.fromWarehouse", lang)} required>
+              <Select value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} options={whOptions} />
+            </Field>
+            <Field label={t("field.toWarehouse", lang)} required>
+              <Select value={toWarehouseId} onChange={(e) => setToWarehouseId(e.target.value)} options={whOptions} />
+            </Field>
+          </Row>
+          <Note tone="info">
+            <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
+            {t("txnGuide.internalTransfer", lang)}
+          </Note>
+        </>
+      )}
+      {txnType === "TRANSFER" && !isInternalTransfer && (
         <>
           <Row>
             <Field label={t("field.fromClient", lang)} required>

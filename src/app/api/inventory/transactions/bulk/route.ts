@@ -109,11 +109,20 @@ export async function POST(request: Request) {
         if (!clientId) return badRequest("invalid_input", { field: "clientId", reason: "required_for_OUT" });
       }
       if (txnType === "TRANSFER") {
-        if (fromWarehouseId || toWarehouseId) {
-          return badRequest("invalid_input", { field: "warehouse", reason: "transfer_must_be_external_only" });
+        // 두 가지 모드: ① 자사 ↔ 자사 (warehouseId 둘) ② 외부 ↔ 외부 (clientId 둘)
+        const isInternal = !!(fromWarehouseId && toWarehouseId);
+        const isExternal = !!(fromClientId && toClientId);
+        if (isInternal && isExternal) {
+          return badRequest("invalid_input", { field: "transferEndpoints", reason: "transfer_mode_ambiguous" });
         }
-        if (!fromClientId || !toClientId) {
-          return badRequest("invalid_input", { field: "transferEndpoints", reason: "external_clients_required" });
+        if (!isInternal && !isExternal) {
+          return badRequest("invalid_input", { field: "transferEndpoints", reason: "transfer_endpoints_required" });
+        }
+        if (isInternal && fromWarehouseId === toWarehouseId) {
+          return badRequest("invalid_input", { field: "transferEndpoints", reason: "same_warehouse" });
+        }
+        if (isExternal && fromClientId === toClientId) {
+          return badRequest("invalid_input", { field: "transferEndpoints", reason: "same_client" });
         }
       }
 
@@ -290,7 +299,7 @@ export async function POST(request: Request) {
                 }
                 break;
               case "MOVE":
-                if (txnType === "IN" && toWarehouseId) {
+                if ((txnType === "IN" || txnType === "TRANSFER") && toWarehouseId) {
                   await tx.inventoryItem.update({
                     where: { serialNumber: line.serialNumber },
                     data: {
@@ -302,11 +311,12 @@ export async function POST(request: Request) {
                 }
                 break;
               case "TRANSFER_LOC":
-                // 외부 위탁 — 거래처 위치로 마스터 이동 표시 (자사창고는 그대로 둠 — 회수 시점에 복원)
+                // 외부 위탁 — 거래처 위치로 마스터 이동 표시 (자사창고는 그대로 둠).
+                // TRANSFER (외주↔외주) 시 toClientId 우선, OUT/위탁 시 clientId.
                 await tx.inventoryItem.update({
                   where: { serialNumber: line.serialNumber },
                   data: {
-                    currentLocationClientId: clientId ?? null,
+                    currentLocationClientId: (txnType === "TRANSFER" ? toClientId : clientId) ?? null,
                     currentLocationSinceAt: new Date(),
                   },
                 }).catch(() => undefined);

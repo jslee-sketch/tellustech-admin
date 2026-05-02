@@ -309,12 +309,12 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-[12px] font-bold text-[color:var(--tts-text)]">{t("label.screenPreviewTitle", lang)}</div>
-              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("label.screenPreviewHint", lang)}</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("label.screenPreviewHint", lang).replace("{n}", String(allLabels.length))}</div>
             </div>
             <div className="flex flex-wrap gap-3">
-              {allLabels.slice(0, 4).map((l, i) => {
+              {allLabels.map((l, i) => {
                 const ch = l.colorChannel && l.colorChannel !== "NONE" ? CHANNEL_META[l.colorChannel] : null;
-                const scale = 2.0;
+                const scale = 0.5;
                 return (
                   <div key={i} style={{
                     width: `${LABEL_SPEC.widthMm * scale}mm`,
@@ -352,9 +352,6 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
                   </div>
                 );
               })}
-              {allLabels.length > 4 && (
-                <div className="text-[11px] text-[color:var(--tts-muted)] self-center">{t("label.previewMore", lang).replace("{n}", String(allLabels.length - 4))}</div>
-              )}
             </div>
           </div>
         )}

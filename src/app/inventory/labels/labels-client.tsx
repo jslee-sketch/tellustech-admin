@@ -8,6 +8,7 @@ import { t, type Lang } from "@/lib/i18n";
 import type { LabelPrefill } from "./page";
 
 type ItemOpt = { value: string; label: string; itemCode: string; itemName: string };
+type ColorChannel = "BLACK" | "CYAN" | "MAGENTA" | "YELLOW" | "DRUM" | "FUSER" | "NONE";
 type LabelRow = {
   itemCode: string;
   itemName: string;
@@ -18,7 +19,20 @@ type LabelRow = {
   warehouseCode?: string | null;
   warehouseName?: string | null;
   source?: string | null;
+  colorChannel?: ColorChannel | null;
   qrUrl?: string;
+};
+
+// 토너/소모품 채널별 시각 표현. 컬러 전사지 사용 시 그대로 인쇄됨.
+// 흑백 전사지 사용 시 OS 인쇄 다이얼로그가 grayscale 로 자동 변환 → 채널 코드(C/M/Y/K)는 글자로도 명시.
+const CHANNEL_META: Record<ColorChannel, { fill: string; text: string; code: string; emoji: string; }> = {
+  BLACK:   { fill: "#000000", text: "#ffffff", code: "K", emoji: "⬛" },
+  CYAN:    { fill: "#00B7E2", text: "#000000", code: "C", emoji: "🟦" },
+  MAGENTA: { fill: "#E5007E", text: "#ffffff", code: "M", emoji: "🟪" },
+  YELLOW:  { fill: "#FFCC00", text: "#000000", code: "Y", emoji: "🟨" },
+  DRUM:    { fill: "#6B7280", text: "#ffffff", code: "D", emoji: "🥁" },
+  FUSER:   { fill: "#DC2626", text: "#ffffff", code: "F", emoji: "🔥" },
+  NONE:    { fill: "transparent", text: "transparent", code: "", emoji: "" },
 };
 type PrintHeader = { supplierName: string; purchaseDate: string; purchaseNumber: string };
 type Props = {
@@ -41,6 +55,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
           warehouseCode: p.warehouseCode ?? null,
           warehouseName: p.warehouseName ?? null,
           source: p.source ?? null,
+          colorChannel: p.colorChannel ?? null,
         }))
       : [{ itemCode: "", itemName: "", serialNumber: "", copies: 1 }],
   );
@@ -51,17 +66,19 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
   async function addRow() {
     if (!selectedItemId) return;
     let item = items.find((i) => i.value === selectedItemId);
-    if (!item) {
-      try {
-        const res = await fetch(`/api/master/items?q=${encodeURIComponent(selectedItemId)}`).then((r) => r.json());
-        const found = (res.items ?? []).find((x: { id: string; itemCode: string; name: string }) => x.id === selectedItemId);
-        if (found) item = { value: found.id, label: `${found.itemCode} · ${found.name}`, itemCode: found.itemCode, itemName: found.name };
-      } catch {
-        return;
+    let colorChannel: ColorChannel | null = null;
+    try {
+      const res = await fetch(`/api/master/items?q=${encodeURIComponent(selectedItemId)}`).then((r) => r.json());
+      const found = (res.items ?? []).find((x: { id: string; itemCode: string; name: string; colorChannel?: ColorChannel | null }) => x.id === selectedItemId);
+      if (found) {
+        if (!item) item = { value: found.id, label: `${found.itemCode} · ${found.name}`, itemCode: found.itemCode, itemName: found.name };
+        colorChannel = found.colorChannel ?? null;
       }
+    } catch {
+      if (!item) return;
     }
     if (!item) return;
-    setRows((r) => [...r, { itemCode: item!.itemCode, itemName: item!.itemName, serialNumber: sn, copies: Math.max(1, Number(copies) || 1) }]);
+    setRows((r) => [...r, { itemCode: item!.itemCode, itemName: item!.itemName, serialNumber: sn, copies: Math.max(1, Number(copies) || 1), colorChannel }]);
     setSelectedItemId("");
     setSn("");
     setCopies("1");
@@ -126,25 +143,37 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
         </div>
 
         <table className="mt-4 w-full text-[12px]">
-          <thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">{t("th.itemCodeTh", lang)}</th><th className="py-2 text-left">{t("th.itemNameTh", lang)}</th><th className="py-2 text-left">{t("th.snTh", lang)}</th><th className="py-2 text-left">{t("col.belongsTo", lang)}</th><th className="py-2 text-right">{t("th.copies", lang)}</th><th className="py-2 text-right">{t("th.delete", lang)}</th></tr></thead>
+          <thead><tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]"><th className="py-2 text-left">{t("th.itemCodeTh", lang)}</th><th className="py-2 text-left">{t("th.itemNameTh", lang)}</th><th className="py-2 text-left">{t("th.snTh", lang)}</th><th className="py-2 text-left">{t("item.colorChannel", lang)}</th><th className="py-2 text-left">{t("col.belongsTo", lang)}</th><th className="py-2 text-right">{t("th.copies", lang)}</th><th className="py-2 text-right">{t("th.delete", lang)}</th></tr></thead>
           <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} className="border-b border-[color:var(--tts-border)]/50">
-                <td className="py-2 font-mono">{r.itemCode || "-"}</td>
-                <td className="py-2">{r.itemName || "-"}</td>
-                <td className="py-2 font-mono">{r.serialNumber || "-"}</td>
-                <td className="py-2 text-[11px]">
-                  {r.ownerType === "EXTERNAL_CLIENT" ? (
-                    <span className="rounded bg-black px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">EX</span>
-                  ) : (
-                    <span className="rounded border border-[color:var(--tts-border)] px-1.5 py-0.5 font-mono text-[10px]">TLS</span>
-                  )}
-                  {r.ownerLabel && <span className="ml-1 text-[color:var(--tts-sub)]">{r.ownerLabel}</span>}
-                </td>
-                <td className="py-2 text-right font-mono">{r.copies}</td>
-                <td className="py-2 text-right"><button onClick={() => removeRow(i)} className="text-[color:var(--tts-danger)] hover:underline">{t("action.delete", lang)}</button></td>
-              </tr>
-            ))}
+            {rows.map((r, i) => {
+              const ch = r.colorChannel && r.colorChannel !== "NONE" ? CHANNEL_META[r.colorChannel] : null;
+              return (
+                <tr key={i} className="border-b border-[color:var(--tts-border)]/50">
+                  <td className="py-2 font-mono">{r.itemCode || "-"}</td>
+                  <td className="py-2">{r.itemName || "-"}</td>
+                  <td className="py-2 font-mono">{r.serialNumber || "-"}</td>
+                  <td className="py-2 text-[11px]">
+                    {ch ? (
+                      <span className="inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold" style={{ background: ch.fill, color: ch.text }}>
+                        <span>{ch.code}</span><span>{r.colorChannel}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[color:var(--tts-muted)]">—</span>
+                    )}
+                  </td>
+                  <td className="py-2 text-[11px]">
+                    {r.ownerType === "EXTERNAL_CLIENT" ? (
+                      <span className="rounded bg-black px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">EX</span>
+                    ) : (
+                      <span className="rounded border border-[color:var(--tts-border)] px-1.5 py-0.5 font-mono text-[10px]">TLS</span>
+                    )}
+                    {r.ownerLabel && <span className="ml-1 text-[color:var(--tts-sub)]">{r.ownerLabel}</span>}
+                  </td>
+                  <td className="py-2 text-right font-mono">{r.copies}</td>
+                  <td className="py-2 text-right"><button onClick={() => removeRow(i)} className="text-[color:var(--tts-danger)] hover:underline">{t("action.delete", lang)}</button></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 
@@ -176,6 +205,11 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
             #print-area .ex-badge {
               background: #000 !important;
               color: #fff !important;
+            }
+            /* 컬러 채널 배지 — 컬러 전사지에서는 그대로 인쇄, 흑백 전사지에서는 OS 가 자동 grayscale 변환 */
+            #print-area .ch-badge {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
             #print-area .label-box {
               page-break-after: always;
@@ -217,7 +251,9 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
         )}
 
         {/* 라벨 — 1장 = 1 페이지 */}
-        {allLabels.map((l, i) => (
+        {allLabels.map((l, i) => {
+          const ch = l.colorChannel && l.colorChannel !== "NONE" ? CHANNEL_META[l.colorChannel] : null;
+          return (
           <div
             key={i}
             className="label-box"
@@ -258,8 +294,26 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
               gap: "0.4mm",
               minWidth: 0,
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1.5mm", fontSize: `${LABEL_SPEC.itemCodeFontPt}pt`, fontFamily: "monospace", fontWeight: 700, lineHeight: 1.1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "1.2mm", fontSize: `${LABEL_SPEC.itemCodeFontPt}pt`, fontFamily: "monospace", fontWeight: 700, lineHeight: 1.1 }}>
                 <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.itemCode}</span>
+                {ch && (
+                  <span
+                    className="ch-badge"
+                    style={{
+                      padding: "0.4mm 1.5mm",
+                      fontSize: "7.5pt",
+                      fontWeight: 800,
+                      fontFamily: "system-ui, sans-serif",
+                      background: ch.fill,
+                      color: ch.text,
+                      borderRadius: "0.5mm",
+                      letterSpacing: "0.05em",
+                    }}
+                    title={l.colorChannel ?? ""}
+                  >
+                    {ch.code}
+                  </span>
+                )}
                 {l.ownerType === "EXTERNAL_CLIENT" ? (
                   <span className="ex-badge" style={{ padding: "0.4mm 1.2mm", fontSize: "7pt", fontWeight: 800, background: "#000", color: "#fff", borderRadius: "0.5mm" }}>EX</span>
                 ) : (
@@ -285,7 +339,8 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

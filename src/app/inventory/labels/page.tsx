@@ -26,6 +26,7 @@ export type LabelPrefill = {
   warehouseCode?: string | null;
   warehouseName?: string | null;
   source?: string | null;
+  colorChannel?: "BLACK" | "CYAN" | "MAGENTA" | "YELLOW" | "DRUM" | "FUSER" | "NONE" | null;
 };
 
 export default async function LabelsPage({ searchParams }: PageProps) {
@@ -44,7 +45,7 @@ export default async function LabelsPage({ searchParams }: PageProps) {
         supplier: { select: { companyNameVi: true, companyNameKo: true, clientCode: true } },
         items: {
           include: {
-            item: { select: { itemCode: true, name: true } },
+            item: { select: { itemCode: true, name: true, colorChannel: true } },
           },
         },
       },
@@ -56,6 +57,7 @@ export default async function LabelsPage({ searchParams }: PageProps) {
         itemName: i.item.name,
         serialNumber: i.serialNumber,
         source: supplierLabel,
+        colorChannel: i.item.colorChannel,
       }));
       printHeader = {
         supplierName: supplierLabel,
@@ -72,7 +74,7 @@ export default async function LabelsPage({ searchParams }: PageProps) {
       const invs = await prisma.inventoryItem.findMany({
         where: { serialNumber: { in: snList } },
         include: {
-          item: { select: { itemCode: true, name: true } },
+          item: { select: { itemCode: true, name: true, colorChannel: true } },
           warehouse: { select: { code: true, name: true } },
           ownerClient: { select: { clientCode: true, companyNameVi: true, companyNameKo: true } },
         },
@@ -87,6 +89,7 @@ export default async function LabelsPage({ searchParams }: PageProps) {
           : null,
         warehouseCode: iv.warehouse?.code ?? null,
         warehouseName: iv.warehouse?.name ?? null,
+        colorChannel: iv.item.colorChannel,
       }));
     }
   }
@@ -97,12 +100,13 @@ export default async function LabelsPage({ searchParams }: PageProps) {
     if (itemIds.length > 0) {
       const its = await prisma.item.findMany({
         where: { id: { in: itemIds } },
-        select: { id: true, itemCode: true, name: true },
+        select: { id: true, itemCode: true, name: true, colorChannel: true },
       });
       const fromItems: LabelPrefill[] = its.map((it) => ({
         itemCode: it.itemCode,
         itemName: it.name,
         serialNumber: null,
+        colorChannel: it.colorChannel,
       }));
       prefill = [...prefill, ...fromItems];
     }
@@ -112,13 +116,14 @@ export default async function LabelsPage({ searchParams }: PageProps) {
   if (sp.itemCode && prefill.length === 0) {
     const it = await prisma.item.findFirst({
       where: { itemCode: sp.itemCode },
-      select: { itemCode: true, name: true },
+      select: { itemCode: true, name: true, colorChannel: true },
     });
     if (it) {
       prefill = [{
         itemCode: it.itemCode,
         itemName: it.name,
         serialNumber: sp.sn ?? null,
+        colorChannel: it.colorChannel,
       }];
     }
   }

@@ -133,6 +133,7 @@
 - **스캐너 시작 버튼 UX**: 카메라 영역 내부 중앙 큰 오버레이로 이동 (모바일에서 fold 위에 노출). 이모지 중복 제거.
 - **카메라 입력 정규식 버그**: `text.replace(/[ -​-‏﻿]/g, "")` 가 U+0020-U+200B 범위로 해석되어 ASCII 전부 삭제 → `text.replace(/[​-‏﻿]/g, "")` 로 zero-width 만 제거.
 - **라벨 50×70mm 세로형**: `@page size: 50mm 70mm; margin: 0;` + 정사각 QR 44mm 상단 + 정보 하단 (itemCode + 컬러배지 + EX/TLS / itemName / S/N / 위치). 배지 0.3mm 검정 테두리로 흑백 인쇄 시에도 식별. 모바일 PNG 다운로드 (200dpi canvas, imageSmoothingEnabled=false).
+- **재고조정·분해·조립 4행 추가** (진리표 30 → 34행): `IN|TRADE|OTHER|COMPANY` (재고조정 발견 NEW), `OUT|TRADE|LOSS|COMPANY` (재고조정 유실 ARCHIVE), `OUT|TRADE|SPLIT|COMPANY` (분해 ARCHIVE), `IN|TRADE|ASSEMBLE|COMPANY` (조립 NEW). 새 SubKind: `LOSS / SPLIT / ASSEMBLE`. 별도 페이지 없이 `/inventory/transactions/new` 콤보 4종으로 통합 — 분해는 본체 라인 + 부품별 IN 라인 한 트랜잭션, 조립은 그 반대.
 
 ## 입출고 시나리오 가이드 (2026-05 기준 진리표 30행 정리)
 
@@ -164,6 +165,8 @@
 | 데모 — 자사 데모 회수 | `IN\|DEMO\|RETURN\|COMPANY` | MOVE | — | 자사 데모기 복귀 |
 | 매입 — 신규 | `IN\|TRADE\|PURCHASE\|COMPANY` | NEW | — | Purchase 모듈에서 자동 |
 | 매출 반품 회수 | `IN\|TRADE\|RETURN\|COMPANY` | MOVE | — | 고객 환불 시 자사 창고 입고 |
+| **재고조정 — 발견** | `IN\|TRADE\|OTHER\|COMPANY` | NEW | — | 실사 시 장부 외 실물 발견 |
+| **조립 (Assemble)** | `IN\|TRADE\|ASSEMBLE\|COMPANY` | NEW | — | 본체 NEW + 부품 별도 라인 OUT/TRADE/OTHER |
 
 #### OUT 콤보 (출고)
 
@@ -182,6 +185,8 @@
 | **매출 — 자사 자산 출고** | `OUT\|TRADE\|SALE\|COMPANY` | ARCHIVE | — | Sales 모듈에서 자동 |
 | **매입 반품 — 공급처로 반환** | `OUT\|TRADE\|RETURN\|COMPANY` | ARCHIVE | — | 사 둔 자산을 supplier 에 반환 |
 | **폐기 / 스크랩** | `OUT\|TRADE\|OTHER\|COMPANY` | ARCHIVE | — | IRREPARABLE 자산 처분 |
+| **재고조정 — 유실** | `OUT\|TRADE\|LOSS\|COMPANY` | ARCHIVE | — | 실사 시 부재 발견 |
+| **분해 (Split)** | `OUT\|TRADE\|SPLIT\|COMPANY` | ARCHIVE | — | 본체 archive + 부품 별도 라인 IN/TRADE/OTHER |
 | 소모품 출고 (AS) | `OUT\|CONSUMABLE\|CONSUMABLE\|COMPANY` | NONE | — | AS 출동, S/N 비필수 |
 
 #### TRANSFER 콤보 (이동)
@@ -206,7 +211,7 @@
 | 마스터 상태 | 의미 | 추천 시나리오 |
 |---|---|---|
 | **NEW** | DB 에 마스터 없음 (신규 S/N) | IN/RENTAL/BORROW, IN/REPAIR/REQUEST, IN/CALIB/REQUEST, IN/DEMO/BORROW, IN/TRADE/PURCHASE |
-| **OWN_IN_STOCK** | 자사 자산이 자사 창고에 있음 | OUT/RENTAL/LEND, OUT/REPAIR/REQUEST, OUT/CALIB/REQUEST, OUT/DEMO/LEND, **OUT/TRADE/SALE**, **OUT/TRADE/RETURN**, **OUT/TRADE/OTHER (폐기)**, **TRANSFER/TRADE/OTHER (내부이동)** |
+| **OWN_IN_STOCK** | 자사 자산이 자사 창고에 있음 | OUT/RENTAL/LEND, OUT/REPAIR/REQUEST, OUT/CALIB/REQUEST, OUT/DEMO/LEND, **OUT/TRADE/SALE**, **OUT/TRADE/RETURN (매입반품)**, **OUT/TRADE/OTHER (폐기)**, **OUT/TRADE/LOSS (유실)**, **OUT/TRADE/SPLIT (분해)**, **TRANSFER/TRADE/OTHER (내부이동)** |
 | **OWN_AT_EXTERNAL** | 자사 자산이 외부 위탁 중 | IN/RENTAL/RETURN, IN/REPAIR/RETURN, IN/CALIB/RETURN, IN/DEMO/RETURN |
 | **EXTERNAL_IN_STOCK** | 고객 자산이 자사 창고 보관 | OUT/REPAIR/RETURN, OUT/CALIB/RETURN, OUT/RENTAL/RETURN, OUT/DEMO/RETURN, OUT/REPAIR/REQUEST, OUT/CALIB/REQUEST |
 | **EXTERNAL_AT_VENDOR** | 고객 자산이 외주에 위탁 중 | IN/REPAIR/RETURN, IN/CALIB/RETURN |
@@ -214,6 +219,9 @@
 
 ### 향후 미구현 항목
 
-- **재고조정 (실사 차이)** — `/inventory/stock-count` 페이지 + IN/OUT TRADE OTHER 룰. Phase 4.
-- **자산 분해/조립** — `InventoryItem.parentSerialNumber` 또는 `AssemblyTransaction` 신 테이블. 본체 1대 ↔ 부품 N개 변환. Phase 4.
-- **법인 간 이관 (TV ↔ VR)** — 거래처 매입/매출 로직으로 처리 (별도 워크플로 불필요).
+- **법인 간 이관 (TV ↔ VR)** — 거래처 매입/매출 로직으로 처리 (별도 워크플로 불필요 — 사용자 결정).
+- **재고조정 / 분해·조립** — 별도 페이지 신설 없이 `/inventory/transactions/new` 의 IN/OUT 콤보로 통합 처리. 단순 워크플로 우선.
+  - 재고조정 발견 = `IN/TRADE/OTHER` (NEW), 유실 = `OUT/TRADE/LOSS` (ARCHIVE)
+  - 분해 = `OUT/TRADE/SPLIT` (본체 archive) + 부품별 `IN/TRADE/OTHER` 라인 추가
+  - 조립 = `IN/TRADE/ASSEMBLE` (본체 NEW) + 부품별 `OUT/TRADE/OTHER` 라인 추가
+- **부모-자식 자산 추적 (분해/조립)** — 향후 `InventoryItem.parentSerialNumber` 칼럼 추가로 본체 ↔ 부품 관계 영속화 가능. 현재는 트랜잭션 노트로 수동 추적.

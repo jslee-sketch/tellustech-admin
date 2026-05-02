@@ -38,6 +38,8 @@ const COMBOS_BY_TYPE: Record<"IN" | "OUT" | "TRANSFER", Combo[]> = {
     { refModule: "DEMO", subKind: "BORROW", labelKey: "txn.combo.demoInBorrow", ownerHint: "EXTERNAL" },
     { refModule: "DEMO", subKind: "RETURN", labelKey: "txn.combo.demoInReturn", ownerHint: "COMPANY" },
     { refModule: "TRADE", subKind: "PURCHASE", labelKey: "txn.combo.tradeInPurchase", ownerHint: "COMPANY" },
+    { refModule: "TRADE", subKind: "OTHER", labelKey: "txn.combo.tradeInFound", ownerHint: "COMPANY" },
+    { refModule: "TRADE", subKind: "ASSEMBLE", labelKey: "txn.combo.tradeInAssemble", ownerHint: "COMPANY" },
   ],
   OUT: [
     { refModule: "RENTAL", subKind: "RETURN", labelKey: "txn.combo.rentalOutReturn", ownerHint: "EXTERNAL" },
@@ -51,6 +53,8 @@ const COMBOS_BY_TYPE: Record<"IN" | "OUT" | "TRANSFER", Combo[]> = {
     { refModule: "TRADE", subKind: "SALE", labelKey: "txn.combo.tradeOutSale", ownerHint: "COMPANY" },
     { refModule: "TRADE", subKind: "RETURN", labelKey: "txn.combo.tradeOutReturn", ownerHint: "COMPANY" },
     { refModule: "TRADE", subKind: "OTHER", labelKey: "txn.combo.tradeOutDispose", ownerHint: "COMPANY" },
+    { refModule: "TRADE", subKind: "LOSS", labelKey: "txn.combo.tradeOutLost", ownerHint: "COMPANY" },
+    { refModule: "TRADE", subKind: "SPLIT", labelKey: "txn.combo.tradeOutSplit", ownerHint: "COMPANY" },
     { refModule: "CONSUMABLE", subKind: "CONSUMABLE", labelKey: "txn.combo.consumableOut", ownerHint: "COMPANY" },
   ],
   TRANSFER: [

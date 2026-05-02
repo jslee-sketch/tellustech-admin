@@ -9,7 +9,7 @@ import type { AssetOwnerType } from "@/generated/prisma/client";
 
 export type TxnTypeNew = "IN" | "OUT" | "TRANSFER";
 export type RefModule = "RENTAL" | "REPAIR" | "CALIB" | "DEMO" | "TRADE" | "CONSUMABLE";
-export type SubKind = "REQUEST" | "RETURN" | "PURCHASE" | "SALE" | "BORROW" | "LEND" | "OTHER" | "CONSUMABLE";
+export type SubKind = "REQUEST" | "RETURN" | "PURCHASE" | "SALE" | "BORROW" | "LEND" | "OTHER" | "CONSUMABLE" | "LOSS" | "SPLIT" | "ASSEMBLE";
 
 export type MasterAction =
   | "NEW"        // InventoryItem 마스터 신규생성 (IN + S/N 미존재)
@@ -180,6 +180,30 @@ export const BASE_RULES: Partial<Record<RuleKey, RuleAction>> = {
     requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
     scenarioLabel: "폐기 / 스크랩 (IRREPARABLE 자산 처분) — archive", scenarioId: 24,
   },
+  // 재고조정 — 발견 (장부에 없던 실물 발견 → NEW 마스터 생성)
+  "IN|TRADE|OTHER|COMPANY": {
+    masterAction: "NEW", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
+    scenarioLabel: "재고조정 — 발견 (실사 시 추가) — NEW", scenarioId: 25,
+  },
+  // 재고조정 — 유실 (장부엔 있는데 실물 부재 → ARCHIVE)
+  "OUT|TRADE|LOSS|COMPANY": {
+    masterAction: "ARCHIVE", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
+    scenarioLabel: "재고조정 — 유실 (실사 시 부재) — archive", scenarioId: 26,
+  },
+  // 분해 — 본체 1대를 부품 N개로 분해 (본체 archive). 부품들은 별도 라인으로 IN/TRADE/OTHER 신규 등록.
+  "OUT|TRADE|SPLIT|COMPANY": {
+    masterAction: "ARCHIVE", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
+    scenarioLabel: "분해 — 본체 archive (부품은 별도 라인으로 신규 등록)", scenarioId: 27,
+  },
+  // 조립 — 부품 N개를 본체 1대로 조립 (본체 NEW). 부품들은 별도 라인으로 OUT/TRADE/OTHER 처리.
+  "IN|TRADE|ASSEMBLE|COMPANY": {
+    masterAction: "NEW", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
+    scenarioLabel: "조립 — 본체 신규 (부품은 별도 라인으로 OUT/TRADE/OTHER)", scenarioId: 28,
+  },
 
   // === 6) 소모품 출고 (AS dispatch) ===
   "OUT|CONSUMABLE|CONSUMABLE|COMPANY": {
@@ -251,6 +275,9 @@ export const SUBKIND_OPTIONS: { value: SubKind; refModuleHint: RefModule[] }[] =
   { value: "SALE", refModuleHint: ["TRADE"] },
   { value: "OTHER", refModuleHint: [] },
   { value: "CONSUMABLE", refModuleHint: ["CONSUMABLE"] },
+  { value: "LOSS", refModuleHint: ["TRADE"] },
+  { value: "SPLIT", refModuleHint: ["TRADE"] },
+  { value: "ASSEMBLE", refModuleHint: ["TRADE"] },
 ];
 
 // RefModule 옵션

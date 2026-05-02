@@ -3208,6 +3208,10 @@ const DICT: Dict = {
   "txn.combo.tradeOutSale":    { vi: "Bán hàng — Xuất hàng tài sản TLS",                  en: "Sale — Outbound own asset", ko: "매출 — 자사 자산 출고" },
   "txn.combo.tradeOutReturn":  { vi: "Trả hàng mua — Trả về NCC",                          en: "Purchase return — Send back to supplier", ko: "매입 반품 — 공급처로 반환" },
   "txn.combo.tradeOutDispose": { vi: "Tiêu huỷ / Loại bỏ",                                 en: "Disposal / Scrap", ko: "폐기 / 스크랩" },
+  "txn.combo.tradeOutLost":    { vi: "Điều chỉnh tồn — Mất (kiểm kê)",                     en: "Stock adjust — Loss (count)", ko: "재고조정 — 유실 (실사 부재)" },
+  "txn.combo.tradeOutSplit":   { vi: "Tháo dỡ — Bản thể archive (linh kiện đăng ký riêng)", en: "Split — Archive parent (parts as separate lines)", ko: "분해 — 본체 archive (부품은 별도 라인 신규)" },
+  "txn.combo.tradeInFound":    { vi: "Điều chỉnh tồn — Phát hiện (kiểm kê thừa)",          en: "Stock adjust — Found (count)", ko: "재고조정 — 발견 (실사 추가)" },
+  "txn.combo.tradeInAssemble": { vi: "Lắp ráp — Bản thể NEW (linh kiện đăng ký riêng OUT)", en: "Assemble — New parent (parts as separate OUT lines)", ko: "조립 — 본체 신규 (부품은 별도 라인 OUT/TRADE/OTHER)" },
   // TRANSFER
   "txn.combo.transferInternal":{ vi: "Chuyển kho nội bộ (kho A → kho B)",                  en: "Internal transfer (warehouse A → B)", ko: "내부재고이동 (자사 창고 A → 자사 창고 B)" },
   "txn.combo.transferRental":  { vi: "Cho thuê — Pass-through (KH A → KH B)",             en: "Rental — Pass-through (A → B)", ko: "렌탈 패스스루 (A 거래처 → B 거래처)" },

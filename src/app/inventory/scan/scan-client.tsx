@@ -43,6 +43,12 @@ export function ScanClient({ items, warehouses, lang }: Props) {
   const [scanned, setScanned] = useState<ScannedItem[]>([]);
   // dedupe + 빠른 비교용
   const scannedSnRef = useRef<Set<string>>(new Set());
+  // 동시 처리 차단 — handleDecoded 가 fetch 대기 중일 때 같은 SN 재진입 방지
+  const inflightSnRef = useRef<Set<string>>(new Set());
+  // 마지막 스캔 시각 — 짧은 쿨다운(1.5s) 동안 새 SN 도 무시 (카메라 안정화)
+  const lastScanAtRef = useRef<number>(0);
+  // 시각적 성공 플래시
+  const [flashSn, setFlashSn] = useState<string | null>(null);
 
   // 헤더 — 첫 스캔 시 추천 첫 항목으로 자동 prefil
   const [txnType, setTxnType] = useState<"IN" | "OUT" | "TRANSFER">("IN");
@@ -126,11 +132,15 @@ export function ScanClient({ items, warehouses, lang }: Props) {
     } catch { /* plain */ }
 
     if (!sn) return;
-    if (scannedSnRef.current.has(sn)) {
-      setOkMsg(t("scan.alreadyAdded", lang).replace("{sn}", sn));
-      return;
-    }
+    // 1) 이미 추가된 SN 이면 무시 (조용히 — 사용자 메시지로 노이즈 방지)
+    if (scannedSnRef.current.has(sn)) return;
+    // 2) 같은 SN 이 fetch 대기 중이면 무시 (handleDecoded 가 fps 15로 쏟아지는 콜백을 동시 처리하지 않도록)
+    if (inflightSnRef.current.has(sn)) return;
+    // 3) 직전 성공 후 1.5초 이내에는 새 SN 도 무시 (카메라가 같은 라벨을 다른 SN 처럼 잠깐 잘못 디코드하는 케이스 차단)
+    const now = Date.now();
+    if (now - lastScanAtRef.current < 1500) return;
 
+    inflightSnRef.current.add(sn);
     try {
       const r = await fetch(`/api/inventory/sn/${encodeURIComponent(sn)}/state`).then((r) => r.json());
       if (r?.state === "ARCHIVED") {
@@ -174,8 +184,16 @@ export function ScanClient({ items, warehouses, lang }: Props) {
       });
       setOkMsg(t("scan.added", lang).replace("{sn}", sn).replace("{n}", String((scanned?.length ?? 0) + 1)));
       setError(null);
+      // 성공 플래시 — 잔상 800ms
+      lastScanAtRef.current = Date.now();
+      setFlashSn(sn);
+      window.setTimeout(() => setFlashSn((cur) => (cur === sn ? null : cur)), 800);
+      // 짧은 진동 피드백 (지원 기기에서만)
+      try { (navigator as Navigator & { vibrate?: (n: number) => boolean }).vibrate?.(60); } catch { /* noop */ }
     } catch (e) {
       setError(e instanceof Error ? e.message : "scan lookup failed");
+    } finally {
+      inflightSnRef.current.delete(sn);
     }
   }
 
@@ -251,11 +269,25 @@ export function ScanClient({ items, warehouses, lang }: Props) {
         {t("scan.guideMulti", lang)}
       </Note>
 
-      <div
-        id={SCANNER_ELEMENT_ID}
-        className="mx-auto my-3 aspect-square w-full max-w-2xl overflow-hidden rounded-md border-2 border-[color:var(--tts-accent)] bg-black"
-        style={{ minHeight: 360 }}
-      />
+      <div className="relative mx-auto my-3 aspect-square w-full max-w-2xl">
+        <div
+          id={SCANNER_ELEMENT_ID}
+          className="absolute inset-0 overflow-hidden rounded-md border-2 border-[color:var(--tts-accent)] bg-black"
+          style={{ minHeight: 360 }}
+        />
+        {/* 성공 플래시 — 800ms */}
+        {flashSn && (
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md border-4 border-emerald-400 bg-emerald-500/35 animate-pulse"
+            style={{ animationIterationCount: 1, animationDuration: "800ms" }}
+          >
+            <div className="rounded-lg bg-emerald-600/95 px-4 py-2 text-center text-white shadow-2xl">
+              <div className="text-[26px] leading-none">✓</div>
+              <div className="mt-1 font-mono text-[11px]">{flashSn}</div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {!scanning ? (

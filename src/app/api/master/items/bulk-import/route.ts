@@ -50,7 +50,7 @@ export async function POST(request: Request) {
           // ── 필수 검증 ──
           const itemType = (r.itemType ?? "").trim().toUpperCase() as ItemType;
           if (!itemType) throw { field: "itemType", reason: "missing_required" };
-          if (!["PRODUCT", "CONSUMABLE", "PART"].includes(itemType)) throw { field: "itemType", reason: "invalid_value" };
+          if (!["PRODUCT", "CONSUMABLE", "PART", "SUPPLIES"].includes(itemType)) throw { field: "itemType", reason: "invalid_value" };
           if (!r.name?.trim()) throw { field: "name", reason: "missing_required" };
           if (!r.description?.trim()) throw { field: "description", reason: "missing_required" };
           // CONSUMABLE/PART 는 호환 장비 최소 1건 필수.

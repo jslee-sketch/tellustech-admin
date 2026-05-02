@@ -21,12 +21,14 @@ const typeTone: Record<string, BadgeTone> = {
   PRODUCT: "primary",
   CONSUMABLE: "success",
   PART: "warn",
+  SUPPLIES: "neutral",
 };
 
 const typeLabelKey: Record<string, string> = {
   PRODUCT: "itemType.PRODUCT",
   CONSUMABLE: "itemType.CONSUMABLE",
   PART: "itemType.PART",
+  SUPPLIES: "itemType.SUPPLIES",
 };
 
 export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lang: Lang }) {
@@ -150,6 +152,7 @@ export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lan
           <option value="PRODUCT">{t("itemType.PRODUCT", lang)}</option>
           <option value="CONSUMABLE">{t("itemType.CONSUMABLE", lang)}</option>
           <option value="PART">{t("itemType.PART", lang)}</option>
+          <option value="SUPPLIES">{t("itemType.SUPPLIES", lang)}</option>
         </select>
       </div>
       <DataTable

@@ -48,6 +48,9 @@ const COMBOS_BY_TYPE: Record<"IN" | "OUT" | "TRANSFER", Combo[]> = {
     { refModule: "CALIB", subKind: "RETURN", labelKey: "txn.combo.calibOutReturn", ownerHint: "EXTERNAL" },
     { refModule: "DEMO", subKind: "LEND", labelKey: "txn.combo.demoOutLend", ownerHint: "COMPANY" },
     { refModule: "DEMO", subKind: "RETURN", labelKey: "txn.combo.demoOutReturn", ownerHint: "EXTERNAL" },
+    { refModule: "TRADE", subKind: "SALE", labelKey: "txn.combo.tradeOutSale", ownerHint: "COMPANY" },
+    { refModule: "TRADE", subKind: "RETURN", labelKey: "txn.combo.tradeOutReturn", ownerHint: "COMPANY" },
+    { refModule: "TRADE", subKind: "OTHER", labelKey: "txn.combo.tradeOutDispose", ownerHint: "COMPANY" },
     { refModule: "CONSUMABLE", subKind: "CONSUMABLE", labelKey: "txn.combo.consumableOut", ownerHint: "COMPANY" },
   ],
   TRANSFER: [

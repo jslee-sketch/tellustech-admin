@@ -1538,6 +1538,7 @@ const DICT: Dict = {
   "itemType.PRODUCT":      { vi: "Hàng hoá",             en: "Product",            ko: "상품" },
   "itemType.CONSUMABLE":   { vi: "Vật tư",               en: "Consumable",         ko: "소모품" },
   "itemType.PART":         { vi: "Linh kiện",            en: "Part",               ko: "부품" },
+  "itemType.SUPPLIES":     { vi: "Đồ dùng (số lượng)",   en: "Supplies (qty)",     ko: "비품 (수량)" },
   "field.unitOpt":         { vi: "Đơn vị (tuỳ chọn)",    en: "Unit (Optional)",    ko: "단위 (옵션)" },
   "field.categoryOpt":     { vi: "Danh mục (tuỳ chọn)",  en: "Category (Optional)", ko: "카테고리 (옵션)" },
   "field.itemNameAscii":   { vi: "Tên mặt hàng (Tiếng Anh)", en: "Item Name (English)", ko: "품목명 (영어 전용)" },
@@ -3205,6 +3206,8 @@ const DICT: Dict = {
   "txn.combo.demoOutReturn":   { vi: "Demo / Xuất / Kết thúc — Trả về ngoài",             en: "Demo / OUT / Return — Return to external", ko: "데모/출고/종료 — 외부에 반환" },
   "txn.combo.consumableOut":   { vi: "Xuất vật tư (linh kiện AS, …)",                     en: "Consumable Out (AS parts, …)", ko: "소모품 출고 (AS 부품 등)" },
   "txn.combo.tradeOutSale":    { vi: "Bán hàng — Xuất hàng tài sản TLS",                  en: "Sale — Outbound own asset", ko: "매출 — 자사 자산 출고" },
+  "txn.combo.tradeOutReturn":  { vi: "Trả hàng mua — Trả về NCC",                          en: "Purchase return — Send back to supplier", ko: "매입 반품 — 공급처로 반환" },
+  "txn.combo.tradeOutDispose": { vi: "Tiêu huỷ / Loại bỏ",                                 en: "Disposal / Scrap", ko: "폐기 / 스크랩" },
   // TRANSFER
   "txn.combo.transferInternal":{ vi: "Chuyển kho nội bộ (kho A → kho B)",                  en: "Internal transfer (warehouse A → B)", ko: "내부재고이동 (자사 창고 A → 자사 창고 B)" },
   "txn.combo.transferRental":  { vi: "Cho thuê — Pass-through (KH A → KH B)",             en: "Rental — Pass-through (A → B)", ko: "렌탈 패스스루 (A 거래처 → B 거래처)" },

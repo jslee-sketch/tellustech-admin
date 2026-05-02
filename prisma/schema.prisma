@@ -60,9 +60,10 @@ enum EmployeeStatus {
 }
 
 enum ItemType {
-  PRODUCT // 상품
-  CONSUMABLE // 소모품
-  PART // 부품
+  PRODUCT // 상품 — 본체 장비, S/N 필수
+  CONSUMABLE // 소모품 — 토너 등, S/N 필수
+  PART // 부품 — Fuser/Drum 등, S/N 필수
+  SUPPLIES // 비품 — A4용지·청소도구 등, S/N 없이 수량 기반 관리
 }
 
 enum WarehouseType {

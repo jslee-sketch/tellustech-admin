@@ -17,7 +17,7 @@ import {
 } from "@/lib/api-utils";
 import type { ItemType } from "@/generated/prisma/client";
 
-const ITEM_TYPES: readonly ItemType[] = ["PRODUCT", "CONSUMABLE", "PART"] as const;
+const ITEM_TYPES: readonly ItemType[] = ["PRODUCT", "CONSUMABLE", "PART", "SUPPLIES"] as const;
 
 type RouteContext = { params: Promise<{ id: string }> };
 

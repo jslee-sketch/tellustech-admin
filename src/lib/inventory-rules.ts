@@ -165,7 +165,20 @@ export const BASE_RULES: Partial<Record<RuleKey, RuleAction>> = {
   "IN|TRADE|RETURN|COMPANY": {
     masterAction: "MOVE", autoPurchaseCandidate: false, autoSalesCandidate: false,
     requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
-    scenarioLabel: "매입 반품 (Sales adjustment RETURN) — 회수", scenarioId: 19,
+    scenarioLabel: "매출 반품 회수 (고객이 매출품 환불) — 자사 창고 입고", scenarioId: 19,
+  },
+  // 매입 반품 — supplier 에 사 둔 자산을 반환. archive 로 마스터 비활성.
+  // PR 자동 후보는 false (refund 음수 처리는 별도 워크플로 — 매입조정 화면에서 처리됨).
+  "OUT|TRADE|RETURN|COMPANY": {
+    masterAction: "ARCHIVE", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
+    scenarioLabel: "매입 반품 (자사 자산 supplier 반환) — archive", scenarioId: 23,
+  },
+  // 폐기 / 스크랩 — IRREPARABLE 자산을 시스템에서 제거. archive.
+  "OUT|TRADE|OTHER|COMPANY": {
+    masterAction: "ARCHIVE", autoPurchaseCandidate: false, autoSalesCandidate: false,
+    requireSerialNumber: true, setExternalLocation: false, externalAssetLabel: false,
+    scenarioLabel: "폐기 / 스크랩 (IRREPARABLE 자산 처분) — archive", scenarioId: 24,
   },
 
   // === 6) 소모품 출고 (AS dispatch) ===

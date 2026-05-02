@@ -15,7 +15,7 @@ import {
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
 import type { ColorChannel, ItemType } from "@/generated/prisma/client";
 
-const ITEM_TYPES: readonly ItemType[] = ["PRODUCT", "CONSUMABLE", "PART"] as const;
+const ITEM_TYPES: readonly ItemType[] = ["PRODUCT", "CONSUMABLE", "PART", "SUPPLIES"] as const;
 const COLOR_CHANNELS: readonly ColorChannel[] = ["BLACK", "CYAN", "MAGENTA", "YELLOW", "DRUM", "FUSER", "NONE"] as const;
 
 function parseYieldInt(v: unknown): number | null {

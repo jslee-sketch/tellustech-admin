@@ -146,6 +146,14 @@ export async function POST(request: Request) {
       if (rawLines.length === 0) return badRequest("invalid_input", { field: "items", reason: "empty" });
       if (rawLines.length > MAX_LINES) return badRequest("invalid_input", { field: "items", reason: `over_${MAX_LINES}` });
 
+      // 라인별 itemType 사전 조회 — SUPPLIES 면 S/N 비필수 (수량 기반 비품)
+      const preItemIds = (rawLines as Record<string, unknown>[]).map((r) => trimNonEmpty(r.itemId)).filter(Boolean) as string[];
+      const itemTypeMap = new Map<string, string>();
+      if (preItemIds.length > 0) {
+        const fetched = await prisma.item.findMany({ where: { id: { in: preItemIds } }, select: { id: true, itemType: true } });
+        for (const it of fetched) itemTypeMap.set(it.id, it.itemType);
+      }
+
       const lines: Line[] = [];
       for (let i = 0; i < rawLines.length; i++) {
         const r = rawLines[i] as Record<string, unknown>;
@@ -154,9 +162,10 @@ export async function POST(request: Request) {
         const sn = trimNonEmpty(r.serialNumber);
         const qty = parseQty(r.quantity);
         if (!qty) return badRequest("invalid_input", { field: `items[${i}].quantity` });
-        // S/N 필수성은 BASE_RULES 의 requireSerialNumber 로 일괄 결정 (CONSUMABLE 만 false)
-        // 단 OUT 마스터 매칭은 OUT + sn 있을 때만 검증.
-        if (subKind !== "CONSUMABLE" && txnType !== "TRANSFER" && !sn) {
+        // S/N 필수성: itemType=SUPPLIES 면 비필수, CONSUMABLE 출고/TRANSFER도 비필수, 그 외 모두 필수.
+        const itemType = itemTypeMap.get(itemId);
+        const isSupplies = itemType === "SUPPLIES";
+        if (!isSupplies && subKind !== "CONSUMABLE" && txnType !== "TRANSFER" && !sn) {
           return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "required" });
         }
         const targetEquipmentSN = trimNonEmpty(r.targetEquipmentSN);

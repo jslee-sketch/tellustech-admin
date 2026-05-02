@@ -122,3 +122,98 @@
 - **인벤토리 흐름 전수정비**: `src/lib/amendments.ts` (IT 계약 ADD/REPLACE/REMOVE), `src/lib/adjustments.ts` (매출/매입 RETURN·EXCHANGE), `src/app/api/sales|purchases/route.ts` (TRADE 강제 S/N + 마스터 매칭 + archive), `src/app/api/as-dispatches/[id]/parts/route.ts` (CONSUMABLE) 모두 `referenceModule`+`subKind` 작성. 단건 `/api/inventory/transactions` 도 `deriveRefModule()` + `deriveSubKind()` 헬퍼로 호환.
 - **포탈 QR 스캔**: `/portal/as-request` 와 `/portal/supplies-request` 에 `<QrScanModal>` 정사각형 스캐너 추가 (88% qrbox · `aspect-square` · `max-w-md`). 스캐너 디코드 → 장비/품목 자동 매칭.
 - **E2E 테스트 인프라**: `scripts/test-inv-e2e.ts` — 6 거래처/2 창고/5 품목/4 마스터 시드 + 23 시나리오 4 라운드 의존성 정렬 실행 + `BASE_RULES` masterAction + PR DRAFT 카운트 검증 + 교차검증. 결과 31/31 PASS.
+
+### 추가 작업 (2026-05 후반)
+
+- **TRANSFER 자사↔자사** + 외부↔외부 별도 행 5개 추가 (`TRANSFER|TRADE|OTHER|COMPANY` MOVE / `TRANSFER|*|OTHER|EXTERNAL_CLIENT` × 4 TRANSFER_LOC). bulk endpoint 가 `from/toWarehouseId` (Internal) 또는 `from/toClientId` (External) 둘 중 하나 모드 자동 분기 + 동일 endpoint 차단. `/inventory/transactions/new` TRANSFER 콤보 첫줄에 "내부재고이동". `/api/inventory/sn/[sn]/state` OWN_IN_STOCK 추천에 TRANSFER 추가.
+- **매입 반품 + 폐기/스크랩 룰** (`OUT|TRADE|RETURN|COMPANY` ARCHIVE, `OUT|TRADE|OTHER|COMPANY` ARCHIVE). `/inventory/transactions/new` 의 OUT 콤보에 매입반품·폐기·매출 3종 명시 노출. OWN_IN_STOCK 추천에도 자동 포함.
+- **비품 (SUPPLIES) itemType 추가**: 4번째 `ItemType.SUPPLIES` (A4용지·청소도구 등 수량 기반 관리). bulk endpoint 가 `itemType=SUPPLIES` 라인은 S/N 비필수로 자동 처리. `/master/items` 폼 + 리스트 필터 + `bulk-import` 모두 SUPPLIES 허용.
+- **QR 인식률 개선**: 라벨 페이로드 JSON → S/N 단독 (또는 itemCode), `errorCorrectionLevel "M"`, `width 1024`, `image-rendering: pixelated`, canvas `imageSmoothingEnabled = false`. 화면 미리보기 50% → 100% 실제크기 전체 라벨. 외부 스캐너 앱과 인식률 동등.
+- **스캐너 dedupe**: `/inventory/scan` 의 fps 15 콜백 폭주 차단 (`inflightSnRef` Set + 1.5s 쿨다운 + 800ms 녹색 플래시 + vibrate 60ms). `QrScanModal` 도 `decodedRef` 단발 가드 + 600ms 플래시 후 닫힘.
+- **스캐너 시작 버튼 UX**: 카메라 영역 내부 중앙 큰 오버레이로 이동 (모바일에서 fold 위에 노출). 이모지 중복 제거.
+- **카메라 입력 정규식 버그**: `text.replace(/[ -​-‏﻿]/g, "")` 가 U+0020-U+200B 범위로 해석되어 ASCII 전부 삭제 → `text.replace(/[​-‏﻿]/g, "")` 로 zero-width 만 제거.
+- **라벨 50×70mm 세로형**: `@page size: 50mm 70mm; margin: 0;` + 정사각 QR 44mm 상단 + 정보 하단 (itemCode + 컬러배지 + EX/TLS / itemName / S/N / 위치). 배지 0.3mm 검정 테두리로 흑백 인쇄 시에도 식별. 모바일 PNG 다운로드 (200dpi canvas, imageSmoothingEnabled=false).
+
+## 입출고 시나리오 가이드 (2026-05 기준 진리표 30행 정리)
+
+사용자가 `/inventory/transactions/new` 또는 `/inventory/scan` 에서 입출고를 등록할 때, 다음 흐름으로 시나리오를 선택합니다.
+
+### 1단계: 거래 유형 (`txnType`) 선택
+
+| 유형 | 의미 | 헤더 입력 |
+|---|---|---|
+| **IN (입고)** | 자사 창고로 들여옴 (자사 매입·외주 의뢰 회수·고객 자산 입고 등) | `toWarehouseId` 필수 + 외부 자산이면 `clientId` |
+| **OUT (출고)** | 자사 창고에서 나감 (매출·외주 의뢰·고객 반환·폐기·매입반품 등) | `fromWarehouseId` + `clientId` 필수 |
+| **TRANSFER (이동)** | 위치만 이동 (자사창고↔자사창고 또는 외주↔외주) | 모드별 분기 (아래) |
+
+### 2단계: 시나리오 콤보 선택 (`referenceModule × subKind`)
+
+#### IN 콤보 (입고)
+
+| 콤보 라벨 | 진리표 키 | masterAction | 자동 PR | 비고 |
+|---|---|---|---|---|
+| 렌탈 — 자사 회수 | `IN\|RENTAL\|RETURN\|COMPANY` | MOVE | — | 외부에 있던 자사 자산이 돌아옴 |
+| 렌탈 — 외주에서 빌림 | `IN\|RENTAL\|BORROW\|EXTERNAL_CLIENT` | NEW | 매입후보 | 외부 자산 신규 등록 |
+| 수리 — 고객 의뢰 | `IN\|REPAIR\|REQUEST\|EXTERNAL_CLIENT` | NEW | — | 고객 자산 입고 |
+| 수리 — 외주수리 후 회수 (자사) | `IN\|REPAIR\|RETURN\|COMPANY` | MOVE | 매입후보 | 외주 수리비 청구 |
+| 수리 — 외주수리 후 회수 (고객) | `IN\|REPAIR\|RETURN\|EXTERNAL_CLIENT` | MOVE | — | 고객 자산이 외부 수리 거쳐 우리에게 다시 옴 |
+| 교정 — 고객 의뢰 | `IN\|CALIB\|REQUEST\|EXTERNAL_CLIENT` | NEW | — | 고객 자산 입고 |
+| 교정 — 외부교정 후 회수 (자사) | `IN\|CALIB\|RETURN\|COMPANY` | MOVE | 매입후보 | 외부 교정비 |
+| 교정 — 외부교정 후 회수 (고객) | `IN\|CALIB\|RETURN\|EXTERNAL_CLIENT` | MOVE | — | 고객 자산 |
+| 데모 — 외부에서 빌림 | `IN\|DEMO\|BORROW\|EXTERNAL_CLIENT` | NEW | — | 외부 데모기 입고 |
+| 데모 — 자사 데모 회수 | `IN\|DEMO\|RETURN\|COMPANY` | MOVE | — | 자사 데모기 복귀 |
+| 매입 — 신규 | `IN\|TRADE\|PURCHASE\|COMPANY` | NEW | — | Purchase 모듈에서 자동 |
+| 매출 반품 회수 | `IN\|TRADE\|RETURN\|COMPANY` | MOVE | — | 고객 환불 시 자사 창고 입고 |
+
+#### OUT 콤보 (출고)
+
+| 콤보 라벨 | 진리표 키 | masterAction | 자동 PR | 비고 |
+|---|---|---|---|---|
+| 렌탈 — 외주에 반납 | `OUT\|RENTAL\|RETURN\|EXTERNAL_CLIENT` | ARCHIVE | — | 빌렸던 외부 자산 반납 |
+| 렌탈 — 자사 → 고객 | `OUT\|RENTAL\|LEND\|COMPANY` | TRANSFER_LOC | 매출후보 | 자사 자산 렌탈 출고 |
+| 수리 — 자사 외주 의뢰 | `OUT\|REPAIR\|REQUEST\|COMPANY` | TRANSFER_LOC | — | 자사 자산을 외주처로 |
+| 수리 — 고객자산 외주 위탁 | `OUT\|REPAIR\|REQUEST\|EXTERNAL_CLIENT` | TRANSFER_LOC | — | 고객 자산을 다시 외주로 |
+| 수리 — 고객 반환 (수리비 청구) | `OUT\|REPAIR\|RETURN\|EXTERNAL_CLIENT` | ARCHIVE | 매출후보 | 수리 완료 |
+| 교정 — 자사 외주 의뢰 | `OUT\|CALIB\|REQUEST\|COMPANY` | TRANSFER_LOC | — | |
+| 교정 — 고객자산 외주 위탁 | `OUT\|CALIB\|REQUEST\|EXTERNAL_CLIENT` | TRANSFER_LOC | — | |
+| 교정 — 고객 반환 (교정비 청구) | `OUT\|CALIB\|RETURN\|EXTERNAL_CLIENT` | ARCHIVE | 매출후보 | |
+| 데모 — 자사 → 고객 | `OUT\|DEMO\|LEND\|COMPANY` | TRANSFER_LOC | — | |
+| 데모 — 외부에 반환 | `OUT\|DEMO\|RETURN\|EXTERNAL_CLIENT` | ARCHIVE | — | |
+| **매출 — 자사 자산 출고** | `OUT\|TRADE\|SALE\|COMPANY` | ARCHIVE | — | Sales 모듈에서 자동 |
+| **매입 반품 — 공급처로 반환** | `OUT\|TRADE\|RETURN\|COMPANY` | ARCHIVE | — | 사 둔 자산을 supplier 에 반환 |
+| **폐기 / 스크랩** | `OUT\|TRADE\|OTHER\|COMPANY` | ARCHIVE | — | IRREPARABLE 자산 처분 |
+| 소모품 출고 (AS) | `OUT\|CONSUMABLE\|CONSUMABLE\|COMPANY` | NONE | — | AS 출동, S/N 비필수 |
+
+#### TRANSFER 콤보 (이동)
+
+| 콤보 라벨 | 진리표 키 | masterAction | 모드 | 입력 |
+|---|---|---|---|---|
+| **내부재고이동** (자사 ↔ 자사) | `TRANSFER\|TRADE\|OTHER\|COMPANY` | MOVE | Internal | `from/toWarehouseId` 둘 다 |
+| 외부 ↔ 외부 (렌탈) | `TRANSFER\|RENTAL\|OTHER\|EXTERNAL_CLIENT` | TRANSFER_LOC | External | `from/toClientId` 둘 다 |
+| 외부 ↔ 외부 (수리) | `TRANSFER\|REPAIR\|OTHER\|EXTERNAL_CLIENT` | TRANSFER_LOC | External | 〃 |
+| 외부 ↔ 외부 (교정) | `TRANSFER\|CALIB\|OTHER\|EXTERNAL_CLIENT` | TRANSFER_LOC | External | 〃 |
+| 외부 ↔ 외부 (데모) | `TRANSFER\|DEMO\|OTHER\|EXTERNAL_CLIENT` | TRANSFER_LOC | External | 〃 |
+
+### 3단계: itemType 별 S/N 처리
+
+- **PRODUCT / CONSUMABLE / PART** → S/N 필수 (CONSUMABLE 출고 sub-kind=`CONSUMABLE` 만 예외)
+- **SUPPLIES** → 모든 흐름에서 S/N 비필수 (수량 기반)
+
+### 4단계: QR 스캔 흐름의 자동 추천
+
+`/inventory/scan` 에서 S/N 을 스캔하면 `/api/inventory/sn/[sn]/state` 가 마스터 상태에 따라 적합한 시나리오를 자동 추천:
+
+| 마스터 상태 | 의미 | 추천 시나리오 |
+|---|---|---|
+| **NEW** | DB 에 마스터 없음 (신규 S/N) | IN/RENTAL/BORROW, IN/REPAIR/REQUEST, IN/CALIB/REQUEST, IN/DEMO/BORROW, IN/TRADE/PURCHASE |
+| **OWN_IN_STOCK** | 자사 자산이 자사 창고에 있음 | OUT/RENTAL/LEND, OUT/REPAIR/REQUEST, OUT/CALIB/REQUEST, OUT/DEMO/LEND, **OUT/TRADE/SALE**, **OUT/TRADE/RETURN**, **OUT/TRADE/OTHER (폐기)**, **TRANSFER/TRADE/OTHER (내부이동)** |
+| **OWN_AT_EXTERNAL** | 자사 자산이 외부 위탁 중 | IN/RENTAL/RETURN, IN/REPAIR/RETURN, IN/CALIB/RETURN, IN/DEMO/RETURN |
+| **EXTERNAL_IN_STOCK** | 고객 자산이 자사 창고 보관 | OUT/REPAIR/RETURN, OUT/CALIB/RETURN, OUT/RENTAL/RETURN, OUT/DEMO/RETURN, OUT/REPAIR/REQUEST, OUT/CALIB/REQUEST |
+| **EXTERNAL_AT_VENDOR** | 고객 자산이 외주에 위탁 중 | IN/REPAIR/RETURN, IN/CALIB/RETURN |
+| **ARCHIVED** | 비활성 (반환·매각·폐기 완료) | (추천 없음) |
+
+### 향후 미구현 항목
+
+- **재고조정 (실사 차이)** — `/inventory/stock-count` 페이지 + IN/OUT TRADE OTHER 룰. Phase 4.
+- **자산 분해/조립** — `InventoryItem.parentSerialNumber` 또는 `AssemblyTransaction` 신 테이블. 본체 1대 ↔ 부품 N개 변환. Phase 4.
+- **법인 간 이관 (TV ↔ VR)** — 거래처 매입/매출 로직으로 처리 (별도 워크플로 불필요).

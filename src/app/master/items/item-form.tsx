@@ -170,6 +170,7 @@ export function ItemForm({ mode, initial, lang }: Props) {
               { value: "PRODUCT", label: t("itemType.PRODUCT", lang) },
               { value: "CONSUMABLE", label: t("itemType.CONSUMABLE", lang) },
               { value: "PART", label: t("itemType.PART", lang) },
+              { value: "SUPPLIES", label: t("itemType.SUPPLIES", lang) },
             ]}
           />
         </Field>

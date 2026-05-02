@@ -21,7 +21,7 @@ function buildColumns(lang: Lang): UploaderColumn[] {
       required: true,
       validate: (raw) => {
         const v = raw.toUpperCase();
-        if (!["PRODUCT", "CONSUMABLE", "PART"].includes(v)) return { error: "PRODUCT|CONSUMABLE|PART" };
+        if (!["PRODUCT", "CONSUMABLE", "PART", "SUPPLIES"].includes(v)) return { error: "PRODUCT|CONSUMABLE|PART|SUPPLIES" };
         return { normalized: v };
       },
     },

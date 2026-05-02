@@ -1827,7 +1827,7 @@ const DICT: Dict = {
   "label.totalLabels50x70":{ vi: "Tổng {count} nhãn (mỗi nhãn 1 trang)", en: "Total {count} labels (1 per page)", ko: "총 {count}장 (라벨당 1페이지)" },
   "label.savePng":         { vi: "Lưu PNG", en: "Save PNG", ko: "PNG 저장" },
   "label.savePngAll":      { vi: "Lưu tất cả PNG", en: "Save all as PNG", ko: "전체 PNG 저장" },
-  "label.screenPreviewTitle":{ vi: "👀 Xem trước (tất cả nhãn, thu nhỏ 50%)", en: "👀 Screen preview (all labels, 50% size)", ko: "👀 화면 미리보기 (전체 라벨 · 50% 축소)" },
+  "label.screenPreviewTitle":{ vi: "👀 Xem trước (tất cả nhãn, kích thước thật)", en: "👀 Screen preview (all labels, actual size)", ko: "👀 화면 미리보기 (전체 라벨 · 실제 크기)" },
   "label.screenPreviewHint": { vi: "Hiển thị tất cả {n} nhãn ở kích thước thu nhỏ để xem trước bố cục.", en: "Shows all {n} labels at reduced size for layout preview.", ko: "모든 {n}장의 라벨을 축소 표시하여 배치 확인용." },
   "label.bulkPrintBtn":    { vi: "In nhãn ({n})", en: "Print labels ({n})", ko: "라벨 인쇄 ({n}장)" },
   "label.printOne":        { vi: "In nhãn", en: "Print label", ko: "라벨 인쇄" },

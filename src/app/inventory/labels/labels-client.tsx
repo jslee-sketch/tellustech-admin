@@ -314,7 +314,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
             <div className="flex flex-wrap gap-3">
               {allLabels.map((l, i) => {
                 const ch = l.colorChannel && l.colorChannel !== "NONE" ? CHANNEL_META[l.colorChannel] : null;
-                const scale = 0.5;
+                const scale = 1.0;
                 return (
                   <div key={i} style={{
                     width: `${LABEL_SPEC.widthMm * scale}mm`,

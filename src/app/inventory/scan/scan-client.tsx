@@ -180,9 +180,10 @@ export function ScanClient({ items, warehouses, lang }: Props) {
           // 외부자산이면 ownerClient 자동
           if (r.master.ownerClientId) setClientId(r.master.ownerClientId);
         }
+        // 메시지에 정확한 누적 카운트 반영 (stale closure 회피 — 콜백 내부의 next.length 사용)
+        setOkMsg(t("scan.added", lang).replace("{sn}", sn).replace("{n}", String(next.length)));
         return next;
       });
-      setOkMsg(t("scan.added", lang).replace("{sn}", sn).replace("{n}", String((scanned?.length ?? 0) + 1)));
       setError(null);
       // 성공 플래시 — 잔상 800ms
       lastScanAtRef.current = Date.now();

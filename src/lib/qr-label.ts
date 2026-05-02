@@ -39,13 +39,13 @@ export const LABEL_SPEC = {
 
 // QR 인코딩 — 핸드폰 카메라 인식률 우선.
 // S/N 우선, 없으면 itemCode 만 인코딩 (짧을수록 dot 큼 → 인식 ↑).
-// ECC H = 30% 손상복원 / margin 4 표준 quiet zone / width 512 출력 해상도.
+// ECC M = grid 작게 (셀 큼) / margin 4 표준 quiet zone / width 1024 화면·인쇄 모두 선명.
 export async function encodeQr(payload: QrPayload): Promise<string> {
   const data = (payload.serialNumber || payload.itemCode).trim();
   return await QRCode.toDataURL(data, {
-    errorCorrectionLevel: "H",
+    errorCorrectionLevel: "M",
     margin: 4,
-    width: 512,
+    width: 1024,
     color: {
       dark: "#000000",
       light: "#FFFFFF",

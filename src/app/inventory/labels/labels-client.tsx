@@ -104,7 +104,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, W, H);
 
-    // QR — 상단 정사각 (44mm)
+    // QR — 상단 정사각 (44mm). 보간 금지(pixelated) → dot 가장자리 보존.
     if (row.qrUrl) {
       const img = new Image();
       img.src = row.qrUrl;
@@ -112,6 +112,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
       const qrSize = LABEL_SPEC.qrMm * dpm;
       const qrX = (W - qrSize) / 2;
       const qrY = pad;
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
     }
 
@@ -205,13 +206,13 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
         rows.map(async (r) => {
           if (r.qrUrl || !r.itemCode) return r;
           // 핸드폰 카메라 인식률 우선 — 짧은 ASCII 만 인코딩.
-          // S/N 이 있으면 S/N 만, 없으면 itemCode 만 (둘 다 시스템에서 unique 마스터 키).
-          // ECC H = 30% 손상복원 / margin 4 = 표준 quiet zone / width 512 = 출력 해상도 ↑.
+          // ECC M = grid 작게 (셀 큼) → 화면·종이 모두 dot 분리 잘 됨.
+          // margin 4 = 표준 quiet zone / width 1024 = 화면에서 1cm 영역에서도 깔끔.
           const data = (r.serialNumber || r.itemCode).trim();
           const qrUrl = await QRCode.toDataURL(data, {
-            errorCorrectionLevel: "H",
+            errorCorrectionLevel: "M",
             margin: 4,
-            width: 512,
+            width: 1024,
             color: { dark: "#000000", light: "#FFFFFF" },
           });
           return { ...r, qrUrl };
@@ -313,7 +314,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
             <div className="flex flex-wrap gap-3">
               {allLabels.slice(0, 4).map((l, i) => {
                 const ch = l.colorChannel && l.colorChannel !== "NONE" ? CHANNEL_META[l.colorChannel] : null;
-                const scale = 1.5;
+                const scale = 2.0;
                 return (
                   <div key={i} style={{
                     width: `${LABEL_SPEC.widthMm * scale}mm`,
@@ -329,7 +330,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
                     fontFamily: "system-ui, sans-serif",
                   }}>
                     <div style={{ width: `${LABEL_SPEC.qrMm * scale}mm`, height: `${LABEL_SPEC.qrMm * scale}mm`, flex: "0 0 auto" }}>
-                      {l.qrUrl && <img src={l.qrUrl} alt="QR" style={{ width: "100%", height: "100%", display: "block" }} />}
+                      {l.qrUrl && <img src={l.qrUrl} alt="QR" style={{ width: "100%", height: "100%", display: "block", imageRendering: "pixelated" }} />}
                     </div>
                     <div style={{ flex: 1, width: "100%", marginTop: `${1 * scale}mm`, display: "flex", flexDirection: "column", gap: `${0.4 * scale}mm`, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: `${1.2 * scale}mm`, fontSize: `${LABEL_SPEC.itemCodeFontPt * scale}pt`, fontFamily: "monospace", fontWeight: 700 }}>
@@ -461,7 +462,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
                 <img
                   src={l.qrUrl}
                   alt="QR"
-                  style={{ width: "100%", height: "100%", display: "block" }}
+                  style={{ width: "100%", height: "100%", display: "block", imageRendering: "pixelated" }}
                 />
               )}
             </div>

@@ -37,15 +37,13 @@ export const LABEL_SPEC = {
   label: "50×70mm (세로형)",
 } as const;
 
-// QR 인코딩 — JSON 페이로드 (요구사항 유지).
+// QR 인코딩 — 핸드폰 카메라 인식률 우선.
+// S/N 우선, 없으면 itemCode 만 인코딩 (짧을수록 dot 큼 → 인식 ↑).
+// ECC H = 30% 손상복원 / margin 4 표준 quiet zone / width 512 출력 해상도.
 export async function encodeQr(payload: QrPayload): Promise<string> {
-  const data = JSON.stringify({
-    itemCode: payload.itemCode,
-    serialNumber: payload.serialNumber || undefined,
-    contractNumber: payload.contractNumber || undefined,
-  });
+  const data = (payload.serialNumber || payload.itemCode).trim();
   return await QRCode.toDataURL(data, {
-    errorCorrectionLevel: "M",
+    errorCorrectionLevel: "H",
     margin: 4,
     width: 512,
     color: {

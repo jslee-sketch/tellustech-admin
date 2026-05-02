@@ -204,15 +204,14 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
       const updated = await Promise.all(
         rows.map(async (r) => {
           if (r.qrUrl || !r.itemCode) return r;
-          // JSON 페이로드 — 요구사항대로 유지.
-          const payload = JSON.stringify({
-            itemCode: r.itemCode,
-            serialNumber: r.serialNumber || undefined,
-          });
-          const qrUrl = await QRCode.toDataURL(payload, {
-            errorCorrectionLevel: "M",
-            margin: 1,
-            width: 256,
+          // 핸드폰 카메라 인식률 우선 — 짧은 ASCII 만 인코딩.
+          // S/N 이 있으면 S/N 만, 없으면 itemCode 만 (둘 다 시스템에서 unique 마스터 키).
+          // ECC H = 30% 손상복원 / margin 4 = 표준 quiet zone / width 512 = 출력 해상도 ↑.
+          const data = (r.serialNumber || r.itemCode).trim();
+          const qrUrl = await QRCode.toDataURL(data, {
+            errorCorrectionLevel: "H",
+            margin: 4,
+            width: 512,
             color: { dark: "#000000", light: "#FFFFFF" },
           });
           return { ...r, qrUrl };
@@ -303,6 +302,61 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
             {t("label.totalLabels50x70", lang).replace("{count}", String(allLabels.length))}
           </div>
         </div>
+
+        {/* 화면 미리보기 — 실제 인쇄와 별개로 카메라 스캔 테스트용. 1.5배 확대. */}
+        {allLabels.length > 0 && (
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-[12px] font-bold text-[color:var(--tts-text)]">{t("label.screenPreviewTitle", lang)}</div>
+              <div className="text-[11px] text-[color:var(--tts-muted)]">{t("label.screenPreviewHint", lang)}</div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {allLabels.slice(0, 4).map((l, i) => {
+                const ch = l.colorChannel && l.colorChannel !== "NONE" ? CHANNEL_META[l.colorChannel] : null;
+                const scale = 1.5;
+                return (
+                  <div key={i} style={{
+                    width: `${LABEL_SPEC.widthMm * scale}mm`,
+                    height: `${LABEL_SPEC.heightMm * scale}mm`,
+                    padding: `${LABEL_SPEC.paddingMm * scale}mm`,
+                    boxSizing: "border-box",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    background: "#fff",
+                    color: "#000",
+                    border: "1px solid #999",
+                    fontFamily: "system-ui, sans-serif",
+                  }}>
+                    <div style={{ width: `${LABEL_SPEC.qrMm * scale}mm`, height: `${LABEL_SPEC.qrMm * scale}mm`, flex: "0 0 auto" }}>
+                      {l.qrUrl && <img src={l.qrUrl} alt="QR" style={{ width: "100%", height: "100%", display: "block" }} />}
+                    </div>
+                    <div style={{ flex: 1, width: "100%", marginTop: `${1 * scale}mm`, display: "flex", flexDirection: "column", gap: `${0.4 * scale}mm`, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: `${1.2 * scale}mm`, fontSize: `${LABEL_SPEC.itemCodeFontPt * scale}pt`, fontFamily: "monospace", fontWeight: 700 }}>
+                        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.itemCode}</span>
+                        {ch && (
+                          <span style={{ padding: `${0.4 * scale}mm ${1.5 * scale}mm`, fontSize: `${7.5 * scale}pt`, fontWeight: 800, background: ch.fill, color: ch.text, border: `${0.3 * scale}mm solid #000`, borderRadius: `${0.5 * scale}mm` }}>{ch.code}</span>
+                        )}
+                        {l.ownerType === "EXTERNAL_CLIENT" ? (
+                          <span style={{ padding: `${0.4 * scale}mm ${1.2 * scale}mm`, fontSize: `${7 * scale}pt`, fontWeight: 800, background: "#000", color: "#fff", border: `${0.3 * scale}mm solid #000`, borderRadius: `${0.5 * scale}mm` }}>EX</span>
+                        ) : (
+                          <span style={{ padding: `${0.4 * scale}mm ${1.2 * scale}mm`, fontSize: `${7 * scale}pt`, fontWeight: 700, border: `${0.3 * scale}mm solid #000`, borderRadius: `${0.5 * scale}mm` }}>TLS</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: `${LABEL_SPEC.itemNameFontPt * scale}pt`, fontWeight: 700, lineHeight: 1.15, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>{l.itemName}</div>
+                      {l.serialNumber && (
+                        <div style={{ fontSize: `${LABEL_SPEC.snFontPt * scale}pt`, fontFamily: "monospace", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>S/N: {l.serialNumber}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {allLabels.length > 4 && (
+                <div className="text-[11px] text-[color:var(--tts-muted)] self-center">{t("label.previewMore", lang).replace("{n}", String(allLabels.length - 4))}</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─── 인쇄 영역 ─────────────────────────────────────────────────

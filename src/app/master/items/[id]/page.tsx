@@ -39,10 +39,21 @@ export default async function EditItemPage({ params }: PageProps) {
           >
             {t("page.items.back", L)}
           </Link>
-          <h1 className="mt-1 text-2xl font-extrabold text-[color:var(--tts-text)]">
-            {t("page.items.detail", L)}
-            <span className="ml-3 font-mono text-[13px] text-[color:var(--tts-primary)]">{item.itemCode}</span>
-          </h1>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-2xl font-extrabold text-[color:var(--tts-text)]">
+              {t("page.items.detail", L)}
+              <span className="ml-3 font-mono text-[13px] text-[color:var(--tts-primary)]">{item.itemCode}</span>
+            </h1>
+            <a
+              href={`/inventory/labels?items=${encodeURIComponent(item.id)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded bg-[color:var(--tts-accent)] px-3 py-1.5 text-[12px] font-bold text-white hover:opacity-90"
+              title={t("label.printOne", L)}
+            >
+              🏷 {t("label.printOne", L)}
+            </a>
+          </div>
         </div>
         <Card>
           <ItemForm

@@ -57,6 +57,34 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
   const [newRemark, setNewRemark] = useState("");
   const [newStatus, setNewStatus] = useState<string>("NORMAL");
   const [newStateNote, setNewStateNote] = useState("");
+  const [selectedSns, setSelectedSns] = useState<Set<string>>(new Set());
+
+  function toggleSn(sn: string) {
+    setSelectedSns((cur) => {
+      const next = new Set(cur);
+      if (next.has(sn)) next.delete(sn);
+      else next.add(sn);
+      return next;
+    });
+  }
+  function toggleGroup(entries: InvItem[]) {
+    setSelectedSns((cur) => {
+      const next = new Set(cur);
+      const allOn = entries.every((e) => next.has(e.serialNumber));
+      if (allOn) entries.forEach((e) => next.delete(e.serialNumber));
+      else entries.forEach((e) => next.add(e.serialNumber));
+      return next;
+    });
+  }
+  function clearSelection() {
+    setSelectedSns(new Set());
+  }
+  function bulkPrint() {
+    const sns = Array.from(selectedSns);
+    if (sns.length === 0) return;
+    const url = `/inventory/labels?sns=${encodeURIComponent(sns.join(","))}`;
+    window.open(url, "_blank");
+  }
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
@@ -110,24 +138,42 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
   }
 
   async function printQR(item: InvItem) {
-    const url = `/inventory/labels?itemCode=${encodeURIComponent(item.itemCode)}&sn=${encodeURIComponent(item.serialNumber)}`;
+    const url = `/inventory/labels?sns=${encodeURIComponent(item.serialNumber)}`;
     window.open(url, "_blank");
   }
 
   return (
     <Card title={`${t("invItem.bySn", lang)} (${filtered.length}${t("invItem.itemsUnit", lang) === "개" ? "" : " "}${t("invItem.itemsUnit", lang)})`} action={
-      <ExcelDownload
-        rows={filtered}
-        columns={[
-          { key: "warehouseCode", header: t("col.warehouse", lang) },
-          { key: "itemCode", header: t("col.itemCode", lang) },
-          { key: "itemName", header: t("col.itemName", lang) },
-          { key: "serialNumber", header: t("col.serial", lang) },
-          { key: "status", header: t("col.status", lang) },
-          { key: "acquiredAt", header: t("field.acquiredAt", lang) },
-        ]}
-        filename="inventory-items.xlsx"
-      />
+      <div className="flex gap-2 items-center">
+        {selectedSns.size > 0 && (
+          <>
+            <button
+              onClick={bulkPrint}
+              className="rounded bg-[color:var(--tts-accent)] px-3 py-1.5 text-[12px] font-bold text-white hover:opacity-90"
+            >
+              🏷 {t("label.bulkPrintBtn", lang).replace("{n}", String(selectedSns.size))}
+            </button>
+            <button
+              onClick={clearSelection}
+              className="text-[11px] text-[color:var(--tts-sub)] hover:underline"
+            >
+              {t("action.clearSelection", lang)}
+            </button>
+          </>
+        )}
+        <ExcelDownload
+          rows={filtered}
+          columns={[
+            { key: "warehouseCode", header: t("col.warehouse", lang) },
+            { key: "itemCode", header: t("col.itemCode", lang) },
+            { key: "itemName", header: t("col.itemName", lang) },
+            { key: "serialNumber", header: t("col.serial", lang) },
+            { key: "status", header: t("col.status", lang) },
+            { key: "acquiredAt", header: t("field.acquiredAt", lang) },
+          ]}
+          filename="inventory-items.xlsx"
+        />
+      </div>
     }>
       <div className="mb-3 flex flex-wrap gap-2">
         <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchInv", lang)} />
@@ -151,6 +197,7 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
         <table className="w-full text-[12px]">
           <thead>
             <tr className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
+              <th className="py-2 w-8"></th>
               <th className="py-2 text-left">{t("col.warehouse", lang)}</th>
               <th className="py-2 text-left">{t("col.item", lang)}</th>
               <th className="py-2 text-left">{t("field.code", lang)}</th>
@@ -163,9 +210,20 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
             {grouped.map(([key, g]) => {
               const isOpen = expanded === key;
               const owner = g.warehouse.type === "EXTERNAL" ? `(${t("invItem.ownerCustomer", lang)})` : companyName;
+              const groupAllChecked = g.entries.length > 0 && g.entries.every((e) => selectedSns.has(e.serialNumber));
+              const groupSomeChecked = !groupAllChecked && g.entries.some((e) => selectedSns.has(e.serialNumber));
               return (
                 <>
                   <tr key={key} className="border-b border-[color:var(--tts-border)]/50 cursor-pointer hover:bg-[color:var(--tts-card-hover)]" onClick={() => setExpanded(isOpen ? null : key)}>
+                    <td className="py-2 text-center" onClick={(ev) => ev.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={groupAllChecked}
+                        ref={(el) => { if (el) el.indeterminate = groupSomeChecked; }}
+                        onChange={() => toggleGroup(g.entries)}
+                        title={t("label.selectAll", lang)}
+                      />
+                    </td>
                     <td className="py-2 font-mono text-[11px]">{g.warehouse.code}</td>
                     <td className="py-2">{g.item.name}</td>
                     <td className="py-2 font-mono text-[10px] text-[color:var(--tts-muted)]">{g.item.code}</td>
@@ -175,10 +233,11 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
                   </tr>
                   {isOpen && (
                     <tr key={`${key}-d`}>
-                      <td colSpan={6} className="bg-[color:var(--tts-card-hover)]/50 p-3">
+                      <td colSpan={7} className="bg-[color:var(--tts-card-hover)]/50 p-3">
                         <table className="w-full text-[11px]">
                           <thead>
                             <tr className="text-[color:var(--tts-sub)]">
+                              <th className="py-1 w-7"></th>
                               <th className="py-1 text-left">{t("col.serial", lang)}</th>
                               <th className="py-1 text-left">{t("col.status", lang)}</th>
                               <th className="py-1 text-left">{t("col.qrLabel", lang)}</th>
@@ -190,6 +249,13 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
                           <tbody>
                             {g.entries.map((e) => (
                               <tr key={e.id} className="border-t border-[color:var(--tts-border)]/30">
+                                <td className="py-1 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedSns.has(e.serialNumber)}
+                                    onChange={() => toggleSn(e.serialNumber)}
+                                  />
+                                </td>
                                 <td className="py-1 font-mono">
                                   {e.serialNumber}
                                   {e.ownerType === "EXTERNAL_CLIENT" && (

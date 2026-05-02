@@ -48,13 +48,27 @@ export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lan
     });
   }, [initialData, q, type]);
 
+  const printOne = (id: string) => {
+    window.open(`/inventory/labels?items=${encodeURIComponent(id)}`, "_blank");
+  };
+
   const columns: DataTableColumn<ItemRow>[] = [
     {
       key: "itemCode",
       label: t("col.itemCode", lang),
       width: "180px",
       render: (v, row) => (
-        <Link href={`/master/items/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
+        <div className="flex items-center gap-2">
+          <Link href={`/master/items/${row.id}`} className="font-mono text-[11px] font-bold text-[color:var(--tts-primary)] hover:underline">{v as string}</Link>
+          <button
+            type="button"
+            onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); printOne(row.id); }}
+            className="rounded bg-[color:var(--tts-accent)] px-1.5 py-0.5 text-[10px] text-white hover:opacity-90"
+            title={t("label.printOne", lang)}
+          >
+            🏷
+          </button>
+        </div>
       ),
     },
     {
@@ -147,12 +161,19 @@ export function ItemsClient({ initialData, lang }: { initialData: ItemRow[]; lan
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
         bulkActionBar={(ids, clear) => (
-          <Button type="button" size="sm" variant="ghost" onClick={async () => {
-            if (!confirm(t("bulk.confirmDelete", lang).replace("{n}", String(ids.length)).replace("{type}", "item"))) return;
-            setBusy(true);
-            for (const id of ids) await fetch(`/api/master/items/${id}`, { method: 'DELETE' });
-            setBusy(false); clear(); location.reload();
-          }} disabled={busy}>{busy ? t("bulk.deleting", lang) : t("bulk.deleteSelected", lang).replace("{n}", String(ids.length))}</Button>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={() => {
+              window.open(`/inventory/labels?items=${encodeURIComponent(ids.join(","))}`, "_blank");
+            }}>
+              🏷 {t("label.bulkPrintBtn", lang).replace("{n}", String(ids.length))}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={async () => {
+              if (!confirm(t("bulk.confirmDelete", lang).replace("{n}", String(ids.length)).replace("{type}", "item"))) return;
+              setBusy(true);
+              for (const id of ids) await fetch(`/api/master/items/${id}`, { method: 'DELETE' });
+              setBusy(false); clear(); location.reload();
+            }} disabled={busy}>{busy ? t("bulk.deleting", lang) : t("bulk.deleteSelected", lang).replace("{n}", String(ids.length))}</Button>
+          </div>
         )}
       />
       <div className="mt-4">

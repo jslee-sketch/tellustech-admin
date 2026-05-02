@@ -1819,7 +1819,14 @@ const DICT: Dict = {
   "th.delete":             { vi: "Xoá",                  en: "Delete",             ko: "삭제" },
   "btn.print":             { vi: "🖨️ In",                en: "🖨️ Print",          ko: "🖨️ 인쇄" },
   "label.totalSheetsPages":{ vi: "Tổng {count} tờ · {pages} trang", en: "Total {count} sheets · {pages} pages", ko: "총 {count}장 · {pages}페이지" },
-  "label.qrLabelDescription":{ vi: "3 kích thước (Lớn/Vừa/Nhỏ) · Tự động bố trí A4 · Đường cắt. Sau khi thêm mặt hàng và S/N, bấm [In] để mở hộp thoại in của OS.", en: "3 sizes (Large/Medium/Small) · A4 auto layout · Cut lines. After adding item & S/N, click [Print] to open OS print dialog.", ko: "크기 3종 (대/중/소) · A4 자동 배치 · 절취선 표시. 품목과 S/N 을 추가한 후 [인쇄] 로 OS 프린트 다이얼로그를 엽니다." },
+  "label.qrLabelDescription":{ vi: "Quy cách thống nhất 70×50mm · Tối ưu cho NIIMBOT B21 · 1 nhãn = 1 trang. Sau khi thêm mặt hàng và S/N, bấm [In] để mở hộp thoại in của OS.", en: "Unified 70×50mm spec · Optimized for NIIMBOT B21 · 1 label = 1 page. After adding item & S/N, click [Print] to open OS print dialog.", ko: "70×50mm 단일 규격 · NIIMBOT B21 최적화 · 라벨 1장 = 1 페이지. 품목과 S/N 을 추가한 후 [인쇄] 로 OS 프린트 다이얼로그를 엽니다." },
+  "label.unifiedSpecTitle":{ vi: "📐 Quy cách nhãn 70×50mm (NIIMBOT B21)", en: "📐 Label spec: 70×50mm (NIIMBOT B21)", ko: "📐 라벨 규격: 70×50mm (NIIMBOT B21 전용)" },
+  "label.unifiedSpecDesc": { vi: "QR 38mm trên · Thông tin dưới (mã/Tên/S/N/Vị trí). Mỗi nhãn xuất 1 trang riêng — chỉ cần chọn máy in NIIMBOT khi in.", en: "QR 38mm top · Info bottom (code/name/SN/location). Each label prints as its own page — just select your NIIMBOT printer.", ko: "QR 38mm 상단 · 정보 하단(코드/이름/S/N/위치). 라벨마다 1페이지로 출력 — OS 프린트 다이얼로그에서 NIIMBOT 프린터만 선택하면 됩니다." },
+  "label.totalLabels50x70":{ vi: "Tổng {count} nhãn (mỗi nhãn 1 trang)", en: "Total {count} labels (1 per page)", ko: "총 {count}장 (라벨당 1페이지)" },
+  "label.bulkPrintBtn":    { vi: "In nhãn ({n})", en: "Print labels ({n})", ko: "라벨 인쇄 ({n}장)" },
+  "label.printOne":        { vi: "In nhãn", en: "Print label", ko: "라벨 인쇄" },
+  "label.selectAll":       { vi: "Chọn tất cả", en: "Select all", ko: "전체 선택" },
+  "action.clearSelection": { vi: "Bỏ chọn", en: "Clear", ko: "선택 해제" },
 
   // Inventory · transactions import
   "title.invImport":       { vi: "Tải lên xuất nhập theo lô", en: "Inventory Bulk Upload", ko: "입출고 일괄 업로드" },

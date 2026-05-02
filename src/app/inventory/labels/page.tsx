@@ -7,35 +7,119 @@ import { LabelsClient } from "./labels-client";
 
 export const dynamic = "force-dynamic";
 
-type PageProps = { searchParams: Promise<{ purchaseId?: string }> };
+type PageProps = {
+  searchParams: Promise<{
+    purchaseId?: string;
+    sns?: string;
+    items?: string;
+    itemCode?: string;
+    sn?: string;
+  }>;
+};
+
+export type LabelPrefill = {
+  itemCode: string;
+  itemName: string;
+  serialNumber: string | null;
+  ownerType?: "COMPANY" | "EXTERNAL_CLIENT";
+  ownerLabel?: string | null;
+  warehouseCode?: string | null;
+  warehouseName?: string | null;
+  source?: string | null;
+};
 
 export default async function LabelsPage({ searchParams }: PageProps) {
   const session = await getSession();
   const L = session.language;
-  const { purchaseId } = await searchParams;
+  const sp = await searchParams;
 
-  // 매입 ID 가 오면 해당 매입의 품목+S/N 자동 프리필 + 인쇄 헤더용 매입 정보
-  let prefill: { itemCode: string; itemName: string; serialNumber: string | null }[] = [];
+  let prefill: LabelPrefill[] = [];
   let printHeader: { supplierName: string; purchaseDate: string; purchaseNumber: string } | null = null;
-  if (purchaseId) {
+
+  // ── ① 매입 ID 프리필 ──────────────────────────────────────────
+  if (sp.purchaseId) {
     const pur = await prisma.purchase.findUnique({
-      where: { id: purchaseId },
+      where: { id: sp.purchaseId },
       include: {
-        supplier: { select: { companyNameVi: true, clientCode: true } },
-        items: { include: { item: { select: { itemCode: true, name: true } } } },
+        supplier: { select: { companyNameVi: true, companyNameKo: true, clientCode: true } },
+        items: {
+          include: {
+            item: { select: { itemCode: true, name: true } },
+          },
+        },
       },
     });
     if (pur) {
+      const supplierLabel = pur.supplier?.companyNameKo ?? pur.supplier?.companyNameVi ?? pur.supplier?.clientCode ?? "-";
       prefill = pur.items.map((i) => ({
         itemCode: i.item.itemCode,
         itemName: i.item.name,
         serialNumber: i.serialNumber,
+        source: supplierLabel,
       }));
       printHeader = {
-        supplierName: pur.supplier?.companyNameVi ?? pur.supplier?.clientCode ?? "-",
+        supplierName: supplierLabel,
         purchaseDate: pur.createdAt ? new Date(pur.createdAt).toISOString().slice(0, 10) : "-",
         purchaseNumber: pur.purchaseNumber ?? "-",
       };
+    }
+  }
+
+  // ── ② S/N 다건 프리필 (sns=SN1,SN2,...) ─────────────────────
+  if (sp.sns) {
+    const snList = sp.sns.split(",").map((s) => s.trim()).filter(Boolean);
+    if (snList.length > 0) {
+      const invs = await prisma.inventoryItem.findMany({
+        where: { serialNumber: { in: snList } },
+        include: {
+          item: { select: { itemCode: true, name: true } },
+          warehouse: { select: { code: true, name: true } },
+          ownerClient: { select: { clientCode: true, companyNameVi: true, companyNameKo: true } },
+        },
+      });
+      prefill = invs.map((iv) => ({
+        itemCode: iv.item.itemCode,
+        itemName: iv.item.name,
+        serialNumber: iv.serialNumber,
+        ownerType: iv.ownerType,
+        ownerLabel: iv.ownerClient
+          ? `${iv.ownerClient.clientCode} · ${iv.ownerClient.companyNameKo ?? iv.ownerClient.companyNameVi}`
+          : null,
+        warehouseCode: iv.warehouse?.code ?? null,
+        warehouseName: iv.warehouse?.name ?? null,
+      }));
+    }
+  }
+
+  // ── ③ Item ID 다건 프리필 (items=ITM1,ITM2,...) ─────────────
+  if (sp.items) {
+    const itemIds = sp.items.split(",").map((s) => s.trim()).filter(Boolean);
+    if (itemIds.length > 0) {
+      const its = await prisma.item.findMany({
+        where: { id: { in: itemIds } },
+        select: { id: true, itemCode: true, name: true },
+      });
+      const fromItems: LabelPrefill[] = its.map((it) => ({
+        itemCode: it.itemCode,
+        itemName: it.name,
+        serialNumber: null,
+      }));
+      prefill = [...prefill, ...fromItems];
+    }
+  }
+
+  // ── ④ 단건 itemCode + sn 프리필 (레거시 호환) ────────────────
+  if (sp.itemCode && prefill.length === 0) {
+    const it = await prisma.item.findFirst({
+      where: { itemCode: sp.itemCode },
+      select: { itemCode: true, name: true },
+    });
+    if (it) {
+      prefill = [{
+        itemCode: it.itemCode,
+        itemName: it.name,
+        serialNumber: sp.sn ?? null,
+      }];
     }
   }
 

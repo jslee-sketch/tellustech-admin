@@ -43,7 +43,6 @@ export async function ensureInventoryItemOnReceipt(
   const qrData = await encodeQr({
     itemCode: item?.itemCode ?? "",
     serialNumber,
-    itemName: item?.name,
   });
 
   await tx.inventoryItem

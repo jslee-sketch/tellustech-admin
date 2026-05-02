@@ -155,7 +155,9 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
                   <td className="py-2 text-[11px]">
                     {ch ? (
                       <span className="inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold" style={{ background: ch.fill, color: ch.text }}>
-                        <span>{ch.code}</span><span>{r.colorChannel}</span>
+                        <span>{ch.code}</span>
+                        <span>·</span>
+                        <span>{r.colorChannel}</span>
                       </span>
                     ) : (
                       <span className="text-[color:var(--tts-muted)]">—</span>

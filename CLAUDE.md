@@ -87,8 +87,10 @@
 | 세션 쿠키 | `tts-session` | `tts_session` (underscore) |
 | Schedule | `name`, `repeatType` | `title`, `dueAt` (required) |
 | License | `expiresAt`만 | `name` + `acquiredAt` + `expiresAt` 3종 required |
-| InventoryTransaction | `type: "IN"/"OUT"` | `txnType: "IN"/"OUT"` |
-| InventoryTransaction reason | `"SALE"` 포함 가정 | REASONS = PURCHASE/CALIBRATION/REPAIR/RENTAL/DEMO/RETURN/**CONSUMABLE_OUT** (SALE 없음) |
+| InventoryTransaction | `type: "IN"/"OUT"/"TRANSFER"` | `txnType: "IN"/"OUT"/"TRANSFER"` (TRANSFER = External↔External 통과) |
+| InventoryTransaction 사유 모델 | 16-value `reason` enum 단일 | **4축 진리표 — `(txnType × referenceModule × subKind × ownerType)`**. legacy `reason` 컬럼은 호환용으로만 자동 채움. 진리표 정의는 `src/lib/inventory-rules.ts` `BASE_RULES` 참조 |
+| InventoryTransaction 신규 필드 | — | `referenceModule` (RENTAL/REPAIR/CALIB/DEMO/TRADE/CONSUMABLE), `subKind` (REQUEST/RETURN/PURCHASE/SALE/BORROW/LEND/OTHER/CONSUMABLE), `fromClientId`, `toClientId` |
+| InventoryItem 자산 추적 | — | `ownerType` (COMPANY/EXTERNAL_CLIENT) + `ownerClientId` + `currentLocationClientId/SinceAt` (외부 위탁 위치) + `archivedAt` (반환·매각 후 비활성). EXTERNAL_CLIENT 자산은 라벨에 검은 [EX] 배지 |
 | Purchase | `clientId` | `supplierId` |
 | TmRental 자동코드 필드 | `contractNumber` | `rentalCode` (TM-YYMMDD-###) |
 | Incident | `descriptionVi/En/Ko` | `contentVi/contentEn/contentKo` + 최소 한 언어 **50자 이상** + 작성자 empCode 필수 |
@@ -106,3 +108,17 @@
 - **QR 라벨/스캔 개선**: 모바일 카메라 인식률 (qrbox 동적, focusMode continuous, fps 15), 품목 매핑 server fallback (`/api/master/items?q=`), 인쇄 시 사이드바 숨김 + 헤더(매입처·매입번호·매입일자·출력일자) 자동 출력, 스캔 사유 옵션 매입/매출/반품 차단.
 - **사이드바·대시보드 재구성** (13그룹): 마스터·영업·렌탈·A/S·재고·인사·재경·회의·캘린더·메시징·**고객 포탈 운영(NEW)**·**통계(NEW)**·관리. SNMP/사용량확인서/적정율은 렌탈 그룹으로, 견적은 영업 그룹으로, 마감은 재경 그룹으로, 품목호환은 마스터 그룹으로 이동. 대시보드 12개 NavCard 가 사이드바와 1:1.
 - **Cron**: `/api/jobs/portal-news-generate` (월요일 09:00 KST · async fire-and-forget · Promise.allSettled). `/api/jobs/yield-analysis-monthly` (매월 1일 02:00 KST).
+
+### 최근 추가 (2026-05 ~)
+
+- **재고사유 — 16-value enum → 4축 진리표** (Phase 1~2): `(txnType × referenceModule × subKind × ownerType)` 키로 `BASE_RULES` 20행 정의 (`src/lib/inventory-rules.ts`). 각 행이 `masterAction` (NEW/MOVE/ARCHIVE/TRANSFER_LOC/NONE) + `autoPurchaseCandidate` + `autoSalesCandidate` + `requireSerialNumber` + `setExternalLocation` + `externalAssetLabel` 결정. 시나리오 6/7/10/11 은 `ownerType` 별도 분기. `ClientRuleOverride` 테이블이 거래처별 예외 허용. legacy `reason` 컬럼은 `deriveLegacyReason()` 으로 자동 채움.
+- **외부 자산 추적**: `InventoryItem.ownerType`/`ownerClientId`/`inboundReason`/`inboundAt`/`currentLocationClientId`/`currentLocationSinceAt`/`archivedAt` 추가. 외부 자산(고객 수리·교정·데모기 등)이 자사 창고에 입고되면 EXTERNAL_CLIENT 로 등록되어 매입금 미발생. 외부 위탁 시 `currentLocationClientId` 설정. 반환·매각 시 `archivedAt` 설정.
+- **PayableReceivable 자동 DRAFT**: `referenceModule × subKind` 조합이 `autoPurchaseCandidate`/`autoSalesCandidate` 인 거래는 매입/매출 트랜잭션 직후 `PayableReceivable` 행을 `DRAFT` 상태(amount=0)로 자동 생성. `sourceInventoryTxnId` 로 역추적. 재경 담당자가 금액 확정 시 `OPEN` 으로 승급.
+- **다행 입출고 등록 + 시나리오 콤보**: `/inventory/transactions/new` 가 카드 레이아웃으로 한 번에 100~수백 라인 처리 (`/api/inventory/transactions/bulk` · `prisma.$transaction({ timeout: 30_000 })`). reason 단일 드롭다운 → 22개 `txn.combo.*` 시나리오 콤보 (`COMBOS_BY_TYPE`). `referenceModule` + `subKind` 자동 매핑.
+- **QR 다중 스캔 (Phase 2.8)**: `/inventory/scan` 이 스캐너 상시 가동 + 스캔 시마다 `/api/inventory/sn/[sn]/state` 호출하여 마스터 상태(`NEW` / `OWN_IN_STOCK` / `OWN_AT_EXTERNAL` / `EXTERNAL_IN_STOCK` / `EXTERNAL_AT_VENDOR` / `ARCHIVED`)에 따른 추천 시나리오 도출. 스캔 누적 → 1 이벤트로 `/api/inventory/transactions/bulk` 일괄 등록. 첫 스캔이 `txnType` + `comboKey` + 창고/거래처 자동 프리필.
+- **QR 라벨 NIIMBOT B21 통합** (Phase 3): 3종(60×40/50×35/40×30) 규격 → **단일 70×50mm** (`LABEL_SPEC` 단일 상수). `@page size: 50mm 70mm; margin: 0;` + `page-break-after: always` 로 라벨 1장 = 1페이지. QR 데이터는 JSON `{itemCode, serialNumber, contractNumber}` 유지. `@media print { color: #000 !important; background: transparent !important; }` 로 다크모드 토큰 무력화.
+- **컬러 채널 배지 in 라벨**: `Item.colorChannel` (BLACK/CYAN/MAGENTA/YELLOW/DRUM/FUSER/NONE) 이 라벨에 자동 표시 — itemCode 옆 작은 컬러 배지 (`K/C/M/Y/D/F`). `-webkit-print-color-adjust: exact` 로 컬러 전사지 사용 시 그대로 컬러 인쇄 (현재 흑백 전사지에서는 OS 가 grayscale 자동 변환되지만 글자는 식별 가능). 추가 입력 단계 없음 — 품목 등록 시 채널 지정만 하면 매입·재고·라벨이 일관 적용.
+- **라벨 일괄 인쇄**: `/inventory/stock` S/N 탭 + `/master/items` 리스트에 체크박스 + `🏷 라벨 인쇄 (N장)` 헤더 버튼. 행별 🏷 아이콘은 항상 노출(모바일 대응). `/master/items/[id]` 단건 페이지에도 🏷 버튼. 라벨 페이지는 `?sns=SN1,SN2` / `?items=ITM1,ITM2` / `?purchaseId=...` / `?itemCode=&sn=` 4가지 프리필 모드 지원.
+- **인벤토리 흐름 전수정비**: `src/lib/amendments.ts` (IT 계약 ADD/REPLACE/REMOVE), `src/lib/adjustments.ts` (매출/매입 RETURN·EXCHANGE), `src/app/api/sales|purchases/route.ts` (TRADE 강제 S/N + 마스터 매칭 + archive), `src/app/api/as-dispatches/[id]/parts/route.ts` (CONSUMABLE) 모두 `referenceModule`+`subKind` 작성. 단건 `/api/inventory/transactions` 도 `deriveRefModule()` + `deriveSubKind()` 헬퍼로 호환.
+- **포탈 QR 스캔**: `/portal/as-request` 와 `/portal/supplies-request` 에 `<QrScanModal>` 정사각형 스캐너 추가 (88% qrbox · `aspect-square` · `max-w-md`). 스캐너 디코드 → 장비/품목 자동 매칭.
+- **E2E 테스트 인프라**: `scripts/test-inv-e2e.ts` — 6 거래처/2 창고/5 품목/4 마스터 시드 + 23 시나리오 4 라운드 의존성 정렬 실행 + `BASE_RULES` masterAction + PR DRAFT 카운트 검증 + 교차검증. 결과 31/31 PASS.

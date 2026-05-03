@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function NewExpensePage() {
   const session = await getSession();
   const L = session.language;
-  const [projects, depts, sales, purchases] = await Promise.all([
+  const [projects, depts, sales, purchases, clients, accounts] = await Promise.all([
     prisma.project.findMany({ where: companyScope(session), orderBy: { projectCode: "asc" }, select: { id: true, projectCode: true, name: true } }),
     prisma.department.findMany({ where: companyScope(session), orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
     prisma.sales.findMany({
@@ -24,6 +24,8 @@ export default async function NewExpensePage() {
       take: 200,
       select: { id: true, purchaseNumber: true, totalAmount: true, supplier: { select: { companyNameVi: true } } },
     }),
+    prisma.client.findMany({ orderBy: { clientCode: "asc" }, take: 500, select: { id: true, clientCode: true, companyNameVi: true, companyNameKo: true } }),
+    prisma.bankAccount.findMany({ where: { isActive: true }, orderBy: { accountCode: "asc" }, select: { id: true, accountCode: true, accountName: true, currency: true } }),
   ]);
   return (
     <main className="flex-1 p-8">
@@ -43,6 +45,8 @@ export default async function NewExpensePage() {
               value: p.id,
               label: `${p.purchaseNumber} · ${p.supplier?.companyNameVi ?? "—"} · ${new Intl.NumberFormat("vi-VN").format(Number(p.totalAmount))}`,
             }))}
+            clientOptions={clients.map((c) => ({ value: c.id, label: `${c.clientCode} · ${c.companyNameKo ?? c.companyNameVi}` }))}
+            accountOptions={accounts.map((a) => ({ value: a.id, label: `${a.accountCode} · ${a.accountName} (${a.currency})` }))}
           />
         </Card>
       </div>

@@ -1715,6 +1715,10 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.3.1 · 2026-05-03**: Expense registration UI enhancement — fills the gap from task 13 of Layer 1 (v2.2.0).
+  - Symptom: the schema and API already accepted 6 new fields (paymentMethod / vendorClientId / vendorName / targetClientId / cashOut / cashOutAccountId) but the `/finance/expenses/new` form did not expose any inputs, so users couldn't actually use them.
+  - Fix: added 3 new sections to `expense-new-form.tsx` — ① Payment info (5 methods + auto-derived status display), ② Vendor / Target Client (master dropdowns + direct vendor name input for tiny vendors like restaurants/gas stations), ③ Immediate Withdrawal (checkbox + account selector, only when payment method is corporate-card / bank-transfer / company-cash). Personal-prepaid methods now show a PENDING_REIMBURSE note guiding the user to the reimburse-approval page.
+  - `new/page.tsx` now prefetches Client and BankAccount options.
 - **v2.3.0 · 2026-05-03**: Finance Layer 2 — **Cost / Profitability management** (CostCenter + AllocationRule + Budget + ExpenseAllocation.costCenterId expansion + per-client profitability report).
   - New models: `CostCenter` (3 types: DEPARTMENT / BRANCH / PROJECT, unique [companyCode, code]), `AllocationRule` (DIRECT / INDIRECT / COMMON), `Budget` (monthly per cost center).
   - 2 new screens: `/finance/cost-centers` (CRUD + budget entry + actual vs budget variance), `/finance/profitability` (Revenue − Direct Cost − Indirect = Net Profit per client, with profit rate).

@@ -1913,6 +1913,7 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
+- **v2.3.1 · 2026-05-03**: Expense UI enhancement — fills the gap from Layer 1 task 13 (exposes paymentMethod / vendor / targetClient / cashOut input fields).
 - **v2.3.0 · 2026-05-03**: Finance Layer 2 — Cost / Profitability (CostCenter + AllocationRule + Budget + per-client profitability). 2 new sidebar items. Full details in Appendix K of the employee manual.
 - **v2.2.0 · 2026-05-03**: Finance Layer 1 — Cash management (BankAccount/CashTransaction + Expense expansion + Payroll bulk-pay + cash-shortage cron). Three new items in the Finance sidebar group. Full details in Appendix K of the employee manual.
 - **v2.1.2 · 2026-05-03**: Added `resolveSessionCompanyCode()` fallback in the Prisma extension — when the ALS store is empty it reads the `x-session-user` header directly to determine `companyCode`. Resolves the case in v2.1.1 where `enterWith` failed because RSC forked the async context.

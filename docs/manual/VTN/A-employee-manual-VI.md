@@ -1714,6 +1714,10 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.3.1 · 2026-05-03**: Tăng cường giao diện đăng ký Expense — bù phần thiếu của tác vụ 13 ở Layer 1 (v2.2.0).
+  - Triệu chứng: schema và API đã nhận 6 trường mới (paymentMethod/vendor/targetClient/cashOut/cashOutAccountId) nhưng màn hình `/finance/expenses/new` chưa hiển thị trường nhập, người dùng không thể sử dụng.
+  - Sửa: thêm 3 mục mới vào `expense-new-form.tsx` — ① Thông tin thanh toán (5 phương thức + trạng thái tự xác định), ② Nhà cung cấp / Khách hàng phân bổ, ③ Rút tiền ngay (chỉ với phương thức nội bộ; ngược lại hiển thị cảnh báo PENDING_REIMBURSE).
+  - `new/page.tsx` lấy thêm danh sách Client / BankAccount.
 - **v2.3.0 · 2026-05-03**: Module Layer 2 mới của Tài chính — **Quản lý chi phí / Giá thành** (CostCenter + AllocationRule + Budget + mở rộng ExpenseAllocation.costCenterId + báo cáo lợi nhuận theo khách hàng).
   - Model mới: `CostCenter` (3 loại: DEPARTMENT / BRANCH / PROJECT), `AllocationRule` (DIRECT / INDIRECT / COMMON), `Budget` (theo tháng).
   - 2 màn hình mới: `/finance/cost-centers` (CRUD + đăng ký ngân sách + so sánh thực tế), `/finance/profitability` (lợi nhuận theo khách hàng — Doanh thu − chi phí trực tiếp − gián tiếp).

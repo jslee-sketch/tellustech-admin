@@ -1915,6 +1915,7 @@ UI 는 추후 추가 예정. 현재는 DB 직접 변경.
 
 # 변경 이력 (관리자 매뉴얼 v2 보강판)
 
+- **v2.3.1 · 2026-05-03**: 비용 등록 UI 강화 — Layer 1 작업 13 누락분 보강 (결제방법·업체·귀속·즉시출금 입력 칸 노출).
 - **v2.3.0 · 2026-05-03**: 재경 Layer 2 — 비용/원가 관리 (CostCenter + AllocationRule + Budget + 거래처 수익성). 사이드바 2 메뉴 추가. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.2.0 · 2026-05-03**: 재경 Layer 1 자금관리 모듈 신설 (BankAccount/CashTransaction + Expense 강화 + Payroll bulk-pay + cash-shortage cron). 사이드바 재경 그룹 3 메뉴 추가. 자세한 변경은 사용자 매뉴얼 부록 K 참조.
 - **v2.1.2 · 2026-05-03**: Prisma extension 의 `resolveSessionCompanyCode()` fallback 도입 — ALS 컨텍스트가 비어 있어도 `x-session-user` 헤더에서 직접 회사코드를 읽음. v2.1.1 의 `enterWith` 가 RSC 격리로 작동 안 하던 케이스 해결.

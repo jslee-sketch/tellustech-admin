@@ -15,12 +15,16 @@ export function ExpenseNewForm({
   departments,
   salesOptions,
   purchaseOptions,
+  clientOptions,
+  accountOptions,
   lang,
 }: {
   projects: Option[];
   departments: Option[];
   salesOptions: Option[];
   purchaseOptions: Option[];
+  clientOptions: Option[];
+  accountOptions: Option[];
   lang: Lang;
 }) {
   const router = useRouter();
@@ -35,6 +39,20 @@ export function ExpenseNewForm({
   const [allocs, setAllocs] = useState<AllocDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Layer 1 신규 필드 ──
+  const [paymentMethod, setPaymentMethod] = useState("CORPORATE_CARD");
+  const [vendorClientId, setVendorClientId] = useState("");
+  const [vendorName, setVendorName] = useState("");
+  const [targetClientId, setTargetClientId] = useState("");
+  const [cashOut, setCashOut] = useState(false);
+  const [cashOutAccountId, setCashOutAccountId] = useState("");
+
+  const isImmediateOut = ["CORPORATE_CARD", "BANK_TRANSFER", "CASH_COMPANY"].includes(paymentMethod);
+  const autoStatus =
+    paymentMethod === "CASH_PERSONAL" || paymentMethod === "CREDIT_PERSONAL"
+      ? "PENDING_REIMBURSE"
+      : "PAID";
 
   function addAlloc() { setAllocs((p) => [...p, { projectId: "", departmentId: "", basis: "AMOUNT", weight: "1", amount: "0" }]); }
   function rmAlloc(i: number) { setAllocs((p) => p.filter((_, x) => x !== i)); }
@@ -53,6 +71,12 @@ export function ExpenseNewForm({
           expenseType, amount, currency, fxRate, incurredAt, note: note || null,
           linkedSalesId: expenseType === "SALES" ? linkedSalesId : null,
           linkedPurchaseId: expenseType === "PURCHASE" ? linkedPurchaseId : null,
+          paymentMethod,
+          vendorClientId: vendorClientId || null,
+          vendorName: vendorName || null,
+          targetClientId: targetClientId || null,
+          cashOut: cashOut && isImmediateOut,
+          cashOutAccountId: cashOut && isImmediateOut ? cashOutAccountId || null : null,
           allocations: allocs.map((a) => ({
             projectId: a.projectId || null,
             departmentId: a.departmentId || null,
@@ -128,6 +152,61 @@ export function ExpenseNewForm({
             )}
           </Field>
         </Row>
+      )}
+
+      <SectionTitle icon="💳" title={t("expense.paymentMethod", lang)} />
+      <Row>
+        <Field label={t("expense.paymentMethod", lang)} required width="240px">
+          <Select required value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} options={[
+            { value: "CORPORATE_CARD", label: t("expense.payMethod.CORPORATE_CARD", lang) },
+            { value: "BANK_TRANSFER",  label: t("expense.payMethod.BANK_TRANSFER", lang) },
+            { value: "CASH_COMPANY",   label: t("expense.payMethod.CASH_COMPANY", lang) },
+            { value: "CASH_PERSONAL",  label: t("expense.payMethod.CASH_PERSONAL", lang) },
+            { value: "CREDIT_PERSONAL",label: t("expense.payMethod.CREDIT_PERSONAL", lang) },
+          ]} />
+        </Field>
+        <Field label={t("expense.paymentStatus", lang)} width="200px">
+          <div className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)] px-3 py-2 text-[12px] font-mono text-[color:var(--tts-sub)]">
+            {t(`expense.payStatus.${autoStatus}`, lang)}
+          </div>
+        </Field>
+      </Row>
+
+      <SectionTitle icon="🤝" title={t("expense.vendor", lang) + " / " + t("expense.targetClient", lang)} />
+      <Row>
+        <Field label={t("expense.vendor", lang)} hint={vendorName ? "" : t("placeholder.notSelected", lang)}>
+          <Select value={vendorClientId} onChange={(e) => setVendorClientId(e.target.value)} placeholder={t("placeholder.notSelected", lang)} options={[{ value: "", label: t("placeholder.notSelected", lang) }, ...clientOptions]} />
+        </Field>
+        <Field label={t("expense.vendor", lang) + " (직접입력)"}>
+          <TextInput value={vendorName} onChange={(e) => setVendorName(e.target.value)} placeholder="식당·주유소 등" />
+        </Field>
+        <Field label={t("expense.targetClient", lang)}>
+          <Select value={targetClientId} onChange={(e) => setTargetClientId(e.target.value)} placeholder={t("placeholder.notSelected", lang)} options={[{ value: "", label: t("placeholder.notSelected", lang) }, ...clientOptions]} />
+        </Field>
+      </Row>
+
+      {isImmediateOut && (
+        <>
+          <SectionTitle icon="🏦" title={t("expense.cashOut", lang)} />
+          <Row>
+            <Field label=" " width="220px">
+              <label className="flex items-center gap-2 text-[12px]">
+                <input type="checkbox" checked={cashOut} onChange={(e) => setCashOut(e.target.checked)} />
+                <span>{t("expense.cashOut", lang)}</span>
+              </label>
+            </Field>
+            {cashOut && (
+              <Field label={t("finance.account", lang)} required>
+                <Select required value={cashOutAccountId} onChange={(e) => setCashOutAccountId(e.target.value)} placeholder={t("placeholder.notSelected", lang)} options={accountOptions} />
+              </Field>
+            )}
+          </Row>
+        </>
+      )}
+      {!isImmediateOut && (
+        <Note tone="warn">
+          개인 선지급 — 결제 상태 = PENDING_REIMBURSE. 등록 후 `/finance/expenses` 에서 [환급 승인] 으로 처리하세요.
+        </Note>
       )}
 
       <Row><Field label={t("field.note", lang)}><Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></Field></Row>

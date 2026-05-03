@@ -2387,6 +2387,12 @@ const DICT: Dict = {
   "nav.cashFlow":         { vi: "Lưu chuyển tiền tệ",  en: "Cash Flow",         ko: "현금흐름표" },
 
   "fs.balance":           { vi: "Số dư",               en: "Balance",           ko: "잔액" },
+  "finance.newCashTxn":   { vi: "Thu/Chi mới (qua tài khoản)", en: "New cash transaction (via accounts)", ko: "신규 입출금 (계좌 페이지)" },
+  "expense.reimburseModalTitle":  { vi: "Duyệt hoàn ứng — chọn tài khoản chi", en: "Approve reimbursement — pick payout account", ko: "환급 승인 — 출금 계좌 선택" },
+  "expense.reimburseAccount":     { vi: "Tài khoản chi",  en: "Payout account",  ko: "출금 계좌" },
+  "expense.reimburseConfirm":     { vi: "Duyệt",          en: "Approve",         ko: "승인" },
+  "expense.reimburseNoAccount":   { vi: "Chưa có tài khoản. Vui lòng đăng ký trước tại Quản lý tài khoản.", en: "No bank accounts registered yet. Please add one in Accounts.", ko: "등록된 계좌가 없습니다. 먼저 [계좌 관리]에서 등록해주세요." },
+  "expense.reimburseFailed":      { vi: "Duyệt hoàn ứng thất bại", en: "Reimbursement approval failed", ko: "환급 승인 실패" },
   "fs.total":             { vi: "Tổng cộng",           en: "Total",             ko: "합계" },
   "fs.amount":            { vi: "Số tiền",             en: "Amount",            ko: "금액" },
   "fs.section":           { vi: "Phân loại",           en: "Section",           ko: "구분" },

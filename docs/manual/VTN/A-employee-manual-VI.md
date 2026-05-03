@@ -1746,6 +1746,7 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.7.1 · 2026-05-03**: Vá UX nhỏ — nút [+ Thu/Chi mới] ở header `/finance/cash-transactions` (chuyển hướng tới `/finance/accounts`); duyệt hoàn ứng đổi từ `window.prompt` sang modal + dropdown chọn TK; thêm 6 khóa i18n.
 - **v2.7.0 · 2026-05-03**: 8 hạng mục tiếp theo — RBAC + Sách hướng dẫn hợp nhất + nợ kỹ thuật + thống kê kỹ sư + đồng bộ favorite trên server + backfill FK Sales.
   - RBAC mới (`src/lib/rbac.ts` + 19 trang tài chính), CLIENT chuyển hướng `/portal`. Action `close`/`reopen`/PUT mapping = ADMIN only.
   - Sách hướng dẫn A/B × 3 ngôn ngữ bổ sung mục 8.3~8.5 (A) và 3-A~3-E (B).

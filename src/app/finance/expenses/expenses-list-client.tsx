@@ -30,17 +30,25 @@ export function ExpensesListClient({ rows, lang, accountOptions }: { rows: Expen
   const router = useRouter();
   const [filter, setFilter] = useState("ALL");
   const [busyId, setBusyId] = useState<string | null>(null);
+  // 환급 승인 모달 상태
+  const [approveTarget, setApproveTarget] = useState<string | null>(null);
+  const [approveAccount, setApproveAccount] = useState<string>(accountOptions[0]?.value ?? "");
 
-  async function approve(id: string) {
-    if (accountOptions.length === 0) { alert("등록된 계좌가 없습니다."); return; }
-    const accountId = window.prompt("환급 계좌 ID 입력 (또는 첫번째 사용)", accountOptions[0].value);
-    if (!accountId) return;
-    setBusyId(id);
-    const r = await fetch(`/api/finance/expenses/${id}/reimburse`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bankAccountId: accountId }),
+  function openApprove(id: string) {
+    if (accountOptions.length === 0) { alert(t("expense.reimburseNoAccount", lang)); return; }
+    setApproveAccount(accountOptions[0].value);
+    setApproveTarget(id);
+  }
+
+  async function confirmApprove() {
+    if (!approveTarget || !approveAccount) return;
+    setBusyId(approveTarget);
+    const r = await fetch(`/api/finance/expenses/${approveTarget}/reimburse`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bankAccountId: approveAccount }),
     });
     setBusyId(null);
-    if (r.ok) router.refresh(); else alert("환급 승인 실패");
+    setApproveTarget(null);
+    if (r.ok) router.refresh(); else alert(t("expense.reimburseFailed", lang));
   }
 
   const filtered = filter === "ALL" ? rows : rows.filter((r) => r.paymentStatus === filter);
@@ -65,7 +73,7 @@ export function ExpensesListClient({ rows, lang, accountOptions }: { rows: Expen
         <div className="flex items-center gap-2">
           <span>{(v as string | null) ?? "—"}</span>
           {r.paymentStatus === "PENDING_REIMBURSE" && (
-            <Button size="sm" variant="ghost" onClick={() => approve(r.id)} disabled={busyId === r.id}>
+            <Button size="sm" variant="ghost" onClick={() => openApprove(r.id)} disabled={busyId === r.id}>
               {busyId === r.id ? "..." : t("expense.reimburse", lang)}
             </Button>
           )}
@@ -84,6 +92,30 @@ export function ExpensesListClient({ rows, lang, accountOptions }: { rows: Expen
         <span className="ml-auto text-[color:var(--tts-muted)]">{filtered.length} / {rows.length}</span>
       </div>
       <DataTable columns={cols} data={filtered} rowKey={(r) => r.id} emptyMessage={t("empty.expenses", lang)} />
+
+      {approveTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setApproveTarget(null)}>
+          <div className="w-[420px] rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)] p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 text-[14px] font-bold">{t("expense.reimburseModalTitle", lang)}</h3>
+            <div className="text-[12px] text-[color:var(--tts-sub)] mb-2">{t("expense.reimburseAccount", lang)}</div>
+            <select
+              value={approveAccount}
+              onChange={(e) => setApproveAccount(e.target.value)}
+              className="w-full rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2 text-[13px]"
+            >
+              {accountOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setApproveTarget(null)}>{t("common.cancel", lang)}</Button>
+              <Button variant="primary" onClick={confirmApprove} disabled={!approveAccount || busyId === approveTarget}>
+                {busyId === approveTarget ? "..." : t("expense.reimburseConfirm", lang)}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

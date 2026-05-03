@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { checkFinanceAccess } from "@/lib/rbac";
 import { t } from "@/lib/i18n";
-import { Card } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,12 @@ export default async function CashTxnPage() {
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-screen-2xl">
-        <h1 className="mb-6 text-2xl font-extrabold text-[color:var(--tts-text)]">{t("nav.cashTransactions", L)}</h1>
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-extrabold text-[color:var(--tts-text)]">{t("nav.cashTransactions", L)}</h1>
+          <Link href="/finance/accounts">
+            <Button variant="primary">+ {t("finance.newCashTxn", L)}</Button>
+          </Link>
+        </div>
         <Card>
           <table className="w-full text-[12px]">
             <thead className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">

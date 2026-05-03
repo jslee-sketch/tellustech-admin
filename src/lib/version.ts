@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.7.0";
+export const VERSION = "v2.7.1";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "Phase 2 E2E + 재경 모듈 매뉴얼 통합 + RBAC + 즐겨찾기 서버동기 + 기사별 통계 + Sales FK 백필 + 기술부채 정리";
+export const VERSION_NOTE = "UX 빈틈 보강 — cash-transactions [+ 신규] 헤더 버튼 + 환급 승인 window.prompt → 모달+select";

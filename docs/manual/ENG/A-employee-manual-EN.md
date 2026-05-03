@@ -1747,6 +1747,7 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.7.1 · 2026-05-03**: Small UX gaps closed — added a [+ New cash transaction] header button on `/finance/cash-transactions` (redirects to `/finance/accounts`); replaced expense reimbursement `window.prompt` with a modal + bank-account select dropdown; added 6 i18n keys.
 - **v2.7.0 · 2026-05-03**: 8 follow-up tasks — RBAC + manual integration + tech debt + engineer stats + server-synced favorites + Sales FK backfill.
   - New RBAC (`src/lib/rbac.ts` + 19 finance pages), CLIENT redirected to `/portal`. `close`/`reopen`/PUT mapping = ADMIN only.
   - A/B manuals × 3 langs gain sections 8.3~8.5 (A) and 3-A~3-E (B).

@@ -6,7 +6,7 @@
 // 오프라인 시 접근 가능 화면 제한: /, /admin/yield-analysis, /inventory/stock,
 // /finance/cash-dashboard 등 dashboard 류만 캐시 hit.
 
-const CACHE_VERSION = "tts-erp-v1";
+const CACHE_VERSION = "tts-erp-v292";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const PAGE_CACHE = `${CACHE_VERSION}-pages`;
 
@@ -47,8 +47,27 @@ self.addEventListener("fetch", (e) => {
   // 2) Portal scope 는 별도 SW (sw.js) 가 담당 — 여기선 패스
   if (url.pathname.startsWith("/portal")) return;
 
-  // 3) 정적 자산 : cache first
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.match(/\.(svg|png|jpg|webp|woff2?|css|js)$/)) {
+  // 3) Next.js chunk (_next/static/chunks/*.js) — network-first (옛 chunk 보존 방지)
+  //    chunk 파일명에 hash가 박혀 있으므로 기존 hash와 다른 새 chunk가 들어와야 함.
+  if (url.pathname.startsWith("/_next/static/chunks/") || url.pathname.match(/\.js$/)) {
+    e.respondWith((async () => {
+      try {
+        const fresh = await fetch(req);
+        if (fresh.ok) {
+          const c = await caches.open(STATIC_CACHE);
+          c.put(req, fresh.clone()).catch(() => undefined);
+        }
+        return fresh;
+      } catch {
+        const cached = await caches.match(req);
+        return cached ?? Response.error();
+      }
+    })());
+    return;
+  }
+
+  // 4) 그 외 정적 자산 (이미지/폰트/css) : cache first
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.match(/\.(svg|png|jpg|webp|woff2?|css)$/)) {
     e.respondWith((async () => {
       const cached = await caches.match(req);
       if (cached) return cached;

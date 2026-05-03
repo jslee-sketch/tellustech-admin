@@ -317,7 +317,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
             <Link href="/" className="font-black tracking-[0.15em] text-[color:var(--tts-accent)]" style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>
               TTS
             </Link>
-            <div className="mt-0.5 font-mono text-[9px] leading-tight text-[color:var(--tts-muted)]" title={t("sidebar.versionTooltip", currentLang)}>
+            <div className="mt-0.5 font-mono text-[9px] leading-tight text-[color:var(--tts-muted)]" title={t("sidebar.versionTooltip", currentLang)} suppressHydrationWarning>
               {VERSION} · {BUILD_DATE}
             </div>
           </div>

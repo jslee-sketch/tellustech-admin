@@ -82,6 +82,8 @@ const GROUPS: NavGroup[] = [
       { href: "/finance/cash-dashboard", labelKey: "nav.cashDashboard", icon: "📊", match: (p) => p.startsWith("/finance/cash-dashboard") },
       { href: "/finance/payables", labelKey: "nav.payables", icon: "💰", match: (p) => p.startsWith("/finance/payables") },
       { href: "/finance/expenses", labelKey: "nav.expenses", icon: "🧾", match: (p) => p.startsWith("/finance/expenses") },
+      { href: "/finance/cost-centers", labelKey: "nav.costCenters", icon: "🏢", match: (p) => p.startsWith("/finance/cost-centers") },
+      { href: "/finance/profitability", labelKey: "nav.profitability", icon: "📈", match: (p) => p.startsWith("/finance/profitability") },
       { href: "/admin/closings", labelKey: "nav.closings", icon: "🔒", match: (p) => p.startsWith("/admin/closings") },
     ],
   },

@@ -1609,6 +1609,7 @@ model ExpenseAllocation {
   expenseId    String
   projectId    String?
   departmentId String?
+  costCenterId String?         // Layer 2 — 비용 센터 배분
   basis        AllocationBasis
   weight       Decimal         @db.Decimal(10, 4) // 수량 또는 비율
   amount       Decimal         @db.Decimal(15, 2)
@@ -1618,10 +1619,12 @@ model ExpenseAllocation {
   expense    Expense     @relation(fields: [expenseId], references: [id], onDelete: Cascade)
   project    Project?    @relation("ExpenseAllocProject", fields: [projectId], references: [id])
   department Department? @relation("ExpenseAllocDept", fields: [departmentId], references: [id])
+  costCenter CostCenter? @relation("ExpenseAllocCostCenter", fields: [costCenterId], references: [id])
 
   companyCode CompanyCode @default(TV)
   @@index([companyCode, createdAt])
   @@index([expenseId])
+  @@index([costCenterId])
   @@map("expense_allocations")
 }
 
@@ -3203,4 +3206,91 @@ model BankAccountMonthlySnapshot {
   @@unique([companyCode, accountId, yearMonth])
   @@index([companyCode, yearMonth])
   @@map("bank_account_monthly_snapshots")
+}
+
+// ==================================================
+// Layer 2 — 비용/원가 관리 (CostCenter + AllocationRule + Budget)
+// ==================================================
+
+model CostCenter {
+  id           String            @id @default(cuid())
+  code         String            // CC-SALES-HN
+  name         String            // "HN 영업팀"
+  centerType   CostCenterType
+  departmentId String?
+  branchCode   BranchType?
+  projectType  String?           // "RENTAL_IT" / "RENTAL_TM" / "REPAIR" / "CALIB"
+  isActive     Boolean           @default(true)
+  companyCode  CompanyCode       @default(TV)
+
+  allocations  ExpenseAllocation[] @relation("ExpenseAllocCostCenter")
+  budgets      Budget[]
+  rules        AllocationRule[]    @relation("RuleCostCenter")
+
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime?
+
+  @@unique([companyCode, code])
+  @@index([companyCode, isActive])
+  @@index([centerType])
+  @@map("cost_centers")
+}
+
+enum CostCenterType {
+  DEPARTMENT
+  BRANCH
+  PROJECT
+}
+
+model AllocationRule {
+  id            String           @id @default(cuid())
+  name          String           // "간접비 매출비율 배분"
+  ruleType      AllocationType
+  costCenterId  String?          // 특정 센터 적용; null = 전사
+  costCenter    CostCenter?      @relation("RuleCostCenter", fields: [costCenterId], references: [id])
+  basis         AllocationBasis
+  isActive      Boolean          @default(true)
+  companyCode   CompanyCode      @default(TV)
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([companyCode, isActive])
+  @@index([costCenterId])
+  @@map("allocation_rules")
+}
+
+enum AllocationType {
+  DIRECT
+  INDIRECT
+  COMMON
+}
+
+// AllocationBasis 는 기존 enum (QUANTITY/AMOUNT) — Layer 2 에서 의미 확장:
+//  REVENUE_RATIO / HEADCOUNT_RATIO / EQUAL / CUSTOM 추가 (아래)
+// 기존 enum AllocationBasis 가 prisma 에 이미 존재 — 그대로 사용하되, 신규 값은 별도 enum 으로 분리하여 호환성 유지.
+enum AllocationBasisV2 {
+  REVENUE_RATIO
+  HEADCOUNT_RATIO
+  EQUAL
+  CUSTOM
+}
+
+model Budget {
+  id            String      @id @default(cuid())
+  costCenterId  String
+  costCenter    CostCenter  @relation(fields: [costCenterId], references: [id])
+  yearMonth     String      // "2026-05"
+  budgetAmount  Decimal     @db.Decimal(15, 2)
+  actualAmount  Decimal?    @db.Decimal(15, 2) // 월말 자동 집계
+  variance      Decimal?    @db.Decimal(15, 2) // budget - actual
+  companyCode   CompanyCode @default(TV)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([costCenterId, yearMonth])
+  @@index([companyCode, yearMonth])
+  @@map("budgets")
 }

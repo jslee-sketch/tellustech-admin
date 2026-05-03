@@ -1714,6 +1714,11 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.3.0 · 2026-05-03**: Module Layer 2 mới của Tài chính — **Quản lý chi phí / Giá thành** (CostCenter + AllocationRule + Budget + mở rộng ExpenseAllocation.costCenterId + báo cáo lợi nhuận theo khách hàng).
+  - Model mới: `CostCenter` (3 loại: DEPARTMENT / BRANCH / PROJECT), `AllocationRule` (DIRECT / INDIRECT / COMMON), `Budget` (theo tháng).
+  - 2 màn hình mới: `/finance/cost-centers` (CRUD + đăng ký ngân sách + so sánh thực tế), `/finance/profitability` (lợi nhuận theo khách hàng — Doanh thu − chi phí trực tiếp − gián tiếp).
+  - API mới: cost-centers, budgets, profitability (kết hợp Sales + Expense.targetClient + AsDispatchPart).
+  - 22 khoá i18n vi/en/ko. Sidebar nhóm Tài chính có 2 mục mới (🏢 Trung tâm chi phí, 📈 Lợi nhuận theo KH).
 - **v2.2.0 · 2026-05-03**: Module Layer 1 mới của Tài chính — **Quản lý ngân quỹ** (BankAccount/CashTransaction/BankAccountMonthlySnapshot) + **Tăng cường Expense** (phương thức/trạng thái thanh toán, nhà cung cấp, khách hàng phân bổ, quy trình hoàn trả) + **Trả lương hàng loạt** + **Cron cảnh báo thiếu tiền**.
   - 3 màn hình mới: `/finance/accounts`, `/finance/cash-transactions`, `/finance/cash-dashboard` (số dư + dự báo 7/14/30 ngày + TOP10 phải thu/phải trả + xu hướng theo tháng).
   - API mới: `/api/finance/bank-accounts`, `/api/finance/cash-transactions` (+ `/transfer`), `/api/finance/cash-dashboard`, `/api/finance/expenses/[id]/reimburse`, `/api/hr/payrolls/bulk-pay`, `/api/jobs/cash-shortage-alert`.

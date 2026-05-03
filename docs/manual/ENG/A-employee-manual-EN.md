@@ -1715,6 +1715,11 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.3.0 · 2026-05-03**: Finance Layer 2 — **Cost / Profitability management** (CostCenter + AllocationRule + Budget + ExpenseAllocation.costCenterId expansion + per-client profitability report).
+  - New models: `CostCenter` (3 types: DEPARTMENT / BRANCH / PROJECT, unique [companyCode, code]), `AllocationRule` (DIRECT / INDIRECT / COMMON), `Budget` (monthly per cost center).
+  - 2 new screens: `/finance/cost-centers` (CRUD + budget entry + actual vs budget variance), `/finance/profitability` (Revenue − Direct Cost − Indirect = Net Profit per client, with profit rate).
+  - New APIs: cost-centers (GET/POST + [id] PATCH/DELETE), budgets (GET/POST upsert), profitability (joins Sales + Expense.targetClient + AsDispatchPart per client for the period).
+  - 22 i18n keys vi/en/ko synced. 2 new items in the Finance sidebar group (🏢 Cost Centers, 📈 Client Profitability).
 - **v2.2.0 · 2026-05-03**: Finance Layer 1 — **Cash management** (BankAccount / CashTransaction / BankAccountMonthlySnapshot) + **Expense expansion** (payment method/status, vendor, target client, reimbursement workflow) + **Payroll bulk-pay** + **Cash-shortage alert cron**.
   - 3 new screens: `/finance/accounts`, `/finance/cash-transactions`, `/finance/cash-dashboard` (balance + 7/14/30-day forecast + TOP10 receivables/payables + monthly trend).
   - New APIs: `/api/finance/bank-accounts`, `/api/finance/cash-transactions` (+ `/transfer`), `/api/finance/cash-dashboard`, `/api/finance/expenses/[id]/reimburse`, `/api/hr/payrolls/bulk-pay`, `/api/jobs/cash-shortage-alert`.

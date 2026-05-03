@@ -2281,6 +2281,26 @@ const DICT: Dict = {
   "expense.payStatus.PENDING_PAYMENT":  { vi: "Chờ thanh toán", en: "Pending Payment", ko: "지급 예정" },
   "expense.payStatus.PENDING_REIMBURSE": { vi: "Chờ hoàn trả", en: "Pending Reimburse", ko: "환급 대기" },
   "expense.payStatus.REIMBURSED":       { vi: "Đã hoàn trả",   en: "Reimbursed",       ko: "환급 완료" },
+  // Layer 2 — 비용/원가 관리
+  "nav.costCenters":         { vi: "Trung tâm chi phí",   en: "Cost Centers",       ko: "비용 센터" },
+  "nav.profitability":       { vi: "Lợi nhuận theo KH",   en: "Client Profitability", ko: "거래처 수익성" },
+  "finance.costCenter":      { vi: "Trung tâm chi phí",   en: "Cost Center",        ko: "비용 센터" },
+  "finance.budget":          { vi: "Ngân sách",           en: "Budget",             ko: "예산" },
+  "finance.budgetActual":    { vi: "Thực tế",             en: "Actual",             ko: "실적" },
+  "finance.budgetVariance":  { vi: "Chênh lệch",          en: "Variance",           ko: "차이" },
+  "finance.centerType":      { vi: "Loại trung tâm",      en: "Center Type",        ko: "센터 유형" },
+  "finance.centerType.DEPARTMENT": { vi: "Phòng ban",     en: "Department",         ko: "부서" },
+  "finance.centerType.BRANCH":     { vi: "Chi nhánh",     en: "Branch",             ko: "지점" },
+  "finance.centerType.PROJECT":    { vi: "Dự án",         en: "Project",            ko: "프로젝트" },
+  "finance.revenue":         { vi: "Doanh thu",           en: "Revenue",            ko: "매출" },
+  "finance.directCost":      { vi: "Chi phí trực tiếp",   en: "Direct Cost",        ko: "직접비" },
+  "finance.indirectCost":    { vi: "Chi phí gián tiếp",   en: "Indirect Cost",      ko: "간접비" },
+  "finance.contributionMargin": { vi: "Lợi nhuận đóng góp", en: "Contribution Margin", ko: "공헌이익" },
+  "finance.netProfit":       { vi: "Lợi nhuận ròng",      en: "Net Profit",         ko: "순이익" },
+  "finance.profitRate":      { vi: "Tỷ suất lợi nhuận",   en: "Profit Rate",        ko: "순이익률" },
+  "finance.partsCost":       { vi: "Chi phí linh kiện",   en: "Parts Cost",         ko: "부품 원가" },
+  "finance.transportCost":   { vi: "Chi phí vận chuyển",  en: "Transport Cost",     ko: "운송비" },
+  "finance.period":          { vi: "Kỳ",                  en: "Period",             ko: "기간" },
 
   // ── 매출/매입: TRADE 외 프로젝트 안내 (재고 자동영향 없음) ──
   "note.nonTradeStock": {

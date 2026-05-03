@@ -27,6 +27,8 @@ const SOFT_DELETE_MODELS = new Set([
   "Calibration", "PayableReceivable",
   // Layer 1
   "BankAccount",
+  // Layer 2
+  "CostCenter",
 ]);
 
 // 회사 분리(TV/VR) 가 적용된 모델 — findMany/findFirst/count 시 자동으로
@@ -49,6 +51,8 @@ const COMPANY_SCOPED_MODELS = new Set([
   "ItContractAmendmentItem", "TmRentalAmendmentItem",
   // Layer 1 — 자금관리
   "BankAccount", "CashTransaction", "BankAccountMonthlySnapshot",
+  // Layer 2 — 비용/원가 관리
+  "CostCenter", "AllocationRule", "Budget",
 ]);
 
 type AnyRecord = Record<string, unknown>;

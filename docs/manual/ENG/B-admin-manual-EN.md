@@ -1982,6 +1982,7 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
+- **v2.7.0 · 2026-05-03**: 8 follow-ups — RBAC + manual body integration (3-A~3-E) + accurate per-engineer stats + Sales FK backfill + server-synced favorites. Full details in Appendix K of the employee manual.
 - **v2.6.1 · 2026-05-03**: Inventory Phase 2 E2E 31/31 PASS + extracted scripts/seed-inventory-e2e.ts + i18n fix for field.fromWarehouse/toWarehouse. Full details in Appendix K of the employee manual.
 - **v2.6.0 · 2026-05-03**: Finance Layer 5 — AccountingConfig (VAS/K_IFRS/IFRS presets) + sidebar 3-way split (Cash/Ledger/Reports) + 21-step E2E verification script (21/21 PASS). Full details in Appendix K of the employee manual.
 - **v2.5.0 · 2026-05-03**: Finance Layer 4 — Financial Statements (Trial Balance/PL/BS/CF) + Period Close (verify→close→reopen) + AccountMonthlyBalance, /admin/closings consolidated. Sidebar +4 items, Excel·Print. Full details in Appendix K of the employee manual.

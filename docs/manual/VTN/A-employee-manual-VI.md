@@ -1746,6 +1746,13 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.7.0 · 2026-05-03**: 8 hạng mục tiếp theo — RBAC + Sách hướng dẫn hợp nhất + nợ kỹ thuật + thống kê kỹ sư + đồng bộ favorite trên server + backfill FK Sales.
+  - RBAC mới (`src/lib/rbac.ts` + 19 trang tài chính), CLIENT chuyển hướng `/portal`. Action `close`/`reopen`/PUT mapping = ADMIN only.
+  - Sách hướng dẫn A/B × 3 ngôn ngữ bổ sung mục 8.3~8.5 (A) và 3-A~3-E (B).
+  - `User.sidebarFavorites` + `/api/user/favorites` — favorites theo user trên server, tự migrate từ localStorage 1 lần.
+  - `/api/admin/yield-analysis/tech-stats` — thống kê thực theo `AsDispatchPart.asDispatch.dispatchEmployee`.
+  - `scripts/backfill-sales-contract.ts` — auto-match RENTAL Sales → IT/TM contract.
+  - Dọn nợ kỹ thuật: bỏ console.log auth, di chuyển 14 script E2E vào `scripts/dev-only/`. Nhãn NIIMBOT B21 đã hoàn thiện trước đó.
 - **v2.6.1 · 2026-05-03**: Refactor tồn kho **E2E Phase 2** + tách script seed.
   - Tách `scripts/seed-inventory-e2e.ts` — 6 KH + 2 kho + 5 mặt hàng + 4 master sẵn có (R001/RP02/CL02/DM02). Idempotent + chạy độc lập.
   - 20 dòng bảng chân trị + 3 phụ + 4 cross-verify = **31/31 PASS**. Kiểm tra row InvTxn, action master (NEW/MOVE/ARCHIVE/TRANSFER_LOC), ownerType + currentLocationClientId + archivedAt, tổng onHand tự sở hữu, lookup BASE_RULES, PR DRAFT mua/bán tự động.

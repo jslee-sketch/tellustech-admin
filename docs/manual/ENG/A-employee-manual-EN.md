@@ -1747,6 +1747,13 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.7.0 · 2026-05-03**: 8 follow-up tasks — RBAC + manual integration + tech debt + engineer stats + server-synced favorites + Sales FK backfill.
+  - New RBAC (`src/lib/rbac.ts` + 19 finance pages), CLIENT redirected to `/portal`. `close`/`reopen`/PUT mapping = ADMIN only.
+  - A/B manuals × 3 langs gain sections 8.3~8.5 (A) and 3-A~3-E (B).
+  - `User.sidebarFavorites` + `/api/user/favorites` — server-synced favorites, one-time auto-migration from localStorage.
+  - `/api/admin/yield-analysis/tech-stats` — real engineer-based stats from `AsDispatchPart.asDispatch.dispatchEmployee`.
+  - `scripts/backfill-sales-contract.ts` — auto-match RENTAL Sales → IT/TM contract.
+  - Tech debt: removed `console.log` auth diagnostic, moved 14 E2E scripts to `scripts/dev-only/`. NIIMBOT B21 label already complete.
 - **v2.6.1 · 2026-05-03**: Inventory refactor **Phase 2 E2E** verification + extracted seed.
   - Extracted `scripts/seed-inventory-e2e.ts` — 6 clients + 2 warehouses + 5 items + 4 pre-existing masters (R001/RP02/CL02/DM02). Idempotent cleanup + standalone runnable.
   - 20 truth-table rows + 3 extras + 4 cross-verify = **31/31 PASS**. Verifies InvTxn row, InventoryItem master action (NEW/MOVE/ARCHIVE/TRANSFER_LOC), ownerType + currentLocationClientId + archivedAt, in-house onHand totals, BASE_RULES lookup, auto purchase/sales PR DRAFT.

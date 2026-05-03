@@ -80,12 +80,29 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
     if (j?.config) setConfig(j.config);
   }
 
+  // tech tab — 실제 AsDispatchPart.dispatch.employee 기반 집계.
+  type TechStat = {
+    employeeId: string; employeeCode: string;
+    nameVi: string; nameKo: string | null; nameEn: string | null;
+    partsCount: number; partsQuantity: number; contractsHandled: number;
+    suspectContractCount: number; avgYieldRate: number;
+  };
+  const [techStatsServer, setTechStatsServer] = useState<TechStat[]>([]);
+  async function loadTechStats() {
+    const params = new URLSearchParams();
+    if (filterFrom) params.set("from", filterFrom);
+    if (filterTo) params.set("to", filterTo);
+    const r = await fetch(`/api/admin/yield-analysis/tech-stats?${params}`, { credentials: "same-origin" });
+    const j = await r.json();
+    setTechStatsServer(j?.stats ?? []);
+  }
+
   useEffect(() => {
     if (tab === "overview") refetch(false);
     if (tab === "fraud") refetch(true);
     if (tab === "config") loadConfig();
-    if (tab === "tech") refetch(false);
-  }, [tab]);
+    if (tab === "tech") loadTechStats();
+  }, [tab, filterFrom, filterTo]);
 
   // 필터 적용 — 계약/거래처/장비S/N/뱃지/기간 부분일치.
   const filteredItems = useMemo(() => {
@@ -141,25 +158,6 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
     setFilterContract(""); setFilterClient(""); setFilterSn("");
     setFilterBadge(""); setFilterFrom(""); setFilterTo("");
   }
-
-  const techStats = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; suspect: number; rateSum: number }>();
-    for (const it of filteredItems) {
-      const parts = (it.consumablesUsed ?? []) as any[];
-      // tech 정보는 consumable-history API 가 있어야 정확. 여기서는 단순 client 별 집계로 대체.
-      const key = it.contract.client.clientCode;
-      const name = it.contract.client.companyNameKo ?? it.contract.client.companyNameVi ?? key;
-      const cur = map.get(key) ?? { name, total: 0, suspect: 0, rateSum: 0 };
-      cur.total += 1;
-      if (it.isFraudSuspect) cur.suspect += 1;
-      cur.rateSum += Number(it.yieldRateBw);
-      map.set(key, cur);
-    }
-    return Array.from(map.entries()).map(([code, v]) => ({
-      code, name: v.name, total: v.total, suspect: v.suspect,
-      avgRate: v.total > 0 ? Math.round((v.rateSum / v.total) * 10) / 10 : 0,
-    })).sort((a, b) => a.avgRate - b.avgRate);
-  }, [items]);
 
   return (
     <main className="flex-1 p-6 md:p-8">
@@ -340,26 +338,34 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
         )}
 
         {tab === "tech" && (
-          <Card count={techStats.length}>
+          <Card count={techStatsServer.length}>
             <Note tone="info">{t("yieldAdmin.techStatsNote", lang)}</Note>
             <table className="mt-3 w-full text-[12px]">
               <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
                 <tr>
-                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.client", lang)}</th>
-                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.analysisCount", lang)}</th>
+                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.engineer", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.contractsHandled", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.partsUsed", lang)}</th>
                   <th className="px-2 py-1 text-right">{t("yieldAdmin.col.avgYieldRate", lang)}</th>
                   <th className="px-2 py-1 text-right">{t("yieldAdmin.col.fraudSuspectCount", lang)}</th>
                 </tr>
               </thead>
               <tbody>
-                {techStats.map((row) => (
-                  <tr key={row.code} className="border-b border-[color:var(--tts-border)]/50">
-                    <td className="px-2 py-1.5">{row.name}</td>
-                    <td className="px-2 py-1.5 text-right font-mono">{row.total}</td>
-                    <td className="px-2 py-1.5 text-right font-mono font-bold">{row.avgRate}%</td>
-                    <td className="px-2 py-1.5 text-right font-mono">{row.suspect > 0 ? <span className="text-[color:var(--tts-danger)]">{row.suspect}</span> : "0"}</td>
-                  </tr>
-                ))}
+                {techStatsServer.map((row) => {
+                  const name = lang === "VI" ? row.nameVi : lang === "EN" ? (row.nameEn ?? row.nameVi) : (row.nameKo ?? row.nameVi);
+                  return (
+                    <tr key={row.employeeId} className="border-b border-[color:var(--tts-border)]/50">
+                      <td className="px-2 py-1.5"><span className="font-mono text-[10px] text-[color:var(--tts-sub)]">{row.employeeCode}</span> {name}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{row.contractsHandled}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{row.partsCount} ({row.partsQuantity})</td>
+                      <td className="px-2 py-1.5 text-right font-mono font-bold">{row.avgYieldRate}%</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{row.suspectContractCount > 0 ? <span className="text-[color:var(--tts-danger)]">{row.suspectContractCount}</span> : "0"}</td>
+                    </tr>
+                  );
+                })}
+                {techStatsServer.length === 0 && (
+                  <tr><td colSpan={5} className="px-2 py-3 text-center text-[color:var(--tts-muted)]">{t("common.noData", lang)}</td></tr>
+                )}
               </tbody>
             </table>
           </Card>

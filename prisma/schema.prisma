@@ -1765,6 +1765,8 @@ model User {
   // 신규 발급 또는 관리자 리셋 직후 true. 사용자가 비밀번호를 변경하면 false.
   // 포탈에서는 true 인 동안 매 페이지마다 "비밀번호를 변경해주세요" 경고 배너 표시.
   mustChangePassword Boolean       @default(false)
+  // 사이드바 즐겨찾기 — href 배열. 브라우저/PC 바뀌어도 유지.
+  sidebarFavorites   String[]      @default([])
   lastLoginAt        DateTime?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt

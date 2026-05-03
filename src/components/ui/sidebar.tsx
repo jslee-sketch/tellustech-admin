@@ -164,21 +164,44 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
   const [perms, setPerms] = useState<Record<string, "HIDDEN" | "VIEW" | "WRITE">>({});
   const [companyCode, setCompanyCode] = useState<string>("");
   const [allowedCompanies, setAllowedCompanies] = useState<string[]>([]);
-  // 즐겨찾기 — 사용자별 자주 사용하는 항목 (localStorage 저장).
-  // 빈 하트 → 클릭 시 빨간 하트로 바뀌고, 사이드바 상단 "즐겨찾기" 그룹에 자동 노출.
+  // 즐겨찾기 — 서버 저장 (User.sidebarFavorites). 브라우저/PC 바뀌어도 유지.
+  // 첫 로드 시 localStorage 잔존분이 있으면 1회 서버로 마이그레이션 후 캐시 제거.
   const [favs, setFavs] = useState<Set<string>>(new Set());
   useEffect(() => {
+    let migrated: string[] | null = null;
     try {
       const saved = typeof window !== "undefined" ? localStorage.getItem(FAV_STORAGE_KEY) : null;
-      if (saved) setFavs(new Set(JSON.parse(saved) as string[]));
+      if (saved) migrated = JSON.parse(saved) as string[];
     } catch { /* ignore */ }
+    fetch("/api/user/favorites", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then(async (j) => {
+        const serverList: string[] = j?.favorites ?? [];
+        if (migrated && migrated.length > 0 && serverList.length === 0) {
+          // localStorage 만 있는 신규 사용자 — 1회 서버로 푸시 후 localStorage 삭제
+          await fetch("/api/user/favorites", {
+            method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+            body: JSON.stringify({ favorites: migrated }),
+          });
+          try { localStorage.removeItem(FAV_STORAGE_KEY); } catch { /* ignore */ }
+          setFavs(new Set(migrated));
+        } else {
+          setFavs(new Set(serverList));
+          if (migrated) { try { localStorage.removeItem(FAV_STORAGE_KEY); } catch { /* ignore */ } }
+        }
+      })
+      .catch(() => undefined);
   }, []);
   function toggleFav(href: string) {
     setFavs((prev) => {
       const next = new Set(prev);
       if (next.has(href)) next.delete(href);
       else next.add(href);
-      try { localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(Array.from(next))); } catch { /* ignore */ }
+      // 서버 저장 (fire-and-forget)
+      fetch("/api/user/favorites", {
+        method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "same-origin",
+        body: JSON.stringify({ favorites: Array.from(next) }),
+      }).catch(() => undefined);
       return next;
     });
   }

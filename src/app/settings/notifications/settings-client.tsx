@@ -16,8 +16,12 @@ export function NotifySettingsClient({ lang }: { lang: Lang }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    fetch("/api/user/notification-settings").then((r) => r.json()).then((j) => setS(j.settings));
+    fetch("/api/user/notification-settings").then((r) => r.json()).then((j) => {
+      if (j.error) setError(j.error);
+      else setS(j.settings);
+    });
   }, []);
 
   async function save() {
@@ -32,6 +36,11 @@ export function NotifySettingsClient({ lang }: { lang: Lang }) {
     else setMsg(`failed: ${(await r.json())?.error ?? "unknown"}`);
   }
 
+  if (error === "not_employee") return (
+    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-[13px] text-amber-700 dark:text-amber-400">
+      {t("notify.notEmployee", lang)}
+    </div>
+  );
   if (!s) return <div className="text-[color:var(--tts-muted)]">…loading</div>;
 
   return (

@@ -2421,6 +2421,7 @@ const DICT: Dict = {
   "notify.markRead":          { vi: "Đã đọc",              en: "Mark read",          ko: "읽음 표시" },
   "notify.markAllRead":       { vi: "Đánh dấu tất cả đã đọc", en: "Mark all read",   ko: "모두 읽음" },
   "common.open":              { vi: "Mở",                  en: "Open",               ko: "열기" },
+  "notify.notEmployee":       { vi: "Tài khoản này không gắn với nhân viên — không thể nhận thông báo email/Zalo. Liên hệ ADMIN để liên kết Employee.", en: "This account is not linked to an Employee — email/Zalo channels are unavailable. Contact ADMIN to link.", ko: "이 계정은 Employee 와 연결되지 않아 이메일/Zalo 채널을 사용할 수 없습니다. ADMIN 에게 연결 요청하세요." },
   "fs.total":             { vi: "Tổng cộng",           en: "Total",             ko: "합계" },
   "fs.amount":            { vi: "Số tiền",             en: "Amount",            ko: "금액" },
   "fs.section":           { vi: "Phân loại",           en: "Section",           ko: "구분" },

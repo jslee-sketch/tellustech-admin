@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { t, type Lang } from "@/lib/i18n";
+import { VERSION, BUILD_DATE } from "@/lib/version";
 
 // 글로벌 사이드바 — 인증된 ERP 페이지 전역. /login 과 /portal/* 에서는 숨김.
 // 홈 + 모듈 아이콘 + 툴팁. 접기/펴기 토글. 라벨은 현재 세션 언어 기준 i18n.
@@ -249,9 +250,14 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
       {/* 헤더 */}
       <div className="flex items-center justify-between border-b border-[color:var(--tts-border)] px-3 py-3">
         {!collapsed && (
-          <Link href="/" className="font-black tracking-[0.15em] text-[color:var(--tts-accent)]" style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>
-            TTS
-          </Link>
+          <div className="flex flex-col">
+            <Link href="/" className="font-black tracking-[0.15em] text-[color:var(--tts-accent)]" style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>
+              TTS
+            </Link>
+            <div className="mt-0.5 font-mono text-[9px] leading-tight text-[color:var(--tts-muted)]" title={t("sidebar.versionTooltip", currentLang)}>
+              {VERSION} · {BUILD_DATE}
+            </div>
+          </div>
         )}
         <button
           type="button"

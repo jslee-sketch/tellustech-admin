@@ -1913,7 +1913,8 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
-- **2026-05-02**: This supplement published.
+- **v2.0.0 · 2026-05-02 (PM)**: 4-rule commit policy adopted — ① new `src/lib/version.ts` + display at top of sidebar (under TTS logo) ② all 3 languages updated together ③ manual change-log kept in sync ④ Chrome verification required. Violations may trigger rework requests on the next task.
+- **2026-05-02 (AM)**: This supplement published.
 - **2026-05-01**: 4-axis truth table 30→34 rows, SUPPLIES itemType, purchase return / disposal / inventory adjustment / disassemble-assemble combos.
 - **Late 2026-04**: ClientRuleOverride, auto PR DRAFT, AI portal posts, SNMP 6-step workflow + PDF.
 - **Mid 2026-04**: NIIMBOT B21 labels, QR multi-scan, color channel badges.

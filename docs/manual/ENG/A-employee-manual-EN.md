@@ -1715,7 +1715,8 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
-- **2026-05-02**: This supplement issued. Part 6 Inventory fully rewritten, Appendices F~K added.
+- **v2.0.0 · 2026-05-02 (PM)**: 4-rule commit policy adopted — ① version bump + display at top of sidebar ② all 3 languages updated together ③ manual change-log entry kept in sync ④ Chrome verification required. New file `src/lib/version.ts`.
+- **2026-05-02 (AM)**: This supplement issued. Part 6 Inventory fully rewritten, Appendices F~K added.
 - **2026-05-01**: SUPPLIES itemType added (4 itemTypes total), TRANSFER Internal mode added, 4 rows added for purchase return/disposal/stock adjustment, truth table grew from 30 to 34 rows.
 - **Late 2026-04**: 4-axis truth table introduced, ECOUNT 16-value enum retired.
 - **Mid 2026-04**: NIIMBOT B21 label single-format 50×70mm portrait, color channel badges, EX/TLS ownership badges.

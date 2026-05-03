@@ -2236,6 +2236,7 @@ const DICT: Dict = {
   "sidebar.langSelect":      { vi: "Chọn ngôn ngữ",       en: "Language",           ko: "언어선택" },
   "sidebar.company":         { vi: "Công ty",             en: "Company",            ko: "회사" },
   "sidebar.companyAll":      { vi: "Xem tổng hợp",        en: "Unified view",       ko: "통합조회" },
+  "sidebar.versionTooltip":  { vi: "Phiên bản build · Ngày phát hành", en: "Build version · Release date", ko: "빌드 버전 · 배포일" },
 
   // ── 매출/매입: TRADE 외 프로젝트 안내 (재고 자동영향 없음) ──
   "note.nonTradeStock": {

@@ -1714,7 +1714,8 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
-- **2026-05-02**: Phát hành bản bổ sung này. Viết lại hoàn toàn Phần 6 Tồn kho, thêm Phụ lục F~K.
+- **v2.0.0 · 2026-05-02 (chiều)**: Thiết lập 4 quy tắc commit — ① cập nhật phiên bản hiển thị ở đầu sidebar ② đồng bộ 3 ngôn ngữ ③ đồng bộ lịch sử thay đổi trong sách hướng dẫn ④ bắt buộc kiểm tra Chrome. Tạo mới `src/lib/version.ts`.
+- **2026-05-02 (sáng)**: Phát hành bản bổ sung này. Viết lại hoàn toàn Phần 6 Tồn kho, thêm Phụ lục F~K.
 - **2026-05-01**: Thêm itemType SUPPLIES (4 itemType), thêm chế độ TRANSFER Internal, thêm 4 dòng cho trả hàng mua/thanh lý/điều chỉnh tồn kho, bảng chân trị 30→34 dòng.
 - **Cuối 2026-04**: Áp dụng bảng chân trị 4 trục, loại bỏ enum 16 giá trị của ECOUNT.
 - **Giữa 2026-04**: Quy cách dọc đơn nhất 50×70mm cho nhãn NIIMBOT B21, huy hiệu channel màu, huy hiệu sở hữu EX/TLS.

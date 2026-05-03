@@ -27,6 +27,26 @@ const SOFT_DELETE_MODELS = new Set([
   "Calibration", "PayableReceivable",
 ]);
 
+// 회사 분리(TV/VR) 가 적용된 모델 — findMany/findFirst/count 시 자동으로
+// companyCode = session.companyCode 필터 주입. ADMIN 통합조회 시에는 우회(session.companyCode = 'ALL').
+// create 시에는 data.companyCode 미설정이면 session 값으로 자동 채움.
+// 마스터(Client/Item/Warehouse) 와 시스템 테이블(File/User/CodeSequence 등) 은 제외.
+// 자식 테이블도 부모 → 자식 자동 propagate 위해 등록.
+const COMPANY_SCOPED_MODELS = new Set([
+  // Phase A (Critical 9 + CodeSequence)
+  "Sales", "Purchase", "Expense", "ItContract", "TmRental",
+  "AsTicket", "AsDispatch", "ItContractAmendment", "TmRentalAmendment", "CodeSequence",
+  // Phase B (포탈/SNMP/적정율 15)
+  "PortalPoint", "PointConfig", "PortalReward", "PortalBanner",
+  "QuoteRequest", "PortalFeedback", "PortalPost", "Survey", "Referral",
+  "SnmpReading", "UsageConfirmation", "AgentHeartbeat",
+  "SnmpUnregisteredDevice", "YieldAnalysis", "YieldConfig",
+  // Phase C (자식 9)
+  "SalesItem", "PurchaseItem", "TmRentalItem", "ItContractEquipment",
+  "ItMonthlyBilling", "ExpenseAllocation", "AsDispatchPart",
+  "ItContractAmendmentItem", "TmRentalAmendmentItem",
+]);
+
 type AnyRecord = Record<string, unknown>;
 
 function createBase(): PrismaClient {
@@ -47,13 +67,41 @@ function injectSoftDeleteFilter(args: unknown): unknown {
   return { ...a, where: { ...cur, deletedAt: null } };
 }
 
+// 호출 측이 where.companyCode 를 명시했는지 확인 (true 면 자동주입 우회).
+function callerWantsCompany(args: unknown): boolean {
+  const where = (args as { where?: { companyCode?: unknown } } | undefined)?.where;
+  return !!where && Object.prototype.hasOwnProperty.call(where, "companyCode");
+}
+
+function injectCompanyFilter(args: unknown, companyCode: string): unknown {
+  const a = (args ?? {}) as { where?: AnyRecord };
+  const cur = a.where ?? {};
+  return { ...a, where: { ...cur, companyCode } };
+}
+
+// create.data 에 companyCode 가 없으면 세션 값으로 자동 채움.
+function injectCompanyOnCreate(args: unknown, companyCode: string): unknown {
+  const a = (args ?? {}) as { data?: AnyRecord };
+  const data = a.data ?? {};
+  if (Object.prototype.hasOwnProperty.call(data, "companyCode")) return args;
+  return { ...a, data: { ...data, companyCode } };
+}
+
 function extendWithAudit(base: PrismaClient) {
   return base.$extends({
     name: "audit-softdelete",
     query: {
       $allModels: {
         async create({ model, args, query }) {
-          const result = (await query(args)) as AnyRecord;
+          // 회사 분리 — 세션 단일회사면 data.companyCode 자동 주입
+          let next = args;
+          if (COMPANY_SCOPED_MODELS.has(model)) {
+            const ctx = getRequestContext();
+            if (ctx && (ctx.companyCode as string) !== "ALL") {
+              next = injectCompanyOnCreate(args, ctx.companyCode) as never;
+            }
+          }
+          const result = (await query(next)) as AnyRecord;
           await writeAudit({ model, action: "INSERT", before: null, after: result });
           return result;
         },
@@ -87,23 +135,44 @@ function extendWithAudit(base: PrismaClient) {
         },
 
         async findMany({ model, args, query }) {
-          const next = SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(args)
-            ? injectSoftDeleteFilter(args)
-            : args;
+          let next: unknown = args;
+          if (SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(next)) {
+            next = injectSoftDeleteFilter(next);
+          }
+          if (COMPANY_SCOPED_MODELS.has(model) && !callerWantsCompany(next)) {
+            const ctx = getRequestContext();
+            if (ctx && (ctx.companyCode as string) !== "ALL") {
+              next = injectCompanyFilter(next, ctx.companyCode);
+            }
+          }
           return query(next as never);
         },
 
         async findFirst({ model, args, query }) {
-          const next = SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(args)
-            ? injectSoftDeleteFilter(args)
-            : args;
+          let next: unknown = args;
+          if (SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(next)) {
+            next = injectSoftDeleteFilter(next);
+          }
+          if (COMPANY_SCOPED_MODELS.has(model) && !callerWantsCompany(next)) {
+            const ctx = getRequestContext();
+            if (ctx && (ctx.companyCode as string) !== "ALL") {
+              next = injectCompanyFilter(next, ctx.companyCode);
+            }
+          }
           return query(next as never);
         },
 
         async count({ model, args, query }) {
-          const next = SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(args)
-            ? injectSoftDeleteFilter(args)
-            : args;
+          let next: unknown = args;
+          if (SOFT_DELETE_MODELS.has(model) && !callerWantsDeleted(next)) {
+            next = injectSoftDeleteFilter(next);
+          }
+          if (COMPANY_SCOPED_MODELS.has(model) && !callerWantsCompany(next)) {
+            const ctx = getRequestContext();
+            if (ctx && (ctx.companyCode as string) !== "ALL") {
+              next = injectCompanyFilter(next, ctx.companyCode);
+            }
+          }
           return query(next as never);
         },
       },

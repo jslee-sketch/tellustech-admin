@@ -1715,6 +1715,7 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.1.0 · 2026-05-03**: companyCode rollout across the schema — added to 34 models (Phase A 10 critical, B 15 portal/SNMP/yield, C 9 child denormalize). Prisma extension `COMPANY_SCOPED_MODELS` auto-injects `WHERE companyCode = session` for `findMany/findFirst/count`, and `data.companyCode` for `create` (when not set). ADMIN unified view (`companyCode=ALL`) bypasses the filter. `CodeSequence` migrated to composite PK `(companyCode, key)` so TV/VR auto-code sequences are separated.
 - **v2.0.0 · 2026-05-02 (PM)**: 4-rule commit policy adopted — ① version bump + display at top of sidebar ② all 3 languages updated together ③ manual change-log entry kept in sync ④ Chrome verification required. New file `src/lib/version.ts`.
 - **2026-05-02 (AM)**: This supplement issued. Part 6 Inventory fully rewritten, Appendices F~K added.
 - **2026-05-01**: SUPPLIES itemType added (4 itemTypes total), TRANSFER Internal mode added, 4 rows added for purchase return/disposal/stock adjustment, truth table grew from 30 to 34 rows.

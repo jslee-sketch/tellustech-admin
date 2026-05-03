@@ -1,5 +1,14 @@
 import "server-only";
 import { prisma } from "./prisma";
+import { getRequestContext } from "./request-context";
+import type { CompanyCode } from "@/generated/prisma/client";
+
+// CodeSequence 가 회사별 분리됨 — 세션 companyCode 가 없으면 TV 로 fallback (cron/seed 용).
+function currentCompanyCode(): CompanyCode {
+  const ctx = getRequestContext();
+  const cc = ctx?.companyCode;
+  return (cc === "TV" || cc === "VR") ? cc : "TV";
+}
 
 // 자동 코드 생성 유틸 — 가이드의 "코드-YYMMDD-###" 패턴을 전 모듈에서 재사용.
 // CodeSequence 테이블 사용 — atomic upsert + increment 로 race condition 0.
@@ -36,7 +45,9 @@ export async function generateDatedCode(opts: GenerateOpts): Promise<string> {
   // CodeSequence atomic counter. lookupLast 는 호환성 위해 보존하지만 시드/마이그레이션용.
   // 1) 첫 호출이면 lookupLast 로 기존 MAX 찾아 seed
   // 2) 이후 atomic upsert + increment 로 race-zero
-  const existing = await prisma.codeSequence.findUnique({ where: { key: seqKey } });
+  const companyCode = currentCompanyCode();
+  const uniqueKey = { companyCode_key: { companyCode, key: seqKey } };
+  const existing = await prisma.codeSequence.findUnique({ where: uniqueKey });
   if (!existing) {
     let seedNext = 1;
     const last = await opts.lookupLast(fullPrefix);
@@ -47,14 +58,14 @@ export async function generateDatedCode(opts: GenerateOpts): Promise<string> {
     }
     // upsert seed (race-safe — 다른 동시 호출이 먼저 만들었어도 ON CONFLICT DO NOTHING 효과)
     await prisma.codeSequence.upsert({
-      where: { key: seqKey },
-      create: { key: seqKey, next: seedNext },
+      where: uniqueKey,
+      create: { companyCode, key: seqKey, next: seedNext },
       update: {}, // 이미 있으면 건드리지 않음
     });
   }
   // atomic increment
   const updated = await prisma.codeSequence.update({
-    where: { key: seqKey },
+    where: uniqueKey,
     data: { next: { increment: 1 } },
     select: { next: true },
   });
@@ -77,7 +88,9 @@ export async function generateSequentialCode(opts: GenerateSequentialOpts): Prom
   const digits = opts.digits ?? 3;
   const seqKey = opts.prefix; // "TNV-" 등 prefix 자체
 
-  const existing = await prisma.codeSequence.findUnique({ where: { key: seqKey } });
+  const companyCode = currentCompanyCode();
+  const uniqueKey = { companyCode_key: { companyCode, key: seqKey } };
+  const existing = await prisma.codeSequence.findUnique({ where: uniqueKey });
   if (!existing) {
     let seedNext = 1;
     const last = await opts.lookupLast(opts.prefix);
@@ -87,13 +100,13 @@ export async function generateSequentialCode(opts: GenerateSequentialOpts): Prom
       if (Number.isInteger(n) && n >= 0) seedNext = n + 1;
     }
     await prisma.codeSequence.upsert({
-      where: { key: seqKey },
-      create: { key: seqKey, next: seedNext },
+      where: uniqueKey,
+      create: { companyCode, key: seqKey, next: seedNext },
       update: {},
     });
   }
   const updated = await prisma.codeSequence.update({
-    where: { key: seqKey },
+    where: uniqueKey,
     data: { next: { increment: 1 } },
     select: { next: true },
   });

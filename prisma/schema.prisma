@@ -721,6 +721,7 @@ model Project {
 
 /// 가이드: "회사코드 없음(거래처 기반)"
 model ItContract {
+
   id                     String         @id @default(cuid())
   contractNumber         String         @unique // TLS-/VRT-YYMMDD-###
   clientId               String
@@ -773,6 +774,8 @@ model ItContract {
   unregisteredDevices SnmpUnregisteredDevice[]
   yieldAnalyses       YieldAnalysis[]
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([clientId])
   @@index([status])
   @@map("it_contracts")
@@ -781,6 +784,7 @@ model ItContract {
 /// IT계약의 장비 목록 (복수 S/N + 과금조건).
 /// 하나의 IT계약에 수백 개까지 등록 가능. S/N 은 계약 내에서 유일.
 model ItContractEquipment {
+
   id                   String    @id @default(cuid())
   itContractId         String
   itemId               String
@@ -828,6 +832,8 @@ model ItContractEquipment {
   snmpReadings  SnmpReading[]
   yieldAnalyses YieldAnalysis[]
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@unique([itContractId, serialNumber])
   @@index([itContractId])
   @@index([itemId])
@@ -836,6 +842,7 @@ model ItContractEquipment {
 }
 
 model ItMonthlyBilling {
+
   id                String        @id @default(cuid())
   itContractId      String
   billingMonth      DateTime // 첫째 날 기준
@@ -855,6 +862,8 @@ model ItMonthlyBilling {
 
   itContract ItContract @relation(fields: [itContractId], references: [id], onDelete: Cascade)
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@unique([itContractId, serialNumber, billingMonth])
   @@index([itContractId])
   @@index([billingMonth])
@@ -863,6 +872,7 @@ model ItMonthlyBilling {
 
 /// 가이드: "매출정보 먼저 + S/N별 매입정보 + 이익자동계산"
 model TmRental {
+
   id                String         @id @default(cuid())
   rentalCode        String         @unique // TM-YYMMDD-###
   clientId          String
@@ -897,6 +907,8 @@ model TmRental {
   items      TmRentalItem[]
   amendments TmRentalAmendment[]
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([clientId])
   @@map("tm_rentals")
 }
@@ -904,6 +916,7 @@ model TmRental {
 /// TmRental의 품목세트 행 (수백 개 + 엑셀 업로드)
 /// 매출 먼저 + S/N별 매입(매입처/매입금액/커미션) + 이익자동계산
 model TmRentalItem {
+
   id            String   @id @default(cuid())
   tmRentalId    String
   itemId        String
@@ -923,6 +936,8 @@ model TmRentalItem {
   item             Item        @relation(fields: [itemId], references: [id])
   reflectedInSales SalesItem[] @relation("TmRentalSalesItemSource")
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([tmRentalId])
   @@index([itemId])
   @@index([serialNumber])
@@ -1044,6 +1059,7 @@ model AssetDepreciation {
 // ==================================================
 
 model AsTicket {
+
   id                String       @id @default(cuid())
   ticketNumber      String       @unique // YY/MM/DD-##
   kind              AsTicketKind @default(AS_REQUEST)
@@ -1074,6 +1090,8 @@ model AsTicket {
   dispatches AsDispatch[]
   photos     File[]       @relation("AsTicketPhotos")
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([clientId])
   @@index([status])
   @@index([serialNumber])
@@ -1081,6 +1099,7 @@ model AsTicket {
 }
 
 model AsDispatch {
+
   id                 String    @id @default(cuid())
   asTicketId         String
   dispatchEmployeeId String?
@@ -1111,6 +1130,8 @@ model AsDispatch {
   receipt          File?            @relation("DispatchReceipt", fields: [receiptFileId], references: [id])
   parts            AsDispatchPart[]
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([asTicketId])
   @@index([targetEquipmentSN])
   @@map("as_dispatches")
@@ -1118,6 +1139,7 @@ model AsDispatch {
 
 /// AS 출동 시 사용한 부품 — 출고 자동처리 + 매입원가 자동조회 + 장비 S/N 매핑
 model AsDispatchPart {
+
   id           String     @id @default(cuid())
   asDispatchId String
   asDispatch   AsDispatch @relation(fields: [asDispatchId], references: [id], onDelete: Cascade)
@@ -1142,6 +1164,8 @@ model AsDispatchPart {
   note      String?
   createdAt DateTime @default(now())
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([asDispatchId])
   @@index([targetEquipmentSN])
   @@index([targetContractId])
@@ -1154,6 +1178,7 @@ model AsDispatchPart {
 
 /// 가이드: "회사없음 + 영업담당 추가 + 사용기간(optional)"
 model Sales {
+
   id                   String    @id @default(cuid())
   salesNumber          String    @unique
   clientId             String
@@ -1191,6 +1216,8 @@ model Sales {
   adjustments    SalesAdjustment[]   @relation("SalesAdjustments")
   linkedExpenses Expense[]           @relation("ExpenseLinkedSales")
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([clientId])
   @@index([projectId])
   @@index([itContractId])
@@ -1201,6 +1228,7 @@ model Sales {
 }
 
 model SalesItem {
+
   id                   String         @id @default(cuid())
   salesId              String
   itemId               String
@@ -1231,6 +1259,8 @@ model SalesItem {
   certFile           File?         @relation(fields: [certFileId], references: [id])
   sourceTmRentalItem TmRentalItem? @relation("TmRentalSalesItemSource", fields: [sourceTmRentalItemId], references: [id])
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([salesId])
   @@index([serialNumber])
   @@index([itemId])
@@ -1240,6 +1270,7 @@ model SalesItem {
 }
 
 model Purchase {
+
   id                   String    @id @default(cuid())
   purchaseNumber       String    @unique
   supplierId           String
@@ -1266,12 +1297,15 @@ model Purchase {
   adjustments    PurchaseAdjustment[] @relation("PurchaseAdjustments")
   linkedExpenses Expense[]            @relation("ExpenseLinkedPurchase")
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([supplierId])
   @@index([projectId])
   @@map("purchases")
 }
 
 model PurchaseItem {
+
   id           String         @id @default(cuid())
   purchaseId   String
   itemId       String
@@ -1296,6 +1330,8 @@ model PurchaseItem {
   item     Item     @relation(fields: [itemId], references: [id])
   certFile File?    @relation(fields: [certFileId], references: [id])
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([purchaseId])
   @@index([serialNumber])
   @@index([itemId])
@@ -1488,6 +1524,7 @@ model RegularEvaluation {
 
 /// 가이드: "회사없음"
 model Expense {
+
   id               String      @id @default(cuid())
   expenseCode      String      @unique // EXP-YYMMDD-###
   expenseType      ExpenseType
@@ -1509,6 +1546,8 @@ model Expense {
   linkedSales    Sales?              @relation("ExpenseLinkedSales", fields: [linkedSalesId], references: [id])
   linkedPurchase Purchase?           @relation("ExpenseLinkedPurchase", fields: [linkedPurchaseId], references: [id])
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([expenseType])
   @@index([linkedSalesId])
   @@index([linkedPurchaseId])
@@ -1516,6 +1555,7 @@ model Expense {
 }
 
 model ExpenseAllocation {
+
   id           String          @id @default(cuid())
   expenseId    String
   projectId    String?
@@ -1530,6 +1570,8 @@ model ExpenseAllocation {
   project    Project?    @relation("ExpenseAllocProject", fields: [projectId], references: [id])
   department Department? @relation("ExpenseAllocDept", fields: [departmentId], references: [id])
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([expenseId])
   @@map("expense_allocations")
 }
@@ -1688,10 +1730,13 @@ model User {
 // key = "<prefix>-<dateSeg>" 또는 "<prefix>" (sequential).
 // upsert + 1 atomic 으로 다음 순번 발급.
 model CodeSequence {
-  key       String   @id // 예: "CL-260427" 또는 "TNV-"
-  next      Int      @default(1)
-  updatedAt DateTime @updatedAt
+  /// 회사별 자동코드 시퀀스 (TNV-### vs VNV-### 분리). 마이그레이션 시 기존 행은 모두 TV 로 백필.
+  companyCode CompanyCode @default(TV)
+  key         String
+  next        Int      @default(1)
+  updatedAt   DateTime @updatedAt
 
+  @@id([companyCode, key])
   @@map("code_sequences")
 }
 
@@ -2241,6 +2286,7 @@ model PurchaseAdjustmentItem {
 /// IT 계약 변경 — 차후(다음 매출 발생 시) 정책으로 반영.
 /// PRICE_CHANGE 의 monthlyDelta 는 effectiveDate 이후 월 매출에 가산/차감.
 model ItContractAmendment {
+
   id               String          @id @default(cuid())
   amendmentCode    String          @unique // AMD-IT-YYMMDD-###
   contractId       String
@@ -2263,12 +2309,15 @@ model ItContractAmendment {
   warehouse Warehouse?                @relation("ItAmendmentWh", fields: [warehouseId], references: [id])
   items     ItContractAmendmentItem[]
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([contractId])
   @@index([effectiveDate])
   @@map("it_contract_amendments")
 }
 
 model ItContractAmendmentItem {
+
   id                  String              @id @default(cuid())
   amendmentId         String
   action              AmendmentItemAction
@@ -2285,12 +2334,15 @@ model ItContractAmendmentItem {
 
   amendment ItContractAmendment @relation(fields: [amendmentId], references: [id], onDelete: Cascade)
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([serialNumber])
   @@map("it_contract_amendment_items")
 }
 
 /// TM 렌탈 변경 — IT 와 같은 패턴.
 model TmRentalAmendment {
+
   id               String          @id @default(cuid())
   amendmentCode    String          @unique // AMD-TM-YYMMDD-###
   rentalId         String
@@ -2312,12 +2364,15 @@ model TmRentalAmendment {
   warehouse Warehouse?              @relation("TmAmendmentWh", fields: [warehouseId], references: [id])
   items     TmRentalAmendmentItem[]
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([rentalId])
   @@index([effectiveDate])
   @@map("tm_rental_amendments")
 }
 
 model TmRentalAmendmentItem {
+
   id             String              @id @default(cuid())
   amendmentId    String
   action         AmendmentItemAction
@@ -2331,6 +2386,8 @@ model TmRentalAmendmentItem {
 
   amendment TmRentalAmendment @relation(fields: [amendmentId], references: [id], onDelete: Cascade)
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([serialNumber])
   @@map("tm_rental_amendment_items")
 }
@@ -2340,6 +2397,7 @@ model TmRentalAmendmentItem {
 // ═══════════════════════════════════════════════════════════════
 
 model PortalPoint {
+
   id           String      @id @default(cuid())
   clientId     String
   client       Client      @relation(fields: [clientId], references: [id])
@@ -2351,6 +2409,8 @@ model PortalPoint {
   issuedById   String?
   createdAt    DateTime    @default(now())
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([clientId])
   @@index([reason])
   @@index([createdAt])
@@ -2376,16 +2436,20 @@ enum PointReason {
 }
 
 model PointConfig {
+
   id        String      @id @default(cuid())
   reason    PointReason @unique
   amount    Int
   isActive  Boolean     @default(true)
   updatedAt DateTime    @updatedAt
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode])
   @@map("point_configs")
 }
 
 model PortalReward {
+
   id                 String             @id @default(cuid())
   clientId           String
   client             Client             @relation(fields: [clientId], references: [id])
@@ -2401,6 +2465,8 @@ model PortalReward {
   deliveryNote       String?
   createdAt          DateTime           @default(now())
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([clientId])
   @@index([status])
   @@map("portal_rewards")
@@ -2435,6 +2501,7 @@ enum RewardStatus {
 // ═══════════════════════════════════════════════════════════════
 
 model PortalBanner {
+
   id        String   @id @default(cuid())
   slot      String   @unique
   textVi    String
@@ -2444,6 +2511,8 @@ model PortalBanner {
   isActive  Boolean  @default(true)
   updatedAt DateTime @updatedAt
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode])
   @@map("portal_banners")
 }
 
@@ -2513,6 +2582,7 @@ enum QuoteStatus {
 // ═══════════════════════════════════════════════════════════════
 
 model PortalFeedback {
+
   id               String         @id @default(cuid())
   feedbackCode     String         @unique
   clientId         String
@@ -2533,6 +2603,8 @@ model PortalFeedback {
   pointId          String?
   createdAt        DateTime       @default(now())
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([clientId])
   @@index([kind])
   @@map("portal_feedback")
@@ -2649,6 +2721,7 @@ model SurveyResponse {
 // ═══════════════════════════════════════════════════════════════
 
 model Referral {
+
   id                  String         @id @default(cuid())
   referralCode        String         @unique
   referrerClientId    String
@@ -2671,6 +2744,8 @@ model Referral {
   firstPaymentAt      DateTime?
   createdAt           DateTime       @default(now())
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@index([referrerClientId])
   @@index([status])
   @@map("referrals")
@@ -2810,6 +2885,7 @@ enum UsageConfirmStatus {
 // ═══════════════════════════════════════════════════════════════
 
 model AgentHeartbeat {
+
   id             String     @id @default(cuid())
   contractId     String
   contract       ItContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
@@ -2820,6 +2896,8 @@ model AgentHeartbeat {
   successCount   Int        @default(0)
   errorMessages  String[]
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode])
   @@index([contractId, reportedAt])
   @@map("agent_heartbeats")
 }
@@ -2829,6 +2907,7 @@ model AgentHeartbeat {
 // ═══════════════════════════════════════════════════════════════
 
 model SnmpUnregisteredDevice {
+
   id             String     @id @default(cuid())
   contractId     String
   contract       ItContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
@@ -2842,6 +2921,8 @@ model SnmpUnregisteredDevice {
   lastSeenAt     DateTime   @default(now())
   status         String     @default("PENDING") // PENDING / IGNORED / REGISTERED
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode])
   @@index([contractId, status])
   @@map("snmp_unregistered_devices")
 }
@@ -2915,6 +2996,7 @@ model YieldAnalysis {
 
 // 단일 row (id="default") — 관리자 임계값 설정
 model YieldConfig {
+
   id                  String   @id @default(cuid())
   thresholdBlue       Int      @default(120)
   thresholdGreen      Int      @default(80)
@@ -2924,5 +3006,7 @@ model YieldConfig {
   updatedAt           DateTime @updatedAt
   createdAt           DateTime @default(now())
 
+  companyCode CompanyCode @default(TV)
+  @@index([companyCode, createdAt])
   @@map("yield_configs")
 }

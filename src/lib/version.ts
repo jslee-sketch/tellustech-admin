@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.0.0";
-export const BUILD_DATE = "2026-05-02";
-export const VERSION_NOTE = "버전 룰 정착, 사이드바 상단 표시 시작";
+export const VERSION = "v2.1.0";
+export const BUILD_DATE = "2026-05-03";
+export const VERSION_NOTE = "companyCode 전수 보강 — 34개 모델 + Prisma extension 자동 주입";

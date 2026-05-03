@@ -1714,6 +1714,7 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.1.0 · 2026-05-03**: Bổ sung `companyCode` toàn diện — thêm vào 34 model (Phase A 10 Critical, B 15 portal/SNMP/yield, C 9 con denormalize). Prisma extension `COMPANY_SCOPED_MODELS` tự động chèn `WHERE companyCode = session` cho `findMany/findFirst/count`, tự động điền `data.companyCode` khi `create` (nếu chưa có). ADMIN xem tổng hợp (`companyCode=ALL`) bỏ qua bộ lọc. `CodeSequence` đổi sang khoá chính phức hợp `(companyCode, key)` để tách chuỗi mã tự động giữa TV và VR.
 - **v2.0.0 · 2026-05-02 (chiều)**: Thiết lập 4 quy tắc commit — ① cập nhật phiên bản hiển thị ở đầu sidebar ② đồng bộ 3 ngôn ngữ ③ đồng bộ lịch sử thay đổi trong sách hướng dẫn ④ bắt buộc kiểm tra Chrome. Tạo mới `src/lib/version.ts`.
 - **2026-05-02 (sáng)**: Phát hành bản bổ sung này. Viết lại hoàn toàn Phần 6 Tồn kho, thêm Phụ lục F~K.
 - **2026-05-01**: Thêm itemType SUPPLIES (4 itemType), thêm chế độ TRANSFER Internal, thêm 4 dòng cho trả hàng mua/thanh lý/điều chỉnh tồn kho, bảng chân trị 30→34 dòng.

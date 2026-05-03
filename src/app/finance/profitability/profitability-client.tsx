@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Button, Field, Row, TextInput } from "@/components/ui";
+import { Button, ExcelDownload, Field, Row, TextInput } from "@/components/ui";
 import { t, type Lang } from "@/lib/i18n";
 
 type Row = {
@@ -39,6 +39,35 @@ export function ProfitabilityClient({ lang }: { lang: Lang }) {
       <Row>
         <Field label={t("finance.period", lang)} width="180px"><TextInput value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="YYYY-MM" /></Field>
         <Field label=" " width="100px"><Button onClick={load} disabled={loading}>{loading ? "..." : "조회"}</Button></Field>
+        <Field label=" ">
+          <ExcelDownload
+            rows={rows.map((r) => ({
+              client: r.clientLabel,
+              revenue: Math.round(r.revenue),
+              transport: Math.round(r.directCost.transport),
+              parts: Math.round(r.directCost.consumable),
+              other: Math.round(r.directCost.other),
+              directCost: Math.round(r.directCost.total),
+              contributionMargin: Math.round(r.contributionMargin),
+              indirectCost: Math.round(r.indirectCostAlloc),
+              netProfit: Math.round(r.netProfit),
+              profitRate: r.profitRate.toFixed(1) + "%",
+            }))}
+            columns={[
+              { key: "client", header: "Client" },
+              { key: "revenue", header: t("finance.revenue", lang) },
+              { key: "transport", header: t("finance.transportCost", lang) },
+              { key: "parts", header: t("finance.partsCost", lang) },
+              { key: "other", header: "기타비" },
+              { key: "directCost", header: t("finance.directCost", lang) },
+              { key: "contributionMargin", header: t("finance.contributionMargin", lang) },
+              { key: "indirectCost", header: t("finance.indirectCost", lang) },
+              { key: "netProfit", header: t("finance.netProfit", lang) },
+              { key: "profitRate", header: t("finance.profitRate", lang) },
+            ]}
+            filename={`profitability-${period}.xlsx`}
+          />
+        </Field>
       </Row>
 
       {rows.length > 0 && (

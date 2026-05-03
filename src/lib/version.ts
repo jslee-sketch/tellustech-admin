@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.3.1";
+export const VERSION = "v2.3.2";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "Expense 등록 UI 강화 — 결제방법·업체·귀속·즉시출금 노출 (Layer 1 작업 13 누락분)";
+export const VERSION_NOTE = "Layer 1·2 누락 14건 일괄 fix — PR 모달 계좌·환급 승인·월말 cron·정합성·계좌 액션";

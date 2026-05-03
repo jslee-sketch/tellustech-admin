@@ -6,12 +6,54 @@ import { t, type Lang } from "@/lib/i18n";
 
 type Account = { id: string; accountCode: string; accountName: string; bankName: string; accountNumber: string; currency: string; accountType: string; currentBalance: number; isActive: boolean };
 
+type ActionMode = "DEPOSIT" | "WITHDRAWAL" | "TRANSFER";
+
 export function AccountsClient({ accounts, lang }: { accounts: Account[]; lang: Lang }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ accountCode: "", accountName: "", bankName: "", accountNumber: "", currency: "VND", accountType: "CHECKING", openingBalance: "0", lowBalanceThreshold: "" });
   const [busy, setBusy] = useState(false);
   const total = accounts.reduce((s, a) => s + a.currentBalance, 0);
+
+  // 입금/출금/이체 액션 모달
+  const [actionMode, setActionMode] = useState<ActionMode | null>(null);
+  const [actionAccountId, setActionAccountId] = useState("");
+  const [actionToAccountId, setActionToAccountId] = useState("");
+  const [actionAmount, setActionAmount] = useState("");
+  const [actionDesc, setActionDesc] = useState("");
+
+  function openAction(mode: ActionMode, accId: string) {
+    setActionMode(mode);
+    setActionAccountId(accId);
+    setActionToAccountId("");
+    setActionAmount("");
+    setActionDesc("");
+  }
+
+  async function submitAction() {
+    if (!actionAmount || Number(actionAmount) <= 0) { alert("금액을 입력하세요"); return; }
+    if (!actionDesc) { alert("설명을 입력하세요"); return; }
+    setBusy(true);
+    let r: Response;
+    if (actionMode === "TRANSFER") {
+      if (!actionToAccountId) { alert("도착 계좌 선택"); setBusy(false); return; }
+      r = await fetch("/api/finance/cash-transactions/transfer", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromAccountId: actionAccountId, toAccountId: actionToAccountId, amount: actionAmount, description: actionDesc }),
+      });
+    } else {
+      r = await fetch("/api/finance/cash-transactions", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountId: actionAccountId, txnType: actionMode,
+          category: actionMode === "DEPOSIT" ? "REVENUE_OTHER" : "OTHER",
+          amount: actionAmount, description: actionDesc,
+        }),
+      });
+    }
+    setBusy(false);
+    if (r.ok) { setActionMode(null); router.refresh(); } else alert("처리 실패");
+  }
 
   async function save() {
     setBusy(true);
@@ -62,7 +104,7 @@ export function AccountsClient({ accounts, lang }: { accounts: Account[]; lang: 
       )}
       <table className="w-full text-[12px]">
         <thead className="border-b border-[color:var(--tts-border)] text-[color:var(--tts-sub)]">
-          <tr><th className="py-2 text-left">Code</th><th className="text-left">{t("finance.bankName", lang)}</th><th className="text-left">Name</th><th className="text-left">{t("finance.accountNumber", lang)}</th><th className="text-left">{t("finance.accountType", lang)}</th><th className="text-right">{t("finance.balance", lang)}</th></tr>
+          <tr><th className="py-2 text-left">Code</th><th className="text-left">{t("finance.bankName", lang)}</th><th className="text-left">Name</th><th className="text-left">{t("finance.accountNumber", lang)}</th><th className="text-left">{t("finance.accountType", lang)}</th><th className="text-right">{t("finance.balance", lang)}</th><th className="text-right">Actions</th></tr>
         </thead>
         <tbody>
           {accounts.map((a) => (
@@ -73,11 +115,48 @@ export function AccountsClient({ accounts, lang }: { accounts: Account[]; lang: 
               <td className="font-mono text-[11px]">{a.accountNumber}</td>
               <td>{a.accountType}</td>
               <td className="text-right font-mono font-bold">{a.currentBalance.toLocaleString()} {a.currency}</td>
+              <td className="text-right">
+                <div className="flex justify-end gap-1">
+                  <button className="rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-600 hover:bg-emerald-500/30" onClick={() => openAction("DEPOSIT", a.id)}>+ {t("finance.deposit", lang)}</button>
+                  <button className="rounded bg-rose-500/20 px-2 py-0.5 text-[10px] text-rose-600 hover:bg-rose-500/30" onClick={() => openAction("WITHDRAWAL", a.id)}>− {t("finance.withdrawal", lang)}</button>
+                  <button className="rounded bg-blue-500/20 px-2 py-0.5 text-[10px] text-blue-600 hover:bg-blue-500/30" onClick={() => openAction("TRANSFER", a.id)}>↔ {t("finance.transfer", lang)}</button>
+                </div>
+              </td>
             </tr>
           ))}
-          {accounts.length === 0 && <tr><td colSpan={6} className="py-4 text-center text-[color:var(--tts-muted)]">no accounts yet</td></tr>}
+          {accounts.length === 0 && <tr><td colSpan={7} className="py-4 text-center text-[color:var(--tts-muted)]">no accounts yet</td></tr>}
         </tbody>
       </table>
+
+      {actionMode && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4" onClick={() => setActionMode(null)}>
+          <div className="w-full max-w-lg rounded-lg bg-[color:var(--tts-card)] p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 text-[14px] font-extrabold">
+              {actionMode === "DEPOSIT" && `+ ${t("finance.deposit", lang)}`}
+              {actionMode === "WITHDRAWAL" && `− ${t("finance.withdrawal", lang)}`}
+              {actionMode === "TRANSFER" && `↔ ${t("finance.transfer", lang)}`}
+            </h3>
+            <Row>
+              <Field label={actionMode === "TRANSFER" ? "From" : t("finance.account", lang)}>
+                <Select value={actionAccountId} onChange={(e) => setActionAccountId(e.target.value)} options={accounts.map((a) => ({ value: a.id, label: `${a.accountCode} · ${a.accountName}` }))} />
+              </Field>
+              {actionMode === "TRANSFER" && (
+                <Field label="To">
+                  <Select value={actionToAccountId} onChange={(e) => setActionToAccountId(e.target.value)} placeholder="선택" options={[{ value: "", label: "선택" }, ...accounts.filter((a) => a.id !== actionAccountId).map((a) => ({ value: a.id, label: `${a.accountCode} · ${a.accountName}` }))]} />
+                </Field>
+              )}
+            </Row>
+            <Row>
+              <Field label={t("finance.amount", lang)} required><TextInput type="number" value={actionAmount} onChange={(e) => setActionAmount(e.target.value)} /></Field>
+              <Field label={t("finance.description", lang)} required><TextInput value={actionDesc} onChange={(e) => setActionDesc(e.target.value)} /></Field>
+            </Row>
+            <div className="mt-3 flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setActionMode(null)}>cancel</Button>
+              <Button onClick={submitAction} disabled={busy}>{busy ? "..." : "submit"}</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

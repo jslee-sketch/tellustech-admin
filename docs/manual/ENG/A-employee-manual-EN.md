@@ -1715,6 +1715,15 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.3.2 · 2026-05-03**: Bulk-fix of 8 of the 14 Layer 1·2 gaps.
+  - PR payment modal (`/finance/payables/[id]`) now has a [Bank Account] dropdown — selecting one auto-creates the matching CashTransaction and syncs the account balance.
+  - `/finance/expenses` list now shows paymentMethod and paymentStatus columns + status filter + [Reimburse] action button for PENDING_REIMBURSE rows.
+  - New cron `/api/jobs/finance-monthly-snapshot` — runs 03:00 KST on the 1st, upserts last month's BankAccountMonthlySnapshot rows + recomputes Budget.actualAmount/variance + emits BUDGET_OVERRUN notifications.
+  - `NotificationType` gains `CASH_SHORTAGE_ALERT` and `BUDGET_OVERRUN`. The cash-shortage-alert cron now actually sends 3-language notifications to all ADMIN users in the affected company.
+  - `/finance/accounts` rows have inline [+ Deposit] [− Withdrawal] [↔ Transfer] actions with a modal — no need to leave the screen.
+  - `/finance/profitability` has an [Excel Download] button.
+  - New endpoint `/api/finance/bank-accounts/integrity-check` compares currentBalance cache vs computed openingBalance + sum(deposits) − sum(withdrawals).
+  - The 6 remaining items (chart visuals, automatic indirect-cost allocation execution, etc.) will be folded into Layer 4.
 - **v2.3.1 · 2026-05-03**: Expense registration UI enhancement — fills the gap from task 13 of Layer 1 (v2.2.0).
   - Symptom: the schema and API already accepted 6 new fields (paymentMethod / vendorClientId / vendorName / targetClientId / cashOut / cashOutAccountId) but the `/finance/expenses/new` form did not expose any inputs, so users couldn't actually use them.
   - Fix: added 3 new sections to `expense-new-form.tsx` — ① Payment info (5 methods + auto-derived status display), ② Vendor / Target Client (master dropdowns + direct vendor name input for tiny vendors like restaurants/gas stations), ③ Immediate Withdrawal (checkbox + account selector, only when payment method is corporate-card / bank-transfer / company-cash). Personal-prepaid methods now show a PENDING_REIMBURSE note guiding the user to the reimburse-approval page.

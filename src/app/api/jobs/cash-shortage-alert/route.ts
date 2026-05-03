@@ -44,7 +44,34 @@ export async function POST(request: Request) {
         threshold,
       });
       // ADMIN 알림 — 단순화 (Notification 테이블 사용; type 은 OTHER 로 fallback)
-      // ADMIN 알림은 v2.3.x 에서 NotificationType.CASH_SHORTAGE_ALERT 추가 후 정식 발송 (Layer 1 첫 릴리스에서는 alerts[] 만 반환)
+      // ADMIN 사용자 모두에게 알림 — companyCode 일치 + role=ADMIN
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN" },
+        select: { id: true, allowedCompanies: true },
+      });
+      const targetUserIds = admins
+        .filter((u) => Array.isArray(u.allowedCompanies) && u.allowedCompanies.includes(acc.companyCode))
+        .map((u) => u.id);
+      const titleKo = `자금 부족 예상 — ${acc.accountCode}`;
+      const titleVi = `Cảnh báo thiếu tiền — ${acc.accountCode}`;
+      const titleEn = `Cash shortage alert — ${acc.accountCode}`;
+      const bodyKo = `현재 잔고 ${cur.toFixed(0)} → 14일 후 예상 ${expectedBalance14.toFixed(0)} (임계값 ${threshold.toFixed(0)})`;
+      const bodyVi = `Số dư hiện tại ${cur.toFixed(0)} → dự kiến sau 14 ngày ${expectedBalance14.toFixed(0)} (ngưỡng ${threshold.toFixed(0)})`;
+      const bodyEn = `Current balance ${cur.toFixed(0)} → expected after 14 days ${expectedBalance14.toFixed(0)} (threshold ${threshold.toFixed(0)})`;
+      for (const uid of targetUserIds) {
+        try {
+          await prisma.notification.create({
+            data: {
+              companyCode: acc.companyCode,
+              userId: uid,
+              type: "CASH_SHORTAGE_ALERT",
+              titleKo, titleVi, titleEn,
+              bodyKo, bodyVi, bodyEn,
+              linkUrl: "/finance/cash-dashboard",
+            },
+          });
+        } catch { /* per-user failure must not break loop */ }
+      }
     }
   }
 

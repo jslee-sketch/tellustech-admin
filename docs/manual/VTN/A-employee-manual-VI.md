@@ -1714,6 +1714,15 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.3.2 · 2026-05-03**: Vá đồng loạt 8/14 hạng mục thiếu của Layer 1·2.
+  - Modal thanh toán PR (`/finance/payables/[id]`) thêm dropdown chọn tài khoản — tự sinh CashTransaction và cập nhật số dư.
+  - `/finance/expenses` thêm cột paymentMethod / paymentStatus + bộ lọc trạng thái + nút [Hoàn trả] cho PENDING_REIMBURSE.
+  - Cron mới `/api/jobs/finance-monthly-snapshot` — 03:00 KST mùng 1, upsert BankAccountMonthlySnapshot tháng trước + cập nhật Budget.actualAmount/variance + cảnh báo BUDGET_OVERRUN.
+  - Enum `NotificationType` thêm `CASH_SHORTAGE_ALERT` / `BUDGET_OVERRUN`. Cron cash-shortage-alert nay gửi thông báo 3 ngôn ngữ tới ADMIN.
+  - Trang `/finance/accounts` thêm nút theo dòng [+ Nạp] [− Rút] [↔ Chuyển] với modal trực tiếp.
+  - `/finance/profitability` thêm nút [Tải Excel].
+  - Endpoint mới `/api/finance/bank-accounts/integrity-check` so sánh currentBalance cache với tổng tính được.
+  - 6 hạng mục còn lại (biểu đồ, chi phí gián tiếp tự động) sẽ tích hợp ở Layer 4.
 - **v2.3.1 · 2026-05-03**: Tăng cường giao diện đăng ký Expense — bù phần thiếu của tác vụ 13 ở Layer 1 (v2.2.0).
   - Triệu chứng: schema và API đã nhận 6 trường mới (paymentMethod/vendor/targetClient/cashOut/cashOutAccountId) nhưng màn hình `/finance/expenses/new` chưa hiển thị trường nhập, người dùng không thể sử dụng.
   - Sửa: thêm 3 mục mới vào `expense-new-form.tsx` — ① Thông tin thanh toán (5 phương thức + trạng thái tự xác định), ② Nhà cung cấp / Khách hàng phân bổ, ③ Rút tiền ngay (chỉ với phương thức nội bộ; ngược lại hiển thị cảnh báo PENDING_REIMBURSE).

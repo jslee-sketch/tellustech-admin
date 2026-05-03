@@ -10,10 +10,13 @@ export const dynamic = "force-dynamic";
 export default async function ExpensesPage() {
   const session = await getSession();
   const L = session.language;
-  const rows = await prisma.expense.findMany({
-    orderBy: { incurredAt: "desc" }, take: 500,
-    include: { _count: { select: { allocations: true } } },
-  });
+  const [rows, accounts] = await Promise.all([
+    prisma.expense.findMany({
+      orderBy: { incurredAt: "desc" }, take: 500,
+      include: { _count: { select: { allocations: true } } },
+    }),
+    prisma.bankAccount.findMany({ where: { isActive: true }, orderBy: { accountCode: "asc" }, select: { id: true, accountCode: true, accountName: true, currency: true } }),
+  ]);
   return (
     <main className="flex-1 p-8">
       <div className="mx-auto max-w-6xl">
@@ -56,8 +59,10 @@ export default async function ExpensesPage() {
             expenseType: r.expenseType,
             amount: r.amount.toString(),
             note: r.note,
+            paymentMethod: r.paymentMethod,
+            paymentStatus: r.paymentStatus,
             _count: { allocations: r._count.allocations },
-          }))} lang={L} />
+          }))} lang={L} accountOptions={accounts.map(a => ({ value: a.id, label: `${a.accountCode} · ${a.accountName} (${a.currency})` }))} />
         </Card>
       </div>
     </main>

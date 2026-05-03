@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Field, TextInput, Textarea, Badge } from "@/components/ui";
+import { Button, Card, Field, Select, TextInput, Textarea, Badge } from "@/components/ui";
 import { pickName, t, type Lang } from "@/lib/i18n";
 
 type ContactLog = {
@@ -76,6 +76,12 @@ export function PrDetailClient(props: Props) {
   const [payRef, setPayRef] = useState("");
   const [payNote, setPayNote] = useState("");
   const [payDate, setPayDate] = useState(new Date().toISOString().slice(0,10));
+  const [payAccountId, setPayAccountId] = useState("");
+  const [accounts, setAccounts] = useState<Array<{ id: string; accountCode: string; accountName: string; currency: string }>>([]);
+  // 첫 마운트 시 계좌 옵션 로드
+  useEffect(() => {
+    fetch("/api/finance/bank-accounts").then((r) => r.json()).then((j) => setAccounts(j?.data?.accounts ?? [])).catch(() => undefined);
+  }, []);
   const [savingPay, setSavingPay] = useState(false);
   const [payErr, setPayErr] = useState<string|null>(null);
 
@@ -107,7 +113,7 @@ export function PrDetailClient(props: Props) {
     try {
       const r = await fetch(`/api/finance/payables/${id}/payments`, {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ amount: payAmt, paidAt: payDate, method: payMethod || null, reference: payRef || null, note: payNote || null }),
+        body: JSON.stringify({ amount: payAmt, paidAt: payDate, method: payMethod || null, reference: payRef || null, note: payNote || null, bankAccountId: payAccountId || null }),
       });
       const j = await r.json();
       if (!r.ok) { setPayErr(j?.error ?? "fail"); return; }
@@ -115,7 +121,7 @@ export function PrDetailClient(props: Props) {
       setPaidAmount(j.totalPaid);
       setStatus(j.pr.status);
       setCompletedAt(j.pr.completedAt);
-      setPayAmt(""); setPayMethod(""); setPayRef(""); setPayNote("");
+      setPayAmt(""); setPayMethod(""); setPayRef(""); setPayNote(""); setPayAccountId("");
       router.refresh();
     } finally { setSavingPay(false); }
   }
@@ -197,6 +203,12 @@ export function PrDetailClient(props: Props) {
           <Field label={t("pr.dateField", lang)}><TextInput type="date" value={payDate} onChange={(e)=>setPayDate(e.target.value)} /></Field>
           <Field label={t("pr.methodField", lang)}><TextInput value={payMethod} onChange={(e)=>setPayMethod(e.target.value)} placeholder={t("pr.methodPlaceholder", lang)}/></Field>
           <Field label={t("pr.refField", lang)}><TextInput value={payRef} onChange={(e)=>setPayRef(e.target.value)} placeholder={t("pr.refPlaceholder", lang)}/></Field>
+          <Field label={t("finance.account", lang)} hint="선택 시 자금 거래 자동 생성">
+            <Select value={payAccountId} onChange={(e)=>setPayAccountId(e.target.value)} options={[
+              { value: "", label: "(연동 안 함)" },
+              ...accounts.map((a) => ({ value: a.id, label: `${a.accountCode} · ${a.accountName} (${a.currency})` })),
+            ]} />
+          </Field>
           <Field label={t("pr.noteField", lang)}><TextInput value={payNote} onChange={(e)=>setPayNote(e.target.value)} /></Field>
         </div>
         {payErr && <div className="mt-2 text-[12px] text-[color:var(--tts-danger)]">{payErr}</div>}

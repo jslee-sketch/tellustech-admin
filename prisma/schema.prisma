@@ -3446,3 +3446,63 @@ model AccountMapping {
   @@index([companyCode, accountCode])
   @@map("account_mappings")
 }
+
+// =====================================================
+// 재경 Layer 4 — 재무제표 + 기간 마감
+// AccountMonthlyBalance: 월별 계정 잔액 스냅샷 (마감 시 동결).
+// PeriodClose: 기간 상태 (DRAFT/VERIFIED/CLOSED/REOPENED) + 마감 가드.
+// 재무제표(시산표/PL/BS/CF) 는 JournalLine 또는 AMB 에서 실시간 산출.
+// =====================================================
+
+model AccountMonthlyBalance {
+  id                String      @id @default(cuid())
+  yearMonth         String      // "2026-05"
+  accountCode       String
+  openingBalance    Decimal     @db.Decimal(18, 2) @default(0)
+  totalDebit        Decimal     @db.Decimal(18, 2) @default(0)
+  totalCredit       Decimal     @db.Decimal(18, 2) @default(0)
+  closingBalance    Decimal     @db.Decimal(18, 2) @default(0)
+  // 마감 후 동결 (PeriodClose 와 함께 변경 불가)
+  isFrozen          Boolean     @default(false)
+  companyCode       CompanyCode @default(TV)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@unique([companyCode, yearMonth, accountCode])
+  @@index([companyCode, yearMonth])
+  @@index([companyCode, accountCode])
+  @@map("account_monthly_balances")
+}
+
+enum PeriodCloseStatus {
+  OPEN        // 마감 전 — 분개 등록 가능
+  VERIFIED    // 검증 완료 — 차대 균형/누락 체크 통과, 마감 직전 단계
+  CLOSED      // 마감됨 — 분개 차단, AMB 동결
+  REOPENED    // 재개됨 — 마감 풀림 (감사 흔적 남김)
+}
+
+model PeriodClose {
+  id            String              @id @default(cuid())
+  yearMonth     String              // "2026-05"
+  status        PeriodCloseStatus   @default(OPEN)
+  // 검증 결과 (verify 단계 캐시)
+  verifiedAt    DateTime?
+  verifiedById  String?
+  verifyResult  Json?               // { unbalancedEntries: [], orphanLines: [], message: "" }
+  // 마감
+  closedAt      DateTime?
+  closedById    String?
+  // 재개
+  reopenedAt    DateTime?
+  reopenedById  String?
+  reopenReason  String?
+  companyCode   CompanyCode         @default(TV)
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([companyCode, yearMonth])
+  @@index([companyCode, status])
+  @@map("period_closes")
+}

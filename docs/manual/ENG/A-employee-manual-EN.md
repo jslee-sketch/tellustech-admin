@@ -1715,6 +1715,12 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.5.0 · 2026-05-03**: Finance **Layer 4 — Financial Statements + Period Close** introduced.
+  - 4 new screens + APIs: `/finance/trial-balance` (Trial Balance — debit/credit totals per leaf account + balance check), `/finance/income-statement` (Income Statement — Revenue/Expense/Net Income, Print + Excel), `/finance/balance-sheet` (Balance Sheet — Assets/Liabilities/Equity with auto-rolled retained earnings + A=L+E balance-check badge), `/finance/cash-flow` (Cash Flow — direct method, source-classified for accounts 111/112).
+  - Period close workflow (verify → close → reopen): `PeriodClose` model + `AccountMonthlyBalance` (monthly account-balance snapshots) + `assertPeriodOpen()` guard — when creating a JournalEntry, if entryDate falls in a CLOSED period it immediately throws `PERIOD_CLOSED:YYYY-MM`.
+  - verify: balance-check on all POSTED entries within the period + scan for leftover DRAFTs. close: only allowed from VERIFIED, upserts AMB rows + sets isFrozen=true. reopen: ADMIN-only, requires reopen reason.
+  - `/admin/closings` consolidated — new `Period Close (Layer 4)` card + recent 12-month history + legacy per-record lock card kept separate. Clicking a history row auto-fills the ym field.
+  - Sidebar Finance group +4 items (⚖️ Trial Balance / 📊 Income Statement / 📑 Balance Sheet / 💵 Cash Flow). Each report has [Excel] + [🖨 Print] buttons. 50+ i18n keys vi/en/ko.
 - **v2.4.0 · 2026-05-03**: Finance **Layer 3 — General Ledger** introduced. VAS (Vietnam Accounting Standards)-based ChartOfAccounts (39 accounts × 2 companies) + JournalEntry/JournalLine + AccountMapping (14 triggers).
   - Auto-journal hooks added to 5 modules: Sales / Purchase / CashTransaction / Expense / Payroll bulk-pay — every business transaction now spawns a `JournalEntry` with debit/credit lines, color-coded source badges.
   - Three new screens: `/finance/chart-of-accounts` (CoA — type filter + search + hierarchical indent), `/finance/journal-entries` (entry list with expandable lines + DRAFT→POSTED post / POSTED→REVERSED reverse actions), `/finance/account-mappings` (edit trigger→VAS code mappings).

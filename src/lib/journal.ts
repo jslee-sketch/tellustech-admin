@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { generateDatedCode } from "@/lib/code-generator";
+import { assertPeriodOpen } from "@/lib/financial-statements";
 
 type LineInput = {
   accountCode: string;
@@ -40,6 +41,9 @@ export async function createJournalEntry(opts: CreateOpts): Promise<{ id: string
   if (opts.lines.length < 2) {
     throw new Error("JournalEntry 는 최소 2개 라인 필요");
   }
+
+  // 마감 가드 — closed period 면 throw
+  await assertPeriodOpen(new Date(opts.entryDate), opts.companyCode);
 
   const entryNo = await generateDatedCode({
     prefix: "JE",

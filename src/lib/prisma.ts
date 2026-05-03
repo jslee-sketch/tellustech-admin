@@ -55,6 +55,8 @@ const COMPANY_SCOPED_MODELS = new Set([
   "CostCenter", "AllocationRule", "Budget",
   // Layer 3 — 회계원장
   "ChartOfAccount", "JournalEntry", "JournalLine", "AccountMapping",
+  // Layer 4 — 재무제표 + 기간 마감
+  "AccountMonthlyBalance", "PeriodClose",
 ]);
 
 type AnyRecord = Record<string, unknown>;

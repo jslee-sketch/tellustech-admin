@@ -1913,6 +1913,7 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
+- **v2.5.0 · 2026-05-03**: Finance Layer 4 — Financial Statements (Trial Balance/PL/BS/CF) + Period Close (verify→close→reopen) + AccountMonthlyBalance, /admin/closings consolidated. Sidebar +4 items, Excel·Print. Full details in Appendix K of the employee manual.
 - **v2.4.0 · 2026-05-03**: Finance Layer 3 — General Ledger (VAS ChartOfAccounts + JournalEntry/Line + AccountMapping). 5 auto-journal hooks for Sales/Purchase/Cash/Expense/Payroll, 3 new screens (Chart of Accounts · Journal Entries · Mappings), +3 sidebar items. Full details in Appendix K of the employee manual.
 - **v2.3.2 · 2026-05-03**: Bulk-fix of 14 Layer 1·2 gaps — bank-account picker in PR payment modal, Expense reimbursement workflow (status filter + badge + [Approve reimbursement] action), per-row cash in/out/transfer actions on accounts page, month-end cron (`/api/jobs/finance-monthly-snapshot` — creates BankAccountMonthlySnapshot + accumulates Budget actualAmount + budget-overrun notifications), integrity check (`/api/finance/bank-accounts/integrity-check` cache vs computed balance), cash-shortage alert (emits `CASH_SHORTAGE_ALERT` notification), profitability Excel export, 2 new NotificationType enums. Full details in Appendix K of the employee manual.
 - **v2.3.1 · 2026-05-03**: Expense UI enhancement — fills the gap from Layer 1 task 13 (exposes paymentMethod / vendor / targetClient / cashOut input fields).

@@ -1714,6 +1714,12 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.5.0 · 2026-05-03**: Tài chính **Layer 4 — Báo cáo tài chính + Đóng kỳ**.
+  - 4 màn hình + API mới: `/finance/trial-balance` (Bảng cân đối thử — tổng nợ/có theo TK leaf + kiểm tra cân bằng), `/finance/income-statement` (Báo cáo kết quả — Doanh thu/Chi phí/Lợi nhuận ròng, In + Excel), `/finance/balance-sheet` (Bảng cân đối kế toán — Tài sản/Nợ/Vốn + cộng dồn lợi nhuận chưa phân phối + badge kiểm tra A=L+E), `/finance/cash-flow` (Lưu chuyển tiền tệ — phương pháp trực tiếp, phân loại theo source cho TK 111/112).
+  - Quy trình đóng kỳ (verify → close → reopen): model `PeriodClose` + `AccountMonthlyBalance` + bộ chặn `assertPeriodOpen()` — khi tạo JournalEntry, nếu entryDate thuộc kỳ CLOSED thì throw `PERIOD_CLOSED:YYYY-MM`.
+  - verify: kiểm tra cân bằng nợ/có cho mọi bút toán POSTED + bản nháp còn sót. close: chỉ từ VERIFIED, upsert AMB + isFrozen=true. reopen: chỉ ADMIN, bắt buộc lý do.
+  - `/admin/closings` được hợp nhất — thẻ mới `Period Close (Layer 4)` + lịch sử 12 tháng gần đây + thẻ khoá theo bản ghi (legacy) tách riêng. Click hàng = tự điền ym.
+  - Sidebar nhóm Tài chính +4 mục (⚖️ Bảng cân đối thử / 📊 BC kết quả / 📑 BC cân đối / 💵 Lưu chuyển tiền). Mỗi báo cáo có nút [Excel] + [🖨 In]. 50+ khoá i18n vi/en/ko.
 - **v2.4.0 · 2026-05-03**: Tài chính **Layer 3 — Sổ cái kế toán**. Hệ thống tài khoản theo VAS (39 tài khoản × 2 công ty) + JournalEntry/JournalLine + AccountMapping (14 trình kích hoạt).
   - Hook bút toán tự động cho 5 mô-đun: Bán hàng / Mua hàng / CashTransaction / Expense / Payroll bulk-pay — khi giao dịch xảy ra, `JournalEntry` + dòng Nợ/Có được tạo tự động với badge nguồn theo màu.
   - 3 màn hình mới: `/finance/chart-of-accounts` (Hệ thống tài khoản — lọc theo loại + tìm kiếm + thụt lề phân cấp), `/finance/journal-entries` (Danh sách bút toán + dòng có thể mở rộng + chuyển DRAFT→POSTED / tạo bút toán đảo cho POSTED), `/finance/account-mappings` (Sửa ánh xạ trình kích hoạt → mã VAS).

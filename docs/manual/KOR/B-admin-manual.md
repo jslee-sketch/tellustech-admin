@@ -1915,6 +1915,7 @@ UI 는 추후 추가 예정. 현재는 DB 직접 변경.
 
 # 변경 이력 (관리자 매뉴얼 v2 보강판)
 
+- **v2.5.0 · 2026-05-03**: 재경 Layer 4 — 재무제표(시산표/PL/BS/CF) + 기간 마감(verify→close→reopen) + AccountMonthlyBalance 모델, /admin/closings 통합. 사이드바 +4 메뉴, Excel·인쇄. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.4.0 · 2026-05-03**: 재경 Layer 3 — 회계원장 (VAS ChartOfAccounts + JournalEntry/Line + AccountMapping). 매출/매입/Cash/Expense/Payroll 자동분개 hook 5종, 신규 화면 3종(계정과목표·전표·매핑), 사이드바 +3 메뉴. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.3.2 · 2026-05-03**: Layer 1·2 누락 14건 일괄 fix — PR 결제 모달 계좌 선택, 비용 환급 승인 워크플로(상태별 필터/배지 + [환급 승인] 액션), 계좌 행별 입금/출금/이체 액션, 월말 cron(`/api/jobs/finance-monthly-snapshot` — BankAccountMonthlySnapshot 생성 + Budget actualAmount 적재 + 예산 초과 알림), 정합성 검증(`/api/finance/bank-accounts/integrity-check` 캐시 vs 계산 잔액 비교), 부족현금 알림(`CASH_SHORTAGE_ALERT` 알림 발행), 수익성 Excel 내보내기, NotificationType 2 enum 추가. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.3.1 · 2026-05-03**: 비용 등록 UI 강화 — Layer 1 작업 13 누락분 보강 (결제방법·업체·귀속·즉시출금 입력 칸 노출).

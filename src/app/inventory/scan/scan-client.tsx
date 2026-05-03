@@ -326,11 +326,11 @@ export function ScanClient({ items, warehouses, lang }: Props) {
               <span className="font-mono text-[color:var(--tts-primary)]">{s.serialNumber}</span>
               <span className="text-[color:var(--tts-text)]">{s.itemCode} · {s.itemName}</span>
               <Badge tone={s.ownerType === "EXTERNAL_CLIENT" ? "warn" : "primary"}>
-                {s.ownerType === "EXTERNAL_CLIENT" ? `🏷 ${t("invItem.externalAsset", lang)}` : "🏠 자사"}
+                {s.ownerType === "EXTERNAL_CLIENT" ? `🏷 ${t("invItem.externalAsset", lang)}` : `🏠 ${t("scan.ownAsset", lang)}`}
               </Badge>
               {s.warehouseCode && <Badge tone="neutral">{s.warehouseCode}</Badge>}
               {s.currentLocationLabel && <Badge tone="accent">→ {s.currentLocationLabel}</Badge>}
-              {s.ownerClientLabel && <span className="text-[11px] text-[color:var(--tts-sub)]">소유: {s.ownerClientLabel}</span>}
+              {s.ownerClientLabel && <span className="text-[11px] text-[color:var(--tts-sub)]">{t("scan.ownerLabel", lang)}: {s.ownerClientLabel}</span>}
               <button
                 type="button"
                 onClick={() => removeScanned(s.serialNumber)}

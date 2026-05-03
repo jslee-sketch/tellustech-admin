@@ -53,7 +53,7 @@ export function BomTab({ itemId, itemType, bomLevel, lang }: { itemId: string; i
   }
 
   async function removeChild(childId: string) {
-    if (!window.confirm(lang === "VI" ? "Bỏ liên kết này?" : lang === "EN" ? "Unlink this part?" : "이 BOM 관계를 해제할까요?")) return;
+    if (!window.confirm(t("bomTab.unlinkConfirm", lang))) return;
     const r = await fetch(`/api/items/${itemId}/bom/${childId}`, { method: "DELETE" });
     if (r.ok) refetch();
   }
@@ -61,7 +61,7 @@ export function BomTab({ itemId, itemType, bomLevel, lang }: { itemId: string; i
   return (
     <div>
       {!canAdd && itemType === "PRODUCT" && (
-        <Note tone="info">{lang === "VI" ? "PRODUCT không thể có BOM." : lang === "EN" ? "PRODUCT cannot have BOM." : "PRODUCT 는 BOM 부모가 될 수 없습니다."}</Note>
+        <Note tone="info">{t("bomTab.productNoBom", lang)}</Note>
       )}
       {!canAdd && bomLevel >= 3 && (
         <Note tone="warn">{t("item.bomMaxDepth", lang)}</Note>
@@ -70,7 +70,7 @@ export function BomTab({ itemId, itemType, bomLevel, lang }: { itemId: string; i
       {/* 트리 표시 */}
       <div className="my-3 rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card)]/40 p-3 font-mono text-[12px]">
         {loading && <div className="text-[color:var(--tts-muted)]">…</div>}
-        {!loading && tree.length === 0 && <div className="text-[color:var(--tts-muted)]">{lang === "VI" ? "Chưa có linh kiện con." : lang === "EN" ? "No sub-parts yet." : "하위 부품 없음"}</div>}
+        {!loading && tree.length === 0 && <div className="text-[color:var(--tts-muted)]">{t("bomTab.noSubParts", lang)}</div>}
         <ul className="space-y-1">
           {tree.map((n) => <BomNode key={n.item.id} node={n} depth={0} onRemove={removeChild} parentId={itemId} lang={lang} />)}
         </ul>
@@ -82,14 +82,14 @@ export function BomTab({ itemId, itemType, bomLevel, lang }: { itemId: string; i
             {t("item.bomAddChild", lang)} <span className="ml-2 text-[10px] text-[color:var(--tts-muted)]">(Level {bomLevel + 1})</span>
           </div>
           <Row>
-            <Field label={lang === "KO" ? "부품 검색" : lang === "VI" ? "Tìm linh kiện" : "Search part"} width="100%">
+            <Field label={t("bomTab.searchPart", lang)} width="100%">
               <ItemCombobox value={pickId} onChange={setPickId} itemType="PART" lang={lang} />
             </Field>
             <Field label={t("item.bomQuantity", lang)} width="100px">
               <TextInput type="number" min="0.01" step="0.01" value={pickQty} onChange={(e) => setPickQty(e.target.value)} />
             </Field>
             <Field label={t("item.bomNote", lang)} width="240px">
-              <TextInput value={pickNote} onChange={(e) => setPickNote(e.target.value)} placeholder={lang === "KO" ? "조립 메모" : ""} />
+              <TextInput value={pickNote} onChange={(e) => setPickNote(e.target.value)} placeholder={t("bomTab.notePh", lang)} />
             </Field>
             <Field label="" width="80px">
               <Button onClick={addChild} disabled={!pickId}>+</Button>
@@ -127,12 +127,12 @@ function BomNode({ node, depth, onRemove, parentId, lang }: { node: Node; depth:
 function mapBomError(reason: string | undefined, lang: Lang): string {
   switch (reason) {
     case "max_depth_exceeded": return t("item.bomMaxDepth", lang);
-    case "self_reference":     return lang === "KO" ? "자기 자신은 하위로 추가할 수 없습니다." : lang === "VI" ? "Không thể tự tham chiếu." : "Cannot self-reference.";
-    case "cycle_detected":     return lang === "KO" ? "순환 참조가 발생합니다." : lang === "VI" ? "Tham chiếu vòng lặp." : "Circular reference detected.";
+    case "self_reference":     return t("bomTab.errSelfReference", lang);
+    case "cycle_detected":     return t("bomTab.errCycleDetected", lang);
     case "product_cannot_be_part":
     case "product_cannot_have_bom":
-      return lang === "KO" ? "PRODUCT 는 BOM 관계에 포함될 수 없습니다." : lang === "VI" ? "PRODUCT không hỗ trợ BOM." : "PRODUCT cannot be part of BOM.";
-    case "already_has_parent": return lang === "KO" ? "다른 상위 품목에 이미 등록되어 있습니다." : lang === "VI" ? "Đã có cha khác." : "Already has another parent.";
-    default: return lang === "KO" ? "추가 실패" : lang === "VI" ? "Thêm thất bại" : "Failed to add";
+      return t("bomTab.errProductCannotBom", lang);
+    case "already_has_parent": return t("bomTab.errAlreadyHasParent", lang);
+    default: return t("bomTab.errAddFailed", lang);
   }
 }

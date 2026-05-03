@@ -434,7 +434,7 @@ export function ClientDetail({
             lang={lang}
           />
           <Note tone="info">
-            태그는 일괄 이메일 발송 / 캠페인 세분화에 사용됩니다 (Phase 2 마케팅 모듈).
+            {t("clientDetail.marketingTagsNote", lang)}
           </Note>
           <div className="mt-4 flex items-center gap-2 border-t border-[color:var(--tts-border)] pt-3">
             <Button type="submit" disabled={savingMarketing}>
@@ -448,8 +448,7 @@ export function ClientDetail({
         <div>
           <SectionTitle icon="📊" title={t("section.transactions", lang)} />
           <Note tone="info">
-            매출 / 매입 / 계약 이력은 Phase 2 매출·매입 · Phase 2 렌탈/IT 계약 모듈 구현 후
-            이 탭에 집계되어 표시됩니다. 지금은 거래 데이터가 없습니다.
+            {t("clientDetail.transactionsNote", lang)}
           </Note>
         </div>
       )}

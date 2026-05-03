@@ -59,7 +59,7 @@ export function PostsAdminClient({ lang }: { lang: Lang }) {
         setAiMsg(`❌ ${j?.error ?? "fail"}${j?.details?.hint ? " — " + j.details.hint : ""}`);
         return;
       }
-      setAiMsg(`✓ AI 초안 생성: "${j?.generated?.titleKo ?? ""}" — 검토 탭에서 확인 후 발행하세요`);
+      setAiMsg(`✓ ${t("postsAdmin.aiDraftCreated", lang).replace("{title}", j?.generated?.titleKo ?? "")}`);
       setAiTopic("");
       setTab("draft"); // 자동으로 초안 탭으로 이동
       await refetch();

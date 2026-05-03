@@ -65,10 +65,10 @@ export function SurveysAdminClient({ lang }: { lang: Lang }) {
               <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
                 <tr>
                   <th className="px-2 py-1 text-left">{t("col.refReceipt", lang)}</th>
-                  <th className="px-2 py-1 text-left">제목</th>
-                  <th className="px-2 py-1 text-left">기간</th>
-                  <th className="px-2 py-1 text-right">포인트</th>
-                  <th className="px-2 py-1 text-right">참여</th>
+                  <th className="px-2 py-1 text-left">{t("surveysAdmin.colTitle", lang)}</th>
+                  <th className="px-2 py-1 text-left">{t("surveysAdmin.colPeriod", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("surveysAdmin.colPoints", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("surveysAdmin.colResponses", lang)}</th>
                 </tr>
               </thead>
               <tbody>

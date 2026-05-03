@@ -40,7 +40,7 @@ function buildColumns(items: ItemRef[], warehouses: WhRef[], clients: ClRef[], l
     {
       key: "reason", header: t("header.reasonH", lang), required: true, validate: (raw, row) => {
         const v = raw.trim().toUpperCase();
-        const type = String(row[t("header.txnType", lang)] ?? row["유형"] ?? "").trim().toUpperCase();
+        const type = String(row[t("header.txnType", lang)] ?? row[t("invImport.headerFallbackType", lang)] ?? "").trim().toUpperCase();
         if (!type || !TYPES.has(type)) return { error: t("msg.typeFirstValid", lang) };
         const allowed = REASONS_BY_TYPE[type];
         if (!allowed.has(v)) return { error: t("msg.reasonOnlyAllowed", lang).replace("{type}", type).replace("{allowed}", Array.from(allowed).join("/")) };
@@ -56,7 +56,7 @@ function buildColumns(items: ItemRef[], warehouses: WhRef[], clients: ClRef[], l
     { key: "serialNumber", header: t("header.serial", lang), validate: (raw) => ({ normalized: raw }) },
     {
       key: "fromWarehouseCode", header: t("header.fromWh", lang), validate: (raw, row) => {
-        const type = String(row[t("header.txnType", lang)] ?? row["유형"] ?? "").trim().toUpperCase();
+        const type = String(row[t("header.txnType", lang)] ?? row[t("invImport.headerFallbackType", lang)] ?? "").trim().toUpperCase();
         if (!raw) {
           if (type === "OUT" || type === "TRANSFER") return { error: t("msg.requiredFor", lang).replace("{type}", type) };
           return { normalized: "" };
@@ -67,7 +67,7 @@ function buildColumns(items: ItemRef[], warehouses: WhRef[], clients: ClRef[], l
     },
     {
       key: "toWarehouseCode", header: t("header.toWh", lang), validate: (raw, row) => {
-        const type = String(row[t("header.txnType", lang)] ?? row["유형"] ?? "").trim().toUpperCase();
+        const type = String(row[t("header.txnType", lang)] ?? row[t("invImport.headerFallbackType", lang)] ?? "").trim().toUpperCase();
         if (!raw) {
           if (type === "IN" || type === "TRANSFER") return { error: t("msg.requiredFor", lang).replace("{type}", type) };
           return { normalized: "" };
@@ -86,7 +86,7 @@ function buildColumns(items: ItemRef[], warehouses: WhRef[], clients: ClRef[], l
     },
     {
       key: "targetEquipmentSN", header: t("header.targetEquipSn", lang), validate: (raw, row) => {
-        const reason = String(row[t("header.reasonH", lang)] ?? row["사유"] ?? "").trim().toUpperCase();
+        const reason = String(row[t("header.reasonH", lang)] ?? row[t("invImport.headerFallbackReason", lang)] ?? "").trim().toUpperCase();
         if (reason === "CONSUMABLE_OUT" && !raw) return { error: t("msg.consumableOutTargetReq", lang) };
         return { normalized: raw };
       },

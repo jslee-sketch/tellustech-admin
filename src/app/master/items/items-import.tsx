@@ -14,7 +14,7 @@ const COLOR_CHANNELS = ["BLACK", "CYAN", "MAGENTA", "YELLOW", "DRUM", "FUSER", "
 
 function buildColumns(lang: Lang): UploaderColumn[] {
   return [
-    { key: "itemCode", header: lang === "KO" ? "품목코드(빈값=자동)" : "itemCode (blank=auto)", validate: (raw) => ({ normalized: raw }) },
+    { key: "itemCode", header: t("itemsImport.headerItemCode", lang), validate: (raw) => ({ normalized: raw }) },
     {
       key: "itemType",
       header: t("header.itemType", lang),
@@ -38,15 +38,15 @@ function buildColumns(lang: Lang): UploaderColumn[] {
       key: "description",
       header: t("item.description", lang),
       required: true,
-      validate: (raw) => raw && raw.trim() ? { normalized: raw.trim() } : { error: lang === "VI" ? "Bắt buộc nhập" : lang === "EN" ? "Required" : "필수 입력" },
+      validate: (raw) => raw && raw.trim() ? { normalized: raw.trim() } : { error: t("itemsImport.errRequired", lang) },
     },
     { key: "unit", header: t("header.unit", lang), validate: (raw) => ({ normalized: raw }) },
-    { key: "reorderPoint", header: lang === "KO" ? "재발주점" : "reorderPoint", validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number.isInteger(Number(raw)) && Number(raw) >= 0 ? { normalized: raw } : { error: "integer ≥ 0" }) },
+    { key: "reorderPoint", header: t("itemsImport.headerReorderPoint", lang), validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number.isInteger(Number(raw)) && Number(raw) >= 0 ? { normalized: raw } : { error: "integer ≥ 0" }) },
     { key: "colorChannel", header: t("item.colorChannel", lang), validate: (raw) => raw === "" ? { normalized: "" } : (COLOR_CHANNELS.includes(raw.toUpperCase()) ? { normalized: raw.toUpperCase() } : { error: COLOR_CHANNELS.join("|") }) },
     { key: "expectedYield", header: t("yield.expectedYield", lang), validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number(raw) >= 0 ? { normalized: raw } : { error: "number ≥ 0" }) },
     { key: "yieldCoverageBase", header: t("yield.coverageBase", lang), validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number(raw) >= 1 && Number(raw) <= 100 ? { normalized: raw } : { error: "1~100" }) },
-    { key: "compatibleItemCodes", header: lang === "KO" ? "호환장비코드(;구분)" : "compatibleItemCodes (;)", validate: (raw) => ({ normalized: raw }) },
-    { key: "parentItemCode", header: lang === "KO" ? "상위품목코드" : "parentItemCode", validate: (raw) => ({ normalized: raw }) },
+    { key: "compatibleItemCodes", header: t("itemsImport.headerCompatibleItemCodes", lang), validate: (raw) => ({ normalized: raw }) },
+    { key: "parentItemCode", header: t("itemsImport.headerParentItemCode", lang), validate: (raw) => ({ normalized: raw }) },
     { key: "bomQuantity", header: t("item.bomQuantity", lang), validate: (raw) => raw === "" ? { normalized: "" } : (Number.isFinite(Number(raw)) && Number(raw) > 0 ? { normalized: raw } : { error: "> 0" }) },
     { key: "bomNote", header: t("item.bomNote", lang), validate: (raw) => ({ normalized: raw }) },
   ];
@@ -81,7 +81,7 @@ export function ItemsImport({ lang }: { lang: Lang }) {
           const fieldLabel = fieldDisplay(e.field, lang);
           const reasonLabel = reasonDisplay(e.reason, lang);
           const code = e.itemCode ? ` (${e.itemCode})` : "";
-          return `  · ${lang === "VI" ? "Hàng" : lang === "EN" ? "Row" : "행"} ${e.row}${code}: ${fieldLabel} — ${reasonLabel}`;
+          return `  · ${t("itemsImport.row", lang)} ${e.row}${code}: ${fieldLabel} — ${reasonLabel}`;
         });
         const more = errors.length > 20 ? `\n  ... +${errors.length - 20}` : "";
         return { ok: false, message: `${head}\n${lines.join("\n")}${more}` };
@@ -91,33 +91,29 @@ export function ItemsImport({ lang }: { lang: Lang }) {
 }
 
 function fieldDisplay(field: string, lang: Lang): string {
-  const map: Record<string, { vi: string; en: string; ko: string }> = {
-    itemType:             { vi: "Loại sản phẩm", en: "Item Type",    ko: "품목 유형" },
-    name:                 { vi: "Tên sản phẩm",  en: "Item Name",    ko: "품목명" },
-    description:          { vi: "Mô tả",         en: "Description",  ko: "설명" },
-    compatibleItemCodes:  { vi: "Mã thiết bị tương thích", en: "Compatible Equipment Codes", ko: "호환 장비 코드" },
-    colorChannel:         { vi: "Kênh màu",      en: "Color Channel",ko: "색상 채널" },
-    expectedYield:        { vi: "Số trang định mức", en: "Rated Yield", ko: "정격 출력장수" },
-    yieldCoverageBase:    { vi: "Mật độ chuẩn",  en: "Base Coverage",ko: "기준 상밀도" },
-    parentItemCode:       { vi: "Mã sản phẩm cha", en: "Parent Item Code", ko: "상위 품목 코드" },
+  const keyMap: Record<string, string> = {
+    itemType:            "itemsImport.fieldItemType",
+    name:                "itemsImport.fieldName",
+    description:         "itemsImport.fieldDescription",
+    compatibleItemCodes: "itemsImport.fieldCompatibleItemCodes",
+    colorChannel:        "itemsImport.fieldColorChannel",
+    expectedYield:       "itemsImport.fieldExpectedYield",
+    yieldCoverageBase:   "itemsImport.fieldYieldCoverageBase",
+    parentItemCode:      "itemsImport.fieldParentItemCode",
   };
-  const e = map[field];
-  if (!e) return field;
-  return e[lang === "VI" ? "vi" : lang === "EN" ? "en" : "ko"];
+  const k = keyMap[field];
+  if (!k) return field;
+  return t(k, lang);
 }
 
 function reasonDisplay(reason: string, lang: Lang): string {
   switch (reason) {
     case "missing_required":
-      return lang === "VI" ? "Trường bắt buộc — chưa nhập" : lang === "EN" ? "Required — missing" : "필수 항목인데 비어있음";
+      return t("itemsImport.reasonMissingRequired", lang);
     case "missing_required_for_consumable_part":
-      return lang === "VI"
-        ? "Vật tư/Linh kiện cần ít nhất 1 thiết bị tương thích"
-        : lang === "EN"
-          ? "Consumable/Part requires at least 1 compatible equipment"
-          : "소모품/부품은 최소 1개의 호환 장비 필수";
+      return t("itemsImport.reasonMissingCompat", lang);
     case "invalid_value":
-      return lang === "VI" ? "Giá trị không hợp lệ" : lang === "EN" ? "Invalid value" : "올바르지 않은 값";
+      return t("itemsImport.reasonInvalidValue", lang);
     default:
       return reason;
   }

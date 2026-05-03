@@ -198,7 +198,7 @@ export function ItemForm({ mode, initial, lang }: Props) {
             rows={2}
             value={value.description}
             onChange={(e) => set("description", e.target.value)}
-            placeholder={lang === "VI" ? "VD: Mực đen tương thích D330/D320" : lang === "EN" ? "e.g. Black toner for D330/D320" : "예: D330/D320 호환 흑백 토너"}
+            placeholder={t("itemForm.descriptionPh", lang)}
           />
         </Field>
       </Row>
@@ -274,7 +274,7 @@ export function ItemForm({ mode, initial, lang }: Props) {
                 );
               })}
               {(value.compatibleItemIds ?? []).length === 0 && (
-                <li className="px-2 py-1 text-[11px] text-[color:var(--tts-muted)]">{lang === "VI" ? "Chưa có thiết bị tương thích" : lang === "EN" ? "No compatible equipment yet" : "등록된 호환 장비 없음"}</li>
+                <li className="px-2 py-1 text-[11px] text-[color:var(--tts-muted)]">{t("itemForm.noCompatYet", lang)}</li>
               )}
             </ul>
           </div>

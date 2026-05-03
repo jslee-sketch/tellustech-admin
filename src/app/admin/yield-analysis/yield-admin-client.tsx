@@ -193,7 +193,7 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
 
             {/* 분포 — 필터 적용 후 */}
             <Card className="mb-4">
-              <div className="mb-2 text-[12px] font-bold text-[color:var(--tts-sub)]">분포 (필터 결과)</div>
+              <div className="mb-2 text-[12px] font-bold text-[color:var(--tts-sub)]">{t("yieldAdmin.distribution", lang)}</div>
               <div className="flex flex-wrap gap-3 text-[12px]">
                 {(Object.keys(BADGE_META) as YieldBadgeT[]).map((b) => (
                   <div key={b} className="flex items-center gap-1">
@@ -212,17 +212,17 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
                   <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
                     <tr>
                       <th className="w-6 px-2 py-1"></th>
-                      <th className="px-2 py-1 text-left">계약번호</th>
-                      <th className="px-2 py-1 text-left">거래처</th>
-                      <th className="px-2 py-1 text-right">장비 수</th>
-                      <th className="px-2 py-1 text-right">최저 적정율</th>
-                      <th className="px-2 py-1 text-left">상태</th>
+                      <th className="px-2 py-1 text-left">{t("yieldAdmin.col.contractNumber", lang)}</th>
+                      <th className="px-2 py-1 text-left">{t("yieldAdmin.col.client", lang)}</th>
+                      <th className="px-2 py-1 text-right">{t("yieldAdmin.col.equipmentCount", lang)}</th>
+                      <th className="px-2 py-1 text-right">{t("yieldAdmin.col.minYieldRate", lang)}</th>
+                      <th className="px-2 py-1 text-left">{t("yieldAdmin.col.status", lang)}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading && <tr><td colSpan={6} className="px-2 py-3 text-center text-[color:var(--tts-muted)]">…</td></tr>}
                     {!loading && contractsGrouped.length === 0 && (
-                      <tr><td colSpan={6} className="px-2 py-3 text-center text-[color:var(--tts-muted)]">결과 없음</td></tr>
+                      <tr><td colSpan={6} className="px-2 py-3 text-center text-[color:var(--tts-muted)]">{t("yieldAdmin.noResults", lang)}</td></tr>
                     )}
                     {contractsGrouped.map((grp) => {
                       const expanded = expandedContracts.has(grp.contract.id);
@@ -245,13 +245,13 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
                               <Badge tone={BADGE_META[minBadge].tone}>
                                 {BADGE_META[minBadge].emoji} {t(BADGE_META[minBadge].key, lang)}
                               </Badge>
-                              {fraudCount > 0 && <span className="ml-2 text-[10px] text-[color:var(--tts-danger)]">⚠️ 부정 {fraudCount}건</span>}
+                              {fraudCount > 0 && <span className="ml-2 text-[10px] text-[color:var(--tts-danger)]">⚠️ {t("yieldAdmin.fraudCount", lang).replace("{n}", String(fraudCount))}</span>}
                             </td>
                           </tr>
                           {expanded && grp.equipments.map((it) => (
                             <tr key={it.id} className="border-b border-[color:var(--tts-border)]/30 bg-[color:var(--tts-input)]/30">
                               <td className="px-2 py-1.5"></td>
-                              <td className="px-2 py-1.5 pl-6 text-[11px] text-[color:var(--tts-muted)]">└ S/N</td>
+                              <td className="px-2 py-1.5 pl-6 text-[11px] text-[color:var(--tts-muted)]">{t("yieldAdmin.snLabel", lang)}</td>
                               <td className="px-2 py-1.5 font-mono text-[11px]">{it.equipment.serialNumber} · <span className="text-[color:var(--tts-sub)]">{it.equipment.item.name}</span></td>
                               <td className="px-2 py-1.5 text-right text-[10px] text-[color:var(--tts-muted)]">{it.periodStart.slice(0, 10)} ~ {it.periodEnd.slice(0, 10)}</td>
                               <td className="px-2 py-1.5 text-right font-mono">
@@ -298,18 +298,18 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
             <table className="mt-3 w-full text-[12px]">
               <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
                 <tr>
-                  <th className="px-2 py-1 text-left">계약</th>
-                  <th className="px-2 py-1 text-left">기간</th>
-                  <th className="px-2 py-1 text-left">거래처</th>
-                  <th className="px-2 py-1 text-left">장비</th>
-                  <th className="px-2 py-1 text-right">적정율</th>
-                  <th className="px-2 py-1 text-left">상태</th>
-                  <th className="px-2 py-1 text-right">액션</th>
+                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.contract", lang)}</th>
+                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.period", lang)}</th>
+                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.client", lang)}</th>
+                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.equipment", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.yieldRate", lang)}</th>
+                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.status", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.action", lang)}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.length === 0 && (
-                  <tr><td colSpan={7} className="px-2 py-3 text-center text-[color:var(--tts-muted)]">부정 의심 건 없음</td></tr>
+                  <tr><td colSpan={7} className="px-2 py-3 text-center text-[color:var(--tts-muted)]">{t("yieldAdmin.noFraudSuspect", lang)}</td></tr>
                 )}
                 {filteredItems.filter((it) => it.isFraudSuspect).map((it) => (
                   <tr key={it.id} className="border-b border-[color:var(--tts-border)]/50">
@@ -320,8 +320,8 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
                     <td className="px-2 py-1.5 text-right font-mono font-bold text-[color:var(--tts-danger)]">{it.yieldRateBw}%</td>
                     <td className="px-2 py-1.5 text-[11px]">
                       {it.fraudReviewedAt
-                        ? <span className="text-[color:var(--tts-success)]">✅ 조사완료 ({it.fraudReviewedAt.slice(0, 10)})</span>
-                        : <span className="text-[color:var(--tts-warn)]">⚠️ 미조사</span>}
+                        ? <span className="text-[color:var(--tts-success)]">✅ {t("yieldAdmin.investigated", lang)} ({it.fraudReviewedAt.slice(0, 10)})</span>
+                        : <span className="text-[color:var(--tts-warn)]">⚠️ {t("yieldAdmin.notInvestigated", lang)}</span>}
                     </td>
                     <td className="px-2 py-1.5 text-right">
                       <button
@@ -341,14 +341,14 @@ export function YieldAdminClient({ lang }: { lang: Lang }) {
 
         {tab === "tech" && (
           <Card count={techStats.length}>
-            <Note tone="info">기사별 통계는 AsDispatchPart 의 dispatchEmployee 집계로 향후 확장. 현재는 거래처별 통계로 대체.</Note>
+            <Note tone="info">{t("yieldAdmin.techStatsNote", lang)}</Note>
             <table className="mt-3 w-full text-[12px]">
               <thead className="border-b border-[color:var(--tts-border)] text-[11px] text-[color:var(--tts-sub)]">
                 <tr>
-                  <th className="px-2 py-1 text-left">거래처</th>
-                  <th className="px-2 py-1 text-right">분석 건수</th>
-                  <th className="px-2 py-1 text-right">평균 적정율</th>
-                  <th className="px-2 py-1 text-right">부정 의심 건수</th>
+                  <th className="px-2 py-1 text-left">{t("yieldAdmin.col.client", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.analysisCount", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.avgYieldRate", lang)}</th>
+                  <th className="px-2 py-1 text-right">{t("yieldAdmin.col.fraudSuspectCount", lang)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -414,21 +414,21 @@ function ConfigPanel({ config, onSaved, lang }: { config: YieldConfig; onSaved: 
 
   return (
     <Card>
-      <Note tone="info">뱃지 임계값은 단조감소여야 함 (Blue &gt; Green &gt; Yellow &gt; Orange &gt; 0).</Note>
+      <Note tone="info">{t("yieldAdmin.thresholdNote", lang)}</Note>
       <Row>
-        <Field label="🔵 BLUE 임계 (≥)" width="180px">
+        <Field label={`🔵 ${t("yieldAdmin.thresholdBlue", lang)}`} width="180px">
           <TextInput type="number" value={String(draft.thresholdBlue)} onChange={(e) => setDraft({ ...draft, thresholdBlue: Number(e.target.value) })} />
         </Field>
-        <Field label="🟢 GREEN 임계 (≥)" width="180px">
+        <Field label={`🟢 ${t("yieldAdmin.thresholdGreen", lang)}`} width="180px">
           <TextInput type="number" value={String(draft.thresholdGreen)} onChange={(e) => setDraft({ ...draft, thresholdGreen: Number(e.target.value) })} />
         </Field>
-        <Field label="🟡 YELLOW 임계 (≥)" width="180px">
+        <Field label={`🟡 ${t("yieldAdmin.thresholdYellow", lang)}`} width="180px">
           <TextInput type="number" value={String(draft.thresholdYellow)} onChange={(e) => setDraft({ ...draft, thresholdYellow: Number(e.target.value) })} />
         </Field>
-        <Field label="🟠 ORANGE 임계 (≥)" width="180px">
+        <Field label={`🟠 ${t("yieldAdmin.thresholdOrange", lang)}`} width="180px">
           <TextInput type="number" value={String(draft.thresholdOrange)} onChange={(e) => setDraft({ ...draft, thresholdOrange: Number(e.target.value) })} />
         </Field>
-        <Field label="🔴 부정 알림 임계" width="180px">
+        <Field label={`🔴 ${t("yieldAdmin.fraudAlertThreshold", lang)}`} width="180px">
           <TextInput type="number" value={String(draft.fraudAlertThreshold)} onChange={(e) => setDraft({ ...draft, fraudAlertThreshold: Number(e.target.value) })} />
         </Field>
       </Row>
@@ -527,19 +527,19 @@ function FilterBar({
           <input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} className={`${inputCls} w-36`} />
         </div>
         <div>
-          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">기간 종료</div>
+          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">{t("yieldAdmin.periodToLabel", lang)}</div>
           <input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} className={`${inputCls} w-36`} />
         </div>
         <div>
-          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">뱃지</div>
+          <div className="mb-0.5 text-[10px] font-bold text-[color:var(--tts-muted)]">{t("yieldAdmin.badgeLabel", lang)}</div>
           <select value={filterBadge} onChange={(e) => setFilterBadge(e.target.value as YieldBadgeT | "")} className={`${inputCls} w-32`}>
-            <option value="">전체</option>
+            <option value="">{t("yieldAdmin.all", lang)}</option>
             {(["BLUE","GREEN","YELLOW","ORANGE","RED"] as YieldBadgeT[]).map((b) => (
               <option key={b} value={b}>{BADGE_META[b].emoji} {t(BADGE_META[b].key, lang)}</option>
             ))}
           </select>
         </div>
-        <Button variant="ghost" onClick={onClear}>초기화</Button>
+        <Button variant="ghost" onClick={onClear}>{t("yieldAdmin.btn.reset", lang)}</Button>
       </div>
     </Card>
   );

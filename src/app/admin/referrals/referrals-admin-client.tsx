@@ -37,7 +37,7 @@ export function ReferralsAdminClient({ lang }: { lang: Lang }) {
               <tr>
                 <th className="px-2 py-1 text-left">{t("portal.points.date", lang)}</th>
                 <th className="px-2 py-1 text-left">{t("col.refReceipt", lang)}</th>
-                <th className="px-2 py-1 text-left">추천인</th>
+                <th className="px-2 py-1 text-left">{t("referralsAdmin.colReferrer", lang)}</th>
                 <th className="px-2 py-1 text-left">{t("portal.referrals.companyName", lang)}</th>
                 <th className="px-2 py-1 text-left">{t("portal.referrals.contactName", lang)}</th>
                 <th className="px-2 py-1 text-left">{t("col.statusShort", lang)}</th>
@@ -58,7 +58,7 @@ export function ReferralsAdminClient({ lang }: { lang: Lang }) {
                       {NEXT_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                     {r.status === "CONTRACTED" && (
-                      <button onClick={() => firstPayment(r.id)} className="ml-1 rounded bg-[color:var(--tts-success)] px-2 py-0.5 text-[11px] font-bold text-white">첫 입금</button>
+                      <button onClick={() => firstPayment(r.id)} className="ml-1 rounded bg-[color:var(--tts-success)] px-2 py-0.5 text-[11px] font-bold text-white">{t("referralsAdmin.firstPaymentBtn", lang)}</button>
                     )}
                   </td>
                 </tr>

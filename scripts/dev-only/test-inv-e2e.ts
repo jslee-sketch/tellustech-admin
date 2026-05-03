@@ -12,10 +12,10 @@
 // 시나리오 의존관계는 Round 1~5 로 분할 실행.
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaClient } from "../../src/generated/prisma/client";
 import * as dotenv from "dotenv";
-import { lookupBaseRule, type RefModule, type SubKind, type TxnTypeNew } from "../src/lib/inventory-rules";
-import type { AssetOwnerType } from "../src/generated/prisma/client";
+import { lookupBaseRule, type RefModule, type SubKind, type TxnTypeNew } from "../../src/lib/inventory-rules";
+import type { AssetOwnerType } from "../../src/generated/prisma/client";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env" });

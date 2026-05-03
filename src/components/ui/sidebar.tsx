@@ -304,7 +304,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
         <div className="border-b border-[color:var(--tts-border)] px-2 py-2">
           {!collapsed && (
             <div className="mb-1 px-1 text-center text-[12px] font-bold uppercase tracking-[0.18em] text-[color:var(--tts-sub)]">
-              회사
+              {t("sidebar.company", currentLang)}
             </div>
           )}
           <div className={`flex ${collapsed ? "flex-col items-center gap-1" : "justify-center gap-1"}`}>
@@ -315,7 +315,7 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
                   key={c}
                   type="button"
                   onClick={() => switchCompany(c)}
-                  title={c === "ALL" ? "통합조회" : c}
+                  title={c === "ALL" ? t("sidebar.companyAll", currentLang) : c}
                   className={`rounded px-2 py-1 text-[11px] font-bold ${active ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)] text-[color:var(--tts-sub)] hover:text-[color:var(--tts-text)]"}`}
                 >
                   {c}

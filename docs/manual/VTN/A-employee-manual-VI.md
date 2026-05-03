@@ -1746,6 +1746,7 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.8.1 · 2026-05-03**: 4 hạng mục còn lại — E2E tồn kho 31/31 PASS sau khi tích hợp thông báo, phân bổ chi phí gián tiếp tự động theo tỷ lệ doanh thu, thêm 4 hook thông báo (SALES_FINANCE_CFM_REQUEST/DONE, EXPENSE_REIMBURSE_APPROVED, AS_TICKET_ASSIGNED), và mức trần tháng cho AI tạo bài (PORTAL_NEWS_MONTHLY_CAP, mặc định 8).
 - **v2.8.0 · 2026-05-03**: **Hệ thống thông báo tích hợp** — Email + Zalo + ERP Chat 3 kênh. 30 loại sự kiện, 27 quy tắc mặc định cho TV/VR, dispatcher tích hợp, 2 cron (scheduler + retry), 4 màn hình (rules / history / my-list / personal settings), badge 🔔 trên sidebar (polling 60s). Gmail SMTP qua `GMAIL_USER`/`GMAIL_APP_PASSWORD`. Zalo OA tự skip khi chưa cấu hình.
 - **v2.7.1 · 2026-05-03**: Vá UX nhỏ — nút [+ Thu/Chi mới] ở header `/finance/cash-transactions` (chuyển hướng tới `/finance/accounts`); duyệt hoàn ứng đổi từ `window.prompt` sang modal + dropdown chọn TK; thêm 6 khóa i18n.
 - **v2.7.0 · 2026-05-03**: 8 hạng mục tiếp theo — RBAC + Sách hướng dẫn hợp nhất + nợ kỹ thuật + thống kê kỹ sư + đồng bộ favorite trên server + backfill FK Sales.

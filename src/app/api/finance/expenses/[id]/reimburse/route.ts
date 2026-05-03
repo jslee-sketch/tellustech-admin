@@ -59,6 +59,21 @@ export async function POST(request: Request, ctx: Ctx) {
         });
         return { expense: updated, cashTxn };
       });
+      // 알림 — 환급 승인 완료. Expense 에 신청자 추적 필드가 없어 ROLE=ADMIN 룰 한정.
+      // 정확한 신청자 알림은 Expense.createdById 추가 후 향후 보강.
+      try {
+        const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+        const exp = result.expense;
+        await dispatchNotification({
+          eventType: "EXPENSE_REIMBURSE_APPROVED",
+          companyCode: session.companyCode as "TV" | "VR",
+          data: {
+            amount: Number(exp.amount).toLocaleString(),
+            description: exp.note ?? exp.expenseCode,
+          },
+          linkedModel: "Expense", linkedId: exp.id, linkUrl: `/finance/expenses/${exp.id}`,
+        });
+      } catch (e) { console.error("[expense-reimburse] notify failed:", e); }
       return ok(result);
     } catch (err) { return serverError(err); }
   });

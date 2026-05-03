@@ -45,6 +45,24 @@ export async function POST(_r: Request, ctx: { params: Promise<{ id: string }> }
         }
       });
 
+      // 알림 — 재경 CFM 요청 (영업이 매출 발행 → 재경팀에 알림)
+      try {
+        const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+        const client = await prisma.client.findUnique({
+          where: { id: sale.clientId }, select: { companyNameKo: true, companyNameVi: true },
+        });
+        await dispatchNotification({
+          eventType: "SALES_FINANCE_CFM_REQUEST",
+          companyCode: companyCode as "TV" | "VR",
+          data: {
+            salesCode: sale.salesNumber,
+            clientName: client?.companyNameKo ?? client?.companyNameVi ?? "",
+            amount: Number(sale.totalAmount).toLocaleString(),
+          },
+          linkedModel: "Sales", linkedId: id, linkUrl: `/finance/sales-confirm`,
+        });
+      } catch (e) { console.error("[sales-confirm] notify failed:", e); }
+
       return ok({ ok: true });
     } catch (err) {
       return serverError(err);

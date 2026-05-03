@@ -17,6 +17,24 @@ export async function POST(_r: Request, ctx: { params: Promise<{ id: string }> }
         where: { id },
         data: { financeConfirmedAt: new Date(), financeConfirmedById: session.sub },
       });
+      // 알림 — 재경 CFM 완료 → 영업 담당
+      try {
+        const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+        const full = await prisma.sales.findUnique({
+          where: { id },
+          include: { client: { select: { companyNameKo: true, companyNameVi: true } } },
+        });
+        await dispatchNotification({
+          eventType: "SALES_FINANCE_CFM_DONE",
+          companyCode: session.companyCode as "TV" | "VR",
+          data: {
+            salesEmployeeId: full?.salesEmployeeId ?? "",
+            salesCode: full?.salesNumber ?? "",
+            clientName: full?.client?.companyNameKo ?? full?.client?.companyNameVi ?? "",
+          },
+          linkedModel: "Sales", linkedId: id, linkUrl: `/finance/sales-confirm`,
+        });
+      } catch (e) { console.error("[sales-finance-confirm] notify failed:", e); }
       return ok({ ok: true });
     } catch (err) {
       return serverError(err);

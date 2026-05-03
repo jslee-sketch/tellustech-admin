@@ -78,14 +78,22 @@ export async function GET(request: Request) {
       }) : [];
       const clientMap = new Map(clients.map((c) => [c.id, c]));
 
-      // 5) 결과 — 매출 기준 정렬
+      // 5) 간접비 배분 — targetClientId 미지정(공통 비용) 합계를 매출 비율로 분배 (REVENUE_RATIO 기본).
+      const indirectTotal = expenses
+        .filter((e) => !e.targetClientId)
+        .reduce((sum, e) => sum + Number(e.amount) * (e.currency === "VND" ? 1 : Number(e.fxRate)), 0);
+      const totalRevenueAll = Array.from(revenueByClient.values()).reduce((s, v) => s + v, 0);
+
+      // 6) 결과 — 매출 기준 정렬
       const result = allClientIds.map((cId) => {
         const c = clientMap.get(cId);
         const revenue = revenueByClient.get(cId) ?? 0;
         const dc = directCostByClient.get(cId) ?? { transport: 0, consumable: 0, other: 0, total: 0 };
         const contributionMargin = revenue - dc.total;
-        // 간접비 배분은 향후 AllocationRule 구현 시 — 현재는 0 으로 고정
-        const indirectCostAlloc = 0;
+        // REVENUE_RATIO 분배 — 매출 비율로 indirectTotal 안분
+        const indirectCostAlloc = totalRevenueAll > 0
+          ? Math.round((indirectTotal * revenue) / totalRevenueAll)
+          : 0;
         const netProfit = contributionMargin - indirectCostAlloc;
         const profitRate = revenue > 0 ? (netProfit / revenue) * 100 : 0;
         return {

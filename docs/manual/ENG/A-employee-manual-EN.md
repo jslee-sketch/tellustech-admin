@@ -1747,6 +1747,7 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.8.1 · 2026-05-03**: Four follow-ups — Inventory E2E 31/31 still PASS after notification integration; automatic indirect-cost allocation by revenue ratio in profitability; 4 new notification hooks (SALES_FINANCE_CFM_REQUEST/DONE, EXPENSE_REIMBURSE_APPROVED, AS_TICKET_ASSIGNED); monthly cap for AI news generation (`PORTAL_NEWS_MONTHLY_CAP`, default 8) to control Anthropic API cost.
 - **v2.8.0 · 2026-05-03**: **Unified notification system** — Email + Zalo + ERP Chat (3 channels). 30 event types, 27 default rules per company (TV/VR), unified dispatcher, 2 crons (scheduler + retry), 4 screens (rules / history / my-list / personal settings), 🔔 badge on sidebar header (60s polling). Gmail SMTP via `GMAIL_USER`/`GMAIL_APP_PASSWORD`. Zalo OA auto-skips when not configured.
 - **v2.7.1 · 2026-05-03**: Small UX gaps closed — added a [+ New cash transaction] header button on `/finance/cash-transactions` (redirects to `/finance/accounts`); replaced expense reimbursement `window.prompt` with a modal + bank-account select dropdown; added 6 i18n keys.
 - **v2.7.0 · 2026-05-03**: 8 follow-up tasks — RBAC + manual integration + tech debt + engineer stats + server-synced favorites + Sales FK backfill.

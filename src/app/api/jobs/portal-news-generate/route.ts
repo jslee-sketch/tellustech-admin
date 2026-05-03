@@ -153,10 +153,32 @@ export async function POST(request: Request) {
     }
   }
 
-  // 백그라운드 작업 — fire-and-forget. 30초 타임아웃 우회.
-  // ?sync=1 쿼리로 동기 실행 (수동 테스트용)도 지원.
+  // 월간 호출 수 캡 — Anthropic API 비용 방지.
+  // PORTAL_NEWS_MONTHLY_CAP 환경변수 (기본 8 = 월~일 주간 8회 발행분).
+  // 같은 달의 PortalPost createdAt 카운트가 캡 이상이면 차단.
+  // ?force=1 쿼리로 ADMIN 이 일회성 우회 가능 (bearer 인증 통과한 호출만).
   const url = new URL(request.url);
   const sync = url.searchParams.get("sync") === "1";
+  const force = url.searchParams.get("force") === "1";
+
+  if (!force) {
+    const cap = Number(process.env.PORTAL_NEWS_MONTHLY_CAP ?? 8);
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const thisMonthCount = await prisma.portalPost.count({
+      where: { createdAt: { gte: monthStart } },
+    });
+    if (thisMonthCount >= cap) {
+      console.warn(`[portal-news-generate] monthly cap reached: ${thisMonthCount}/${cap}`);
+      return NextResponse.json({
+        ok: false,
+        error: "monthly_cap_reached",
+        thisMonthCount,
+        cap,
+        hint: "?force=1 to override (admin only)",
+      }, { status: 429 });
+    }
+  }
 
   const runJob = async () => {
     try {

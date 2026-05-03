@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.8.0";
+export const VERSION = "v2.8.1";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "통합 알림 시스템 — Email(Gmail SMTP) + Zalo(준비) + ERP Chat. 30 이벤트 + 27 기본 규칙 + 디스패처 + 2 cron + 사이드바 벨 배지 + 개인 설정";
+export const VERSION_NOTE = "잔여 4건 — E2E 회귀 PASS + 간접비 자동 배분 + 알림 hook 4종 보강 + AI 뉴스 월간 캡";

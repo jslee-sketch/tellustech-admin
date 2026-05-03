@@ -103,6 +103,26 @@ export async function PATCH(request: Request, context: RouteContext) {
       if (Object.keys(data).length === 0) return ok({ ticket: existing });
 
       const updated = await prisma.asTicket.update({ where: { id }, data });
+      // 알림 — assignedToId 가 새로 설정되거나 변경된 경우 담당자에게 발송
+      if (data.assignedToId && data.assignedToId !== existing.assignedToId) {
+        try {
+          const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+          const full = await prisma.asTicket.findUnique({
+            where: { id }, include: { client: { select: { companyNameKo: true, companyNameVi: true } } },
+          });
+          await dispatchNotification({
+            eventType: "AS_TICKET_ASSIGNED",
+            companyCode: (full?.companyCode ?? "TV") as "TV" | "VR",
+            data: {
+              assigneeId: data.assignedToId as string,
+              ticketCode: full?.ticketNumber ?? "",
+              clientName: full?.client?.companyNameKo ?? full?.client?.companyNameVi ?? "",
+              symptom: (full?.symptomKo ?? full?.symptomVi ?? full?.symptomEn ?? "").slice(0, 200),
+            },
+            linkedModel: "AsTicket", linkedId: id, linkUrl: `/as/tickets/${id}`,
+          });
+        } catch (e) { console.error("[as-ticket-assign] notify failed:", e); }
+      }
       return ok({ ticket: updated });
     } catch (err) {
       const handled = handleFieldError(err);

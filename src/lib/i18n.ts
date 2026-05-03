@@ -2455,6 +2455,7 @@ const DICT: Dict = {
   "fs.inflow":            { vi: "Dòng vào",            en: "Inflow",            ko: "유입" },
   "fs.outflow":           { vi: "Dòng ra",             en: "Outflow",           ko: "유출" },
   "fs.net":               { vi: "Ròng",                en: "Net",               ko: "순액" },
+  "fs.subtotal":          { vi: "Tổng phụ",            en: "Subtotal",          ko: "소계" },
 
   "close.periodCloseTitle": { vi: "Đóng kỳ kế toán",    en: "Period Close",      ko: "기간 마감 (Layer 4)" },
   "close.recentTitle":      { vi: "Kỳ gần đây",         en: "Recent Periods",    ko: "최근 마감 이력" },

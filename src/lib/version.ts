@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.9.0";
-export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "PWA 오프라인 캐시 (ERP root SW + 설치 프롬프트 + 오프라인 배너) + 포인트 만료 정책 (FIFO + 24개월 자동 + cron + 30일 전 알림)";
+export const VERSION = "v2.9.1";
+export const BUILD_DATE = "2026-05-04";
+export const VERSION_NOTE = "100 시나리오 E2E 시드 + 재무제표 4종 보강 (TB 30 계정·5111/5113/5117 매출 분리·VAT 분개·비용 6423~6429 세분화·211 유형자산·차입·자본금) + 클라이언트 5 버그 수정 (j.data 이중래퍼/URL query/cache:no-store/CF 투자·재무 섹션/프린트 색상 강제) + 정합성 11/11 + Chrome 7화면 PASS";

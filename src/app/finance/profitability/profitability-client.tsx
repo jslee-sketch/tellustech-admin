@@ -23,7 +23,7 @@ export function ProfitabilityClient({ lang }: { lang: Lang }) {
     setLoading(true);
     const r = await fetch(`/api/finance/profitability?period=${period}`);
     const j = await r.json();
-    setRows(j.data?.rows ?? []);
+    setRows((j.rows ?? j.data?.rows) ?? []);
     setLoading(false);
   }
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);

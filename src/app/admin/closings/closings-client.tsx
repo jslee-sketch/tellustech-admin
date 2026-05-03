@@ -33,7 +33,7 @@ export function ClosingsClient({ role, lang }: { role: string; lang: Lang }) {
   async function loadCloses() {
     const r = await fetch("/api/finance/period-close");
     const j = await r.json();
-    setCloses(j.data?.closes ?? []);
+    setCloses((j.closes ?? j.data?.closes) ?? []);
   }
   useEffect(() => { loadCloses(); }, []);
 

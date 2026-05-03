@@ -177,43 +177,56 @@ export async function computeCashFlow(period: string, companyCode: Company): Pro
   });
   const openingCash = beforeLines.reduce((s, l) => s + Number(l.debitAmount) - Number(l.creditAmount), 0);
 
-  // period 내 cash 라인 — source 별 분류
-  const periodLines = await prisma.journalLine.findMany({
+  // 분류 — 동일 분개의 다른 라인(상대 계정)을 기준으로 INVESTING/FINANCING/OPERATING 결정
+  // 211(유형자산) 동반 → INVESTING. 411(자본금)/421(이익잉여금)/311/338(차입) 동반 → FINANCING. 그 외 → OPERATING.
+  const periodLinesFull = await prisma.journalLine.findMany({
     where: {
       companyCode: companyCode as never,
-      accountCode: { in: CASH_CODES },
       entry: { status: "POSTED", entryDate: { gte: from, lt: to } },
     },
-    select: { debitAmount: true, creditAmount: true, entry: { select: { source: true } } },
+    select: { entryId: true, accountCode: true, debitAmount: true, creditAmount: true, entry: { select: { source: true } } },
   });
+  const linesByEntry = new Map<string, typeof periodLinesFull>();
+  for (const l of periodLinesFull) {
+    if (!linesByEntry.has(l.entryId)) linesByEntry.set(l.entryId, [] as any);
+    (linesByEntry.get(l.entryId) as any).push(l);
+  }
+  const INVESTING_ACCS = new Set(["211", "212", "213", "214", "228"]);
+  const FINANCING_ACCS = new Set(["311", "338", "411", "412", "421", "414"]);
+  const classify = (entryId: string): "OPERATING" | "INVESTING" | "FINANCING" => {
+    const lines = linesByEntry.get(entryId) ?? [];
+    for (const l of lines) {
+      if (INVESTING_ACCS.has(l.accountCode)) return "INVESTING";
+      if (FINANCING_ACCS.has(l.accountCode)) return "FINANCING";
+    }
+    return "OPERATING";
+  };
 
-  // operating: SALES, PURCHASE, EXPENSE, PAYROLL, CASH
-  // investing/financing: 향후 분류 가능 — 현재는 모두 operating 으로 집계
-  const bySource = new Map<string, { in: number; out: number }>();
-  for (const l of periodLines) {
+  type SrcSum = { in: number; out: number };
+  const buckets: Record<"OPERATING"|"INVESTING"|"FINANCING", Map<string, SrcSum>> = {
+    OPERATING: new Map(), INVESTING: new Map(), FINANCING: new Map(),
+  };
+  for (const l of periodLinesFull) {
+    if (!CASH_CODES.includes(l.accountCode)) continue; // 현금 라인만 집계
+    const cls = classify(l.entryId);
     const src = l.entry.source as string;
-    const cur = bySource.get(src) ?? { in: 0, out: 0 };
+    const m = buckets[cls];
+    const cur = m.get(src) ?? { in: 0, out: 0 };
     cur.in += Number(l.debitAmount);
     cur.out += Number(l.creditAmount);
-    bySource.set(src, cur);
+    m.set(src, cur);
   }
-
-  const operating: { source: string; inflow: number; outflow: number; net: number }[] = [];
-  for (const [source, v] of bySource) {
-    operating.push({ source, inflow: v.in, outflow: v.out, net: v.in - v.out });
-  }
-  operating.sort((a, b) => a.source.localeCompare(b.source));
-
-  const netCashFlow = operating.reduce((s, x) => s + x.net, 0);
-  return {
-    period,
-    operating,
-    investing: [],
-    financing: [],
-    netCashFlow,
-    openingCash,
-    closingCash: openingCash + netCashFlow,
+  const toArr = (m: Map<string, SrcSum>) => {
+    const arr = [...m.entries()].map(([source, v]) => ({ source, inflow: v.in, outflow: v.out, net: v.in - v.out }));
+    arr.sort((a, b) => a.source.localeCompare(b.source));
+    return arr;
   };
+  const operating = toArr(buckets.OPERATING);
+  const investing = toArr(buckets.INVESTING);
+  const financing = toArr(buckets.FINANCING);
+
+  const netCashFlow = [...operating, ...investing, ...financing].reduce((s, x) => s + x.net, 0);
+  return { period, operating, investing, financing, netCashFlow, openingCash, closingCash: openingCash + netCashFlow };
 }
 
 // AccountMonthlyBalance 산출/upsert — 마감 직전 호출.

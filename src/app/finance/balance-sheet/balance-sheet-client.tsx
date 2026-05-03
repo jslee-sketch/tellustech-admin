@@ -14,17 +14,22 @@ type BS = {
 
 export function BalanceSheetClient({ lang }: { lang: Lang }) {
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 7));
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    const q = u.searchParams.get("asOf") ?? u.searchParams.get("period");
+    if (q && /^\d{4}-\d{2}$/.test(q)) setAsOf(q);
+  }, []);
   const [data, setData] = useState<BS | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function load() {
     setLoading(true);
-    const r = await fetch(`/api/finance/balance-sheet?asOf=${asOf}&lang=${lang}`);
+    const r = await fetch(`/api/finance/balance-sheet?asOf=${asOf}&lang=${lang}`, { cache: "no-store" });
     const j = await r.json();
-    setData(j.data?.result ?? null);
+    setData(j.result ?? j.data?.result ?? null);
     setLoading(false);
   }
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [asOf, lang]);
 
   const balanced = data ? Math.abs(data.totalAsset - (data.totalLiability + data.totalEquity)) < 0.01 : false;
 
@@ -142,6 +147,17 @@ export function BalanceSheetClient({ lang }: { lang: Lang }) {
           </div>
         </div>
       )}
+      <style jsx global>{`
+        @media print {
+          @page { margin: 12mm; }
+          aside, header, button, nav, .no-print { display: none !important; }
+          html, body { background: #fff !important; }
+          body *, main *, table * { color: #000 !important; background: transparent !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          table { border-collapse: collapse !important; width: 100% !important; }
+          table td, table th { color: #000 !important; font-family: ui-monospace, "Roboto Mono", "Consolas", monospace !important; }
+          .text-emerald-500, .text-rose-500, .text-blue-500, .text-amber-500, .text-purple-500 { color: #000 !important; }
+        }
+      `}</style>
     </div>
   );
 }

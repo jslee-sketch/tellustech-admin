@@ -25,7 +25,7 @@ async function fetchDashboard(): Promise<DashData | null> {
   const r = await fetch(`${proto}://${host}/api/finance/cash-dashboard`, { headers: { cookie }, cache: "no-store" });
   if (!r.ok) return null;
   const j = await r.json();
-  return j.data as DashData;
+  return (j.data ?? j) as DashData;
 }
 
 export default async function CashDashboardPage() {

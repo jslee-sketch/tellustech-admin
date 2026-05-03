@@ -1982,6 +1982,8 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
+- **v2.9.1 · 2026-05-04**: 100-scenario E2E seed + 4 financial statements enriched + 5 client bugfixes. TB active codes 9 → 30 (5111/5113/5117 revenue split, VAT 3331/133, 6423~6429 expense split, 211 fixed assets, 411/421/338 capital·loan). CF classification (211→INVESTING, 411/421/338→FINANCING) added. Client 5 bugs fixed: j.data double-wrapper / URL query / cache:no-store / CF investing·financing sections / print colour. Full details in Appendix K of the employee manual.
+- **v2.9.0 · 2026-05-03**: PWA offline + points expiry policy. Full details in Appendix K of the employee manual.
 - **v2.8.0 · 2026-05-03**: Unified notification system (Email + Zalo + ERP Chat) — 30 event types, 27 default rules, dispatcher + 2 crons + 4 screens + 🔔 sidebar badge. Full details in Appendix K of the employee manual.
 - **v2.7.1 · 2026-05-03**: Small UX gaps closed — cash-tx header + reimbursement modal.
 - **v2.7.0 · 2026-05-03**: 8 follow-ups — RBAC + manual body integration (3-A~3-E) + accurate per-engineer stats + Sales FK backfill + server-synced favorites. Full details in Appendix K of the employee manual.

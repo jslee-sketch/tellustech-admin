@@ -14,15 +14,20 @@ export function CashFlowClient({ lang }: { lang: Lang }) {
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
   const [data, setData] = useState<CF | null>(null);
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    const q = u.searchParams.get("period");
+    if (q && /^\d{4}-\d{2}$/.test(q)) setPeriod(q);
+  }, []);
 
   async function load() {
     setLoading(true);
-    const r = await fetch(`/api/finance/cash-flow?period=${period}`);
+    const r = await fetch(`/api/finance/cash-flow?period=${period}`, { cache: "no-store" });
     const j = await r.json();
-    setData(j.data?.result ?? null);
+    setData((j.result ?? j.data?.result) ?? null);
     setLoading(false);
   }
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [period]);
 
   return (
     <div>
@@ -82,13 +87,14 @@ export function CashFlowClient({ lang }: { lang: Lang }) {
               </tr>
             </thead>
             <tbody>
+              {/* 영업활동 */}
               <tr className="bg-[color:var(--tts-bg)]/40 font-bold">
                 <td colSpan={4} className="py-2 text-emerald-500">{t("fs.operating", lang)}</td>
               </tr>
               {data.operating.map((r) => (
-                <tr key={r.source} className="border-b border-[color:var(--tts-border)]/30">
+                <tr key={`op-${r.source}`} className="border-b border-[color:var(--tts-border)]/30">
                   <td className="py-1.5 pl-4">{t(`journal.source.${r.source}`, lang)}</td>
-                  <td className="text-right font-mono">{Math.round(r.inflow).toLocaleString()}</td>
+                  <td className="text-right font-mono">{r.inflow ? Math.round(r.inflow).toLocaleString() : "—"}</td>
                   <td className="text-right font-mono text-rose-500">{r.outflow ? `(${Math.round(r.outflow).toLocaleString()})` : "—"}</td>
                   <td className={`text-right font-mono ${r.net >= 0 ? "" : "text-rose-500"}`}>{Math.round(r.net).toLocaleString()}</td>
                 </tr>
@@ -96,10 +102,68 @@ export function CashFlowClient({ lang }: { lang: Lang }) {
               {data.operating.length === 0 && (
                 <tr><td colSpan={4} className="py-3 text-center text-[color:var(--tts-muted)]">{t("common.noData", lang)}</td></tr>
               )}
+              <tr className="border-t border-[color:var(--tts-border)] font-bold">
+                <td className="py-2 pl-4">{t("fs.subtotal", lang) ?? "소계"}</td>
+                <td colSpan={2}></td>
+                <td className="text-right font-mono text-emerald-500">{Math.round(data.operating.reduce((s, r) => s + r.net, 0)).toLocaleString()}</td>
+              </tr>
+
+              {/* 투자활동 */}
+              <tr className="bg-[color:var(--tts-bg)]/40 font-bold">
+                <td colSpan={4} className="py-2 pt-4 text-amber-500">{t("fs.investing", lang) ?? "투자활동"}</td>
+              </tr>
+              {data.investing.map((r) => (
+                <tr key={`inv-${r.source}`} className="border-b border-[color:var(--tts-border)]/30">
+                  <td className="py-1.5 pl-4">{t(`journal.source.${r.source}`, lang)}</td>
+                  <td className="text-right font-mono">{r.inflow ? Math.round(r.inflow).toLocaleString() : "—"}</td>
+                  <td className="text-right font-mono text-rose-500">{r.outflow ? `(${Math.round(r.outflow).toLocaleString()})` : "—"}</td>
+                  <td className={`text-right font-mono ${r.net >= 0 ? "" : "text-rose-500"}`}>{Math.round(r.net).toLocaleString()}</td>
+                </tr>
+              ))}
+              {data.investing.length === 0 && (
+                <tr><td colSpan={4} className="py-3 text-center text-[color:var(--tts-muted)]">{t("common.noData", lang)}</td></tr>
+              )}
+              <tr className="border-t border-[color:var(--tts-border)] font-bold">
+                <td className="py-2 pl-4">{t("fs.subtotal", lang) ?? "소계"}</td>
+                <td colSpan={2}></td>
+                <td className="text-right font-mono text-amber-500">{Math.round(data.investing.reduce((s, r) => s + r.net, 0)).toLocaleString()}</td>
+              </tr>
+
+              {/* 재무활동 */}
+              <tr className="bg-[color:var(--tts-bg)]/40 font-bold">
+                <td colSpan={4} className="py-2 pt-4 text-purple-500">{t("fs.financing", lang) ?? "재무활동"}</td>
+              </tr>
+              {data.financing.map((r) => (
+                <tr key={`fin-${r.source}`} className="border-b border-[color:var(--tts-border)]/30">
+                  <td className="py-1.5 pl-4">{t(`journal.source.${r.source}`, lang)}</td>
+                  <td className="text-right font-mono">{r.inflow ? Math.round(r.inflow).toLocaleString() : "—"}</td>
+                  <td className="text-right font-mono text-rose-500">{r.outflow ? `(${Math.round(r.outflow).toLocaleString()})` : "—"}</td>
+                  <td className={`text-right font-mono ${r.net >= 0 ? "" : "text-rose-500"}`}>{Math.round(r.net).toLocaleString()}</td>
+                </tr>
+              ))}
+              {data.financing.length === 0 && (
+                <tr><td colSpan={4} className="py-3 text-center text-[color:var(--tts-muted)]">{t("common.noData", lang)}</td></tr>
+              )}
+              <tr className="border-t border-[color:var(--tts-border)] font-bold">
+                <td className="py-2 pl-4">{t("fs.subtotal", lang) ?? "소계"}</td>
+                <td colSpan={2}></td>
+                <td className="text-right font-mono text-purple-500">{Math.round(data.financing.reduce((s, r) => s + r.net, 0)).toLocaleString()}</td>
+              </tr>
             </tbody>
           </table>
         </div>
       )}
+      <style jsx global>{`
+        @media print {
+          @page { margin: 12mm; }
+          aside, header, button, nav, .no-print { display: none !important; }
+          html, body { background: #fff !important; }
+          body *, main *, table * { color: #000 !important; background: transparent !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          table { border-collapse: collapse !important; width: 100% !important; }
+          table td, table th { color: #000 !important; font-family: ui-monospace, "Roboto Mono", "Consolas", monospace !important; }
+          .text-emerald-500, .text-rose-500, .text-blue-500, .text-amber-500, .text-purple-500 { color: #000 !important; }
+        }
+      `}</style>
     </div>
   );
 }

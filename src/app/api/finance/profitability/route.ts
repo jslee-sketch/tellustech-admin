@@ -32,9 +32,9 @@ export async function GET(request: Request) {
         revenueByClient.set(s.clientId, (revenueByClient.get(s.clientId) ?? 0) + local);
       }
 
-      // 2) 직접비 — Expense.targetClientId 가 있는 비용 집계 (운송/소모품/기타)
+      // 2) 직접비 + 간접비 — 두 종류 모두 한 번에 가져와서 분류
       const expenses = await prisma.expense.findMany({
-        where: { incurredAt: { gte: from, lte: to }, targetClientId: { not: null } },
+        where: { incurredAt: { gte: from, lte: to }, deletedAt: null },
         select: { targetClientId: true, expenseType: true, amount: true, fxRate: true, currency: true },
       });
       const directCostByClient = new Map<string, { transport: number; consumable: number; other: number; total: number }>();

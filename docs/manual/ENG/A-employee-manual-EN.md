@@ -1715,6 +1715,9 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.1.2 · 2026-05-03**: Discovered that the `enterWith` from v2.1.1 doesn't propagate across RSC concurrent-render boundaries. Chrome verification showed VR mode still listing the 123 TV sales rows.
+  - Fix: Added `resolveSessionCompanyCode()` fallback inside the Prisma extension — when the ALS store is empty, it reads the `x-session-user` header directly via `next/headers` and parses `companyCode` from there.
+  - Result: A single helper resolves the company code for Server Components, Route Handlers, cron jobs, and tests. The behaviour no longer depends on whether ALS propagates through the runtime.
 - **v2.1.1 · 2026-05-03**: Server Component auto company-filter bug fix.
   - Symptom: After switching to VR, the sales list still showed the 123 TV rows.
   - Root cause: A server component that only calls `getSession()` (e.g. `/sales/page.tsx`) is not wrapped by `withSessionContext` so the ALS context is empty — the Prisma extension's `COMPANY_SCOPED_MODELS` filter therefore never fires.

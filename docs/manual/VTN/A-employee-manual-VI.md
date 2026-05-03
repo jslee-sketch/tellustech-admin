@@ -1714,6 +1714,9 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.1.2 · 2026-05-03**: Phát hiện `enterWith` của v2.1.1 không lan truyền qua hàng rào render đồng thời của RSC. Kiểm tra Chrome cho thấy chuyển sang VR vẫn hiển thị 123 dòng doanh thu của TV.
+  - Khắc phục: Bổ sung `resolveSessionCompanyCode()` fallback trong Prisma extension — khi ngữ cảnh ALS rỗng, đọc trực tiếp header `x-session-user` qua `next/headers` để lấy `companyCode`.
+  - Kết quả: Một hàm duy nhất quyết định `companyCode` cho cả Server Component / Route Handler / Cron / Test, không phụ thuộc vào việc ALS có lan truyền hay không.
 - **v2.1.1 · 2026-05-03**: Sửa lỗi tự động lọc công ty trong Server Component.
   - Triệu chứng: Sau khi chuyển sang VR, danh sách doanh thu vẫn hiển thị 123 bản ghi của TV.
   - Nguyên nhân: Server component chỉ gọi `getSession()` (ví dụ `/sales/page.tsx`) không được bọc bởi `withSessionContext` → ngữ cảnh ALS không được thiết lập → bộ lọc `COMPANY_SCOPED_MODELS` của Prisma extension không hoạt động.

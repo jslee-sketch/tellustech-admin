@@ -87,6 +87,25 @@ function injectCompanyOnCreate(args: unknown, companyCode: string): unknown {
   return { ...a, data: { ...data, companyCode } };
 }
 
+// Server Component 의 RSC 동시렌더 환경에서 AsyncLocalStorage 컨텍스트가
+// fork·격리될 수 있어 getRequestContext() 만으로는 부족. fallback 으로
+// next/headers 의 x-session-user 헤더를 직접 읽어 회사코드를 결정.
+// route handler (withSessionContext 로 ALS 가 보장된 경우) 도 동일하게 동작.
+async function resolveSessionCompanyCode(): Promise<string | null> {
+  const ctx = getRequestContext();
+  if (ctx) return ctx.companyCode;
+  try {
+    const { headers } = await import("next/headers");
+    const h = await headers();
+    const raw = h.get("x-session-user");
+    if (!raw) return null;
+    const session = JSON.parse(raw) as { companyCode?: string };
+    return session.companyCode ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function extendWithAudit(base: PrismaClient) {
   return base.$extends({
     name: "audit-softdelete",
@@ -96,9 +115,9 @@ function extendWithAudit(base: PrismaClient) {
           // 회사 분리 — 세션 단일회사면 data.companyCode 자동 주입
           let next = args;
           if (COMPANY_SCOPED_MODELS.has(model)) {
-            const ctx = getRequestContext();
-            if (ctx && (ctx.companyCode as string) !== "ALL") {
-              next = injectCompanyOnCreate(args, ctx.companyCode) as never;
+            const cc = await resolveSessionCompanyCode();
+            if (cc && cc !== "ALL") {
+              next = injectCompanyOnCreate(args, cc) as never;
             }
           }
           const result = (await query(next)) as AnyRecord;
@@ -140,9 +159,9 @@ function extendWithAudit(base: PrismaClient) {
             next = injectSoftDeleteFilter(next);
           }
           if (COMPANY_SCOPED_MODELS.has(model) && !callerWantsCompany(next)) {
-            const ctx = getRequestContext();
-            if (ctx && (ctx.companyCode as string) !== "ALL") {
-              next = injectCompanyFilter(next, ctx.companyCode);
+            const cc = await resolveSessionCompanyCode();
+            if (cc && cc !== "ALL") {
+              next = injectCompanyFilter(next, cc);
             }
           }
           return query(next as never);
@@ -154,9 +173,9 @@ function extendWithAudit(base: PrismaClient) {
             next = injectSoftDeleteFilter(next);
           }
           if (COMPANY_SCOPED_MODELS.has(model) && !callerWantsCompany(next)) {
-            const ctx = getRequestContext();
-            if (ctx && (ctx.companyCode as string) !== "ALL") {
-              next = injectCompanyFilter(next, ctx.companyCode);
+            const cc = await resolveSessionCompanyCode();
+            if (cc && cc !== "ALL") {
+              next = injectCompanyFilter(next, cc);
             }
           }
           return query(next as never);
@@ -168,9 +187,9 @@ function extendWithAudit(base: PrismaClient) {
             next = injectSoftDeleteFilter(next);
           }
           if (COMPANY_SCOPED_MODELS.has(model) && !callerWantsCompany(next)) {
-            const ctx = getRequestContext();
-            if (ctx && (ctx.companyCode as string) !== "ALL") {
-              next = injectCompanyFilter(next, ctx.companyCode);
+            const cc = await resolveSessionCompanyCode();
+            if (cc && cc !== "ALL") {
+              next = injectCompanyFilter(next, cc);
             }
           }
           return query(next as never);

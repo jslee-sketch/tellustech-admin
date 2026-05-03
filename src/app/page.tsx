@@ -67,7 +67,7 @@ export default async function Home() {
   const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
   const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const [salesRows, purchaseRows, openReceivable, openPayable, asPending, expiringContracts, certExpiring] = await Promise.all([
+  const [salesRows, purchaseRows, openReceivable, openPayable, asPending, expiringContracts, certExpiring, bankAgg, activeItContracts, activeTmRentals] = await Promise.all([
     prisma.sales.findMany({
       where: { createdAt: { gte: monthStart, lt: monthEnd } },
       select: { totalAmount: true, fxRate: true },
@@ -94,6 +94,16 @@ export default async function Home() {
     prisma.salesItem.count({
       where: { nextDueAt: { lte: thirtyDaysLater } },
     }).then(async (s) => s + (await prisma.purchaseItem.count({ where: { nextDueAt: { lte: thirtyDaysLater } } }))),
+    // 자금 잔고 합계 (활성 계좌)
+    prisma.bankAccount.aggregate({
+      where: { isActive: true, companyCode: session.companyCode },
+      _sum: { currentBalance: true },
+      _count: true,
+    }),
+    // 활성 IT 계약 수
+    prisma.itContract.count({ where: { status: "ACTIVE" } }),
+    // 활성 TM 렌탈 수
+    prisma.tmRental.count({ where: { status: "ACTIVE" } }),
   ]);
 
   // 월 매출/매입은 fxRate 적용해 VND 환산값 집계
@@ -141,6 +151,13 @@ export default async function Home() {
           <KpiCard label={t("dash.kpi.payable", L)}       value={`${new Intl.NumberFormat("vi-VN").format(Number(payable))} ₫`}    sub={`${openPayable._count} ${t("dash.kpi.cases", L)}`} accent="warn" />
           <KpiCard label={t("dash.kpi.asPending", L)}     value={String(asPending)} sub="" accent="warn" />
           <KpiCard label={t("dash.kpi.expiring", L)}      value={String(expiringContracts + certExpiring)} sub={`${t("dash.kpi.expiringSub", L)} · ${expiringContracts}/${certExpiring}`} accent="danger" />
+        </div>
+
+        {/* 100 시드 신규 KPI */}
+        <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-3">
+          <KpiCard label={t("dash.kpi.bankBalance", L)}    value={`${new Intl.NumberFormat("vi-VN").format(Number(bankAgg._sum.currentBalance ?? 0))} ₫`} sub={`${bankAgg._count} ${t("dash.kpi.accounts", L)}`} accent="success" />
+          <KpiCard label={t("dash.kpi.itContractsActive", L)} value={String(activeItContracts)} sub={t("dash.kpi.itContractsSub", L)} accent="primary" />
+          <KpiCard label={t("dash.kpi.tmRentalsActive", L)}   value={String(activeTmRentals)}   sub={t("dash.kpi.tmRentalsSub", L)}   accent="purple" />
         </div>
 
         {/* 모듈 네비 */}

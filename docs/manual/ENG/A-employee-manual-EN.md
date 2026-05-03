@@ -1747,6 +1747,17 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.9.2 · 2026-05-04**: Cumulative (YTD) financial statements + cash-management UX overhaul.
+  - **4 statements switched to YTD**: trial balance / income statement / cash flow / profitability now aggregate from Jan 1 of fiscal year to end of selected month (was monthly only). Label "Period" → "Cumulative (YTD)".
+  - **Sales screen**: per-column sort toggle + date-from/to filter (existing stage/status dropdowns kept).
+  - **Bank accounts**: confirmation modal on deposit/withdrawal/transfer (account, amount, description shown).
+  - **Cash transactions** (`/finance/cash-transactions`): split into client component. Search (code/account/description/category) + type/status dropdowns + date range + column sort + page size (10/30/50/100) + prev/next paging.
+  - **Cash dashboard**: monthly-trend zero bug fixed — falls back to CashTransaction aggregation when `BankAccountMonthlySnapshot` is empty. `?monthsBack=N` query (1–24).
+  - **Expenses**: search + type dropdown + date range + paging (existing status filter kept).
+  - **Profitability**: cumulative mode + sort + client search + paging.
+  - **Dashboard**: +3 KPI cards from 100-seed (bank balance total, active IT contracts, active TM rentals).
+  - **layout.tsx fix**: `<script>` → `next/script` (Next.js 16 hydration error resolved).
+  - i18n vi/en/ko +11 keys (fs.cumulative, col.dateFrom/To, page.size/prev/next, dash.kpi.bankBalance/itContractsActive/tmRentalsActive, etc.).
 - **v2.9.1 · 2026-05-04**: 100-scenario E2E seed + 4 financial-statement enrichment + 5 client bugfixes.
   - **100-scenario seed (`scripts/dev-only/seed-full-100.ts`)**: 10 clients + 10 employees + 5 warehouses + 15 items (BOM/compat) + 10 purchases (1.7B) + 10 sales (172.4M) + 5 IT contracts/9 devices + 3 TM rentals + 12 AS tickets + 8 expenses + 4 bank accounts + 30 cash txns + 60+ journal entries + 10 payrolls + 15 usage confirmations + 27 SNMP readings + 9 yield analyses + 3 portal points + 16 notifications + 20 receivables/payables. All prefixed `-100-` to coexist with prior seeds.
   - **4 statements richer**: trial balance active codes 9 → **30**. Sales 511 split into 5111(goods)/5113(service)/5117(rental) by project type. Expenses 642 split into 6423(office)/6424(travel)/6425(entertainment)/6426(rent)/6428(misc cash)/6429(utility/telecom). VAT entries (3331 output / 133 input @ 10%). 211 fixed assets + 152 raw materials + 153 tools split. 411 capital 200M + 421 retained earnings 30M + 338 short-term loan 100M (FINANCING). 711 other revenue + 515 finance income + 811 other expense activated. COGS (632) recognised per sale.

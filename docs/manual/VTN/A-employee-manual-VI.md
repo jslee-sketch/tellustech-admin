@@ -1746,6 +1746,17 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.9.2 · 2026-05-04**: BCTC chế độ lũy kế (YTD) + tổng nâng cấp UX quản lý tiền.
+  - **4 BCTC chuyển YTD**: TB / IS / CF / lợi nhuận khách hàng nay tổng từ 1/1 năm tài chính đến cuối tháng đã chọn. Nhãn "Kỳ" → "Lũy kế đến tháng (YTD)".
+  - **Bán hàng**: sắp xếp từng cột + lọc khoảng ngày (giữ dropdown stage/status hiện có).
+  - **Tài khoản NH**: modal xác nhận khi đăng ký thu/chi/chuyển khoản.
+  - **Lịch sử thu/chi** (`/finance/cash-transactions`): tách client component. Tìm kiếm + dropdown loại/trạng thái + khoảng ngày + sắp xếp cột + cỡ trang (10/30/50/100) + phân trang trước/sau.
+  - **Bảng điều khiển dòng tiền**: sửa lỗi xu hướng tháng = 0 — fallback gộp CashTransaction khi `BankAccountMonthlySnapshot` rỗng. Hỗ trợ `?monthsBack=N` (1–24).
+  - **Chi phí**: tìm kiếm + dropdown loại + khoảng ngày + phân trang (giữ filter trạng thái hiện có).
+  - **Lợi nhuận khách hàng**: chế độ lũy kế + sắp xếp + tìm kiếm + phân trang.
+  - **Dashboard**: +3 thẻ KPI từ seed 100 (tổng số dư NH, hợp đồng IT đang hoạt động, TM rental đang hoạt động).
+  - **Sửa layout.tsx**: `<script>` → `next/script` (giải quyết lỗi hydration Next.js 16).
+  - i18n vi/en/ko +11 khóa.
 - **v2.9.1 · 2026-05-04**: Seed E2E 100 kịch bản + làm giàu 4 báo cáo tài chính + sửa 5 lỗi client.
   - **Seed 100 kịch bản (`scripts/dev-only/seed-full-100.ts`)**: 10 khách hàng + 10 nhân viên + 5 kho + 15 mặt hàng (BOM/tương thích) + 10 phiếu mua (1,7 tỷ) + 10 phiếu bán (172,4 tr) + 5 hợp đồng IT/9 thiết bị + 3 TM rental + 12 ticket AS + 8 chi phí + 4 tài khoản NH + 30 cash txn + 60+ bút toán + 10 bảng lương + 15 phiếu xác nhận sử dụng + 27 SNMP + 9 yield + 3 điểm portal + 16 thông báo + 20 phải thu/trả. Tất cả prefix `-100-` để cùng tồn tại với seed cũ.
   - **4 báo cáo phong phú hơn**: bảng cân đối thử (TB) tài khoản hoạt động 9 → **30**. Doanh thu 511 chia thành 5111(hàng hoá)/5113(dịch vụ)/5117(cho thuê) theo loại dự án. Chi phí 642 chia thành 6423(văn phòng phẩm)/6424(công tác)/6425(tiếp khách)/6426(thuê)/6428(tiền mặt khác)/6429(tiện ích·viễn thông). Bút toán VAT (3331 đầu ra / 133 đầu vào 10%). 211 TSCĐ + 152 NVL + 153 CCDC tách. 411 vốn 200tr + 421 LN giữ lại 30tr + 338 vay ngắn hạn 100tr (FINANCING). 711 thu nhập khác + 515 thu nhập tài chính + 811 chi phí khác kích hoạt. Giá vốn (632) ghi nhận theo doanh số.

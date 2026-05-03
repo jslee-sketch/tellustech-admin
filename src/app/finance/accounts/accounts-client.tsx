@@ -33,6 +33,19 @@ export function AccountsClient({ accounts, lang }: { accounts: Account[]; lang: 
   async function submitAction() {
     if (!actionAmount || Number(actionAmount) <= 0) { alert("금액을 입력하세요"); return; }
     if (!actionDesc) { alert("설명을 입력하세요"); return; }
+    // 사용자 확인 — 거래 등록은 자금 흐름에 직접 영향
+    const acc = accounts.find((x) => x.id === actionAccountId);
+    const accLabel = acc ? `${acc.accountCode} (${acc.bankName})` : actionAccountId;
+    const modeKo = actionMode === "DEPOSIT" ? "입금" : actionMode === "WITHDRAWAL" ? "출금" : "이체";
+    const target = actionMode === "TRANSFER"
+      ? ` → ${accounts.find((x) => x.id === actionToAccountId)?.accountCode ?? actionToAccountId}`
+      : "";
+    const confirmMsg = `${modeKo} 거래 등록 확정?\n\n` +
+      `계좌: ${accLabel}${target}\n` +
+      `금액: ${Number(actionAmount).toLocaleString()} VND\n` +
+      `설명: ${actionDesc}\n\n` +
+      `※ 이 거래는 즉시 자금 흐름에 반영되며 분개 + CashTransaction이 생성됩니다.`;
+    if (!confirm(confirmMsg)) return;
     setBusy(true);
     let r: Response;
     if (actionMode === "TRANSFER") {

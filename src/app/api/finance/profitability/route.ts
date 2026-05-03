@@ -10,8 +10,9 @@ export async function GET(request: Request) {
     const period = trimNonEmpty(url.searchParams.get("period"));
     let from: Date, to: Date;
     if (period && /^\d{4}-\d{2}$/.test(period)) {
+      // 누적 모드 — 회계연도 시작(1월 1일) ~ 기준월 말일
       const y = Number(period.slice(0, 4)); const m = Number(period.slice(5, 7)) - 1;
-      from = new Date(y, m, 1, 0, 0, 0);
+      from = new Date(y, 0, 1, 0, 0, 0);
       to = new Date(y, m + 1, 0, 23, 59, 59);
     } else {
       const ps = trimNonEmpty(url.searchParams.get("periodStart"));

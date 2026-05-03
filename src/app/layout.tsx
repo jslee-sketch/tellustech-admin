@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
@@ -56,7 +57,7 @@ export default async function RootLayout({
           <Sidebar initialLang={initialLang} />
           <div className="flex min-h-full flex-1 flex-col">{children}</div>
         </div>
-        <script dangerouslySetInnerHTML={{ __html: `
+        <Script id="tts-sw-register" strategy="afterInteractive">{`
           if ("serviceWorker" in navigator) {
             var isPortal = location.pathname.startsWith("/portal");
             var isLogin = location.pathname.startsWith("/login");
@@ -65,7 +66,6 @@ export default async function RootLayout({
                 try { reg.update(); } catch (_) {}
               }).catch(() => undefined);
             } else if (!isLogin) {
-              // ERP 본체 — root scope SW. 인증 필요한 화면이라 로그인 페이지는 제외.
               navigator.serviceWorker.register("/sw-erp.js", { scope: "/", updateViaCache: "none" }).then((reg) => {
                 try { reg.update(); } catch (_) {}
               }).catch(() => undefined);
@@ -79,7 +79,7 @@ export default async function RootLayout({
               screen.orientation.unlock();
             }
           } catch (_) {}
-        `}} />
+        `}</Script>
       </body>
     </html>
   );

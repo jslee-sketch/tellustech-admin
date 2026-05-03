@@ -93,6 +93,10 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("all");
   const [stage, setStage] = useState<"all" | SalesRow["stage"]>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sortBy, setSortBy] = useState<string>("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const stageCounts = useMemo(() => {
     const c: Record<SalesRow["stage"], number> = { TECH: 0, SALES: 0, FINANCE: 0, DONE: 0 };
@@ -102,9 +106,11 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
 
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
-    return initialData.filter((s) => {
+    let out = initialData.filter((s) => {
       if (status !== "all" && s.receivableStatus !== status) return false;
       if (stage !== "all" && s.stage !== stage) return false;
+      if (dateFrom && s.createdAt < dateFrom) return false;
+      if (dateTo && s.createdAt > dateTo) return false;
       if (!qLower) return true;
       return (
         s.salesNumber.toLowerCase().includes(qLower) ||
@@ -112,13 +118,21 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
         s.clientName.toLowerCase().includes(qLower)
       );
     });
-  }, [initialData, q, status, stage]);
+    // 정렬
+    out = [...out].sort((a: any, b: any) => {
+      const va = a[sortBy] ?? ""; const vb = b[sortBy] ?? "";
+      const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "vi");
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return out;
+  }, [initialData, q, status, stage, dateFrom, dateTo, sortBy, sortDir]);
 
   const columns: DataTableColumn<SalesRow>[] = [
     {
       key: "salesNumber",
       label: t("col.salesNumber", lang),
       width: "160px",
+      sortable: true,
       render: (v, row) => (
         <Link
           href={`/sales/${row.id}`}
@@ -132,10 +146,12 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
       key: "createdAt",
       label: t("col.createdAt", lang),
       width: "110px",
+      sortable: true,
     },
     {
       key: "clientName",
       label: t("col.client", lang),
+      sortable: true,
       render: (_v, row) => (
         <div>
           <span className="font-semibold">{row.clientName}</span>{" "}
@@ -170,6 +186,7 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
       label: t("col.amountVnd", lang),
       width: "170px",
       align: "right",
+      sortable: true,
       render: (v, r) => (
         <div className="font-mono">
           <div className="text-[13px] font-bold">{formatVnd(v as string)}</div>
@@ -200,6 +217,7 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
       key: "stage",
       label: t("col.stage", lang),
       width: "150px",
+      sortable: true,
       render: (_v, row) => {
         const m = STAGE_META[row.stage];
         return <Badge tone={m.tone}>{m.emoji} {t(m.key, lang)}</Badge>;
@@ -273,8 +291,11 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
           );
         })}
       </div>
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="mb-3 flex flex-wrap gap-2 items-center">
         <SearchBar value={q} onChange={setQ} placeholder={t("placeholder.searchSales", lang)} />
+        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-2 text-[12px]" title={t("col.dateFrom", lang)} />
+        <span className="text-[12px] text-[color:var(--tts-muted)]">~</span>
+        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-2 text-[12px]" title={t("col.dateTo", lang)} />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
@@ -299,6 +320,7 @@ export function SalesClient({ initialData, lang }: { initialData: SalesRow[]; la
         </select>
       </div>
       <DataTable columns={columns} data={filtered} rowKey={(s) => s.id} emptyMessage={t("empty.sales", lang)}
+        sortBy={sortBy} sortDir={sortDir} onSortChange={(k, d) => { setSortBy(k); setSortDir(d); }}
         selectable
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}

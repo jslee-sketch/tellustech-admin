@@ -1982,6 +1982,7 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
+- **v2.9.2 · 2026-05-04**: Cumulative (YTD) financial statements + cash-management UX overhaul (sales/accounts/cash-tx/dashboard/expenses/profitability). Standard sort/search/date/paging pattern. Cash-tx confirm modal + monthly-trend zero-bug fix + 3 dashboard KPI cards from 100-seed. layout.tsx `<script>` → next/script. Full details in Appendix K of the employee manual.
 - **v2.9.1 · 2026-05-04**: 100-scenario E2E seed + 4 financial statements enriched + 5 client bugfixes. TB active codes 9 → 30 (5111/5113/5117 revenue split, VAT 3331/133, 6423~6429 expense split, 211 fixed assets, 411/421/338 capital·loan). CF classification (211→INVESTING, 411/421/338→FINANCING) added. Client 5 bugs fixed: j.data double-wrapper / URL query / cache:no-store / CF investing·financing sections / print colour. Full details in Appendix K of the employee manual.
 - **v2.9.0 · 2026-05-03**: PWA offline + points expiry policy. Full details in Appendix K of the employee manual.
 - **v2.8.0 · 2026-05-03**: Unified notification system (Email + Zalo + ERP Chat) — 30 event types, 27 default rules, dispatcher + 2 crons + 4 screens + 🔔 sidebar badge. Full details in Appendix K of the employee manual.

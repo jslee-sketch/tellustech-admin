@@ -18,7 +18,8 @@ export type TrialBalanceRow = {
 // 시산표 — 모든 leaf 계정의 차/대 합계.
 export async function computeTrialBalance(period: string, companyCode: Company): Promise<TrialBalanceRow[]> {
   const [year, month] = period.split("-").map(Number);
-  const from = new Date(Date.UTC(year, month - 1, 1));
+  // 누적: 회계연도 시작(1월 1일) ~ 기준월 말일+1
+  const from = new Date(Date.UTC(year, 0, 1));
   const to = new Date(Date.UTC(year, month, 1));
 
   const accounts = await prisma.chartOfAccount.findMany({
@@ -163,7 +164,8 @@ const CASH_CODES = ["111", "112"];
 
 export async function computeCashFlow(period: string, companyCode: Company): Promise<CashFlowStatement> {
   const [year, month] = period.split("-").map(Number);
-  const from = new Date(Date.UTC(year, month - 1, 1));
+  // 누적: 회계연도 시작(1월 1일) ~ 기준월 말일+1
+  const from = new Date(Date.UTC(year, 0, 1));
   const to = new Date(Date.UTC(year, month, 1));
 
   // 기초 현금 — period 시작 전까지 누적

@@ -48,7 +48,7 @@ export function TrialBalanceClient({ lang }: { lang: Lang }) {
   return (
     <div>
       <Row>
-        <Field label={t("finance.period", lang)} width="180px">
+        <Field label={t("fs.cumulative", lang)} width="220px">
           <TextInput value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="YYYY-MM" />
         </Field>
         <Field label=" " width="100px">

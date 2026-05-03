@@ -51,7 +51,27 @@ export function ExpensesListClient({ rows, lang, accountOptions }: { rows: Expen
     if (r.ok) router.refresh(); else alert(t("expense.reimburseFailed", lang));
   }
 
-  const filtered = filter === "ALL" ? rows : rows.filter((r) => r.paymentStatus === filter);
+  const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [pageSize, setPageSize] = useState(30);
+  const [page, setPage] = useState(1);
+
+  const baseFiltered = (() => {
+    const ql = q.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (filter !== "ALL" && r.paymentStatus !== filter) return false;
+      if (typeFilter !== "all" && r.expenseType !== typeFilter) return false;
+      if (dateFrom && r.incurredAt.slice(0, 10) < dateFrom) return false;
+      if (dateTo && r.incurredAt.slice(0, 10) > dateTo) return false;
+      if (!ql) return true;
+      return r.expenseCode.toLowerCase().includes(ql) || (r.note ?? "").toLowerCase().includes(ql) || r.expenseType.toLowerCase().includes(ql);
+    });
+  })();
+  const totalPages = Math.max(1, Math.ceil(baseFiltered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const filtered = baseFiltered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const cols: DataTableColumn<ExpenseRow>[] = [
     { key: "expenseCode", label: t("col.expenseCode", lang), width: "150px",
@@ -85,13 +105,38 @@ export function ExpensesListClient({ rows, lang, accountOptions }: { rows: Expen
       <div className="mb-3 flex flex-wrap items-center gap-2 text-[12px]">
         <span className="text-[color:var(--tts-sub)]">{t("expense.paymentStatus", lang)}:</span>
         {(["ALL", "PAID", "PENDING_PAYMENT", "PENDING_REIMBURSE", "REIMBURSED"] as const).map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={`rounded px-2 py-1 ${filter === s ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)]"}`}>
+          <button key={s} onClick={() => { setFilter(s); setPage(1); }} className={`rounded px-2 py-1 ${filter === s ? "bg-[color:var(--tts-primary)] text-white" : "border border-[color:var(--tts-border)]"}`}>
             {s === "ALL" ? "전체" : t(`expense.payStatus.${s}`, lang)}
           </button>
         ))}
-        <span className="ml-auto text-[color:var(--tts-muted)]">{filtered.length} / {rows.length}</span>
+        <span className="ml-auto text-[color:var(--tts-muted)]">{baseFiltered.length} 건</span>
+      </div>
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-[12px]">
+        <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="🔎 코드/메모/타입"
+          className="w-[220px] rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-3 py-2" />
+        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+          className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-2">
+          <option value="all">전체 타입</option>
+          {["TRANSPORT","MEAL","ENTERTAINMENT","RENT","UTILITY","GENERAL","SALES","PURCHASE","OTHER"].map((tp) => <option key={tp} value={tp}>{tp}</option>)}
+        </select>
+        <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-2" title="시작일" />
+        <span className="text-[color:var(--tts-muted)]">~</span>
+        <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-2" title="종료일" />
       </div>
       <DataTable columns={cols} data={filtered} rowKey={(r) => r.id} emptyMessage={t("empty.expenses", lang)} />
+      <div className="mt-3 flex items-center justify-between text-[12px]">
+        <div className="flex items-center gap-2">
+          <span className="text-[color:var(--tts-sub)]">{t("page.size", lang)}</span>
+          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-1">
+            {[10,30,50,100].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>← {t("page.prev", lang)}</Button>
+          <span className="font-mono">{safePage} / {totalPages}</span>
+          <Button variant="ghost" disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>{t("page.next", lang)} →</Button>
+        </div>
+      </div>
 
       {approveTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setApproveTarget(null)}>

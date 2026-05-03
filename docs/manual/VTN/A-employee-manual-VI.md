@@ -1714,6 +1714,10 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.6.0 · 2026-05-03**: Tài chính **Layer 5 — AccountingConfig + Sidebar tổ chức lại + E2E 21 bước** hoàn thiện.
+  - **AccountingConfig** (1 dòng/công ty) — 3 preset chuẩn (VAS/K_IFRS/IFRS) + tháng bắt đầu năm tài chính + Tiền tệ báo cáo + VAT mặc định + Ngôn ngữ báo cáo + 3 cờ (kế toán dồn tích / bút toán tự động / bắt buộc đóng kỳ). Màn hình mới `/finance/accounting-config` (ADMIN/MANAGER) — 3 thẻ preset + form chi tiết + [Lưu].
+  - **Sidebar nhóm Tài chính chia nhỏ** — từ 16 mục đơn → 3 sub-group: `Tài chính · Quỹ`(8 mục) / `Tài chính · Sổ cái`(4 mục, kèm AccountingConfig) / `Tài chính · BCTC`(5 mục — Cân đối thử/PL/BS/CF/Đóng kỳ). Cải thiện điều hướng + phân nhóm trực quan.
+  - **E2E 21 bước** (`scripts/test-finance-e2e.ts`) — Hợp nhất Layer 1·5: tạo AccountingConfig, 39 TK/14 mapping VAS, BankAccount, 4 bút toán tự động, cân đối thử, ghi nhận lợi nhuận, A=L+E, lưu chuyển tiền, verify ok, close + đóng băng AMB, chặn bút toán khi đã CLOSED, reopen + tiếp tục, áp K_IFRS, đổi mapping. 21/21 PASS.
 - **v2.5.0 · 2026-05-03**: Tài chính **Layer 4 — Báo cáo tài chính + Đóng kỳ**.
   - 4 màn hình + API mới: `/finance/trial-balance` (Bảng cân đối thử — tổng nợ/có theo TK leaf + kiểm tra cân bằng), `/finance/income-statement` (Báo cáo kết quả — Doanh thu/Chi phí/Lợi nhuận ròng, In + Excel), `/finance/balance-sheet` (Bảng cân đối kế toán — Tài sản/Nợ/Vốn + cộng dồn lợi nhuận chưa phân phối + badge kiểm tra A=L+E), `/finance/cash-flow` (Lưu chuyển tiền tệ — phương pháp trực tiếp, phân loại theo source cho TK 111/112).
   - Quy trình đóng kỳ (verify → close → reopen): model `PeriodClose` + `AccountMonthlyBalance` + bộ chặn `assertPeriodOpen()` — khi tạo JournalEntry, nếu entryDate thuộc kỳ CLOSED thì throw `PERIOD_CLOSED:YYYY-MM`.

@@ -2433,6 +2433,30 @@ const DICT: Dict = {
   "close.closeDone":        { vi: "Đã đóng kỳ",         en: "Closed",            ko: "마감 완료" },
   "close.reopenDone":       { vi: "Đã mở lại",          en: "Reopened",          ko: "재개 완료" },
 
+  // Layer 5 — 회계 설정 마스터 + 사이드바 sub-group
+  "nav.financeCash":        { vi: "Tài chính · Quỹ",    en: "Finance · Cash",    ko: "재경 · 자금관리" },
+  "nav.financeLedger":      { vi: "Tài chính · Sổ cái", en: "Finance · Ledger",  ko: "재경 · 회계원장" },
+  "nav.financeReports":     { vi: "Tài chính · BCTC",   en: "Finance · Reports", ko: "재경 · 재무제표" },
+  "nav.accountingConfig":   { vi: "Cấu hình kế toán",   en: "Accounting Config", ko: "회계 설정" },
+  "acfg.presetTitle":       { vi: "Chuẩn kế toán (Preset)", en: "Accounting Standard (Preset)", ko: "회계 표준 (프리셋)" },
+  "acfg.settingsTitle":     { vi: "Cài đặt chi tiết",   en: "Detailed settings", ko: "세부 설정" },
+  "acfg.standard":          { vi: "Chuẩn",              en: "Standard",          ko: "회계 표준" },
+  "acfg.fiscalYear":        { vi: "Năm tài chính",      en: "Fiscal year start", ko: "회계연도 시작" },
+  "acfg.reportCurrency":    { vi: "Tiền tệ báo cáo",    en: "Report currency",   ko: "보고 통화" },
+  "acfg.vatRate":           { vi: "Thuế VAT mặc định",  en: "Default VAT rate",  ko: "기본 VAT률" },
+  "acfg.reportLang":        { vi: "Ngôn ngữ báo cáo",   en: "Report language",   ko: "보고서 언어" },
+  "acfg.accrual":           { vi: "Kế toán dồn tích",   en: "Accrual basis",     ko: "발생주의 회계" },
+  "acfg.autoJournal":       { vi: "Bút toán tự động",   en: "Auto-journal",      ko: "자동 분개" },
+  "acfg.enforceClose":      { vi: "Bắt buộc đóng kỳ",   en: "Enforce period close", ko: "마감 가드 강제" },
+  "acfg.fy.JAN":            { vi: "Tháng 1",            en: "January",           ko: "1월" },
+  "acfg.fy.APR":            { vi: "Tháng 4",            en: "April",             ko: "4월" },
+  "acfg.fy.JUL":            { vi: "Tháng 7",            en: "July",              ko: "7월" },
+  "acfg.fy.OCT":            { vi: "Tháng 10",           en: "October",           ko: "10월" },
+  "acfg.active":            { vi: "Đang áp dụng",       en: "Active",            ko: "적용 중" },
+  "acfg.confirmPreset":     { vi: "Áp dụng preset {p}? Cài đặt hiện tại sẽ bị ghi đè.", en: "Apply preset {p}? Current settings will be overwritten.", ko: "{p} 프리셋을 적용하시겠습니까? 현재 설정이 덮어쓰기됩니다." },
+  "acfg.presetApplied":     { vi: "Đã áp dụng preset {p}", en: "Preset {p} applied", ko: "{p} 프리셋 적용 완료" },
+  "acfg.saved":             { vi: "Đã lưu",             en: "Saved",             ko: "저장 완료" },
+
   // ── 매출/매입: TRADE 외 프로젝트 안내 (재고 자동영향 없음) ──
   "note.nonTradeStock": {
     vi: "ℹ️ Loại dự án này KHÔNG tự động ảnh hưởng tồn kho. Việc di chuyển thiết bị thực tế cần được đăng ký riêng tại Xuất nhập kho → TRANSFER với lý do tương ứng (REPAIR/CALIBRATION/RENTAL/DEMO).",

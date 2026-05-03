@@ -3506,3 +3506,42 @@ model PeriodClose {
   @@index([companyCode, status])
   @@map("period_closes")
 }
+
+// =====================================================
+// 재경 Layer 5 — 회계 설정 마스터 (AccountingConfig)
+// 회사별 1행. 표준(VAS/K_IFRS/IFRS) + 회계연도 시작월 + 보고통화 + VAT률.
+// 표준 변경 시 ChartOfAccount 의 standard 도 일괄 갱신.
+// =====================================================
+
+enum FiscalYearStart {
+  JAN  // 1월 (한국·VAS 기본)
+  APR  // 4월 (일본·영국)
+  JUL  // 7월 (호주)
+  OCT  // 10월 (미국 일부)
+}
+
+model AccountingConfig {
+  id                    String          @id @default(cuid())
+  // 기본 표준
+  standard              AccountStandard @default(VAS)
+  // 회계연도
+  fiscalYearStart       FiscalYearStart @default(JAN)
+  // 보고통화 (재무제표 표시 통화)
+  reportingCurrency     Currency        @default(VND)
+  // VAT 기본률 (자동분개에서 net/vat 분리에 사용)
+  defaultVatRate        Decimal         @db.Decimal(5, 4) @default(0.10) // 10%
+  // 사용 언어 — 재무제표 PDF/Excel 기본
+  defaultReportLang     Language        @default(VI)
+  // 발생주의 회계 사용 여부 (false 면 현금주의)
+  enableAccrual         Boolean         @default(true)
+  // 자동분개 활성 여부 (false 시 수동 분개만)
+  enableAutoJournal     Boolean         @default(true)
+  // 마감 가드 활성 여부
+  enforcePeriodClose    Boolean         @default(true)
+  companyCode           CompanyCode     @unique @default(TV)
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@map("accounting_configs")
+}

@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.5.0";
+export const VERSION = "v2.6.0";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "재경 Layer 4 — 재무제표(시산표·PL·BS·CF) + 기간 마감(verify·close·reopen) + AccountMonthlyBalance";
+export const VERSION_NOTE = "재경 Layer 5 — AccountingConfig (VAS/K_IFRS/IFRS preset) + 사이드바 sub-divider 정렬 + E2E 21단계";

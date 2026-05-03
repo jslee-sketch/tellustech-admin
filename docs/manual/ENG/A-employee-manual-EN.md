@@ -1715,6 +1715,10 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.6.0 · 2026-05-03**: Finance **Layer 5 — AccountingConfig + Sidebar reorganization + 21-step E2E** completed.
+  - **AccountingConfig** (one row per company) — 3 standard presets (VAS/K_IFRS/IFRS) + fiscal year start month + reporting currency + default VAT rate + report language + 3 toggles (accrual / auto-journal / enforce period close). New screen `/finance/accounting-config` (ADMIN/MANAGER only) — 3 preset cards + detail form + [Save].
+  - **Finance sidebar group split** — single 16-item group reorganized into 3 sub-groups: `Finance · Cash` (8 items) / `Finance · Ledger` (4 items, includes AccountingConfig) / `Finance · Reports` (5 items — Trial Balance/PL/BS/CF/Closings). Visual separation improves navigation + onboarding for new users.
+  - **21-step E2E** (`scripts/test-finance-e2e.ts` via `npx tsx`) — full Layer 1·5 integration: AccountingConfig creation, VAS 39 accounts/14 mappings verified, BankAccount, 4 auto-journals (sales/purchase/cash/expense), trial balance, income recognition, balance sheet A=L+E, cash flow net, verify OK, close + AMB freeze, post-close entry blocking (PERIOD_CLOSED throw), reopen + resume, K_IFRS preset apply, mapping change. 21/21 PASS.
 - **v2.5.0 · 2026-05-03**: Finance **Layer 4 — Financial Statements + Period Close** introduced.
   - 4 new screens + APIs: `/finance/trial-balance` (Trial Balance — debit/credit totals per leaf account + balance check), `/finance/income-statement` (Income Statement — Revenue/Expense/Net Income, Print + Excel), `/finance/balance-sheet` (Balance Sheet — Assets/Liabilities/Equity with auto-rolled retained earnings + A=L+E balance-check badge), `/finance/cash-flow` (Cash Flow — direct method, source-classified for accounts 111/112).
   - Period close workflow (verify → close → reopen): `PeriodClose` model + `AccountMonthlyBalance` (monthly account-balance snapshots) + `assertPeriodOpen()` guard — when creating a JournalEntry, if entryDate falls in a CLOSED period it immediately throws `PERIOD_CLOSED:YYYY-MM`.

@@ -74,7 +74,7 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
-    labelKey: "nav.finance",
+    labelKey: "nav.financeCash",
     items: [
       { href: "/finance/sales-confirm", labelKey: "nav.salesConfirm", icon: "🔵", match: (p) => p.startsWith("/finance/sales-confirm") },
       { href: "/finance/accounts", labelKey: "nav.cashAccounts", icon: "🏦", match: (p) => p.startsWith("/finance/accounts") },
@@ -84,9 +84,20 @@ const GROUPS: NavGroup[] = [
       { href: "/finance/expenses", labelKey: "nav.expenses", icon: "🧾", match: (p) => p.startsWith("/finance/expenses") },
       { href: "/finance/cost-centers", labelKey: "nav.costCenters", icon: "🏢", match: (p) => p.startsWith("/finance/cost-centers") },
       { href: "/finance/profitability", labelKey: "nav.profitability", icon: "📈", match: (p) => p.startsWith("/finance/profitability") },
+    ],
+  },
+  {
+    labelKey: "nav.financeLedger",
+    items: [
       { href: "/finance/chart-of-accounts", labelKey: "nav.chartOfAccounts", icon: "📒", match: (p) => p.startsWith("/finance/chart-of-accounts") },
       { href: "/finance/journal-entries", labelKey: "nav.journalEntries", icon: "📝", match: (p) => p.startsWith("/finance/journal-entries") },
       { href: "/finance/account-mappings", labelKey: "nav.accountMappings", icon: "🔗", match: (p) => p.startsWith("/finance/account-mappings") },
+      { href: "/finance/accounting-config", labelKey: "nav.accountingConfig", icon: "⚙️", match: (p) => p.startsWith("/finance/accounting-config") },
+    ],
+  },
+  {
+    labelKey: "nav.financeReports",
+    items: [
       { href: "/finance/trial-balance", labelKey: "nav.trialBalance", icon: "⚖️", match: (p) => p.startsWith("/finance/trial-balance") },
       { href: "/finance/income-statement", labelKey: "nav.incomeStatement", icon: "📊", match: (p) => p.startsWith("/finance/income-statement") },
       { href: "/finance/balance-sheet", labelKey: "nav.balanceSheet", icon: "📑", match: (p) => p.startsWith("/finance/balance-sheet") },

@@ -170,6 +170,75 @@ Use only when a mistake is found after closing. The unlock button is hidden for 
 
 ---
 
+# Part 3-A. Accounting Configuration (Layer 5 — `/finance/accounting-config`)
+
+> ADMIN/MANAGER only. One row per company. Preset changes apply immediately to all auto-journal hooks and financial-statement computations.
+
+## 3-A.1 Three Standard Presets
+
+| Preset | Standard | Fiscal year | Currency | VAT | Report language |
+|---|---|---|---|---|---|
+| **VAS** | Vietnam (Circular 200/2014/TT-BTC) | January | VND | 10% | Tiếng Việt |
+| **K_IFRS** | Korean adoption of IFRS | January | KRW | 10% | 한국어 |
+| **IFRS** | International (IASB) | January | USD | 0% | English |
+
+Click a preset card → confirm → single POST applies the bundle. The current ChartOfAccounts seed is VAS-only (39 accounts) — other standards need a separate seed (future expansion).
+
+## 3-A.2 Detailed settings
+
+- **enableAccrual** — false ⇒ cash basis (recognize only on cash movement).
+- **enableAutoJournal** — false ⇒ all 5 module hooks become silent. Manual journals only.
+- **enforcePeriodClose** — false ⇒ disables `assertPeriodOpen` guard (audit risk).
+
+Recommended: all three true. Disable manually only for debug/migration.
+
+---
+
+# Part 3-B. Account Mapping Management (`/finance/account-mappings`)
+
+14 triggers (SALES_REVENUE/RECEIVABLE/VAT_OUT, PURCHASE_INVENTORY/PAYABLE/VAT_IN, CASH_IN/OUT/TRANSFER, EXPENSE_OPEX/CASH, PAYROLL_SALARY/PAYABLE, RENTAL_REVENUE) → VAS account codes.
+
+Edit row → account dropdown → Save. Only `isLeaf=true` accounts selectable. Mapping changes apply to subsequent transactions only — historical entries are not recomputed. Recommended: change only at fiscal-year start, after closing.
+
+---
+
+# Part 3-C. Financial Statements (Layer 4)
+
+| Screen | Computation basis |
+|---|---|
+| **Trial Balance** | DR/CR totals per leaf account within the period + balance check |
+| **Income Statement** | REVENUE - EXPENSE = Net income. Excel + Print |
+| **Balance Sheet** | Cumulative ASSET = LIAB + EQUITY + cumulative retained earnings to date. A=L+E badge |
+| **Cash Flow** | Direct method. Account 111/112 lines classified by source |
+
+All screens have [Excel] + [🖨 Print].
+
+---
+
+# Part 3-D. Period Close (Layer 4 — `/admin/closings`)
+
+Legacy record-lock card + new PeriodClose card + 12-month history. **Workflow**: verify → close → reopen.
+
+1. **Verify**: balance check + leftover-DRAFT scan.
+2. **Close**: only from VERIFIED. AMB upsert + isFrozen=true. New journal entries with entryDate in the period throw `PERIOD_CLOSED:YYYY-MM`.
+3. **Reopen**: ADMIN-only, reason required.
+
+Recommended cadence: verify on the 5th, close on the 7th.
+
+---
+
+# Part 3-E. Cost Centers / Budgets / Per-Client Profitability (Layer 2)
+
+## 3-E.1 Cost Centers (`/finance/cost-centers`)
+
+CostCenter (DEPARTMENT/BRANCH/PROJECT) + monthly Budget. Monthly cron `/api/jobs/finance-monthly-snapshot` (1st @ 03:00 KST) sums ExpenseAllocation into `Budget.actualAmount`; overruns emit `BUDGET_OVERRUN` notifications.
+
+## 3-E.2 Per-Client Profitability (`/finance/profitability`)
+
+Revenue − (transport + parts + other direct + indirect-allocated) = net profit per client. Excel export. Accurate aggregation requires `Expense.targetClientId` to be filled at registration.
+
+---
+
 # Part 4. Trash (`/admin/trash`)
 
 Restores soft-deleted (`deletedAt != null`) rows. There is no permanent delete (audit log preservation).

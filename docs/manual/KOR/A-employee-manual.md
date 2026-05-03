@@ -1146,6 +1146,85 @@ OS 인쇄 다이얼로그에서 **반드시** 다음 값으로:
 
 회계마감(잠금) 정책의 영향을 받습니다 — 잠긴 월에 속한 비용 수정·삭제는 차단(책 B 3부).
 
+## 8.3 자금관리 — 계좌 / 입출금 / 자금현황판 (Layer 1)
+
+### 8.3.1 계좌 관리 (`/finance/accounts`)
+
+회사 은행 계좌·현금 박스를 등록하고 잔고를 추적합니다.
+
+| 입력 | 시스템 영향 |
+|---|---|
+| **계좌코드** | `accountCode` — `ACC-001` 등. 자동 발급되지 않으니 수동 부여 |
+| **은행명·계좌번호·계좌명** | `bankName`/`accountNumber`/`accountName` |
+| **계좌 유형** | `CHECKING`(당좌) / `SAVINGS`(예금) / `CASH`(현금박스) / `OTHER` |
+| **통화** | `VND`/`KRW`/`USD` 등 |
+| **개시잔액·개시일** | `openingBalance`/`openingDate` — 시스템 도입 시점 잔고 |
+| **부족 임계값** | `lowBalanceThreshold` — 이 값 이하로 떨어지면 매월 1일 cron 이 ADMIN 에게 `CASH_SHORTAGE_ALERT` 알림 발송 (3언어) |
+| **분기 (TV/VR)** | `branchCode` — 회사 분리 외 추가 분기용 (선택) |
+
+행별 액션: **[+ 입금]** / **[− 출금]** / **[↔ 이체]** — 해당 모달에서 즉시 `CashTransaction` 생성 + `currentBalance` 동기 갱신 + (자동분개 활성 시) `JournalEntry` 자동 발급.
+
+### 8.3.2 입출금 내역 (`/finance/cash-transactions`)
+
+모든 자금 이동 기록.
+
+- 자동코드 `CT-YYMMDD-###`.
+- 거래 유형: **DEPOSIT**(입금) / **WITHDRAWAL**(출금) / **TRANSFER**(계좌간 이체).
+- 카테고리: `RECEIVABLE_COLLECTION` / `PAYABLE_PAYMENT` / `SALARY` / `TAX` / `EXPENSE` / `REVENUE_OTHER` / `TRANSFER` / `LOAN_IN` / `LOAN_OUT` / `REIMBURSEMENT` / `OTHER`.
+- 카테고리에 따라 **자동 분개** 시 상대 계정이 결정됨 (예: `RECEIVABLE_COLLECTION` → 차) 112 예금 / 대) 131 미수금).
+
+### 8.3.3 자금 현황판 (`/finance/cash-dashboard`)
+
+전 계좌 잔고 요약 + 이번 달 IN/OUT 합계 + 부족 경고 카드.
+
+### 8.3.4 비용 등록 강화
+
+**비용** (`/finance/expenses/new`) 화면이 Layer 1 에서 6 신규 필드를 노출:
+
+| 입력 | 시스템 영향 |
+|---|---|
+| **결제방법 (paymentMethod)** | `BANK_COMPANY` / `CASH_COMPANY` / `CARD_COMPANY` / `CASH_PERSONAL` / `CREDIT_PERSONAL` — 결제방식 |
+| **결제상태 (paymentStatus)** | `PAID`(결제완료) / `PENDING_PAYMENT`(지급예정) / `PENDING_REIMBURSE`(환급대기) / `REIMBURSED`(환급완료) |
+| **발생업체 (vendorClient)** | `vendorClientId` 또는 `vendorName` — 비용 청구처 |
+| **귀속 거래처 (targetClient)** | `targetClientId` — 이 비용이 어느 거래처와 연관되는지 (수익성 분석용) |
+| **즉시 출금 (cashOut)** | true 시 `CASH_COMPANY`/`BANK_COMPANY` 결제방법에서 선택 계좌 차감 + CashTransaction 자동 생성 |
+| **출금 계좌 (cashOutAccountId)** | 즉시 출금 시 사용할 계좌 |
+
+리스트 화면 (`/finance/expenses`) 에 paymentStatus 필터 5종 (전체/결제완료/지급예정/환급대기/환급완료) + `PENDING_REIMBURSE` 행에 **[환급 승인]** 버튼.
+
+## 8.4 미수금/미지급금 입금 모달 — 계좌 동기화
+
+PR 상세 (`/finance/payables/[id]`) 의 결제 등록 시 **[계좌] 드롭다운** — 선택 시:
+
+1. `CashTransaction` 자동 생성 (해당 계좌, 해당 금액, `RECEIVABLE_COLLECTION` 또는 `PAYABLE_PAYMENT` 카테고리).
+2. `BankAccount.currentBalance` 동기 갱신.
+3. (자동분개 활성 시) `JournalEntry` 자동 발급.
+
+## 8.5 회계원장 — 계정과목 / 분개장 (Layer 3)
+
+### 8.5.1 계정과목표 (`/finance/chart-of-accounts`)
+
+VAS(베트남 회계기준) 39개 표준 계정 + K-IFRS / IFRS 프리셋. 타입별 색상:
+- ASSET 자산 (1xxx) — 청색 / LIABILITY 부채 (3xxx) — 황색 / EQUITY 자본 (4xxx) — 보라
+- REVENUE 수익 (5xxx, 7xxx) — 녹색 / EXPENSE 비용 (6xxx, 8xxx) — 적색
+
+`isLeaf=true` 인 계정만 분개라인에 사용 가능. 계층 구조는 `parentCode` + `level`.
+
+### 8.5.2 회계 전표 (`/finance/journal-entries`)
+
+모든 분개를 source 별로 색상 배지와 함께 조회:
+- **수동** (회색) / **매출** (청색) / **매입** (보라) / **자금** (녹색) / **비용** (적색) / **급여** (주황) / **조정** (자홍).
+- 상태 필터: 초안 / 전기됨 / 역분개됨.
+- 행 클릭으로 라인 펼치기.
+- 초안 → **[전기]** (POSTED 변환) / 전기됨 → **[역분개]** (반대 분개 entry 자동 생성).
+
+자동분개 정책 (Layer 3 hooks):
+- 매출: 차) 131 미수금 / 3331 부가세예수금 ┃ 대) 5111 매출
+- 매입: 차) 156 재고 / 133 매입세액 ┃ 대) 331 외상매입금
+- 자금 IN/OUT: 카테고리별 상대계정 자동 lookup
+- 비용: 즉시출금이면 차) 6428 비용 / 대) 112 예금, 미지급이면 차) 6428 / 대) 331
+- 급여 bulk-pay: 차) 6421 급여 / 대) 112 예금
+
 ---
 
 # 9부. 회의 / 캘린더 / 메시징

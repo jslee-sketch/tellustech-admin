@@ -1146,6 +1146,38 @@ Distributes a single expense across multiple sales / purchases or departments / 
 
 Subject to the accounting-close (lock) policy — modifications / deletions of expenses in a locked month are blocked (Volume B, Part 3).
 
+## 8.3 Cash Management — Accounts / Transactions / Dashboard (Layer 1)
+
+### 8.3.1 Bank Accounts (`/finance/accounts`)
+
+Register bank accounts + cash boxes and track balances. Per-row actions **[+ In]** / **[− Out]** / **[↔ Transfer]** auto-create a `CashTransaction`, sync `currentBalance`, and (if auto-journal is enabled) emit a `JournalEntry`. `lowBalanceThreshold` triggers a `CASH_SHORTAGE_ALERT` notification to ADMIN via the monthly cron.
+
+### 8.3.2 Cash Transactions (`/finance/cash-transactions`)
+
+Code `CT-YYMMDD-###`. Type: **DEPOSIT** / **WITHDRAWAL** / **TRANSFER**. 11 categories (RECEIVABLE_COLLECTION, PAYABLE_PAYMENT, SALARY, TAX, EXPENSE, TRANSFER, LOAN_IN/OUT, REIMBURSEMENT, REVENUE_OTHER, OTHER) — drive contra-account selection during auto-journal.
+
+### 8.3.3 Cash Dashboard (`/finance/cash-dashboard`)
+
+Aggregate balance across all accounts + monthly IN/OUT totals + low-balance warning cards.
+
+### 8.3.4 Expanded Expense Entry
+
+`/finance/expenses/new` exposes 6 new fields: **paymentMethod** (BANK/CASH/CARD COMPANY or PERSONAL), **paymentStatus** (PAID / PENDING_PAYMENT / PENDING_REIMBURSE / REIMBURSED), **vendorClient** (the issuer), **targetClient** (the client this expense is attached to — used by profitability), **cashOut** (immediate withdrawal when BANK/CASH_COMPANY) + **cashOutAccountId**. List view has 5 status filters + an **[Approve reimbursement]** button on `PENDING_REIMBURSE` rows.
+
+## 8.4 PR Payment Modal — Bank Account Sync
+
+`/finance/payables/[id]` payment dialog includes a **[Bank Account]** dropdown — selecting one auto-creates a CashTransaction, syncs `currentBalance`, and (if enabled) emits a JournalEntry.
+
+## 8.5 General Ledger — Chart of Accounts / Journal (Layer 3)
+
+### 8.5.1 Chart of Accounts (`/finance/chart-of-accounts`)
+
+39 VAS standard accounts (with K-IFRS / IFRS presets). Color by type: ASSET 1xxx blue, LIABILITY 3xxx amber, EQUITY 4xxx purple, REVENUE 5xxx/7xxx green, EXPENSE 6xxx/8xxx rose. Only `isLeaf=true` accounts can be posted to.
+
+### 8.5.2 Journal Entries (`/finance/journal-entries`)
+
+Browse all entries by source badge: **Manual / Sales / Purchase / Cash / Expense / Payroll / Adjustment**. Status filters: Draft / Posted / Reversed. Click a row to expand lines. **[Post]** moves Draft→POSTED; **[Reverse]** generates an offsetting entry. Auto-journal rules: Sales `DR 131 / 3331 — CR 5111`; Purchase `DR 156 / 133 — CR 331`; Cash IN/OUT contra by category; Expense `DR 6428 — CR 112` if cashOut else `CR 331`; Payroll bulk-pay `DR 6421 — CR 112`.
+
 ---
 
 # Part 9. Meetings / Calendar / Messaging

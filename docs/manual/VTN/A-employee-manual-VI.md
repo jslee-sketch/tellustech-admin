@@ -1145,6 +1145,38 @@ Phân bổ một chi phí theo tỷ lệ vào nhiều bán ra/mua vào hoặc ph
 
 Bị ảnh hưởng bởi chính sách chốt sổ (khóa) kế toán — Sửa·xóa chi phí thuộc tháng đã khóa bị chặn (Sách B Phần 3).
 
+## 8.3 Quản lý quỹ — Tài khoản / Thu chi / Bảng theo dõi (Layer 1)
+
+### 8.3.1 Quản lý tài khoản (`/finance/accounts`)
+
+Đăng ký tài khoản ngân hàng + tiền mặt và theo dõi số dư. Hành động trên dòng: **[+ Thu]** / **[− Chi]** / **[↔ Chuyển khoản]** — modal tự tạo `CashTransaction`, đồng bộ `currentBalance` + (nếu bật auto-journal) tạo `JournalEntry`. `lowBalanceThreshold` thấp hơn → cron đầu tháng gửi `CASH_SHORTAGE_ALERT` cho ADMIN.
+
+### 8.3.2 Thu chi (`/finance/cash-transactions`)
+
+Mã `CT-YYMMDD-###`. Loại: **DEPOSIT** / **WITHDRAWAL** / **TRANSFER**. 11 phân loại (RECEIVABLE_COLLECTION / PAYABLE_PAYMENT / SALARY / TAX / EXPENSE / TRANSFER / LOAN_IN / LOAN_OUT / REIMBURSEMENT / REVENUE_OTHER / OTHER) — quyết định TK đối ứng khi auto-journal.
+
+### 8.3.3 Bảng theo dõi quỹ (`/finance/cash-dashboard`)
+
+Tổng số dư + IN/OUT trong tháng + cảnh báo thiếu tiền.
+
+### 8.3.4 Đăng ký chi phí mở rộng
+
+`/finance/expenses/new` thêm 6 trường: **paymentMethod** (BANK/CASH/CARD COMPANY hoặc PERSONAL), **paymentStatus** (PAID/PENDING_PAYMENT/PENDING_REIMBURSE/REIMBURSED), **vendorClient** (đơn vị xuất hoá đơn), **targetClient** (KH gắn chi phí — dùng cho phân tích lợi nhuận), **cashOut** (trừ trực tiếp khi BANK/CASH_COMPANY) + **cashOutAccountId**. Danh sách có 5 lọc trạng thái + nút **[Duyệt hoàn ứng]** trên dòng `PENDING_REIMBURSE`.
+
+## 8.4 Modal thanh toán PR — Đồng bộ tài khoản
+
+`/finance/payables/[id]` có dropdown **[Tài khoản]** — chọn → tự tạo CashTransaction + đồng bộ `currentBalance` + (nếu bật) tạo JournalEntry.
+
+## 8.5 Sổ cái — Hệ thống TK / Bút toán (Layer 3)
+
+### 8.5.1 Hệ thống tài khoản (`/finance/chart-of-accounts`)
+
+39 TK chuẩn VAS (có K-IFRS / IFRS preset). Màu theo loại: ASSET 1xxx xanh, LIABILITY 3xxx vàng, EQUITY 4xxx tím, REVENUE 5xxx/7xxx xanh lá, EXPENSE 6xxx/8xxx đỏ. Chỉ TK `isLeaf=true` mới hạch toán được.
+
+### 8.5.2 Bút toán (`/finance/journal-entries`)
+
+Xem theo source (badge màu): **Thủ công / Bán hàng / Mua hàng / Quỹ / Chi phí / Lương / Điều chỉnh**. Lọc trạng thái: Nháp / Đã hạch toán / Đã đảo. Click hàng để mở rộng dòng. **[Hạch toán]** chuyển Nháp → POSTED; **[Bút toán đảo]** tạo bút toán đối ứng. Quy tắc bút toán tự động: Bán hàng `Nợ 131 / 3331 — Có 5111`; Mua hàng `Nợ 156 / 133 — Có 331`; Thu/Chi theo category; Chi phí cashOut `Nợ 6428 / Có 112` (hoặc Có 331); Lương bulk-pay `Nợ 6421 / Có 112`.
+
 ---
 
 # Phần 9. Họp / Lịch / Tin nhắn

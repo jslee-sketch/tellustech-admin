@@ -68,6 +68,28 @@ export async function POST(request: Request) {
         linkedModel: "AsTicket",
         linkedId: created.id,
       }).catch(() => null);
+      // 알림 발송 — 포탈 AS 요청 → 담당 영업
+      try {
+        const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+        const client = await prisma.client.findUnique({
+          where: { id: user.clientAccount!.id },
+          select: { companyNameKo: true, companyNameVi: true, salesPicId: true },
+        });
+        await dispatchNotification({
+          eventType: "PORTAL_AS_REQUEST",
+          companyCode: session.companyCode as "TV" | "VR",
+          data: {
+            assigneeId: client?.salesPicId ?? "",
+            clientName: client?.companyNameKo ?? client?.companyNameVi ?? "",
+            equipmentName: trimNonEmpty(p.serialNumber) ?? "—",
+            symptom: (filled.ko ?? filled.vi ?? filled.en ?? "").slice(0, 200),
+          },
+          linkedModel: "AsTicket",
+          linkedId: created.id,
+          linkUrl: `/as/tickets/${created.id}`,
+        });
+      } catch (e) { console.error("[portal-as] notify failed:", e); }
+
       return ok({
         ticket: { id: created.id, ticketNumber: created.ticketNumber },
         pointsEarned: granted?.pointsEarned ?? null,

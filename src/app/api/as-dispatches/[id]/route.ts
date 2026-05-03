@@ -142,6 +142,29 @@ export async function PATCH(request: Request, context: RouteContext) {
       if (Object.keys(data).length === 0) return ok({ dispatch: existing });
 
       const updated = await prisma.asDispatch.update({ where: { id }, data });
+      // 알림 — completedAt 가 NULL→ 값으로 설정될 때만 (= 출동 완료)
+      if (data.completedAt && !existing.completedAt) {
+        try {
+          const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+          const dispatch = await prisma.asDispatch.findUnique({
+            where: { id }, include: { asTicket: { include: { client: true } } },
+          });
+          if (dispatch) {
+            await dispatchNotification({
+              eventType: "AS_DISPATCH_COMPLETED",
+              companyCode: (dispatch.companyCode ?? "TV") as "TV" | "VR",
+              data: {
+                assigneeId: dispatch.dispatchEmployeeId ?? "",
+                ticketCode: dispatch.asTicket?.ticketNumber ?? "",
+                clientName: dispatch.asTicket?.client?.companyNameKo ?? dispatch.asTicket?.client?.companyNameVi ?? "",
+                result: dispatch.note ?? "—",
+              },
+              linkedModel: "AsDispatch", linkedId: dispatch.id,
+              linkUrl: `/as/dispatches/${dispatch.id}`,
+            });
+          }
+        } catch (e) { console.error("[as-dispatch] notify failed:", e); }
+      }
       return ok({ dispatch: updated });
     } catch (err) {
       const handled = handleFieldError(err);

@@ -76,6 +76,25 @@ export async function POST(request: Request) {
         { isConflict: () => true },
       );
       const granted = await grantPoints({ clientId: user.clientAccount!.id, reason: "QUOTE_REQUEST", linkedModel: "QuoteRequest", linkedId: created.id }).catch(() => null);
+      // 알림 — 포탈 견적 요청 → 담당 영업
+      try {
+        const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+        const client = await prisma.client.findUnique({
+          where: { id: user.clientAccount!.id },
+          select: { companyNameKo: true, companyNameVi: true, salesPicId: true },
+        });
+        await dispatchNotification({
+          eventType: "PORTAL_QUOTE_REQUEST",
+          companyCode: session.companyCode as "TV" | "VR",
+          data: {
+            assigneeId: client?.salesPicId ?? "",
+            clientName: client?.companyNameKo ?? client?.companyNameVi ?? "",
+            quoteType, budget: p.quantity ? `qty=${p.quantity}` : "—",
+          },
+          linkedModel: "QuoteRequest", linkedId: created.id,
+          linkUrl: `/admin/quotes/${created.id}`,
+        });
+      } catch (e) { console.error("[portal-quote] notify failed:", e); }
       return ok({ quote: created, pointsEarned: granted?.pointsEarned ?? null, pointBalance: granted?.balance ?? null }, { status: 201 });
     } catch (e) { return serverError(e); }
   });

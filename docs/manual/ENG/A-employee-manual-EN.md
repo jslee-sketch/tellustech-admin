@@ -1747,6 +1747,7 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.8.0 · 2026-05-03**: **Unified notification system** — Email + Zalo + ERP Chat (3 channels). 30 event types, 27 default rules per company (TV/VR), unified dispatcher, 2 crons (scheduler + retry), 4 screens (rules / history / my-list / personal settings), 🔔 badge on sidebar header (60s polling). Gmail SMTP via `GMAIL_USER`/`GMAIL_APP_PASSWORD`. Zalo OA auto-skips when not configured.
 - **v2.7.1 · 2026-05-03**: Small UX gaps closed — added a [+ New cash transaction] header button on `/finance/cash-transactions` (redirects to `/finance/accounts`); replaced expense reimbursement `window.prompt` with a modal + bank-account select dropdown; added 6 i18n keys.
 - **v2.7.0 · 2026-05-03**: 8 follow-up tasks — RBAC + manual integration + tech debt + engineer stats + server-synced favorites + Sales FK backfill.
   - New RBAC (`src/lib/rbac.ts` + 19 finance pages), CLIENT redirected to `/portal`. `close`/`reopen`/PUT mapping = ADMIN only.

@@ -390,6 +390,12 @@ model Employee {
   nameKo          String?
   position        String?
   email           String?
+  // 알림 시스템 — 개인 업무 이메일·Zalo + 채널별 수신 토글
+  personalEmail   String?
+  zaloId          String?
+  notifyEmail     Boolean        @default(true)
+  notifyZalo      Boolean        @default(true)
+  notifyChat      Boolean        @default(true)
   phone           String?
   photoUrl        String?
   idCardNumber    String?
@@ -1880,6 +1886,8 @@ model Notification {
   companyCode CompanyCode?
   userId      String
   type        NotificationType
+  // 통합 알림 시스템 — 이벤트 분류 + 발송 채널 추적
+  eventType   NotificationEventType?
   titleVi     String?
   titleEn     String?
   titleKo     String?
@@ -1887,13 +1895,133 @@ model Notification {
   bodyEn      String?
   bodyKo      String?
   linkUrl     String?
+  linkedModel String?
+  linkedId    String?
   readAt      DateTime?
   createdAt   DateTime         @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user       User                   @relation(fields: [userId], references: [id])
+  deliveries NotificationDelivery[]
 
   @@index([userId, readAt])
+  @@index([eventType])
   @@map("notifications")
+}
+
+// =====================================================
+// 통합 알림 시스템 — Event → Rule → Channel 발송 + 이력 추적
+// =====================================================
+
+enum NotificationEventType {
+  // 직원 업무
+  AS_TICKET_ASSIGNED
+  AS_DISPATCH_COMPLETED
+  SALES_FINANCE_CFM_REQUEST
+  SALES_FINANCE_CFM_DONE
+  EXPENSE_REIMBURSE_REQUEST
+  EXPENSE_REIMBURSE_APPROVED
+  SCHEDULE_ASSIGNED
+  WEEKLY_MEETING_REMINDER
+  // 마감/기한
+  RECEIVABLE_DUE_D7
+  RECEIVABLE_DUE_D3
+  RECEIVABLE_OVERDUE
+  PAYABLE_DUE_D3
+  CONTRACT_EXPIRY_D30
+  CONTRACT_EXPIRY_D7
+  LICENSE_EXPIRY
+  ACCOUNTING_CLOSE_REMINDER
+  SNMP_COLLECT_DAY
+  // 고객 관련
+  PORTAL_AS_REQUEST
+  PORTAL_SUPPLY_REQUEST
+  PORTAL_QUOTE_REQUEST
+  PORTAL_FEEDBACK
+  USAGE_CFM_COMPLETED
+  USAGE_CFM_NO_RESPONSE_D3
+  PORTAL_REFERRAL
+  // 부정/이상 감지
+  YIELD_FRAUD_SUSPECT_EVENT
+  CASH_SHORTAGE_ALERT_EVENT
+  AGENT_DISCONNECTED
+  TOKEN_EXPIRY_SOON
+  // 시스템
+  SYSTEM_DEPLOY
+  SYSTEM_MAINTENANCE
+}
+
+enum NotifyTargetType {
+  INDIVIDUAL
+  TEAM
+  ROLE
+  ALL
+  ASSIGNEE
+  ASSIGNEE_MANAGER
+  CLIENT_PIC
+}
+
+enum NotifyChannel {
+  EMAIL
+  ZALO
+  CHAT
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  RETRY
+}
+
+model NotificationRule {
+  id                  String                @id @default(cuid())
+  eventType           NotificationEventType
+  targetType          NotifyTargetType      @default(ASSIGNEE)
+  targetRoleId        String?
+  targetDepartmentId  String?
+  targetEmployeeId    String?
+
+  channelEmail        Boolean               @default(true)
+  channelZalo         Boolean               @default(true)
+  channelChat         Boolean               @default(true)
+
+  triggerTiming       String                @default("IMMEDIATE")
+
+  templateKo          String
+  templateVi          String
+  templateEn          String
+
+  isActive            Boolean               @default(true)
+  companyCode         CompanyCode           @default(TV)
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@index([companyCode, eventType])
+  @@index([companyCode, isActive])
+  @@map("notification_rules")
+}
+
+model NotificationDelivery {
+  id                String         @id @default(cuid())
+  notificationId    String
+  notification      Notification   @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel           NotifyChannel
+  recipientId       String         // Employee ID
+  recipientAddress  String         // email / zaloId / chatroom id
+  status            DeliveryStatus @default(PENDING)
+  sentAt            DateTime?
+  failedAt          DateTime?
+  errorMessage      String?
+  retryCount        Int            @default(0)
+  companyCode       CompanyCode    @default(TV)
+
+  createdAt         DateTime       @default(now())
+
+  @@index([notificationId])
+  @@index([recipientId])
+  @@index([companyCode, status])
+  @@map("notification_deliveries")
 }
 
 model File {

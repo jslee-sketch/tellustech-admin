@@ -45,6 +45,8 @@ export default async function NewEmployeePage() {
               nameKo: "",
               position: "",
               email: "",
+              personalEmail: "",
+              zaloId: "",
               phone: "",
               hireDate: "",
               status: "ACTIVE",

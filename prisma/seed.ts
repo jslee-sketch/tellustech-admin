@@ -483,6 +483,46 @@ async function seedVasChartOfAccounts() {
   console.log(`  ✓ VAS chart: ${VAS_ACCOUNTS.length} accounts × 2 cos + ${DEFAULT_MAPPINGS.length} mappings × 2 cos`);
 }
 
+async function seedNotificationRules() {
+  const { DEFAULT_RULES } = (await import("../src/lib/notify/default-rules")) as {
+    DEFAULT_RULES: { eventType: string; targetType: string; targetRoleId?: string; channelEmail: boolean; channelZalo: boolean; channelChat: boolean; templateKo: string; templateVi: string; templateEn: string; }[];
+  };
+  for (const cc of [CompanyCode.TV, CompanyCode.VR]) {
+    for (const r of DEFAULT_RULES) {
+      // upsert by (companyCode, eventType, targetType, targetRoleId) — 같은 회사+이벤트+타겟 조합은 1행
+      const existing = await prisma.notificationRule.findFirst({
+        where: {
+          companyCode: cc,
+          eventType: r.eventType as never,
+          targetType: r.targetType as never,
+          targetRoleId: r.targetRoleId ?? null,
+        },
+      });
+      if (existing) {
+        await prisma.notificationRule.update({
+          where: { id: existing.id },
+          data: {
+            channelEmail: r.channelEmail, channelZalo: r.channelZalo, channelChat: r.channelChat,
+            templateKo: r.templateKo, templateVi: r.templateVi, templateEn: r.templateEn,
+          },
+        });
+      } else {
+        await prisma.notificationRule.create({
+          data: {
+            eventType: r.eventType as never,
+            targetType: r.targetType as never,
+            targetRoleId: r.targetRoleId ?? null,
+            channelEmail: r.channelEmail, channelZalo: r.channelZalo, channelChat: r.channelChat,
+            templateKo: r.templateKo, templateVi: r.templateVi, templateEn: r.templateEn,
+            companyCode: cc,
+          },
+        });
+      }
+    }
+  }
+  console.log(`  ✓ notification rules: ${DEFAULT_RULES.length} × 2 cos`);
+}
+
 async function main() {
   console.log("🌱 Seeding Tellustech ERP database...");
   await seedDepartments();
@@ -496,6 +536,7 @@ async function main() {
   await seedSnmpModels();
   await seedYieldConfig();
   await seedVasChartOfAccounts();
+  await seedNotificationRules();
   console.log("✅ Seed complete");
 }
 

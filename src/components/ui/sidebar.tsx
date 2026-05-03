@@ -145,6 +145,8 @@ const GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/audit-logs", labelKey: "nav.audit", icon: "🧾", match: (p) => p.startsWith("/admin/audit-logs") },
       { href: "/admin/permissions", labelKey: "nav.permissions", icon: "🔐", match: (p) => p.startsWith("/admin/permissions") },
+      { href: "/admin/notification-rules", labelKey: "nav.notifyRules", icon: "🔔", match: (p) => p.startsWith("/admin/notification-rules") },
+      { href: "/admin/notification-history", labelKey: "nav.notifyHistory", icon: "📋", match: (p) => p.startsWith("/admin/notification-history") },
       { href: "/admin/trash", labelKey: "nav.trash", icon: "🗑", match: (p) => p.startsWith("/admin/trash") },
     ],
   },
@@ -211,6 +213,21 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
       if (j?.user?.companyCode) setCompanyCode(j.user.companyCode);
       if (j?.user?.allowedCompanies) setAllowedCompanies(j.user.allowedCompanies);
     }).catch(() => undefined);
+  }, []);
+  // 미확인 알림 갯수 — 60초마다 폴링
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  useEffect(() => {
+    let cancelled = false;
+    async function tick() {
+      try {
+        const r = await fetch("/api/notifications?status=unread&limit=1", { credentials: "same-origin" });
+        const j = await r.json();
+        if (!cancelled) setUnreadCount(Number(j?.unreadCount ?? 0));
+      } catch { /* ignore */ }
+    }
+    tick();
+    const id = setInterval(tick, 60000);
+    return () => { cancelled = true; clearInterval(id); };
   }, []);
   async function switchCompany(code: string) {
     if (code === companyCode) return;
@@ -305,14 +322,30 @@ export function Sidebar({ initialLang = "KO" }: { initialLang?: Lang }) {
             </div>
           </div>
         )}
-        <button
-          type="button"
-          onClick={() => setCollapsed((c) => !c)}
-          className="rounded p-1 text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
-          aria-label={collapsed ? t("sidebar.expand", currentLang) : t("sidebar.collapse", currentLang)}
-        >
-          {collapsed ? "›" : "‹"}
-        </button>
+        <div className="flex items-center gap-1">
+          {/* 알림 벨 — 미확인 갯수 배지 */}
+          <Link
+            href="/notifications"
+            className="relative rounded p-1 text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-accent)]"
+            title={t("notify.myList", currentLang)}
+            aria-label="Notifications"
+          >
+            <span className="text-[16px]">🔔</span>
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[color:var(--tts-danger)] px-1 text-[9px] font-bold text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            className="rounded p-1 text-[color:var(--tts-muted)] hover:bg-[color:var(--tts-card-hover)] hover:text-[color:var(--tts-text)]"
+            aria-label={collapsed ? t("sidebar.expand", currentLang) : t("sidebar.collapse", currentLang)}
+          >
+            {collapsed ? "›" : "‹"}
+          </button>
+        </div>
       </div>
 
       {/* 언어 선택 — 상단, 동그란 국기, 활성 시 발광 테두리 */}

@@ -67,6 +67,8 @@ export default async function EditEmployeePage({ params }: PageProps) {
               nameKo: emp.nameKo ?? "",
               position: emp.position ?? "",
               email: emp.email ?? "",
+              personalEmail: emp.personalEmail ?? "",
+              zaloId: emp.zaloId ?? "",
               phone: emp.phone ?? "",
               hireDate: dateToInput(emp.hireDate),
               status: emp.status,

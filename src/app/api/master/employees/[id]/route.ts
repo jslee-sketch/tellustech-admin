@@ -91,6 +91,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
       if (p.position !== undefined) data.position = trimNonEmpty(p.position);
       if (p.email !== undefined) data.email = trimNonEmpty(p.email);
+      if (p.personalEmail !== undefined) data.personalEmail = trimNonEmpty(p.personalEmail);
+      if (p.zaloId !== undefined) data.zaloId = trimNonEmpty(p.zaloId);
       if (p.phone !== undefined) data.phone = trimNonEmpty(p.phone);
       if (p.photoUrl !== undefined) data.photoUrl = trimNonEmpty(p.photoUrl);
       if (p.idCardNumber !== undefined) data.idCardNumber = trimNonEmpty(p.idCardNumber);

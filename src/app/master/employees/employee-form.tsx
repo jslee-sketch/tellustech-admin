@@ -15,6 +15,8 @@ export type EmployeeFormValue = {
   nameKo: string;
   position: string;
   email: string;
+  personalEmail: string;
+  zaloId: string;
   phone: string;
   hireDate: string;
   status: string;
@@ -87,6 +89,8 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies, lan
         nameKo: value.nameKo || null,
         position: value.position || null,
         email: value.email || null,
+        personalEmail: value.personalEmail || null,
+        zaloId: value.zaloId || null,
         phone: value.phone || null,
         hireDate: value.hireDate || null,
         status: value.status || "ACTIVE",
@@ -240,6 +244,14 @@ export function EmployeeForm({ mode, initial, departments, allowedCompanies, lan
         </Field>
         <Field label={t("field.hireDate", lang)} width="180px">
           <TextInput type="date" value={value.hireDate} onChange={(e) => set("hireDate", e.target.value)} />
+        </Field>
+      </Row>
+      <Row>
+        <Field label={t("notify.personalEmail", lang)}>
+          <TextInput type="email" value={value.personalEmail} onChange={(e) => set("personalEmail", e.target.value)} placeholder="example@gmail.com" />
+        </Field>
+        <Field label={t("notify.zaloId", lang)}>
+          <TextInput value={value.zaloId} onChange={(e) => set("zaloId", e.target.value)} placeholder="0911XXXXXX" />
         </Field>
       </Row>
 

@@ -59,6 +59,8 @@ const COMPANY_SCOPED_MODELS = new Set([
   "AccountMonthlyBalance", "PeriodClose",
   // Layer 5 — 회계 설정 마스터
   "AccountingConfig",
+  // 통합 알림 시스템
+  "NotificationRule", "NotificationDelivery",
 ]);
 
 type AnyRecord = Record<string, unknown>;

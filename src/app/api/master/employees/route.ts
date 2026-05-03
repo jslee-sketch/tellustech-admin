@@ -124,6 +124,8 @@ export async function POST(request: Request) {
         nameKo: filled.ko ?? inKo ?? null,
         position: trimNonEmpty(p.position),
         email: trimNonEmpty(p.email),
+        personalEmail: trimNonEmpty(p.personalEmail),
+        zaloId: trimNonEmpty(p.zaloId),
         phone: trimNonEmpty(p.phone),
         photoUrl: trimNonEmpty(p.photoUrl),
         idCardNumber: trimNonEmpty(p.idCardNumber),

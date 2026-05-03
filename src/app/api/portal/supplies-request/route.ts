@@ -83,6 +83,29 @@ export async function POST(request: Request) {
         linkedModel: "AsTicket",
         linkedId: created.id,
       }).catch(() => null);
+      // 알림 — 포탈 소모품 요청 → 담당 영업
+      try {
+        const { dispatchNotification } = await import("@/lib/notify/dispatcher");
+        const client = await prisma.client.findUnique({
+          where: { id: clientId },
+          select: { companyNameKo: true, companyNameVi: true, salesPicId: true },
+        });
+        const firstItem = (itemsParsed as Array<{ itemId: string; quantity: number }>)[0];
+        const itemMaster = firstItem ? await prisma.item.findUnique({ where: { id: firstItem.itemId }, select: { name: true } }) : null;
+        await dispatchNotification({
+          eventType: "PORTAL_SUPPLY_REQUEST",
+          companyCode: session.companyCode as "TV" | "VR",
+          data: {
+            assigneeId: client?.salesPicId ?? "",
+            clientName: client?.companyNameKo ?? client?.companyNameVi ?? "",
+            itemName: itemMaster?.name ?? "—",
+            quantity: firstItem?.quantity ?? 0,
+          },
+          linkedModel: "AsTicket", linkedId: created.id,
+          linkUrl: `/as/tickets/${created.id}`,
+        });
+      } catch (e) { console.error("[portal-supply] notify failed:", e); }
+
       return ok({
         ticket: { id: created.id, ticketNumber: created.ticketNumber },
         pointsEarned: granted?.pointsEarned ?? null,

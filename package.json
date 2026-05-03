@@ -41,6 +41,7 @@
     "jsonwebtoken": "^9.0.3",
     "net-snmp": "^3.26.3",
     "next": "16.2.4",
+    "nodemailer": "^8.0.7",
     "pdf-lib": "^1.17.1",
     "pg": "^8.20.0",
     "prisma": "^7.8.0",
@@ -54,6 +55,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.0",
     "dotenv": "^17.4.2"
   }
 }

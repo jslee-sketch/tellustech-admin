@@ -1993,6 +1993,8 @@ UI 는 추후 추가 예정. 현재는 DB 직접 변경.
 
 # 변경 이력 (관리자 매뉴얼 v2 보강판)
 
+- **v2.8.0 · 2026-05-03**: 통합 알림 시스템 (Email + Zalo + ERP Chat) — 30 이벤트, 27 기본 규칙, 디스패처 + 2 cron + 4 화면 + 사이드바 벨 배지. Gmail SMTP / Zalo OA / 시스템 채팅 통합. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
+- **v2.7.1 · 2026-05-03**: UX 빈틈 보강 — cash-tx 헤더 + 환급 승인 모달.
 - **v2.7.0 · 2026-05-03**: 8 후속 작업 — RBAC + 매뉴얼 본문 통합(3-A~3-E) + 기사별 통계 정확화 + Sales FK 백필 + 즐겨찾기 서버동기. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.6.1 · 2026-05-03**: 재고 Phase 2 E2E 31/31 PASS + scripts/seed-inventory-e2e.ts 분리 + i18n field.fromWarehouse/toWarehouse 보강. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.6.0 · 2026-05-03**: 재경 Layer 5 — AccountingConfig (VAS/K_IFRS/IFRS preset) + 사이드바 재경 그룹 3-way 분할 (자금/원장/재무제표) + E2E 21단계 검증 스크립트 (21/21 PASS). 자세한 내용은 사용자 매뉴얼 부록 K 참조.

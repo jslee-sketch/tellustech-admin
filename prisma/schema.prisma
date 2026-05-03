@@ -508,6 +508,10 @@ model Client {
   portalPostViews     PortalPostView[]
   // SNMP / 사용량 확인서
   usageConfirmations  UsageConfirmation[]
+  // Layer 1 — Expense 강화 역참조
+  expenseAsVendor     Expense[]           @relation("ExpenseVendor")
+  expenseAsTarget     Expense[]           @relation("ExpenseTargetClient")
+  cashTransactions    CashTransaction[]   @relation("CashTxnClient")
 
   @@index([referrerEmployeeId])
   @@index([salesPicId])
@@ -1218,6 +1222,8 @@ model Sales {
 
   companyCode CompanyCode @default(TV)
   @@index([companyCode, createdAt])
+  cashTransactions CashTransaction[] @relation("SalesCashTx")
+
   @@index([clientId])
   @@index([projectId])
   @@index([itContractId])
@@ -1296,6 +1302,7 @@ model Purchase {
   payables       PayableReceivable[]  @relation("PurchasePayable")
   adjustments    PurchaseAdjustment[] @relation("PurchaseAdjustments")
   linkedExpenses Expense[]            @relation("ExpenseLinkedPurchase")
+  cashTransactions CashTransaction[]  @relation("PurchaseCashTx")
 
   companyCode CompanyCode @default(TV)
   @@index([companyCode, createdAt])
@@ -1352,6 +1359,14 @@ model Payroll {
   allowances  Decimal     @default(0) @db.Decimal(15, 2)
   deductions  Decimal     @default(0) @db.Decimal(15, 2)
   netPay      Decimal     @db.Decimal(15, 2)
+  // Layer 1 — 지급 처리
+  paidAt              DateTime?
+  paidById            String?
+  bankAccountId       String?
+  cashTransactionId   String?       @unique
+  bankAccount         BankAccount?     @relation("PayrollAccount", fields: [bankAccountId], references: [id])
+  cashTransaction     CashTransaction? @relation("PayrollCashTx", fields: [cashTransactionId], references: [id])
+
   createdAt   DateTime    @default(now())
   deletedAt   DateTime?
   lockedAt    DateTime?
@@ -1362,6 +1377,7 @@ model Payroll {
 
   @@unique([employeeId, month])
   @@index([companyCode, month])
+  @@index([paidAt])
   @@map("payroll")
 }
 
@@ -1522,7 +1538,7 @@ model RegularEvaluation {
 // 재경 (4)
 // ==================================================
 
-/// 가이드: "회사없음"
+/// 비용 — Layer 1 강화: 결제방법 + 결제상태 + 발생업체 + 귀속고객 + 환급 워크플로
 model Expense {
 
   id               String      @id @default(cuid())
@@ -1541,17 +1557,50 @@ model Expense {
   lockReason       String?
   updatedAt        DateTime    @updatedAt
 
-  allocations    ExpenseAllocation[]
-  payables       PayableReceivable[] @relation("ExpensePayable")
-  linkedSales    Sales?              @relation("ExpenseLinkedSales", fields: [linkedSalesId], references: [id])
-  linkedPurchase Purchase?           @relation("ExpenseLinkedPurchase", fields: [linkedPurchaseId], references: [id])
+  // ── Layer 1 신규 필드 ──
+  vendorClientId    String?
+  vendorClient      Client?     @relation("ExpenseVendor", fields: [vendorClientId], references: [id])
+  vendorName        String?     // 마스터에 없는 소액 거래처 (식당·주유소 등)
+  targetClientId    String?
+  targetClient      Client?     @relation("ExpenseTargetClient", fields: [targetClientId], references: [id])
+
+  paymentMethod     ExpensePaymentMethod?
+  paymentStatus     ExpensePaymentStatus  @default(PAID)
+  reimbursedAt      DateTime?
+  reimbursedById    String?
+  reimburseCashTxId String?     // CashTransaction FK (환급 시점)
+  reimburseCashTx   CashTransaction? @relation("ExpenseReimburseTx", fields: [reimburseCashTxId], references: [id])
+
+  allocations      ExpenseAllocation[]
+  payables         PayableReceivable[] @relation("ExpensePayable")
+  linkedSales      Sales?              @relation("ExpenseLinkedSales", fields: [linkedSalesId], references: [id])
+  linkedPurchase   Purchase?           @relation("ExpenseLinkedPurchase", fields: [linkedPurchaseId], references: [id])
+  cashTransactions CashTransaction[]   @relation("ExpenseCashTx")
 
   companyCode CompanyCode @default(TV)
   @@index([companyCode, createdAt])
   @@index([expenseType])
   @@index([linkedSalesId])
   @@index([linkedPurchaseId])
+  @@index([vendorClientId])
+  @@index([targetClientId])
+  @@index([paymentStatus])
   @@map("expenses")
+}
+
+enum ExpensePaymentMethod {
+  CORPORATE_CARD
+  BANK_TRANSFER
+  CASH_COMPANY
+  CASH_PERSONAL
+  CREDIT_PERSONAL
+}
+
+enum ExpensePaymentStatus {
+  PAID
+  PENDING_PAYMENT
+  PENDING_REIMBURSE
+  REIMBURSED
 }
 
 model ExpenseAllocation {
@@ -1611,6 +1660,7 @@ model PayableReceivable {
   delayReasons   DelayReason[]
   contactLogs    PrContactLog[]
   payments       PrPayment[]
+  cashTransactions CashTransaction[] @relation("PrCashTx")
   // Phase A 포탈 — 포인트 청구액 차감 적용 이력
   appliedRewards PortalReward[] @relation("RewardAppliedToInvoice")
 
@@ -3009,4 +3059,148 @@ model YieldConfig {
   companyCode CompanyCode @default(TV)
   @@index([companyCode, createdAt])
   @@map("yield_configs")
+}
+
+// ==================================================
+// Layer 1 — 자금관리 (BankAccount + CashTransaction)
+// ==================================================
+
+model BankAccount {
+  id              String           @id @default(cuid())
+  accountCode     String           @unique // ACC-001
+  accountName     String
+  bankName        String
+  accountNumber   String
+  currency        Currency         @default(VND)
+  accountType     BankAccountType
+  openingBalance  Decimal          @db.Decimal(15, 2)
+  openingDate     DateTime
+  currentBalance  Decimal?         @db.Decimal(15, 2) // 캐시 — 트랜잭션 내 동기 갱신
+  isActive        Boolean          @default(true)
+  branchCode      BranchType?
+  companyCode     CompanyCode      @default(TV)
+  note            String?
+
+  // 자금 부족 알림 임계값
+  lowBalanceThreshold Decimal?     @db.Decimal(15, 2)
+
+  cashTransactions     CashTransaction[]            @relation("BankAccountTxns")
+  cashCounterAccountTx CashTransaction[]            @relation("BankAccountCounter")
+  monthlySnapshots     BankAccountMonthlySnapshot[]
+  payrolls             Payroll[]                    @relation("PayrollAccount")
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  @@index([companyCode, isActive])
+  @@map("bank_accounts")
+}
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  CASH
+  OTHER
+}
+
+model CashTransaction {
+  id            String       @id @default(cuid())
+  txnCode       String       @unique // CT-YYMMDD-###
+  txnDate       DateTime
+  txnType       CashTxnType
+
+  amount        Decimal      @db.Decimal(15, 2)
+  currency      Currency     @default(VND)
+  exchangeRate  Decimal      @default(1) @db.Decimal(10, 4)
+  amountLocal   Decimal      @db.Decimal(15, 2) // VND 환산액
+
+  accountId         String
+  account           BankAccount @relation("BankAccountTxns", fields: [accountId], references: [id])
+  counterAccountId  String?
+  counterAccount    BankAccount? @relation("BankAccountCounter", fields: [counterAccountId], references: [id])
+
+  category      CashCategory
+
+  // 연결 FK — 한 행에 1개만 채움 (코드 레벨 검증)
+  prId           String?
+  pr             PayableReceivable? @relation("PrCashTx", fields: [prId], references: [id])
+  expenseId      String?
+  expense        Expense?           @relation("ExpenseCashTx", fields: [expenseId], references: [id])
+  payrollId      String?
+  payroll        Payroll?           @relation("PayrollCashTx")
+  expenseReimburse Expense[]        @relation("ExpenseReimburseTx")
+  salesId        String?
+  sales          Sales?             @relation("SalesCashTx", fields: [salesId], references: [id])
+  purchaseId     String?
+  purchase       Purchase?          @relation("PurchaseCashTx", fields: [purchaseId], references: [id])
+  transferPairId String?            // 이체 쌍
+  transferPair   CashTransaction?   @relation("TransferPair", fields: [transferPairId], references: [id])
+  transferOf     CashTransaction[]  @relation("TransferPair")
+
+  status         CashTxnStatus @default(DRAFT)
+  confirmedById  String?
+  confirmedAt    DateTime?
+
+  description    String
+  clientId       String?
+  client         Client? @relation("CashTxnClient", fields: [clientId], references: [id])
+  employeeId     String?
+  companyCode    CompanyCode @default(TV)
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lockedAt       DateTime?
+  lockReason     String?
+
+  @@index([companyCode, txnDate])
+  @@index([accountId, txnDate])
+  @@index([prId])
+  @@index([expenseId])
+  @@index([category])
+  @@index([status])
+  @@map("cash_transactions")
+}
+
+enum CashTxnType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+}
+
+enum CashCategory {
+  RECEIVABLE_COLLECTION
+  PAYABLE_PAYMENT
+  SALARY
+  TAX
+  EXPENSE
+  REVENUE_OTHER
+  TRANSFER
+  LOAN_IN
+  LOAN_OUT
+  REIMBURSEMENT
+  OTHER
+}
+
+enum CashTxnStatus {
+  DRAFT
+  CONFIRMED
+  VOIDED
+}
+
+model BankAccountMonthlySnapshot {
+  id             String    @id @default(cuid())
+  accountId      String
+  account        BankAccount @relation(fields: [accountId], references: [id])
+  yearMonth      String      // "YYYY-MM"
+  openingBalance Decimal   @db.Decimal(15, 2)
+  totalIn        Decimal   @db.Decimal(15, 2)
+  totalOut       Decimal   @db.Decimal(15, 2)
+  closingBalance Decimal   @db.Decimal(15, 2)
+  companyCode    CompanyCode @default(TV)
+  createdAt      DateTime  @default(now())
+
+  @@unique([companyCode, accountId, yearMonth])
+  @@index([companyCode, yearMonth])
+  @@map("bank_account_monthly_snapshots")
 }

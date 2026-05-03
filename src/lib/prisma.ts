@@ -25,6 +25,8 @@ const SOFT_DELETE_MODELS = new Set([
   "Expense", "Payroll", "Incentive", "LeaveRecord", "OnboardingCard",
   "OffboardingCard", "Incident", "Evaluation", "CalendarEvent", "Schedule",
   "Calibration", "PayableReceivable",
+  // Layer 1
+  "BankAccount",
 ]);
 
 // 회사 분리(TV/VR) 가 적용된 모델 — findMany/findFirst/count 시 자동으로
@@ -45,6 +47,8 @@ const COMPANY_SCOPED_MODELS = new Set([
   "SalesItem", "PurchaseItem", "TmRentalItem", "ItContractEquipment",
   "ItMonthlyBilling", "ExpenseAllocation", "AsDispatchPart",
   "ItContractAmendmentItem", "TmRentalAmendmentItem",
+  // Layer 1 — 자금관리
+  "BankAccount", "CashTransaction", "BankAccountMonthlySnapshot",
 ]);
 
 type AnyRecord = Record<string, unknown>;

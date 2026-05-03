@@ -1715,6 +1715,13 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.2.0 · 2026-05-03**: Finance Layer 1 — **Cash management** (BankAccount / CashTransaction / BankAccountMonthlySnapshot) + **Expense expansion** (payment method/status, vendor, target client, reimbursement workflow) + **Payroll bulk-pay** + **Cash-shortage alert cron**.
+  - 3 new screens: `/finance/accounts`, `/finance/cash-transactions`, `/finance/cash-dashboard` (balance + 7/14/30-day forecast + TOP10 receivables/payables + monthly trend).
+  - New APIs: `/api/finance/bank-accounts`, `/api/finance/cash-transactions` (+ `/transfer`), `/api/finance/cash-dashboard`, `/api/finance/expenses/[id]/reimburse`, `/api/hr/payrolls/bulk-pay`, `/api/jobs/cash-shortage-alert`.
+  - PrPayment accepts optional `bankAccountId` — when present, the same transaction creates a CashTransaction and updates `BankAccount.currentBalance` atomically.
+  - Expense gets `cashOut` + `cashOutAccountId` — for company-funded payment methods (corporate card / bank transfer / company cash) the registration immediately withdraws from the chosen account.
+  - 4 new enums (BankAccountType·CashTxnType·CashCategory·CashTxnStatus) + 2 for Expense payment.
+  - 50+ new i18n keys synced across vi/en/ko. Three new items added to the Finance sidebar group.
 - **v2.1.2 · 2026-05-03**: Discovered that the `enterWith` from v2.1.1 doesn't propagate across RSC concurrent-render boundaries. Chrome verification showed VR mode still listing the 123 TV sales rows.
   - Fix: Added `resolveSessionCompanyCode()` fallback inside the Prisma extension — when the ALS store is empty, it reads the `x-session-user` header directly via `next/headers` and parses `companyCode` from there.
   - Result: A single helper resolves the company code for Server Components, Route Handlers, cron jobs, and tests. The behaviour no longer depends on whether ALS propagates through the runtime.

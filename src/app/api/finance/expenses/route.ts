@@ -1,15 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import {
-  badRequest, conflict, handleFieldError, isUniqueConstraintError, ok,
+  badRequest, handleFieldError, isUniqueConstraintError, ok,
   optionalEnum, requireEnum, requireString, serverError, trimNonEmpty,
 } from "@/lib/api-utils";
 import { generateDatedCode, withUniqueRetry } from "@/lib/code-generator";
-import type { AllocationBasis, Currency, ExpenseType } from "@/generated/prisma/client";
+import { Prisma, type AllocationBasis, type Currency, type ExpenseType, type ExpensePaymentMethod, type ExpensePaymentStatus } from "@/generated/prisma/client";
 
 const EXP_TYPES: readonly ExpenseType[] = ["PURCHASE", "SALES", "GENERAL", "TRANSPORT", "MEAL", "ENTERTAINMENT", "RENT", "UTILITY", "OTHER"] as const;
 const BASES: readonly AllocationBasis[] = ["QUANTITY", "AMOUNT"] as const;
 const CURRENCIES: readonly Currency[] = ["VND", "USD", "KRW", "JPY", "CNY"] as const;
+const PAY_METHODS: readonly ExpensePaymentMethod[] = ["CORPORATE_CARD", "BANK_TRANSFER", "CASH_COMPANY", "CASH_PERSONAL", "CREDIT_PERSONAL"] as const;
+const PAY_STATUSES: readonly ExpensePaymentStatus[] = ["PAID", "PENDING_PAYMENT", "PENDING_REIMBURSE", "REIMBURSED"] as const;
+
+// 즉시 출금 가능한 결제수단 — 회사 자금이 즉시 빠지는 케이스만
+const IMMEDIATE_OUT_METHODS: readonly ExpensePaymentMethod[] = ["CORPORATE_CARD", "BANK_TRANSFER", "CASH_COMPANY"] as const;
 
 // 비용 CRUD — 저장 시 optional 로 원가배분 라인(allocations) 포함 가능.
 // 배분 비중 = QUANTITY or AMOUNT 기준. 합이 amount 와 일치하도록 권장 (검증은 기본만).
@@ -60,6 +65,20 @@ export async function POST(request: Request) {
         };
       });
 
+      // Layer 1 신규 입력
+      const paymentMethod = optionalEnum(p.paymentMethod, PAY_METHODS) ?? null;
+      const cashOut = !!p.cashOut;
+      const cashOutAccountId = trimNonEmpty(p.cashOutAccountId);
+      const vendorClientId = trimNonEmpty(p.vendorClientId);
+      const vendorName = trimNonEmpty(p.vendorName);
+      const targetClientId = trimNonEmpty(p.targetClientId);
+      // 결제 상태 자동 결정
+      let paymentStatus: ExpensePaymentStatus = "PAID";
+      if (paymentMethod === "CASH_PERSONAL" || paymentMethod === "CREDIT_PERSONAL") paymentStatus = "PENDING_REIMBURSE";
+      else if (!paymentMethod) paymentStatus = "PENDING_PAYMENT";
+      const explicit = optionalEnum(p.paymentStatus, PAY_STATUSES);
+      if (explicit) paymentStatus = explicit;
+
       const created = await withUniqueRetry(
         async () => {
           const expenseCode = await generateDatedCode({
@@ -85,12 +104,45 @@ export async function POST(request: Request) {
                 incurredAt,
                 linkedSalesId: trimNonEmpty(p.linkedSalesId),
                 linkedPurchaseId: trimNonEmpty(p.linkedPurchaseId),
+                paymentMethod,
+                paymentStatus,
+                vendorClientId, vendorName, targetClientId,
               },
             });
             if (allocsData.length > 0) {
               await tx.expenseAllocation.createMany({
                 data: allocsData.map((a) => ({ expenseId: exp.id, ...a })),
               });
+            }
+            // 즉시 출금 옵션 — IMMEDIATE_OUT_METHODS 만 가능
+            if (cashOut && cashOutAccountId && paymentMethod && IMMEDIATE_OUT_METHODS.includes(paymentMethod)) {
+              const acc = await tx.bankAccount.findUnique({ where: { id: cashOutAccountId } });
+              if (acc) {
+                const txnCode = await generateDatedCode({
+                  prefix: "CT",
+                  lookupLast: async (fp) => {
+                    const last = await tx.cashTransaction.findFirst({ where: { txnCode: { startsWith: fp } }, orderBy: { txnCode: "desc" }, select: { txnCode: true } });
+                    return last?.txnCode ?? null;
+                  },
+                });
+                await tx.cashTransaction.create({
+                  data: {
+                    txnCode, txnDate: incurredAt, txnType: "WITHDRAWAL", category: "EXPENSE",
+                    accountId: cashOutAccountId,
+                    amount: amount.toFixed(2), currency: acc.currency,
+                    exchangeRate: fxRate, amountLocal: amount.toFixed(2),
+                    expenseId: exp.id,
+                    clientId: vendorClientId,
+                    description: `${expenseCode} ${trimNonEmpty(p.note) ?? ""}`.trim(),
+                    status: "CONFIRMED",
+                    confirmedAt: new Date(),
+                  },
+                });
+                await tx.bankAccount.update({
+                  where: { id: cashOutAccountId },
+                  data: { currentBalance: { decrement: new Prisma.Decimal(amount.toFixed(2)) } },
+                });
+              }
             }
             return exp;
           });

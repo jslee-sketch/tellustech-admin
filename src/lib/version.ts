@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.1.2";
+export const VERSION = "v2.2.0";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "Prisma extension headers() fallback — RSC ALS 격리 우회";
+export const VERSION_NOTE = "재경 Layer 1 — 자금관리 + Expense 강화 + Payroll 일괄지급";

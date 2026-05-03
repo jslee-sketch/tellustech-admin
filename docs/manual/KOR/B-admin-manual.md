@@ -1915,6 +1915,7 @@ UI 는 추후 추가 예정. 현재는 DB 직접 변경.
 
 # 변경 이력 (관리자 매뉴얼 v2 보강판)
 
+- **v2.2.0 · 2026-05-03**: 재경 Layer 1 자금관리 모듈 신설 (BankAccount/CashTransaction + Expense 강화 + Payroll bulk-pay + cash-shortage cron). 사이드바 재경 그룹 3 메뉴 추가. 자세한 변경은 사용자 매뉴얼 부록 K 참조.
 - **v2.1.2 · 2026-05-03**: Prisma extension 의 `resolveSessionCompanyCode()` fallback 도입 — ALS 컨텍스트가 비어 있어도 `x-session-user` 헤더에서 직접 회사코드를 읽음. v2.1.1 의 `enterWith` 가 RSC 격리로 작동 안 하던 케이스 해결.
 - **v2.1.1 · 2026-05-03**: Server Component 자동 회사 필터 fix — `getSession()` 이 ALS 컨텍스트를 sticky 설정. v2.1.0 에서 누락된 server component 경로에서도 자동 필터 작동.
 - **v2.1.0 · 2026-05-03**: companyCode 전수 보강 — 34개 업무 데이터 모델에 컬럼 일괄 추가(@default(TV) 로 기존 행 백필). `src/lib/prisma.ts` 의 `COMPANY_SCOPED_MODELS` Set 이 회사별 자동 필터·자동 주입. CodeSequence 는 `(companyCode, key)` 복합 PK 로 분리(TNV/VNV 시퀀스 race 방지). 인덱스 `@@index([companyCode, createdAt])` 일괄 추가. 마스터(Client/Item/Warehouse) + 시스템 테이블(File/User/AuditLog) 은 미적용(공유). 자식 테이블(SalesItem/PurchaseItem/AsDispatchPart 등) 은 부모 propagate 로 채움.

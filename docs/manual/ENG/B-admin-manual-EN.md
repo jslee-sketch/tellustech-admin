@@ -1913,6 +1913,7 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
+- **v2.2.0 · 2026-05-03**: Finance Layer 1 — Cash management (BankAccount/CashTransaction + Expense expansion + Payroll bulk-pay + cash-shortage cron). Three new items in the Finance sidebar group. Full details in Appendix K of the employee manual.
 - **v2.1.2 · 2026-05-03**: Added `resolveSessionCompanyCode()` fallback in the Prisma extension — when the ALS store is empty it reads the `x-session-user` header directly to determine `companyCode`. Resolves the case in v2.1.1 where `enterWith` failed because RSC forked the async context.
 - **v2.1.1 · 2026-05-03**: Server Component auto company-filter fix — `getSession()` now sets sticky ALS context. The server-component path missed in v2.1.0 now also auto-filters.
 - **v2.1.0 · 2026-05-03**: companyCode rollout — 34 transactional models gained the column (`@default(TV)` to backfill existing rows). `COMPANY_SCOPED_MODELS` set in `src/lib/prisma.ts` auto-filters reads + auto-injects on writes. `CodeSequence` migrated to composite PK `(companyCode, key)` to keep TNV vs VNV sequences race-free. `@@index([companyCode, createdAt])` added across the board. Master tables (Client/Item/Warehouse) + system tables (File/User/AuditLog) intentionally excluded (shared). Child tables (SalesItem/PurchaseItem/AsDispatchPart, …) get the column via parent propagation.

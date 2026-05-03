@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { withSessionContext } from "@/lib/session";
 import { badRequest, notFound, ok, requireString, serverError, trimNonEmpty } from "@/lib/api-utils";
 import { fillTranslations } from "@/lib/translate";
-import type { Language } from "@/generated/prisma/client";
+import { generateDatedCode } from "@/lib/code-generator";
+import { Prisma, type Language } from "@/generated/prisma/client";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -58,6 +59,9 @@ export async function POST(request: Request, context: Ctx) {
           })
         : { vi: null, en: null, ko: null };
 
+      // Layer 1 — 계좌 ID 가 들어오면 CashTransaction 자동 생성 + 잔고 갱신
+      const bankAccountId = trimNonEmpty(p.bankAccountId);
+
       const result = await prisma.$transaction(async (tx) => {
         const payment = await tx.prPayment.create({
           data: {
@@ -88,7 +92,48 @@ export async function POST(request: Request, context: Ctx) {
             completedAt: newStatus === "PAID" ? (pr.completedAt ?? new Date()) : null,
           },
         });
-        return { payment, pr: updated, totalPaid: totalPaid.toFixed(2), remaining: Math.max(0, remaining).toFixed(2) };
+        // Layer 1 — CashTransaction 동시 생성
+        let cashTxn = null;
+        if (bankAccountId) {
+          const acc = await tx.bankAccount.findUnique({ where: { id: bankAccountId } });
+          if (!acc) throw new Error("invalid_bank_account");
+          const txnType = pr.kind === "RECEIVABLE" ? "DEPOSIT" : "WITHDRAWAL";
+          const category = pr.kind === "RECEIVABLE" ? "RECEIVABLE_COLLECTION" : "PAYABLE_PAYMENT";
+          const txnCode = await generateDatedCode({
+            prefix: "CT",
+            lookupLast: async (fp) => {
+              const last = await tx.cashTransaction.findFirst({
+                where: { txnCode: { startsWith: fp } },
+                orderBy: { txnCode: "desc" },
+                select: { txnCode: true },
+              });
+              return last?.txnCode ?? null;
+            },
+          });
+          cashTxn = await tx.cashTransaction.create({
+            data: {
+              txnCode, txnDate: paidAt, txnType, category,
+              accountId: bankAccountId,
+              amount: amountN.toFixed(2),
+              currency: acc.currency,
+              exchangeRate: "1",
+              amountLocal: amountN.toFixed(2),
+              prId: id,
+              clientId: pr.clientId,
+              description: `PR ${id.slice(-6)} ${pr.kind === "RECEIVABLE" ? "입금" : "결제"}`,
+              status: "CONFIRMED",
+              confirmedById: session.sub,
+              confirmedAt: new Date(),
+            },
+          });
+          // 잔고 동기화
+          const delta = txnType === "DEPOSIT" ? amountN : -amountN;
+          await tx.bankAccount.update({
+            where: { id: bankAccountId },
+            data: { currentBalance: { increment: new Prisma.Decimal(delta.toFixed(2)) } },
+          });
+        }
+        return { payment, pr: updated, cashTxn, totalPaid: totalPaid.toFixed(2), remaining: Math.max(0, remaining).toFixed(2) };
       });
       return ok(result, { status: 201 });
     } catch (err) { return serverError(err); }

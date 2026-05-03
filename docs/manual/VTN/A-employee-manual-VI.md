@@ -1714,6 +1714,13 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.2.0 · 2026-05-03**: Module Layer 1 mới của Tài chính — **Quản lý ngân quỹ** (BankAccount/CashTransaction/BankAccountMonthlySnapshot) + **Tăng cường Expense** (phương thức/trạng thái thanh toán, nhà cung cấp, khách hàng phân bổ, quy trình hoàn trả) + **Trả lương hàng loạt** + **Cron cảnh báo thiếu tiền**.
+  - 3 màn hình mới: `/finance/accounts`, `/finance/cash-transactions`, `/finance/cash-dashboard` (số dư + dự báo 7/14/30 ngày + TOP10 phải thu/phải trả + xu hướng theo tháng).
+  - API mới: `/api/finance/bank-accounts`, `/api/finance/cash-transactions` (+ `/transfer`), `/api/finance/cash-dashboard`, `/api/finance/expenses/[id]/reimburse`, `/api/hr/payrolls/bulk-pay`, `/api/jobs/cash-shortage-alert`.
+  - PrPayment thêm tuỳ chọn `bankAccountId` — tự động tạo CashTransaction và đồng bộ `BankAccount.currentBalance`.
+  - Expense thêm `cashOut` — phương thức nội bộ (thẻ công ty/chuyển khoản/tiền mặt) sẽ rút tiền ngay khi đăng ký.
+  - 4 enum mới (BankAccountType·CashTxnType·CashCategory·CashTxnStatus) + 2 enum cho thanh toán Expense.
+  - i18n 50+ khoá vi/en/ko đồng bộ. Sidebar nhóm Tài chính có 3 mục mới.
 - **v2.1.2 · 2026-05-03**: Phát hiện `enterWith` của v2.1.1 không lan truyền qua hàng rào render đồng thời của RSC. Kiểm tra Chrome cho thấy chuyển sang VR vẫn hiển thị 123 dòng doanh thu của TV.
   - Khắc phục: Bổ sung `resolveSessionCompanyCode()` fallback trong Prisma extension — khi ngữ cảnh ALS rỗng, đọc trực tiếp header `x-session-user` qua `next/headers` để lấy `companyCode`.
   - Kết quả: Một hàm duy nhất quyết định `companyCode` cho cả Server Component / Route Handler / Cron / Test, không phụ thuộc vào việc ALS có lan truyền hay không.

@@ -76,9 +76,12 @@ const GROUPS: NavGroup[] = [
   {
     labelKey: "nav.finance",
     items: [
+      { href: "/finance/sales-confirm", labelKey: "nav.salesConfirm", icon: "🔵", match: (p) => p.startsWith("/finance/sales-confirm") },
+      { href: "/finance/accounts", labelKey: "nav.cashAccounts", icon: "🏦", match: (p) => p.startsWith("/finance/accounts") },
+      { href: "/finance/cash-transactions", labelKey: "nav.cashTransactions", icon: "💳", match: (p) => p.startsWith("/finance/cash-transactions") },
+      { href: "/finance/cash-dashboard", labelKey: "nav.cashDashboard", icon: "📊", match: (p) => p.startsWith("/finance/cash-dashboard") },
       { href: "/finance/payables", labelKey: "nav.payables", icon: "💰", match: (p) => p.startsWith("/finance/payables") },
       { href: "/finance/expenses", labelKey: "nav.expenses", icon: "🧾", match: (p) => p.startsWith("/finance/expenses") },
-      { href: "/finance/sales-confirm", labelKey: "nav.salesConfirm", icon: "🔵", match: (p) => p.startsWith("/finance/sales-confirm") },
       { href: "/admin/closings", labelKey: "nav.closings", icon: "🔒", match: (p) => p.startsWith("/admin/closings") },
     ],
   },

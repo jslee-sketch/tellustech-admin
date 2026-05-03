@@ -1777,6 +1777,8 @@ model User {
   chatRoomMembers ChatRoomMember[]
   filesUploaded   File[]           @relation("FileUploader")
   permissions     UserPermission[]
+  journalEntriesPosted  JournalEntry[] @relation("JournalEntryPostedBy")
+  journalEntriesCreated JournalEntry[] @relation("JournalEntryCreatedBy")
 
   @@map("users")
 }
@@ -3295,4 +3297,152 @@ model Budget {
   @@unique([costCenterId, yearMonth])
   @@index([companyCode, yearMonth])
   @@map("budgets")
+}
+
+// =====================================================
+// 재경 Layer 3 — 회계원장 (ChartOfAccounts + JournalEntry + AccountMapping)
+// VAS (Vietnam Accounting Standards) 코드 기반. 자동 분개 hook이 매출/매입/Cash/Expense/Payroll
+// 트랜잭션을 JournalEntry 로 자동 생성. AccountMapping 으로 모듈→VAS 코드 연결.
+// =====================================================
+
+enum AccountType {
+  ASSET       // 자산 (1xxx)
+  LIABILITY   // 부채 (3xxx)
+  EQUITY      // 자본 (4xxx)
+  REVENUE     // 수익 (5xxx, 7xxx)
+  EXPENSE     // 비용 (6xxx, 8xxx)
+}
+
+enum AccountStandard {
+  VAS         // Vietnam Accounting Standards
+  K_IFRS      // 한국채택국제회계기준
+  IFRS        // 국제회계기준
+}
+
+model ChartOfAccount {
+  id            String        @id @default(cuid())
+  code          String        // "111" / "131" / "511" 등 VAS 코드
+  nameVi        String
+  nameEn        String
+  nameKo        String
+  type          AccountType
+  parentCode    String?       // 상위 계정 코드 (계층 구조용)
+  level         Int           @default(1) // 1=대분류, 2=중분류, 3=소분류
+  isLeaf        Boolean       @default(true) // 분개 가능 여부 (leaf 만 분개 허용)
+  standard      AccountStandard @default(VAS)
+  isActive      Boolean       @default(true)
+  companyCode   CompanyCode   @default(TV)
+
+  journalLines  JournalLine[]
+  mappings      AccountMapping[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([companyCode, code])
+  @@index([companyCode, type])
+  @@index([companyCode, parentCode])
+  @@map("chart_of_accounts")
+}
+
+enum JournalEntryStatus {
+  DRAFT       // 초안 — 수정 가능
+  POSTED      // 전기 완료 — 수정 불가, 마감 시 잠김
+  REVERSED    // 역분개 처리됨
+}
+
+enum JournalSource {
+  MANUAL      // 수동 입력
+  SALES       // 매출 자동 분개
+  PURCHASE    // 매입 자동 분개
+  CASH        // CashTransaction 자동 분개
+  EXPENSE     // Expense 자동 분개
+  PAYROLL     // Payroll 자동 분개
+  ADJUSTMENT  // 결산 조정
+}
+
+model JournalEntry {
+  id              String              @id @default(cuid())
+  entryNo         String              // "JE-260503-001"
+  entryDate       DateTime            // 거래 일자
+  description     String
+  status          JournalEntryStatus  @default(DRAFT)
+  source          JournalSource       @default(MANUAL)
+  sourceModuleId  String?             // 원천 트랜잭션 ID (Sales.id / Purchase.id / CashTransaction.id 등)
+  reversedById    String?             // 역분개 시 원본 entry ID
+  postedAt        DateTime?
+  postedById      String?
+  postedBy        User?               @relation("JournalEntryPostedBy", fields: [postedById], references: [id])
+  companyCode     CompanyCode         @default(TV)
+
+  lines           JournalLine[]
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  createdById     String?
+  createdBy       User?               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([companyCode, entryNo])
+  @@index([companyCode, entryDate])
+  @@index([companyCode, status])
+  @@index([companyCode, source, sourceModuleId])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id              String          @id @default(cuid())
+  entryId         String
+  entry           JournalEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  lineNo          Int             // 1, 2, 3, ...
+  accountCode     String
+  account         ChartOfAccount  @relation(fields: [companyCode, accountCode], references: [companyCode, code])
+  debitAmount     Decimal         @db.Decimal(15, 2) @default(0)
+  creditAmount    Decimal         @db.Decimal(15, 2) @default(0)
+  description     String?
+  // 보조 분석 차원 (선택적)
+  costCenterId    String?
+  clientId        String?
+  companyCode     CompanyCode     @default(TV)
+
+  createdAt       DateTime        @default(now())
+
+  @@index([entryId, lineNo])
+  @@index([companyCode, accountCode])
+  @@index([companyCode, costCenterId])
+  @@index([companyCode, clientId])
+  @@map("journal_lines")
+}
+
+enum MappingTrigger {
+  SALES_REVENUE         // 매출 - 수익 인식
+  SALES_RECEIVABLE      // 매출 - 미수금
+  SALES_VAT_OUT         // 매출 부가세
+  PURCHASE_INVENTORY    // 매입 - 재고 자산
+  PURCHASE_PAYABLE      // 매입 - 미지급금
+  PURCHASE_VAT_IN       // 매입 부가세
+  CASH_IN               // 입금
+  CASH_OUT              // 출금
+  CASH_TRANSFER         // 계좌 이체
+  EXPENSE_OPEX          // 일반 비용
+  EXPENSE_CASH          // 비용 즉시 출금
+  PAYROLL_SALARY        // 급여 비용
+  PAYROLL_PAYABLE       // 급여 미지급
+  RENTAL_REVENUE        // 렌탈 수익
+}
+
+model AccountMapping {
+  id            String          @id @default(cuid())
+  trigger       MappingTrigger
+  accountCode   String
+  account       ChartOfAccount  @relation(fields: [companyCode, accountCode], references: [companyCode, code])
+  description   String?
+  isActive      Boolean         @default(true)
+  companyCode   CompanyCode     @default(TV)
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([companyCode, trigger])
+  @@index([companyCode, accountCode])
+  @@map("account_mappings")
 }

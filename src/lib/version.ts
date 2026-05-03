@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.3.2";
+export const VERSION = "v2.4.0";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "Layer 1·2 누락 14건 일괄 fix — PR 모달 계좌·환급 승인·월말 cron·정합성·계좌 액션";
+export const VERSION_NOTE = "재경 Layer 3 — 회계원장 (ChartOfAccounts·JournalEntry·자동분개·VAS 시드)";

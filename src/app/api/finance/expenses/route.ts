@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  return withSessionContext(async () => {
+  return withSessionContext(async (session) => {
     let body: unknown;
     try { body = await request.json(); } catch { return badRequest("invalid_body"); }
     const p = body as Record<string, unknown>;
@@ -149,6 +149,22 @@ export async function POST(request: Request) {
         },
         { isConflict: isUniqueConstraintError },
       );
+      // Layer 3 — 비용 자동 분개.
+      try {
+        const { postExpenseJournal } = await import("@/lib/journal");
+        await postExpenseJournal({
+          expenseId: created.id,
+          expenseDate: incurredAt,
+          amount,
+          paymentStatus: paymentStatus ?? "PENDING_PAYMENT",
+          companyCode: session.companyCode as "TV" | "VR",
+          description: `비용 ${created.expenseCode}${trimNonEmpty(p.note) ? ` — ${trimNonEmpty(p.note)}` : ""}`,
+          createdById: session.sub,
+        });
+      } catch (e) {
+        console.error("[expense] auto-journal failed:", e);
+      }
+
       return ok({ expense: created }, { status: 201 });
     } catch (err) {
       const h = handleFieldError(err); if (h) return h;

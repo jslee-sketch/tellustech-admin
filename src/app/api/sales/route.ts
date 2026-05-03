@@ -315,6 +315,28 @@ export async function POST(request: Request) {
         { isConflict: isUniqueConstraintError },
       );
 
+      // Layer 3 — 매출 자동 분개 (실패해도 매출은 유지).
+      try {
+        const { postSalesJournal } = await import("@/lib/journal");
+        const total = Number(totalAmount);
+        const vatRate = 0.1;
+        const net = +(total / (1 + vatRate)).toFixed(2);
+        const vat = +(total - net).toFixed(2);
+        await postSalesJournal({
+          salesId: created.id,
+          salesDate: createdAt,
+          totalAmount: total,
+          netAmount: net,
+          vatAmount: vat,
+          clientId,
+          companyCode: session.companyCode as "TV" | "VR",
+          description: `매출 ${created.salesNumber} — ${client.companyNameVi}`,
+          createdById: session.sub,
+        });
+      } catch (e) {
+        console.error("[sales] auto-journal failed:", e);
+      }
+
       // 전체 레코드를 items 포함으로 반환
       const full = await prisma.sales.findUnique({
         where: { id: created.id },

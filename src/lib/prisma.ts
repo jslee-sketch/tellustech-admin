@@ -53,6 +53,8 @@ const COMPANY_SCOPED_MODELS = new Set([
   "BankAccount", "CashTransaction", "BankAccountMonthlySnapshot",
   // Layer 2 — 비용/원가 관리
   "CostCenter", "AllocationRule", "Budget",
+  // Layer 3 — 회계원장
+  "ChartOfAccount", "JournalEntry", "JournalLine", "AccountMapping",
 ]);
 
 type AnyRecord = Record<string, unknown>;

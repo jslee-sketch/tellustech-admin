@@ -98,6 +98,34 @@ export async function POST(request: Request) {
         { isConflict: (e) => (e as { code?: string })?.code === "P2002" },
       );
 
+      // Layer 3 — 자금 자동 분개.
+      try {
+        const { postCashJournal, lookupAccountCode } = await import("@/lib/journal");
+        const bankCode = await lookupAccountCode(txnType === "DEPOSIT" ? "CASH_IN" : "CASH_OUT", session.companyCode as "TV" | "VR");
+        if (bankCode) {
+          // 카테고리 → trigger 매핑
+          const catTrigger =
+            category === "RECEIVABLE_COLLECTION" ? "SALES_COLLECTION"
+            : category === "PAYABLE_PAYMENT" ? "PURCHASE_PAYMENT"
+            : category === "SALARY" ? "PAYROLL"
+            : category === "EXPENSE" ? "EXPENSE"
+            : "OTHER";
+          await postCashJournal({
+            cashTxId: created.id,
+            txnDate,
+            type: txnType === "DEPOSIT" ? "IN" : txnType === "WITHDRAWAL" ? "OUT" : "TRANSFER",
+            amount,
+            category: catTrigger,
+            bankAccountCode: bankCode,
+            companyCode: session.companyCode as "TV" | "VR",
+            description,
+            createdById: session.sub,
+          });
+        }
+      } catch (e) {
+        console.error("[cash-tx] auto-journal failed:", e);
+      }
+
       return ok({ transaction: created }, { status: 201 });
     } catch (err) { return serverError(err); }
   });

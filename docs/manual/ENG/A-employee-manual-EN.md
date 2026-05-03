@@ -1715,6 +1715,11 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.4.0 · 2026-05-03**: Finance **Layer 3 — General Ledger** introduced. VAS (Vietnam Accounting Standards)-based ChartOfAccounts (39 accounts × 2 companies) + JournalEntry/JournalLine + AccountMapping (14 triggers).
+  - Auto-journal hooks added to 5 modules: Sales / Purchase / CashTransaction / Expense / Payroll bulk-pay — every business transaction now spawns a `JournalEntry` with debit/credit lines, color-coded source badges.
+  - Three new screens: `/finance/chart-of-accounts` (CoA — type filter + search + hierarchical indent), `/finance/journal-entries` (entry list with expandable lines + DRAFT→POSTED post / POSTED→REVERSED reverse actions), `/finance/account-mappings` (edit trigger→VAS code mappings).
+  - Posting logic: Sales = DR 131(Receivable) / 3331(VAT out) | CR 5111(Revenue). Purchase = DR 156(Inventory) / 133(VAT deductible) | CR 331(Payable). Cash IN/OUT looks up contra account by category (SALES_COLLECTION/PAYROLL/EXPENSE). Expense with paymentStatus=PAID hits bank, otherwise CR 331. Payroll bulk-pay = DR 6421(Salary) | CR 112(Bank).
+  - Sidebar Finance group +3 items (📒 Chart of Accounts / 📝 Journal Entries / 🔗 Account Mappings). 60+ i18n keys vi/en/ko. AccountStandard enum (VAS/K_IFRS/IFRS) — ready for K-IFRS preset extension.
 - **v2.3.2 · 2026-05-03**: Bulk-fix of 8 of the 14 Layer 1·2 gaps.
   - PR payment modal (`/finance/payables/[id]`) now has a [Bank Account] dropdown — selecting one auto-creates the matching CashTransaction and syncs the account balance.
   - `/finance/expenses` list now shows paymentMethod and paymentStatus columns + status filter + [Reimburse] action button for PENDING_REIMBURSE rows.

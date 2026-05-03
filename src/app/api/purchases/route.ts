@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       const supplierId = requireString(p.supplierId, "supplierId");
       const supplier = await prisma.client.findUnique({
         where: { id: supplierId },
-        select: { id: true, paymentTerms: true },
+        select: { id: true, paymentTerms: true, companyNameVi: true },
       });
       if (!supplier) return badRequest("invalid_supplier");
 
@@ -291,6 +291,28 @@ export async function POST(request: Request) {
         },
         { isConflict: isUniqueConstraintError },
       );
+
+      // Layer 3 — 매입 자동 분개.
+      try {
+        const { postPurchaseJournal } = await import("@/lib/journal");
+        const total = Number(totalAmount);
+        const vatRate = 0.1;
+        const net = +(total / (1 + vatRate)).toFixed(2);
+        const vat = +(total - net).toFixed(2);
+        await postPurchaseJournal({
+          purchaseId: created.id,
+          purchaseDate: createdAt,
+          totalAmount: total,
+          netAmount: net,
+          vatAmount: vat,
+          supplierId,
+          companyCode: session.companyCode as "TV" | "VR",
+          description: `매입 ${created.purchaseNumber} — ${supplier.companyNameVi}`,
+          createdById: session.sub,
+        });
+      } catch (e) {
+        console.error("[purchases] auto-journal failed:", e);
+      }
 
       const full = await prisma.purchase.findUnique({
         where: { id: created.id },

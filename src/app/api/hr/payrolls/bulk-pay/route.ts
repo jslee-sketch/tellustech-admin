@@ -74,6 +74,25 @@ export async function POST(request: Request) {
         return { paid: payrolls.length, totalAmount: totalAmount.toFixed(2), cashTxns };
       }, { timeout: 30_000 });
 
+      // Layer 3 — 급여 자동 분개 (지급 직후, 트랜잭션 외부).
+      try {
+        const { postPayrollJournal } = await import("@/lib/journal");
+        for (const pr of payrolls) {
+          const amt = Number(pr.netPay);
+          await postPayrollJournal({
+            payrollId: pr.id,
+            payDate: new Date(),
+            amount: amt,
+            isPaid: true,
+            companyCode: session.companyCode as "TV" | "VR",
+            description: `급여 지급 ${ym} (${pr.employeeId})`,
+            createdById: session.sub,
+          });
+        }
+      } catch (e) {
+        console.error("[payroll bulk-pay] auto-journal failed:", e);
+      }
+
       return ok(result);
     } catch (err) { return serverError(err); }
   });

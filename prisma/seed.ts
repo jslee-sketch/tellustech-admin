@@ -447,6 +447,42 @@ async function seedSnmpModels() {
   console.log(`  ✓ snmp model OIDs: ${SNMP_MODELS.length}`);
 }
 
+async function seedVasChartOfAccounts() {
+  // VAS 표준 계정 + 트리거 기본 매핑 — 두 회사(TV/VR) 모두에 시드.
+  // 동적 import 로 src/lib 모듈 로드 (seed 는 prisma/ 디렉터리에서 실행).
+  const { VAS_ACCOUNTS, DEFAULT_MAPPINGS } = (await import("../src/lib/vas-chart")) as {
+    VAS_ACCOUNTS: { code: string; nameVi: string; nameEn: string; nameKo: string; type: string; parentCode?: string; level: number; isLeaf: boolean }[];
+    DEFAULT_MAPPINGS: { trigger: string; accountCode: string; description: string }[];
+  };
+
+  for (const cc of [CompanyCode.TV, CompanyCode.VR]) {
+    for (const a of VAS_ACCOUNTS) {
+      await prisma.chartOfAccount.upsert({
+        where: { companyCode_code: { companyCode: cc, code: a.code } },
+        update: {
+          nameVi: a.nameVi, nameEn: a.nameEn, nameKo: a.nameKo,
+          type: a.type as never, parentCode: a.parentCode ?? null,
+          level: a.level, isLeaf: a.isLeaf,
+        },
+        create: {
+          code: a.code, nameVi: a.nameVi, nameEn: a.nameEn, nameKo: a.nameKo,
+          type: a.type as never, parentCode: a.parentCode ?? null,
+          level: a.level, isLeaf: a.isLeaf,
+          standard: "VAS", companyCode: cc,
+        },
+      });
+    }
+    for (const m of DEFAULT_MAPPINGS) {
+      await prisma.accountMapping.upsert({
+        where: { companyCode_trigger: { companyCode: cc, trigger: m.trigger as never } },
+        update: { accountCode: m.accountCode, description: m.description },
+        create: { trigger: m.trigger as never, accountCode: m.accountCode, description: m.description, companyCode: cc },
+      });
+    }
+  }
+  console.log(`  ✓ VAS chart: ${VAS_ACCOUNTS.length} accounts × 2 cos + ${DEFAULT_MAPPINGS.length} mappings × 2 cos`);
+}
+
 async function main() {
   console.log("🌱 Seeding Tellustech ERP database...");
   await seedDepartments();
@@ -459,6 +495,7 @@ async function main() {
   await seedPortalBanners();
   await seedSnmpModels();
   await seedYieldConfig();
+  await seedVasChartOfAccounts();
   console.log("✅ Seed complete");
 }
 

@@ -1714,6 +1714,11 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.4.0 · 2026-05-03**: Tài chính **Layer 3 — Sổ cái kế toán**. Hệ thống tài khoản theo VAS (39 tài khoản × 2 công ty) + JournalEntry/JournalLine + AccountMapping (14 trình kích hoạt).
+  - Hook bút toán tự động cho 5 mô-đun: Bán hàng / Mua hàng / CashTransaction / Expense / Payroll bulk-pay — khi giao dịch xảy ra, `JournalEntry` + dòng Nợ/Có được tạo tự động với badge nguồn theo màu.
+  - 3 màn hình mới: `/finance/chart-of-accounts` (Hệ thống tài khoản — lọc theo loại + tìm kiếm + thụt lề phân cấp), `/finance/journal-entries` (Danh sách bút toán + dòng có thể mở rộng + chuyển DRAFT→POSTED / tạo bút toán đảo cho POSTED), `/finance/account-mappings` (Sửa ánh xạ trình kích hoạt → mã VAS).
+  - Logic phân bổ: Bán hàng = Nợ 131(Phải thu) / 3331(VAT đầu ra) | Có 5111(Doanh thu). Mua = Nợ 156(Tồn kho) / 133(VAT khấu trừ) | Có 331(Phải trả). Cash IN/OUT theo category (SALES_COLLECTION/PAYROLL/EXPENSE) tự lookup contra. Expense paymentStatus=PAID → ghi giảm tiền gửi, khác → Có 331. Payroll bulk-pay = Nợ 6421(Lương) | Có 112(Tiền gửi).
+  - Sidebar nhóm Tài chính +3 mục (📒 Hệ thống tài khoản / 📝 Bút toán / 🔗 Ánh xạ tự động). 60+ khoá i18n vi/en/ko. Enum AccountStandard (VAS/K_IFRS/IFRS) — sẵn sàng mở rộng preset K-IFRS sau.
 - **v2.3.2 · 2026-05-03**: Vá đồng loạt 8/14 hạng mục thiếu của Layer 1·2.
   - Modal thanh toán PR (`/finance/payables/[id]`) thêm dropdown chọn tài khoản — tự sinh CashTransaction và cập nhật số dư.
   - `/finance/expenses` thêm cột paymentMethod / paymentStatus + bộ lọc trạng thái + nút [Hoàn trả] cho PENDING_REIMBURSE.

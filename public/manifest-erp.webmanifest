@@ -1,0 +1,21 @@
+{
+  "name": "Tellustech ERP",
+  "short_name": "TTS ERP",
+  "description": "Tellustech Vina / Vietrental — ERP",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "lang": "ko",
+  "icons": [
+    { "src": "/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "재고 현황 / Inventory", "url": "/inventory/stock" },
+    { "name": "AS 티켓 / AS Tickets", "url": "/as/tickets" },
+    { "name": "자금 현황판 / Cash Dashboard", "url": "/finance/cash-dashboard" }
+  ]
+}

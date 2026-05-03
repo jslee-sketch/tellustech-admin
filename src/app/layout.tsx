@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import { Sidebar } from "@/components/ui";
+import { OfflineBanner } from "@/components/ui/offline-banner";
 import { SESSION_HEADER_USER, type SessionPayload } from "@/lib/auth";
 import type { Lang } from "@/lib/i18n";
 
@@ -50,22 +51,29 @@ export default async function RootLayout({
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-tts-bg text-tts-text">
+        <OfflineBanner lang={initialLang} />
         <div className="flex min-h-full">
           <Sidebar initialLang={initialLang} />
           <div className="flex min-h-full flex-1 flex-col">{children}</div>
         </div>
         <script dangerouslySetInnerHTML={{ __html: `
-          if ("serviceWorker" in navigator && location.pathname.startsWith("/portal")) {
-            navigator.serviceWorker.register("/sw.js", { scope: "/portal", updateViaCache: "none" }).then((reg) => {
-              // 등록 시점에 즉시 업데이트 체크 — 새 SW 가 있으면 다운로드/활성화 유도
-              try { reg.update(); } catch (_) {}
-            }).catch(() => undefined);
-            // 새 SW 가 active 되면 즉시 새로고침해서 새 manifest/리소스 적용
+          if ("serviceWorker" in navigator) {
+            var isPortal = location.pathname.startsWith("/portal");
+            var isLogin = location.pathname.startsWith("/login");
+            if (isPortal) {
+              navigator.serviceWorker.register("/sw.js", { scope: "/portal", updateViaCache: "none" }).then((reg) => {
+                try { reg.update(); } catch (_) {}
+              }).catch(() => undefined);
+            } else if (!isLogin) {
+              // ERP 본체 — root scope SW. 인증 필요한 화면이라 로그인 페이지는 제외.
+              navigator.serviceWorker.register("/sw-erp.js", { scope: "/", updateViaCache: "none" }).then((reg) => {
+                try { reg.update(); } catch (_) {}
+              }).catch(() => undefined);
+            }
             navigator.serviceWorker.addEventListener("controllerchange", () => {
               if (!window.__tts_reloaded) { window.__tts_reloaded = true; location.reload(); }
             });
           }
-          // 화면 회전 잠금 해제 (가능한 브라우저에서) — manifest 가 portrait 였던 경우 잔여 잠금 해제
           try {
             if (screen.orientation && typeof screen.orientation.unlock === "function") {
               screen.orientation.unlock();

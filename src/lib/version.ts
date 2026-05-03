@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.8.1";
+export const VERSION = "v2.9.0";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "잔여 4건 — E2E 회귀 PASS + 간접비 자동 배분 + 알림 hook 4종 보강 + AI 뉴스 월간 캡";
+export const VERSION_NOTE = "PWA 오프라인 캐시 (ERP root SW + 설치 프롬프트 + 오프라인 배너) + 포인트 만료 정책 (FIFO + 24개월 자동 + cron + 30일 전 알림)";

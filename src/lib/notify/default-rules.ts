@@ -151,4 +151,9 @@ export const DEFAULT_RULES: DefaultRule[] = [
     templateKo: "📋 주간 회의 리마인더 — {meetingTime}",
     templateVi: "📋 Nhắc nhở họp tuần — {meetingTime}",
     templateEn: "📋 Weekly meeting reminder — {meetingTime}" },
+
+  { eventType: "PORTAL_POINTS_EXPIRY_SOON", targetType: "ASSIGNEE", channelEmail: true, channelZalo: false, channelChat: true,
+    templateKo: "⏳ 고객 포인트 만료 임박\n{clientName}: {totalExpiring}d (가장 이른 만료: {firstExpireAt})",
+    templateVi: "⏳ Điểm khách hàng sắp hết hạn\n{clientName}: {totalExpiring}d (sớm nhất: {firstExpireAt})",
+    templateEn: "⏳ Client points expiring soon\n{clientName}: {totalExpiring}d (earliest: {firstExpireAt})" },
 ];

@@ -2422,6 +2422,17 @@ const DICT: Dict = {
   "notify.markAllRead":       { vi: "Đánh dấu tất cả đã đọc", en: "Mark all read",   ko: "모두 읽음" },
   "common.open":              { vi: "Mở",                  en: "Open",               ko: "열기" },
   "notify.notEmployee":       { vi: "Tài khoản này không gắn với nhân viên — không thể nhận thông báo email/Zalo. Liên hệ ADMIN để liên kết Employee.", en: "This account is not linked to an Employee — email/Zalo channels are unavailable. Contact ADMIN to link.", ko: "이 계정은 Employee 와 연결되지 않아 이메일/Zalo 채널을 사용할 수 없습니다. ADMIN 에게 연결 요청하세요." },
+
+  // PWA
+  "pwa.offline":              { vi: "Chế độ offline",      en: "Offline mode",       ko: "오프라인 모드" },
+  "pwa.lastSync":             { vi: "Đồng bộ gần nhất",    en: "Last sync",          ko: "마지막 동기화" },
+  "pwa.installApp":           { vi: "📲 Cài đặt ứng dụng", en: "📲 Install app",     ko: "📲 앱 설치" },
+
+  // 포인트 만료
+  "points.expiry.expiringIn30":   { vi: "{amount}d sẽ hết hạn trong 30 ngày", en: "{amount}d expires within 30 days", ko: "{amount}d 가 30일 내 만료" },
+  "points.expiry.nextExpireAt":   { vi: "Hết hạn sớm nhất", en: "Earliest expiry",   ko: "가장 이른 만료" },
+  "points.expiry.expired":        { vi: "Đã hết hạn",       en: "Expired",            ko: "만료됨" },
+  "points.expiry.policy":         { vi: "Điểm hết hạn sau {months} tháng", en: "Points expire after {months} months", ko: "포인트는 {months}개월 후 만료" },
   "fs.total":             { vi: "Tổng cộng",           en: "Total",             ko: "합계" },
   "fs.amount":            { vi: "Số tiền",             en: "Amount",            ko: "금액" },
   "fs.section":           { vi: "Phân loại",           en: "Section",           ko: "구분" },

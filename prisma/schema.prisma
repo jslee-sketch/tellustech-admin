@@ -1940,6 +1940,7 @@ enum NotificationEventType {
   USAGE_CFM_COMPLETED
   USAGE_CFM_NO_RESPONSE_D3
   PORTAL_REFERRAL
+  PORTAL_POINTS_EXPIRY_SOON
   // 부정/이상 감지
   YIELD_FRAUD_SUSPECT_EVENT
   CASH_SHORTAGE_ALERT_EVENT
@@ -2588,12 +2589,20 @@ model PortalPoint {
   id           String      @id @default(cuid())
   clientId     String
   client       Client      @relation(fields: [clientId], references: [id])
-  amount       Int
+  amount       Int         // 적립=양수, 사용=음수, 만료=음수
   reason       PointReason
   reasonDetail String?
   linkedModel  String?
   linkedId     String?
   issuedById   String?
+  // 포인트 만료 정책 — 적립일 + PointConfig.expiryMonths 자동 설정 (FIFO 차감용)
+  expiresAt    DateTime?
+  expiredAt    DateTime?   // 실제 만료 처리된 시각 (음수 차감 행 표시)
+  // FIFO 사용/만료 시 어느 적립행을 소진했는지 추적
+  consumedFromId String?
+  consumedFrom   PortalPoint?  @relation("PointConsume", fields: [consumedFromId], references: [id])
+  consumedBy     PortalPoint[] @relation("PointConsume")
+
   createdAt    DateTime    @default(now())
 
   companyCode CompanyCode @default(TV)
@@ -2601,6 +2610,7 @@ model PortalPoint {
   @@index([clientId])
   @@index([reason])
   @@index([createdAt])
+  @@index([expiresAt])
   @@map("portal_points")
 }
 
@@ -2620,15 +2630,19 @@ enum PointReason {
   ADMIN_GRANT
   ADMIN_DEDUCT
   REWARD_EXCHANGE
+  POINT_EXPIRED        // FIFO 만료 자동 차감 (cron)
+  POINT_EXPIRING_SOON  // (알림 전용 — 실제 데이터 행 발생 안 함, NotificationEventType 와 별도)
 }
 
 model PointConfig {
 
-  id        String      @id @default(cuid())
-  reason    PointReason @unique
-  amount    Int
-  isActive  Boolean     @default(true)
-  updatedAt DateTime    @updatedAt
+  id           String      @id @default(cuid())
+  reason       PointReason @unique
+  amount       Int
+  isActive     Boolean     @default(true)
+  // 포인트 만료 — 회사 전역 설정 (각 reason 별 동일값 — 첫 행 기준 적용).
+  expiryMonths Int         @default(24)
+  updatedAt    DateTime    @updatedAt
 
   companyCode CompanyCode @default(TV)
   @@index([companyCode])

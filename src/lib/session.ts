@@ -1,7 +1,7 @@
 import "server-only";
 import { headers } from "next/headers";
 import { SESSION_HEADER_USER, type SessionPayload } from "./auth";
-import { runWithRequestContext, type RequestContext } from "./request-context";
+import { requestContextStore, runWithRequestContext, type RequestContext } from "./request-context";
 
 // Route Handler / Server Component 에서 현재 세션을 꺼내는 표준 경로.
 // proxy.ts 가 JWT 검증 후 x-session-user 헤더에 세션 JSON 을 실어 보내므로
@@ -15,7 +15,22 @@ export async function getSession(): Promise<SessionPayload> {
       "세션 헤더 누락 — 이 핸들러는 인증된 경로에서만 호출되어야 합니다 (proxy.ts 확인).",
     );
   }
-  return JSON.parse(raw) as SessionPayload;
+  const session = JSON.parse(raw) as SessionPayload;
+  // Server Component 가 getSession() 만 호출해도 이후 prisma 호출에서
+  // companyCode 자동 필터/주입이 동작하도록 ALS 컨텍스트를 sticky 로 설정.
+  // (Route Handler 는 withSessionContext 로 별도 wrap — 그쪽이 우선이라 무관)
+  if (!requestContextStore.getStore()) {
+    const ctx: RequestContext = {
+      userId: session.sub,
+      username: session.username,
+      role: session.role,
+      companyCode: session.companyCode,
+      empCode: session.empCode,
+      language: session.language,
+    };
+    requestContextStore.enterWith(ctx);
+  }
+  return session;
 }
 
 /**

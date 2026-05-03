@@ -1715,6 +1715,11 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.1.1 · 2026-05-03**: Server Component auto company-filter bug fix.
+  - Symptom: After switching to VR, the sales list still showed the 123 TV rows.
+  - Root cause: A server component that only calls `getSession()` (e.g. `/sales/page.tsx`) is not wrapped by `withSessionContext` so the ALS context is empty — the Prisma extension's `COMPANY_SCOPED_MODELS` filter therefore never fires.
+  - Fix: `src/lib/session.ts` `getSession()` now calls `requestContextStore.enterWith(ctx)` to set a sticky ALS context. Route Handlers (already wrapped) are unaffected.
+  - Effect: Every `prisma.X.findMany()` call inside any server component now picks up the company filter automatically.
 - **v2.1.0 · 2026-05-03**: companyCode rollout across the schema — added to 34 models (Phase A 10 critical, B 15 portal/SNMP/yield, C 9 child denormalize). Prisma extension `COMPANY_SCOPED_MODELS` auto-injects `WHERE companyCode = session` for `findMany/findFirst/count`, and `data.companyCode` for `create` (when not set). ADMIN unified view (`companyCode=ALL`) bypasses the filter. `CodeSequence` migrated to composite PK `(companyCode, key)` so TV/VR auto-code sequences are separated.
 - **v2.0.0 · 2026-05-02 (PM)**: 4-rule commit policy adopted — ① version bump + display at top of sidebar ② all 3 languages updated together ③ manual change-log entry kept in sync ④ Chrome verification required. New file `src/lib/version.ts`.
 - **2026-05-02 (AM)**: This supplement issued. Part 6 Inventory fully rewritten, Appendices F~K added.

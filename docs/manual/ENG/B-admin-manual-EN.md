@@ -1913,6 +1913,7 @@ On save, the Claude API instantly translates into the other 2 languages. Auto-di
 
 # Change History (Administrator Manual v2 Supplement)
 
+- **v2.1.1 · 2026-05-03**: Server Component auto company-filter fix — `getSession()` now sets sticky ALS context. The server-component path missed in v2.1.0 now also auto-filters.
 - **v2.1.0 · 2026-05-03**: companyCode rollout — 34 transactional models gained the column (`@default(TV)` to backfill existing rows). `COMPANY_SCOPED_MODELS` set in `src/lib/prisma.ts` auto-filters reads + auto-injects on writes. `CodeSequence` migrated to composite PK `(companyCode, key)` to keep TNV vs VNV sequences race-free. `@@index([companyCode, createdAt])` added across the board. Master tables (Client/Item/Warehouse) + system tables (File/User/AuditLog) intentionally excluded (shared). Child tables (SalesItem/PurchaseItem/AsDispatchPart, …) get the column via parent propagation.
 - **v2.0.0 · 2026-05-02 (PM)**: 4-rule commit policy adopted — ① new `src/lib/version.ts` + display at top of sidebar (under TTS logo) ② all 3 languages updated together ③ manual change-log kept in sync ④ Chrome verification required. Violations may trigger rework requests on the next task.
 - **2026-05-02 (AM)**: This supplement published.

@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.1.0";
+export const VERSION = "v2.1.1";
 export const BUILD_DATE = "2026-05-03";
-export const VERSION_NOTE = "companyCode 전수 보강 — 34개 모델 + Prisma extension 자동 주입";
+export const VERSION_NOTE = "Server Component 자동 회사 필터 — getSession ALS sticky";

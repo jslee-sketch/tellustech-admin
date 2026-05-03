@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { checkFinanceAccess } from "@/lib/rbac";
 import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 
@@ -11,6 +13,7 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function ExpenseDetailPage({ params }: PageProps) {
   const { id } = await params;
   const session = await getSession();
+  { const r = checkFinanceAccess(session, "client"); if (!r.ok) redirect(r.redirectTo!); }
   const L = session.language;
   const r = await prisma.expense.findUnique({
     where: { id },

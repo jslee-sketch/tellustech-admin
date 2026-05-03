@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { checkFinanceAccess } from "@/lib/rbac";
 import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 
@@ -7,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CashTxnPage() {
   const session = await getSession();
+  { const r = checkFinanceAccess(session, "manager"); if (!r.ok) redirect(r.redirectTo!); }
   const L = session.language;
   const txns = await prisma.cashTransaction.findMany({
     orderBy: { txnDate: "desc" },

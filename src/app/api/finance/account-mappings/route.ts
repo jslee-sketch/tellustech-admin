@@ -18,6 +18,8 @@ export async function GET() {
 export async function PUT(request: Request) {
   return withSessionContext(async (session) => {
     try {
+      // RBAC: mapping 변경은 ADMIN 만
+      if (session.role !== "ADMIN") return badRequest("admin_only");
       const body = (await request.json()) as { trigger?: string; accountCode?: string; isActive?: boolean };
       if (!body.trigger || !body.accountCode) return badRequest("invalid_input");
 

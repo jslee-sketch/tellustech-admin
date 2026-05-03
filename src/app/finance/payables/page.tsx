@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { checkFinanceAccess } from "@/lib/rbac";
 import { t } from "@/lib/i18n";
 import { Card, ExcelDownload } from "@/components/ui";
 import { PayablesListClient } from "./payables-list-client";
@@ -9,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PayablesPage() {
   const session = await getSession();
+  { const r = checkFinanceAccess(session, "client"); if (!r.ok) redirect(r.redirectTo!); }
   const L = session.language;
   const rows = await prisma.payableReceivable.findMany({
     orderBy: [{ status: "asc" }, { dueDate: { sort: "asc", nulls: "last" } }],

@@ -1,4 +1,6 @@
 import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { checkFinanceAccess } from "@/lib/rbac";
 import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
 import { headers } from "next/headers";
@@ -28,6 +30,7 @@ async function fetchDashboard(): Promise<DashData | null> {
 
 export default async function CashDashboardPage() {
   const session = await getSession();
+  { const r = checkFinanceAccess(session, "manager"); if (!r.ok) redirect(r.redirectTo!); }
   const L = session.language;
   const data = await fetchDashboard();
   return (

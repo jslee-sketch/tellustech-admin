@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { checkFinanceAccess } from "@/lib/rbac";
 import { t } from "@/lib/i18n";
 import { Badge, Card, Note } from "@/components/ui";
 import { PrDetailClient } from "./pr-detail-client";
@@ -12,6 +14,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function PayableDetailPage({ params }: PageProps) {
   const session = await getSession();
+  { const r = checkFinanceAccess(session, "client"); if (!r.ok) redirect(r.redirectTo!); }
   const L = session.language;
   const { id } = await params;
   const pr = await prisma.payableReceivable.findUnique({

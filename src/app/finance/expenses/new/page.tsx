@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { checkFinanceAccess } from "@/lib/rbac";
 import { companyScope } from "@/lib/api-utils";
 import { t } from "@/lib/i18n";
 import { Card } from "@/components/ui";
@@ -10,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewExpensePage() {
   const session = await getSession();
+  { const r = checkFinanceAccess(session, "client"); if (!r.ok) redirect(r.redirectTo!); }
   const L = session.language;
   const [projects, depts, sales, purchases, clients, accounts] = await Promise.all([
     prisma.project.findMany({ where: companyScope(session), orderBy: { projectCode: "asc" }, select: { id: true, projectCode: true, name: true } }),

@@ -47,6 +47,8 @@ export async function POST(request: Request) {
       }
 
       if (action === "close") {
+        // RBAC: close 는 ADMIN 만
+        if (session.role !== "ADMIN") return badRequest("admin_only");
         // VERIFIED 상태에서만 마감 가능
         const cur = await prisma.periodClose.findUnique({
           where: { companyCode_yearMonth: { companyCode: cc as never, yearMonth: ym } },
@@ -68,6 +70,8 @@ export async function POST(request: Request) {
       }
 
       if (action === "reopen") {
+        // RBAC: reopen 은 ADMIN 만
+        if (session.role !== "ADMIN") return badRequest("admin_only");
         const cur = await prisma.periodClose.findUnique({
           where: { companyCode_yearMonth: { companyCode: cc as never, yearMonth: ym } },
         });

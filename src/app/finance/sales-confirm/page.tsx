@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
+import { checkFinanceAccess } from "@/lib/rbac";
 import { pickName, t } from "@/lib/i18n";
 import { SalesConfirmClient } from "./sales-confirm-client";
 
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SalesConfirmPage() {
   const s = await getSession();
-  if (s.role === "CLIENT") redirect("/portal");
+  { const r = checkFinanceAccess(s, "manager"); if (!r.ok) redirect(r.redirectTo!); }
 
   const sales = await prisma.sales.findMany({
     where: { isDraft: false, financeConfirmedAt: null },

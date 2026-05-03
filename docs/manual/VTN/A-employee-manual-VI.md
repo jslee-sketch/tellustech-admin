@@ -1714,6 +1714,11 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.6.1 · 2026-05-03**: Refactor tồn kho **E2E Phase 2** + tách script seed.
+  - Tách `scripts/seed-inventory-e2e.ts` — 6 KH + 2 kho + 5 mặt hàng + 4 master sẵn có (R001/RP02/CL02/DM02). Idempotent + chạy độc lập.
+  - 20 dòng bảng chân trị + 3 phụ + 4 cross-verify = **31/31 PASS**. Kiểm tra row InvTxn, action master (NEW/MOVE/ARCHIVE/TRANSFER_LOC), ownerType + currentLocationClientId + archivedAt, tổng onHand tự sở hữu, lookup BASE_RULES, PR DRAFT mua/bán tự động.
+  - Chrome verify: `/inventory/transactions/new` cascading — IN(11) / OUT(14) / TRANSFER(5). TRANSFER dòng 1 = chuyển kho nội bộ, 2~5 = pass-through ngoài (KH↔KH).
+  - Vá i18n — thêm khoá `field.fromWarehouse` / `field.toWarehouse` vi/en/ko (xử lý chuỗi i18n key bị lộ ở chế độ TRANSFER nội bộ).
 - **v2.6.0 · 2026-05-03**: Tài chính **Layer 5 — AccountingConfig + Sidebar tổ chức lại + E2E 21 bước** hoàn thiện.
   - **AccountingConfig** (1 dòng/công ty) — 3 preset chuẩn (VAS/K_IFRS/IFRS) + tháng bắt đầu năm tài chính + Tiền tệ báo cáo + VAT mặc định + Ngôn ngữ báo cáo + 3 cờ (kế toán dồn tích / bút toán tự động / bắt buộc đóng kỳ). Màn hình mới `/finance/accounting-config` (ADMIN/MANAGER) — 3 thẻ preset + form chi tiết + [Lưu].
   - **Sidebar nhóm Tài chính chia nhỏ** — từ 16 mục đơn → 3 sub-group: `Tài chính · Quỹ`(8 mục) / `Tài chính · Sổ cái`(4 mục, kèm AccountingConfig) / `Tài chính · BCTC`(5 mục — Cân đối thử/PL/BS/CF/Đóng kỳ). Cải thiện điều hướng + phân nhóm trực quan.

@@ -1715,6 +1715,11 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.6.1 · 2026-05-03**: Inventory refactor **Phase 2 E2E** verification + extracted seed.
+  - Extracted `scripts/seed-inventory-e2e.ts` — 6 clients + 2 warehouses + 5 items + 4 pre-existing masters (R001/RP02/CL02/DM02). Idempotent cleanup + standalone runnable.
+  - 20 truth-table rows + 3 extras + 4 cross-verify = **31/31 PASS**. Verifies InvTxn row, InventoryItem master action (NEW/MOVE/ARCHIVE/TRANSFER_LOC), ownerType + currentLocationClientId + archivedAt, in-house onHand totals, BASE_RULES lookup, auto purchase/sales PR DRAFT.
+  - Chrome verify: `/inventory/transactions/new` cascading — IN(11) / OUT(14) / TRANSFER(5). TRANSFER row 1 = internal warehouse↔warehouse, rows 2~5 = external client↔client pass-through.
+  - i18n fix — added `field.fromWarehouse` / `field.toWarehouse` vi/en/ko keys (resolves the raw i18n key string previously visible in the TRANSFER internal mode).
 - **v2.6.0 · 2026-05-03**: Finance **Layer 5 — AccountingConfig + Sidebar reorganization + 21-step E2E** completed.
   - **AccountingConfig** (one row per company) — 3 standard presets (VAS/K_IFRS/IFRS) + fiscal year start month + reporting currency + default VAT rate + report language + 3 toggles (accrual / auto-journal / enforce period close). New screen `/finance/accounting-config` (ADMIN/MANAGER only) — 3 preset cards + detail form + [Save].
   - **Finance sidebar group split** — single 16-item group reorganized into 3 sub-groups: `Finance · Cash` (8 items) / `Finance · Ledger` (4 items, includes AccountingConfig) / `Finance · Reports` (5 items — Trial Balance/PL/BS/CF/Closings). Visual separation improves navigation + onboarding for new users.

@@ -662,6 +662,8 @@ const DICT: Dict = {
   "field.warehouse":       { vi: "Kho",               en: "Warehouse",        ko: "창고" },
   "field.warehouseOut":    { vi: "Kho xuất",          en: "From Warehouse",   ko: "출고창고" },
   "field.warehouseIn":     { vi: "Kho nhập",          en: "To Warehouse",     ko: "입고창고" },
+  "field.fromWarehouse":   { vi: "Kho đi",            en: "From Warehouse",   ko: "출발 창고" },
+  "field.toWarehouse":     { vi: "Kho đến",           en: "To Warehouse",     ko: "도착 창고" },
   "field.warehouseShip":   { vi: "Kho xuất hàng",     en: "Shipping Warehouse", ko: "출고 창고" },
   "field.currency":        { vi: "Tiền tệ",           en: "Currency",         ko: "통화" },
   "field.fxRate":          { vi: "Tỷ giá (1 → VND)",  en: "FX Rate (1 → VND)", ko: "환율 (1 단위 → VND)" },

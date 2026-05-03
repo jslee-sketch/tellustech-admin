@@ -1915,6 +1915,7 @@ UI 는 추후 추가 예정. 현재는 DB 직접 변경.
 
 # 변경 이력 (관리자 매뉴얼 v2 보강판)
 
+- **v2.6.1 · 2026-05-03**: 재고 Phase 2 E2E 31/31 PASS + scripts/seed-inventory-e2e.ts 분리 + i18n field.fromWarehouse/toWarehouse 보강. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.6.0 · 2026-05-03**: 재경 Layer 5 — AccountingConfig (VAS/K_IFRS/IFRS preset) + 사이드바 재경 그룹 3-way 분할 (자금/원장/재무제표) + E2E 21단계 검증 스크립트 (21/21 PASS). 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.5.0 · 2026-05-03**: 재경 Layer 4 — 재무제표(시산표/PL/BS/CF) + 기간 마감(verify→close→reopen) + AccountMonthlyBalance 모델, /admin/closings 통합. 사이드바 +4 메뉴, Excel·인쇄. 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.4.0 · 2026-05-03**: 재경 Layer 3 — 회계원장 (VAS ChartOfAccounts + JournalEntry/Line + AccountMapping). 매출/매입/Cash/Expense/Payroll 자동분개 hook 5종, 신규 화면 3종(계정과목표·전표·매핑), 사이드바 +3 메뉴. 자세한 내용은 사용자 매뉴얼 부록 K 참조.

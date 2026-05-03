@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  try {
   const today = dateOnly(new Date());
   const counters: Record<string, number> = {
     receivableD7: 0, receivableD3: 0, receivableOverdue: 0,
@@ -146,10 +147,10 @@ export async function POST(request: Request) {
     }
   }
 
-  // 사용량 CFM 미응답 D+3
+  // 사용량 CFM 미응답 D+3 — 고객에게 통보됐으나 3일 경과 미확인 (CUSTOMER_NOTIFIED 상태로 남아있음)
   const d3ago = addDays(today, -3);
   const noResponse = await prisma.usageConfirmation.findMany({
-    where: { status: "TECHNICIAN_CONFIRMED" as never, createdAt: { lt: d3ago } },
+    where: { status: "CUSTOMER_NOTIFIED", createdAt: { lt: d3ago } },
   });
   for (const u of noResponse) {
     const client = await lookupClientWithPic(u.clientId);
@@ -165,5 +166,10 @@ export async function POST(request: Request) {
     counters.usageNoResponseD3++;
   }
 
-  return NextResponse.json({ ok: true, counters });
+    return NextResponse.json({ ok: true, counters });
+  } catch (err) {
+    console.error("[notification-scheduler] failed:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
 }

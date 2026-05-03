@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  try {
   const failed = await prisma.notificationDelivery.findMany({
     where: { status: "FAILED", retryCount: { lt: 3 } },
     include: { notification: true },
@@ -53,5 +54,10 @@ export async function POST(request: Request) {
     if (result.ok) succeeded++;
   }
 
-  return NextResponse.json({ ok: true, retried, succeeded });
+    return NextResponse.json({ ok: true, retried, succeeded });
+  } catch (err) {
+    console.error("[notification-retry] failed:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
 }

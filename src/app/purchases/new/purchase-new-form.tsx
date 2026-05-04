@@ -20,6 +20,7 @@ type Props = {
 type ItemDraft = {
   itemId: string;
   serialNumber: string;
+  options: string;
   quantity: string;
   unitPrice: string;
   startDate: string;
@@ -29,6 +30,7 @@ type ItemDraft = {
 const emptyItem: ItemDraft = {
   itemId: "",
   serialNumber: "",
+  options: "",
   quantity: "1",
   unitPrice: "0",
   startDate: "",
@@ -115,6 +117,7 @@ export function PurchaseNewForm({ suppliers, projects, employeeOptions, warehous
             .map((x) => ({
               itemId: x.itemId,
               serialNumber: x.serialNumber || null,
+              options: x.options || null,
               quantity: x.quantity,
               unitPrice: x.unitPrice,
               startDate: x.startDate || null,
@@ -215,6 +218,7 @@ export function PurchaseNewForm({ suppliers, projects, employeeOptions, warehous
             <tr>
               <th className="px-2 py-2">{t("field.itemRequired", lang)}</th>
               <th className="px-2 py-2" style={{ width: 130 }}>{t("col.serial", lang)}</th>
+              <th className="px-2 py-2" style={{ width: 140 }}>옵션</th>
               {showPeriod && <th className="px-2 py-2" style={{ width: 130 }}>{t("field.startDate", lang)}</th>}
               {showPeriod && <th className="px-2 py-2" style={{ width: 130 }}>{t("field.endDate", lang)}</th>}
               <th className="px-2 py-2 text-right" style={{ width: 70 }}>{t("col.qty", lang)} *</th>
@@ -230,6 +234,7 @@ export function PurchaseNewForm({ suppliers, projects, employeeOptions, warehous
                 <tr key={i} className="border-b border-[color:var(--tts-border)]">
                   <td className="px-2 py-1"><ItemCombobox value={it.itemId} onChange={(id) => updateItem(i, "itemId", id)} /></td>
                   <td className="px-2 py-1"><TextInput className="w-full" value={it.serialNumber} onChange={(e) => updateItem(i, "serialNumber", e.target.value)} /></td>
+                  <td className="px-2 py-1"><TextInput className="w-full" placeholder="옵션" value={it.options} onChange={(e) => updateItem(i, "options", e.target.value)} /></td>
                   {showPeriod && <td className="px-2 py-1"><TextInput className="w-full" type="date" value={it.startDate} onChange={(e) => updateItem(i, "startDate", e.target.value)} /></td>}
                   {showPeriod && <td className="px-2 py-1"><TextInput className="w-full" type="date" value={it.endDate} onChange={(e) => updateItem(i, "endDate", e.target.value)} /></td>}
                   <td className="px-2 py-1"><TextInput className="w-full text-right" type="number" value={it.quantity} onChange={(e) => updateItem(i, "quantity", e.target.value)} /></td>

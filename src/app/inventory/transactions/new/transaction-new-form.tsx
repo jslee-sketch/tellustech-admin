@@ -102,8 +102,8 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
   const [toClientId, setToClientId] = useState("");
   const [headerNote, setHeaderNote] = useState("");
 
-  // ── 라인 ── (default 빈 배열 — 사용자가 명시적으로 라인 추가해야 함)
-  const [lines, setLines] = useState<LineRow[]>([]);
+  // ── 라인 ── (default 빈 1줄 — S/N 우선 입력 흐름)
+  const [lines, setLines] = useState<LineRow[]>([blankLine()]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
@@ -342,110 +342,7 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Row>
-        <Field label={t("field.txnType", lang)} required width="160px">
-          <Select
-            value={txnType}
-            onChange={(e) => selectType(e.target.value as "IN" | "OUT" | "TRANSFER")}
-            options={[
-              { value: "IN", label: t("txnType.in", lang) },
-              { value: "OUT", label: t("txnType.out", lang) },
-              { value: "TRANSFER", label: t("txnType.transfer", lang) },
-            ]}
-          />
-        </Field>
-        <Field label={t("txn.scenarioLabel", lang)} required width="100%">
-          <Select
-            required
-            value={comboKey}
-            onChange={(e) => setComboKey(e.target.value)}
-            options={combos.map((c) => ({ value: `${c.refModule}|${c.subKind}`, label: t(c.labelKey, lang) }))}
-          />
-        </Field>
-      </Row>
-
-      {/* 헤더 */}
-      {txnType === "IN" && (
-        <Row>
-          <Field label={t("field.toWh", lang)} required>
-            <Select
-              required
-              value={toWarehouseId}
-              onChange={(e) => setToWarehouseId(e.target.value)}
-              placeholder={t("placeholder.select", lang)}
-              options={whAllOptions}
-            />
-          </Field>
-          {showOwnerClient && (
-            <Field label={t("field.ownerClient", lang)} required={isExternalIn}>
-              <ClientCombobox value={clientId} onChange={setClientId} required={isExternalIn} lang={lang} />
-            </Field>
-          )}
-        </Row>
-      )}
-      {txnType === "OUT" && (
-        <Row>
-          <Field label={t("field.fromWh", lang)} required>
-            <Select
-              required
-              value={fromWarehouseId}
-              onChange={(e) => setFromWarehouseId(e.target.value)}
-              placeholder={t("placeholder.select", lang)}
-              options={whOptions}
-            />
-          </Field>
-          <Field label={t("field.toWh", lang)}>
-            <Select
-              value={toWarehouseId}
-              onChange={(e) => setToWarehouseId(e.target.value)}
-              placeholder={t("placeholder.select", lang)}
-              options={whAllOptions}
-            />
-          </Field>
-          <Field label={t("field.clientCustomer", lang)} required>
-            <ClientCombobox value={clientId} onChange={setClientId} required lang={lang} />
-          </Field>
-        </Row>
-      )}
-      {txnType === "TRANSFER" && isInternalTransfer && (
-        <>
-          <Row>
-            <Field label={t("field.fromWarehouse", lang)} required>
-              <Select value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} options={whOptions} />
-            </Field>
-            <Field label={t("field.toWarehouse", lang)} required>
-              <Select value={toWarehouseId} onChange={(e) => setToWarehouseId(e.target.value)} options={whOptions} />
-            </Field>
-          </Row>
-          <Note tone="info">
-            <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
-            {t("txnGuide.internalTransfer", lang)}
-          </Note>
-        </>
-      )}
-      {txnType === "TRANSFER" && !isInternalTransfer && (
-        <>
-          <Row>
-            <Field label={t("field.fromClient", lang)} required>
-              <ClientCombobox value={fromClientId} onChange={setFromClientId} required lang={lang} />
-            </Field>
-            <Field label={t("field.toClient", lang)} required>
-              <ClientCombobox value={toClientId} onChange={setToClientId} required lang={lang} />
-            </Field>
-          </Row>
-          <Note tone="info">
-            <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
-            {t("txnGuide.passthrough", lang)}
-          </Note>
-        </>
-      )}
-
-      <Row>
-        <Field label={t("field.note", lang)}>
-          <TextInput value={headerNote} onChange={(e) => setHeaderNote(e.target.value)} placeholder={t("placeholder.headerNote", lang)} />
-        </Field>
-      </Row>
-
+      {/* 1) 라인 우선 입력 — S/N 입력 → 마스터 조회 → 품목 자동 매핑 → 가능한 시나리오 도출 */}
       {/* 라인 테이블 */}
       <div className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-card-hover)]/40 p-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -547,6 +444,111 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
           ))}
         </div>
       </div>
+
+      {/* 2) 유형 + 시나리오 — 라인의 마스터 상태 확인 후 결정 */}
+      <Row>
+        <Field label={t("field.txnType", lang)} required width="160px">
+          <Select
+            value={txnType}
+            onChange={(e) => selectType(e.target.value as "IN" | "OUT" | "TRANSFER")}
+            options={[
+              { value: "IN", label: t("txnType.in", lang) },
+              { value: "OUT", label: t("txnType.out", lang) },
+              { value: "TRANSFER", label: t("txnType.transfer", lang) },
+            ]}
+          />
+        </Field>
+        <Field label={t("txn.scenarioLabel", lang)} required width="100%">
+          <Select
+            required
+            value={comboKey}
+            onChange={(e) => setComboKey(e.target.value)}
+            options={combos.map((c) => ({ value: `${c.refModule}|${c.subKind}`, label: t(c.labelKey, lang) }))}
+          />
+        </Field>
+      </Row>
+
+      {/* 3) 헤더 (창고/거래처) */}
+      {txnType === "IN" && (
+        <Row>
+          <Field label={t("field.toWh", lang)} required>
+            <Select
+              required
+              value={toWarehouseId}
+              onChange={(e) => setToWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={whAllOptions}
+            />
+          </Field>
+          {showOwnerClient && (
+            <Field label={t("field.ownerClient", lang)} required={isExternalIn}>
+              <ClientCombobox value={clientId} onChange={setClientId} required={isExternalIn} lang={lang} />
+            </Field>
+          )}
+        </Row>
+      )}
+      {txnType === "OUT" && (
+        <Row>
+          <Field label={t("field.fromWh", lang)} required>
+            <Select
+              required
+              value={fromWarehouseId}
+              onChange={(e) => setFromWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={whOptions}
+            />
+          </Field>
+          <Field label={t("field.toWh", lang)}>
+            <Select
+              value={toWarehouseId}
+              onChange={(e) => setToWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={whAllOptions}
+            />
+          </Field>
+          <Field label={t("field.clientCustomer", lang)} required>
+            <ClientCombobox value={clientId} onChange={setClientId} required lang={lang} />
+          </Field>
+        </Row>
+      )}
+      {txnType === "TRANSFER" && isInternalTransfer && (
+        <>
+          <Row>
+            <Field label={t("field.fromWarehouse", lang)} required>
+              <Select value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)} options={whOptions} />
+            </Field>
+            <Field label={t("field.toWarehouse", lang)} required>
+              <Select value={toWarehouseId} onChange={(e) => setToWarehouseId(e.target.value)} options={whOptions} />
+            </Field>
+          </Row>
+          <Note tone="info">
+            <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
+            {t("txnGuide.internalTransfer", lang)}
+          </Note>
+        </>
+      )}
+      {txnType === "TRANSFER" && !isInternalTransfer && (
+        <>
+          <Row>
+            <Field label={t("field.fromClient", lang)} required>
+              <ClientCombobox value={fromClientId} onChange={setFromClientId} required lang={lang} />
+            </Field>
+            <Field label={t("field.toClient", lang)} required>
+              <ClientCombobox value={toClientId} onChange={setToClientId} required lang={lang} />
+            </Field>
+          </Row>
+          <Note tone="info">
+            <span className="font-bold">{t("txnGuide.title", lang)}</span><br/>
+            {t("txnGuide.passthrough", lang)}
+          </Note>
+        </>
+      )}
+
+      <Row>
+        <Field label={t("field.note", lang)}>
+          <TextInput value={headerNote} onChange={(e) => setHeaderNote(e.target.value)} placeholder={t("placeholder.headerNote", lang)} />
+        </Field>
+      </Row>
 
       {error && <div className="rounded-md bg-[color:var(--tts-danger-dim)] px-3 py-2 text-[12px] font-semibold text-[color:var(--tts-danger)]">{error}</div>}
       {okMsg && <div className="rounded-md bg-[color:var(--tts-success-dim)] px-3 py-2 text-[12px] font-semibold text-[color:var(--tts-success)]">{okMsg}</div>}

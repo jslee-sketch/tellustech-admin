@@ -57,7 +57,7 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
           source: p.source ?? null,
           colorChannel: p.colorChannel ?? null,
         }))
-      : [{ itemCode: "", itemName: "", serialNumber: "", copies: 1 }],
+      : [], // default 빈 행 제거 — 임의 라벨 생성 방지
   );
   const [selectedItemId, setSelectedItemId] = useState("");
   const [sn, setSn] = useState("");

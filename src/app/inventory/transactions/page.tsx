@@ -25,9 +25,17 @@ export default async function InventoryTransactionsPage() {
       item: { select: { itemCode: true, name: true } },
       fromWarehouse: { select: { code: true, name: true, warehouseType: true } },
       toWarehouse: { select: { code: true, name: true, warehouseType: true } },
-      client: { select: { clientCode: true, companyNameVi: true } },
+      client: { select: { id: true, clientCode: true, companyNameVi: true } },
     },
   });
+  // toClientId / fromClientId 가 있는 트랜잭션을 위해 client 사전조회 (TRANSFER External 케이스)
+  const extClientIds = Array.from(new Set(
+    txns.flatMap((t) => [t.toClientId, t.fromClientId]).filter((x): x is string => !!x)
+  ));
+  const extClients = extClientIds.length > 0
+    ? await prisma.client.findMany({ where: { id: { in: extClientIds } }, select: { id: true, clientCode: true, companyNameVi: true } })
+    : [];
+  const extClientMap = new Map(extClients.map((c) => [c.id, c]));
 
   // 소속 표시: Internal/Main 창고 → 회사명, External 창고 → 고객명
   const companyName = session.companyCode === "TV" ? "Tellustech Vina" : "Vietrental";
@@ -63,13 +71,16 @@ export default async function InventoryTransactionsPage() {
         <TransactionsClient
           lang={L}
           initialData={txns.map((t) => {
-            // 입고창고 폴백 (정책 H): toWarehouseCode → toClientCode/Name → clientCode/Name
-            // toClient/fromClient 정보를 위해 별도 client 매핑이 없는 경우 client 만 있음
+            // 입고창고 폴백 (정책 H): toWarehouseCode → toClient → client
+            // OUT(LEND/SALE 등)은 client 가 도착지(고객) 역할, TRANSFER External 은 toClient
+            const toClient = t.toClientId ? extClientMap.get(t.toClientId) : null;
             const inboundLabel = t.toWarehouse?.code
               ? `${t.toWarehouse.code} · ${t.toWarehouse.name}`
-              : t.client?.clientCode
-                ? `[거래처] ${t.client.clientCode} · ${t.client.companyNameVi}`
-                : null;
+              : toClient?.clientCode
+                ? `[거래처] ${toClient.clientCode} · ${toClient.companyNameVi}`
+                : t.client?.clientCode
+                  ? `[거래처] ${t.client.clientCode} · ${t.client.companyNameVi}`
+                  : null;
             return {
               id: t.id,
               itemCode: t.item.itemCode,

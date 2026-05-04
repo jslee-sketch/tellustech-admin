@@ -28,6 +28,12 @@ export default async function InventoryTransactionsPage() {
       client: { select: { id: true, clientCode: true, companyNameVi: true } },
     },
   });
+  // S/N 별 옵션 lookup (InventoryItem.options)
+  const allSns = Array.from(new Set(txns.map((x) => x.serialNumber).filter((s): s is string => !!s)));
+  const invItems = allSns.length > 0
+    ? await prisma.inventoryItem.findMany({ where: { serialNumber: { in: allSns } }, select: { serialNumber: true, options: true } })
+    : [];
+  const optionsBySn = new Map(invItems.map((iv) => [iv.serialNumber, iv.options]));
   // toClientId / fromClientId 가 있는 트랜잭션을 위해 client 사전조회 (TRANSFER External 케이스)
   const extClientIds = Array.from(new Set(
     txns.flatMap((t) => [t.toClientId, t.fromClientId]).filter((x): x is string => !!x)
@@ -89,9 +95,10 @@ export default async function InventoryTransactionsPage() {
               fromWarehouseName: t.fromWarehouse?.name ?? null,
               toWarehouseCode: t.toWarehouse?.code ?? null,
               toWarehouseName: t.toWarehouse?.name ?? null,
-              inboundLabel,  // 입고창고 표시 폴백 결과
+              inboundLabel,
               owner: ownerLabel(t.toWarehouse ?? t.fromWarehouse, t.client),
               serialNumber: t.serialNumber,
+              options: t.serialNumber ? (optionsBySn.get(t.serialNumber) ?? null) : null,
               txnType: t.txnType,
               reason: t.reason,
               quantity: t.quantity,

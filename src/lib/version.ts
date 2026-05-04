@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.9.4";
+export const VERSION = "v2.9.5";
 export const BUILD_DATE = "2026-05-04";
-export const VERSION_NOTE = "입출고 등록 로직 재구성 (S/N 우선 입력 → 품목 자동 매핑 + 마스터 상태 배지) + 라인 default 빈 배열 + 라인별 itemId/sn/qty 필수 검증 + 정책 D (archived resurrect) + 정책 E (외부 archived 재입고/이동 OK·출고 NG) + 정책 H (입고창고 폴백 toWh→client) + 서버 S/N-품목 일치 검증 (Bulk API)";
+export const VERSION_NOTE = "재고 3화면 보강 + options/평균매입단가/가용수량/현황 컬럼 — 실시간재고: 옵션·가용수량·평균단가·재고금액 / S/N별재고: 옵션·현황(재고/렌탈/수리/교정/데모)·외부위탁위치 / 입출고현황: S/N 옵션 표시 + 단일 S/N 이력 detail card + DB 마이그레이션 (PurchaseItem.options/InventoryItem.options)";

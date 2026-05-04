@@ -19,11 +19,12 @@ export async function ensureInventoryItemOnReceipt(
     ownerType?: AssetOwnerType;
     ownerClientId?: string | null;
     inboundReason?: InventoryReason;
+    options?: string | null;
   },
 ): Promise<void> {
   const {
     itemId, serialNumber, warehouseId, companyCode,
-    ownerType, ownerClientId, inboundReason,
+    ownerType, ownerClientId, inboundReason, options,
   } = params;
 
   const exists = await tx.inventoryItem.findUnique({ where: { serialNumber } });
@@ -69,6 +70,7 @@ export async function ensureInventoryItemOnReceipt(
         status: "NORMAL",
         acquiredAt: new Date(),
         qrData,
+        options: options ?? null,
         ownerType: ownerType ?? "COMPANY",
         ownerClientId: ownerClientId ?? null,
         inboundReason: inboundReason ?? null,

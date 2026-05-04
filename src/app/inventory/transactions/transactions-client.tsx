@@ -17,6 +17,7 @@ export type TxnRow = {
   inboundLabel?: string | null;
   owner: string;
   serialNumber: string | null;
+  options?: string | null;
   txnType: string;
   reason: string;
   quantity: number;
@@ -98,6 +99,22 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
     });
   }, [initialData, q, type, reason, from, to]);
 
+  // 단일 S/N 이력 모드 — 검색이 단일 S/N 정확 매칭 시 그 S/N detail 표시
+  const singleSn = useMemo(() => {
+    const sns = new Set(filtered.map((tx) => tx.serialNumber).filter((s): s is string => !!s));
+    return sns.size === 1 ? Array.from(sns)[0] : null;
+  }, [filtered]);
+  const snDetail = useMemo(() => {
+    if (!singleSn) return null;
+    const rows = filtered.filter((tx) => tx.serialNumber === singleSn);
+    const ins = rows.filter((tx) => tx.txnType === "IN").length;
+    const outs = rows.filter((tx) => tx.txnType === "OUT").length;
+    const itemCode = rows[0]?.itemCode ?? "";
+    const itemName = rows[0]?.itemName ?? "";
+    const options = rows.find((tx) => tx.options)?.options ?? null;
+    return { sn: singleSn, ins, outs, itemCode, itemName, options };
+  }, [singleSn, filtered]);
+
   const columns: DataTableColumn<TxnRow>[] = [
     { key: "performedAt", label: t("col.date", lang), width: "130px", render: (v) => <span className="font-mono text-[11px]">{(v as string).slice(0, 10)}</span> },
     {
@@ -134,6 +151,7 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
       render: (v, row) => (
         <div>
           {v ? <span className="font-mono text-[11px]">{v as string}</span> : <span className="text-[color:var(--tts-muted)]">—</span>}
+          {row.options && <span className="ml-1 rounded bg-[color:var(--tts-primary-dim)] px-1 py-0 text-[10px] text-[color:var(--tts-primary)]">{row.options}</span>}
           {row.targetEquipmentSN && <div className="font-mono text-[10px] text-[color:var(--tts-accent)]">→ {t("label.equipShort", lang)} {row.targetEquipmentSN}</div>}
         </div>
       ),
@@ -211,6 +229,21 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
         <span className="text-[color:var(--tts-muted)]">~</span>
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-[color:var(--tts-border)] bg-[color:var(--tts-input)] px-2 py-2 text-[12px] outline-none" />
       </div>
+      {/* 단일 S/N 이력 모드 — detail card */}
+      {snDetail && (
+        <div className="mb-3 rounded-md border border-[color:var(--tts-primary)]/40 bg-[color:var(--tts-primary-dim)]/30 p-3 text-[12px]">
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-[color:var(--tts-primary)] px-2 py-0.5 text-[11px] font-bold text-white">📋 단일 S/N 이력</span>
+            <span className="font-mono font-bold text-[14px] text-[color:var(--tts-primary)]">{snDetail.sn}</span>
+            {snDetail.options && <span className="rounded bg-[color:var(--tts-accent-dim)] px-2 py-0.5 text-[11px] text-[color:var(--tts-accent)]">옵션: {snDetail.options}</span>}
+          </div>
+          <div className="mt-1 text-[11px] text-[color:var(--tts-sub)]">
+            <span className="font-mono">{snDetail.itemCode}</span> · {snDetail.itemName} ·
+            <span className="ml-2 text-emerald-500">IN {snDetail.ins}회</span> ·
+            <span className="ml-2 text-rose-500">OUT {snDetail.outs}회</span>
+          </div>
+        </div>
+      )}
       <DataTable columns={columns} data={filtered} rowKey={(t) => t.id} emptyMessage={t("empty.txns", lang)} />
     </Card>
   );

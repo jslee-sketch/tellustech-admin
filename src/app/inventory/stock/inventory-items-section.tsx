@@ -22,6 +22,9 @@ type InvItem = {
   ownerType?: "COMPANY" | "EXTERNAL_CLIENT";
   ownerClientLabel?: string | null;
   inboundReason?: string | null;
+  options?: string | null;
+  currentLocationLabel?: string | null;
+  situation?: "재고" | "렌탈" | "수리" | "교정" | "데모" | null;
 };
 
 type Props = {
@@ -233,13 +236,15 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
                   </tr>
                   {isOpen && (
                     <tr key={`${key}-d`}>
-                      <td colSpan={7} className="bg-[color:var(--tts-card-hover)]/50 p-3">
+                      <td colSpan={9} className="bg-[color:var(--tts-card-hover)]/50 p-3">
                         <table className="w-full text-[11px]">
                           <thead>
                             <tr className="text-[color:var(--tts-sub)]">
                               <th className="py-1 w-7"></th>
                               <th className="py-1 text-left">{t("col.serial", lang)}</th>
+                              <th className="py-1 text-left">옵션</th>
                               <th className="py-1 text-left">{t("col.status", lang)}</th>
+                              <th className="py-1 text-left">현황</th>
                               <th className="py-1 text-left">{t("col.qrLabel", lang)}</th>
                               <th className="py-1 text-left">{t("field.recentNote", lang)}</th>
                               <th className="py-1 text-left">{t("field.acquiredAt", lang)}</th>
@@ -265,7 +270,16 @@ export function InventoryItemsSection({ initialItems, companyName, lang }: Props
                                     <div className="text-[10px] font-normal text-[color:var(--tts-warn)]">{e.ownerClientLabel}{e.inboundReason ? ` · ${e.inboundReason}` : ""}</div>
                                   )}
                                 </td>
+                                <td className="py-1 text-[10px] text-[color:var(--tts-sub)]">{e.options ?? "—"}</td>
                                 <td className="py-1"><Badge tone={STATUS_TONE[e.status]}>{statusLabel(e.status, lang)}</Badge></td>
+                                <td className="py-1">
+                                  {e.situation ? (
+                                    <Badge tone={e.situation === "재고" ? "success" : "accent"}>{e.situation}</Badge>
+                                  ) : <span className="text-[color:var(--tts-muted)]">—</span>}
+                                  {e.currentLocationLabel && (
+                                    <div className="text-[10px] font-normal text-[color:var(--tts-warn)]">→ {e.currentLocationLabel}</div>
+                                  )}
+                                </td>
                                 <td className="py-1"><button onClick={(ev) => { ev.stopPropagation(); printQR(e); }} className="rounded bg-[color:var(--tts-accent)] px-2 py-0.5 text-white">🏷</button></td>
                                 <td className="py-1 text-[color:var(--tts-sub)]">{e.lastRemark ? `${e.lastRemark.date.slice(0, 10)}: ${e.lastRemark.content.slice(0, 50)}` : "—"}</td>
                                 <td className="py-1 font-mono text-[10px]">{e.acquiredAt ? e.acquiredAt.slice(0, 10) : "—"}</td>

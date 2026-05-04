@@ -1746,6 +1746,11 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.9.5 · 2026-05-04**: Làm giàu 3 màn hình tồn kho — cột options/đơn giá mua TB/SL khả dụng/tình trạng.
+  - Migration DB: `PurchaseItem.options` + `InventoryItem.options`.
+  - Tồn kho realtime: +3 cột (khả dụng / đơn giá TB / giá trị tồn).
+  - Tồn S/N: +2 cột (options / tình trạng: tồn/cho thuê/sửa/hiệu chuẩn/demo).
+  - Lịch sử xuất nhập: badge options cạnh S/N + thẻ chi tiết khi tìm chính xác 1 S/N.
 - **v2.9.4 · 2026-05-04**: Tổ chức lại logic đăng ký xuất nhập kho — S/N ưu tiên + xác minh trạng thái master + 7 chính sách.
   - **Sắp xếp lại form**: dòng trước (cũ: loại/kịch bản trước). Dòng mặc định rỗng (cũ: 1 dòng tự động).
   - **Tự ánh xạ S/N → mặt hàng**: SerialCombobox.onPick → `/api/inventory/sn/[sn]/state` → itemId/itemCode/itemName tự đặt + khóa readonly.

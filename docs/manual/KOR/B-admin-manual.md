@@ -1993,6 +1993,7 @@ UI 는 추후 추가 예정. 현재는 DB 직접 변경.
 
 # 변경 이력 (관리자 매뉴얼 v2 보강판)
 
+- **v2.9.5 · 2026-05-04**: 재고 3화면 풍부화 — `options`/평균매입단가/가용수량/현황 컬럼 추가. DB 마이그레이션 (PurchaseItem.options + InventoryItem.options). 단일 S/N 이력 detail card.
 - **v2.9.4 · 2026-05-04**: 입출고 등록 로직 재구성 — S/N 우선 + 마스터 상태 자동 검증 + 정책 ABDEGH 7종. 라인 default 빈 배열, S/N→품목 자동 매핑 lock, archived resurrect, 외부 archived OUT 차단, 입고창고 폴백, 서버 S/N-품목 일치 검증.
 - **v2.9.3 · 2026-05-04**: 입출고 OUT 도착창고 필드 + QR 라벨 마스터 검증 + S/N 정합성 backfill (orphan 123건 자동 등록). production 시드+검증 (created=308, S/N 정합 19/19 PASS, Chrome 7화면 PASS). 자세한 내용은 사용자 매뉴얼 부록 K 참조.
 - **v2.9.2 · 2026-05-04**: 재무제표 누적(YTD) 모드 전환 + 자금관리 UX 일괄 보강 (매출/계좌/입출금내역/자금현황판/비용/수익성). 정렬·검색·기간·페이징 표준 패턴 적용. 입출금 등록 확인 모달 + 월별추이 0 버그 수정 + 대시보드 100시드 KPI 3종 추가. layout.tsx `<script>` → next/script 마이그레이션. 자세한 내용은 사용자 매뉴얼 부록 K 참조.

@@ -1747,6 +1747,11 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.9.5 · 2026-05-04**: Inventory 3-screen enrichment — options + avg purchase price + available qty + situation columns.
+  - DB migration: `PurchaseItem.options` + `InventoryItem.options` String fields.
+  - Realtime stock: +3 columns — available (Internal + own + not on loan + NORMAL) / avg unit price (weighted avg of PurchaseItem) / total amount (avg × on hand).
+  - S/N stock: +2 columns — options + situation (재고/렌탈/수리/교정/데모, derived from currentLocation + last OUT referenceModule).
+  - Tx history: options badge next to S/N + single-S/N detail card when search matches exactly one S/N.
 - **v2.9.4 · 2026-05-04**: Inventory transaction form reorganized — S/N first + master status validation + 7 policies.
   - **Form reorder**: lines first (was type/scenario first). Lines default empty (was 1 row auto).
   - **S/N → item auto-mapping**: SerialCombobox.onPick → `/api/inventory/sn/[sn]/state` → itemId/itemCode/itemName auto-set + readonly lock. Direct typing + blur same flow.

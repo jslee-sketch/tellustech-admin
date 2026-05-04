@@ -26,6 +26,7 @@ const DEFAULT_PAYMENT_DAYS = 30;
 type ItemInput = {
   itemId: string;
   serialNumber?: string | null;
+  options?: string | null;
   quantity: string | number;
   unitPrice: string | number;
   startDate?: string | null;
@@ -138,6 +139,7 @@ export async function POST(request: Request) {
       const itemsData: {
         itemId: string;
         serialNumber: string | null;
+        options: string | null;
         quantity: string;
         unitPrice: string;
         amount: string;
@@ -189,6 +191,7 @@ export async function POST(request: Request) {
         itemsData.push({
           itemId,
           serialNumber: lineSn,
+          options: trimNonEmpty(it.options) ?? null,
           quantity,
           unitPrice,
           amount,
@@ -270,6 +273,8 @@ export async function POST(request: Request) {
                   serialNumber: it.serialNumber,
                   warehouseId,
                   companyCode: session.companyCode,
+                  inboundReason: "PURCHASE",
+                  options: it.options,
                 });
               }
             }

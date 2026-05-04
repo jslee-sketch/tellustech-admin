@@ -15,6 +15,9 @@ export type StockRow = {
   inQty: number;
   outQty: number;
   onHand: number;
+  available: number;
+  avgUnitPrice: number;
+  totalAmount: number;
 };
 
 export function StockClient({ initialData, lang }: { initialData: StockRow[]; lang: Lang }) {
@@ -93,6 +96,27 @@ export function StockClient({ initialData, lang }: { initialData: StockRow[]; la
       },
     },
     {
+      key: "available",
+      label: "가용수량",
+      width: "90px",
+      align: "right",
+      render: (v) => <span className="font-mono text-[12px] font-bold text-emerald-500">{v as number}</span>,
+    },
+    {
+      key: "avgUnitPrice",
+      label: "평균 매입단가",
+      width: "120px",
+      align: "right",
+      render: (v) => <span className="font-mono text-[11px] text-[color:var(--tts-sub)]">{(v as number).toLocaleString()}</span>,
+    },
+    {
+      key: "totalAmount",
+      label: "재고 금액",
+      width: "140px",
+      align: "right",
+      render: (v) => <span className="font-mono text-[12px] font-bold">{(v as number).toLocaleString()}</span>,
+    },
+    {
       key: "onHand",
       label: t("col.statusStock", lang),
       width: "90px",
@@ -115,6 +139,9 @@ export function StockClient({ initialData, lang }: { initialData: StockRow[]; la
           { key: "inQty", header: t("header.stockIn", lang) },
           { key: "outQty", header: t("header.stockOut", lang) },
           { key: "onHand", header: t("header.stockOnHand", lang) },
+          { key: "available", header: "가용수량" },
+          { key: "avgUnitPrice", header: "평균 매입단가" },
+          { key: "totalAmount", header: "재고 금액" },
         ]}
         filename="inventory-stock.xlsx"
       />

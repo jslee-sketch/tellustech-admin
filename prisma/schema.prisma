@@ -628,6 +628,7 @@ model InventoryItem {
   companyCode  CompanyCode
 
   status                InventoryStatus @default(NORMAL)
+  options               String?         // 라인별 옵션 텍스트 — 매입 시 PurchaseItem.options 에서 전파, 어디서나 노출
   qrData                String?
   acquiredAt            DateTime?
   lastStatusChange      DateTime?
@@ -1325,6 +1326,7 @@ model PurchaseItem {
   purchaseId   String
   itemId       String
   serialNumber String?
+  options      String?        // 라인별 옵션 텍스트 (자유서술) — 매입 시 입력, 입출고/재고 화면 어디서나 노출
   stockCheck   StockCheckMode @default(LOOSE)
   quantity     Decimal        @db.Decimal(15, 3)
   unitPrice    Decimal        @db.Decimal(15, 2)

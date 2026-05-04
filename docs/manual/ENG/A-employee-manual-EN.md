@@ -1747,6 +1747,13 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.9.3 · 2026-05-04**: Inventory OUT toWarehouse + QR label master validation + orphan S/N backfill.
+  - **OUT toWarehouse field**: `/inventory/transactions/new` OUT mode now has a **destination warehouse** (`field.toWh`) — both internal and external warehouses allowed (with "(external)" suffix).
+  - **IN toWarehouse external option**: external warehouses now appear in IN mode (for external-vendor → external-storage flows).
+  - **QR label master validation**: `/inventory/labels` [+ Add] now queries InventoryItem master via `/api/inventory/sn/[sn]/state` — blocks unregistered S/Ns and warns on item mismatch. `useEffect` skips QR generation when S/N empty. Arbitrary label creation without prior purchase/inbound is impossible.
+  - **Orphan S/N backfill** (`scripts/dev-only/backfill-orphan-sn.ts`): 123 legacy orphan S/Ns automatically registered into InventoryItem. Auto-creates WH-BACKFILL + ITM-BACKFILL fallback. Coverage: ItContractEquipment / PurchaseItem / SalesItem / InventoryTransaction / AsTicket / AsDispatch / TmRentalItem.
+  - **Production seed + verification**: 100-scenario seed applied (created=308). S/N integrity 19/19 PASS (was 4 fail). Chrome live verification 7 screens PASS.
+  - i18n vi/en/ko +3 keys.
 - **v2.9.2 · 2026-05-04**: Cumulative (YTD) financial statements + cash-management UX overhaul.
   - **4 statements switched to YTD**: trial balance / income statement / cash flow / profitability now aggregate from Jan 1 of fiscal year to end of selected month (was monthly only). Label "Period" → "Cumulative (YTD)".
   - **Sales screen**: per-column sort toggle + date-from/to filter (existing stage/status dropdowns kept).

@@ -1746,6 +1746,12 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.9.3 · 2026-05-04**: Trường kho đến cho xuất kho + xác minh master cho nhãn QR + backfill S/N mồ côi.
+  - **Trường kho đến (OUT)**: `/inventory/transactions/new` chế độ OUT có thêm **`Kho đến`** — cả kho nội bộ và kho ngoài đều cho chọn (gắn nhãn "(ngoài)").
+  - **Xác minh master nhãn QR**: `/inventory/labels` nút [+ Thêm] kiểm tra InventoryItem master qua `/api/inventory/sn/[sn]/state` — chặn S/N chưa đăng ký + cảnh báo khi mặt hàng không khớp. Không thể in nhãn tùy ý mà không qua nhập kho/mua trước.
+  - **Backfill S/N mồ côi** (`scripts/dev-only/backfill-orphan-sn.ts`): 123 S/N mồ côi cũ tự đăng ký vào master. Tạo WH-BACKFILL + ITM-BACKFILL fallback.
+  - **Seed + xác minh production**: áp dụng seed 100 kịch bản vào DB vận hành (created=308). Toàn vẹn S/N 19/19 PASS. Chrome live 7 màn hình PASS.
+  - i18n vi/en/ko +3 khóa.
 - **v2.9.2 · 2026-05-04**: BCTC chế độ lũy kế (YTD) + tổng nâng cấp UX quản lý tiền.
   - **4 BCTC chuyển YTD**: TB / IS / CF / lợi nhuận khách hàng nay tổng từ 1/1 năm tài chính đến cuối tháng đã chọn. Nhãn "Kỳ" → "Lũy kế đến tháng (YTD)".
   - **Bán hàng**: sắp xếp từng cột + lọc khoảng ngày (giữ dropdown stage/status hiện có).

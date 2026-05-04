@@ -65,20 +65,49 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
 
   async function addRow() {
     if (!selectedItemId) return;
-    let item = items.find((i) => i.value === selectedItemId);
-    let colorChannel: ColorChannel | null = null;
+    if (!sn || !sn.trim()) {
+      alert(t("label.snRequired", lang));
+      return;
+    }
+    // 마스터 검증 — InventoryItem 에 등록된 S/N 만 라벨 생성 허용
+    let masterItem: { itemCode: string; itemName: string; ownerType?: "COMPANY" | "EXTERNAL_CLIENT"; ownerLabel?: string | null; warehouseCode?: string | null; warehouseName?: string | null; colorChannel?: ColorChannel | null } | null = null;
     try {
-      const res = await fetch(`/api/master/items?q=${encodeURIComponent(selectedItemId)}`).then((r) => r.json());
-      const found = (res.items ?? []).find((x: { id: string; itemCode: string; name: string; colorChannel?: ColorChannel | null }) => x.id === selectedItemId);
-      if (found) {
-        if (!item) item = { value: found.id, label: `${found.itemCode} · ${found.name}`, itemCode: found.itemCode, itemName: found.name };
-        colorChannel = found.colorChannel ?? null;
+      const r = await fetch(`/api/inventory/sn/${encodeURIComponent(sn.trim())}/state`).then((x) => x.json());
+      if (r && r.master) {
+        masterItem = {
+          itemCode: r.master.item?.itemCode ?? "",
+          itemName: r.master.item?.name ?? "",
+          ownerType: r.master.ownerType,
+          ownerLabel: r.master.ownerClient ? `${r.master.ownerClient.clientCode} · ${r.master.ownerClient.companyNameKo ?? r.master.ownerClient.companyNameVi}` : null,
+          warehouseCode: r.master.warehouse?.code ?? null,
+          warehouseName: r.master.warehouse?.name ?? null,
+          colorChannel: r.master.item?.colorChannel ?? null,
+        };
       }
     } catch {
-      if (!item) return;
+      // 네트워크 실패 — 차단
     }
-    if (!item) return;
-    setRows((r) => [...r, { itemCode: item!.itemCode, itemName: item!.itemName, serialNumber: sn, copies: Math.max(1, Number(copies) || 1), colorChannel }]);
+    if (!masterItem) {
+      alert(t("label.snNotInMaster", lang));
+      return;
+    }
+    // 선택한 품목과 마스터 품목 일치 확인 (잘못된 매핑 방지)
+    const selectedItem = items.find((i) => i.value === selectedItemId);
+    if (selectedItem && selectedItem.itemCode !== masterItem.itemCode) {
+      alert(t("label.snItemMismatch", lang) + `\n선택: ${selectedItem.itemCode} / 마스터: ${masterItem.itemCode}`);
+      return;
+    }
+    setRows((r) => [...r, {
+      itemCode: masterItem!.itemCode,
+      itemName: masterItem!.itemName,
+      serialNumber: sn.trim(),
+      copies: Math.max(1, Number(copies) || 1),
+      ownerType: masterItem!.ownerType,
+      ownerLabel: masterItem!.ownerLabel,
+      warehouseCode: masterItem!.warehouseCode,
+      warehouseName: masterItem!.warehouseName,
+      colorChannel: masterItem!.colorChannel,
+    }]);
     setSelectedItemId("");
     setSn("");
     setCopies("1");
@@ -205,10 +234,9 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
       const updated = await Promise.all(
         rows.map(async (r) => {
           if (r.qrUrl || !r.itemCode) return r;
-          // 핸드폰 카메라 인식률 우선 — 짧은 ASCII 만 인코딩.
-          // ECC M = grid 작게 (셀 큼) → 화면·종이 모두 dot 분리 잘 됨.
-          // margin 4 = 표준 quiet zone / width 1024 = 화면에서 1cm 영역에서도 깔끔.
-          const data = (r.serialNumber || r.itemCode).trim();
+          // QR은 마스터 등록된 S/N 만 생성 — S/N 없는 품목 행은 QR 미생성 (라벨에 코드/이름만 표시).
+          if (!r.serialNumber || !r.serialNumber.trim()) return r;
+          const data = r.serialNumber.trim();
           const qrUrl = await QRCode.toDataURL(data, {
             errorCorrectionLevel: "M",
             margin: 4,

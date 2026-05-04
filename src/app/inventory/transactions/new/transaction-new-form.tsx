@@ -107,6 +107,8 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
 
   const internalWarehouses = useMemo(() => warehouses.filter((w) => w.warehouseType !== "EXTERNAL"), [warehouses]);
   const whOptions = internalWarehouses.map((w) => ({ value: w.value, label: w.label }));
+  // OUT 도착창고는 자사+외부 모두 허용 (외부 거래처 보관 / 외주처 위탁 등)
+  const whAllOptions = warehouses.map((w) => ({ value: w.value, label: `${w.label}${w.warehouseType === "EXTERNAL" ? " (외부)" : ""}` }));
 
   function selectType(type: "IN" | "OUT" | "TRANSFER") {
     setTxnType(type);
@@ -283,7 +285,7 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
               value={toWarehouseId}
               onChange={(e) => setToWarehouseId(e.target.value)}
               placeholder={t("placeholder.select", lang)}
-              options={whOptions}
+              options={whAllOptions}
             />
           </Field>
           {showOwnerClient && (
@@ -302,6 +304,14 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
               onChange={(e) => setFromWarehouseId(e.target.value)}
               placeholder={t("placeholder.select", lang)}
               options={whOptions}
+            />
+          </Field>
+          <Field label={t("field.toWh", lang)}>
+            <Select
+              value={toWarehouseId}
+              onChange={(e) => setToWarehouseId(e.target.value)}
+              placeholder={t("placeholder.select", lang)}
+              options={whAllOptions}
             />
           </Field>
           <Field label={t("field.clientCustomer", lang)} required>

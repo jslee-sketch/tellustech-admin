@@ -73,15 +73,16 @@ export function LabelsClient({ items, prefill, printHeader, lang }: Props) {
     let masterItem: { itemCode: string; itemName: string; ownerType?: "COMPANY" | "EXTERNAL_CLIENT"; ownerLabel?: string | null; warehouseCode?: string | null; warehouseName?: string | null; colorChannel?: ColorChannel | null } | null = null;
     try {
       const r = await fetch(`/api/inventory/sn/${encodeURIComponent(sn.trim())}/state`).then((x) => x.json());
-      if (r && r.master) {
+      const m = r?.master ?? r?.data?.master;
+      if (m) {
         masterItem = {
-          itemCode: r.master.item?.itemCode ?? "",
-          itemName: r.master.item?.name ?? "",
-          ownerType: r.master.ownerType,
-          ownerLabel: r.master.ownerClient ? `${r.master.ownerClient.clientCode} · ${r.master.ownerClient.companyNameKo ?? r.master.ownerClient.companyNameVi}` : null,
-          warehouseCode: r.master.warehouse?.code ?? null,
-          warehouseName: r.master.warehouse?.name ?? null,
-          colorChannel: r.master.item?.colorChannel ?? null,
+          itemCode: m.itemCode ?? "",
+          itemName: m.itemName ?? "",
+          ownerType: m.ownerType,
+          ownerLabel: m.ownerClientLabel ?? null,
+          warehouseCode: m.warehouseCode ?? null,
+          warehouseName: m.warehouseName ?? null,
+          colorChannel: m.colorChannel ?? null,
         };
       }
     } catch {

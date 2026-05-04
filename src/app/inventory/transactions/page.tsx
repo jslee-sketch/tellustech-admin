@@ -62,23 +62,33 @@ export default async function InventoryTransactionsPage() {
         </div>
         <TransactionsClient
           lang={L}
-          initialData={txns.map((t) => ({
-            id: t.id,
-            itemCode: t.item.itemCode,
-            itemName: t.item.name,
-            fromWarehouseCode: t.fromWarehouse?.code ?? null,
-            fromWarehouseName: t.fromWarehouse?.name ?? null,
-            toWarehouseCode: t.toWarehouse?.code ?? null,
-            toWarehouseName: t.toWarehouse?.name ?? null,
-            owner: ownerLabel(t.toWarehouse ?? t.fromWarehouse, t.client),
-            serialNumber: t.serialNumber,
-            txnType: t.txnType,
-            reason: t.reason,
-            quantity: t.quantity,
-            targetEquipmentSN: t.targetEquipmentSN,
-            performedAt: t.performedAt.toISOString().slice(0, 16).replace("T", " "),
-            note: t.note,
-          }))}
+          initialData={txns.map((t) => {
+            // 입고창고 폴백 (정책 H): toWarehouseCode → toClientCode/Name → clientCode/Name
+            // toClient/fromClient 정보를 위해 별도 client 매핑이 없는 경우 client 만 있음
+            const inboundLabel = t.toWarehouse?.code
+              ? `${t.toWarehouse.code} · ${t.toWarehouse.name}`
+              : t.client?.clientCode
+                ? `[거래처] ${t.client.clientCode} · ${t.client.companyNameVi}`
+                : null;
+            return {
+              id: t.id,
+              itemCode: t.item.itemCode,
+              itemName: t.item.name,
+              fromWarehouseCode: t.fromWarehouse?.code ?? null,
+              fromWarehouseName: t.fromWarehouse?.name ?? null,
+              toWarehouseCode: t.toWarehouse?.code ?? null,
+              toWarehouseName: t.toWarehouse?.name ?? null,
+              inboundLabel,  // 입고창고 표시 폴백 결과
+              owner: ownerLabel(t.toWarehouse ?? t.fromWarehouse, t.client),
+              serialNumber: t.serialNumber,
+              txnType: t.txnType,
+              reason: t.reason,
+              quantity: t.quantity,
+              targetEquipmentSN: t.targetEquipmentSN,
+              performedAt: t.performedAt.toISOString().slice(0, 16).replace("T", " "),
+              note: t.note,
+            };
+          })}
         />
         <div className="mt-4">
           <Card title={t("page.invTxn.import", L)}>

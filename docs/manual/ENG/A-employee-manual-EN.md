@@ -1747,6 +1747,15 @@ Handled via the inter-client sales/purchase logic. Register a TV → VR sale and
 
 # Appendix K — Change Log (2026-05 Supplement)
 
+- **v2.9.4 · 2026-05-04**: Inventory transaction form reorganized — S/N first + master status validation + 7 policies.
+  - **Form reorder**: lines first (was type/scenario first). Lines default empty (was 1 row auto).
+  - **S/N → item auto-mapping**: SerialCombobox.onPick → `/api/inventory/sn/[sn]/state` → itemId/itemCode/itemName auto-set + readonly lock. Direct typing + blur same flow.
+  - **Master state badge**: each line shows OWN_IN_STOCK / OWN_AT_EXTERNAL / EXTERNAL_IN_STOCK / EXTERNAL_AT_VENDOR / ARCHIVED / NEW chip.
+  - **Line required validation** (policy G): itemId + S/N + qty ≥ 1.
+  - **Policy D (resurrect)**: `ensureInventoryItemOnReceipt` archives.archivedAt !== null → unarchive + new ownerType. itemId change blocked.
+  - **Policy E (external archived)**: ARCHIVED + EXTERNAL_CLIENT → IN/TRANSFER recommended, OUT blocked at Bulk API (`external_archived_no_out`).
+  - **Policy H (inbound warehouse fallback)**: list column shows toWarehouseCode → toClientCode → clientCode.
+  - **Server S/N-item match (policy B)**: Bulk API rejects input itemId vs master itemId mismatch (`sn_item_mismatch`).
 - **v2.9.3 · 2026-05-04**: Inventory OUT toWarehouse + QR label master validation + orphan S/N backfill.
   - **OUT toWarehouse field**: `/inventory/transactions/new` OUT mode now has a **destination warehouse** (`field.toWh`) — both internal and external warehouses allowed (with "(external)" suffix).
   - **IN toWarehouse external option**: external warehouses now appear in IN mode (for external-vendor → external-storage flows).

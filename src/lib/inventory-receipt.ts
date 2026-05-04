@@ -28,10 +28,24 @@ export async function ensureInventoryItemOnReceipt(
 
   const exists = await tx.inventoryItem.findUnique({ where: { serialNumber } });
   if (exists) {
-    // 이미 마스터 존재 — 창고만 변경, 소유주 정보는 보존 (재입고 시 owner 가 바뀔 수 있다면 별도 정책 필요)
-    await tx.inventoryItem
-      .update({ where: { serialNumber }, data: { warehouseId } })
-      .catch(() => undefined);
+    // 정책 B (S/N 1개 = 품목 1개) — itemId 변경 차단
+    if (exists.itemId !== itemId) {
+      throw new Error(`S/N ${serialNumber} 은 다른 품목(${exists.itemId})에 이미 등록됨 — 다른 S/N 사용 필요`);
+    }
+    // 정책 D — archived 상태이면 resurrect (잔량 0 후 재입고)
+    const data: { warehouseId: string; archivedAt?: Date | null; ownerType?: AssetOwnerType; ownerClientId?: string | null; inboundReason?: InventoryReason; inboundAt?: Date; status?: "NORMAL"; currentLocationClientId?: string | null; currentLocationSinceAt?: Date } = { warehouseId };
+    if (exists.archivedAt) {
+      data.archivedAt = null;
+      data.status = "NORMAL";
+      data.inboundAt = new Date();
+      data.currentLocationClientId = null;
+      data.currentLocationSinceAt = new Date();
+      // ownerType/ownerClientId 갱신 — 새 입고 사이클의 소유주로 변경
+      if (ownerType) data.ownerType = ownerType;
+      if (ownerClientId !== undefined) data.ownerClientId = ownerClientId;
+      if (inboundReason) data.inboundReason = inboundReason;
+    }
+    await tx.inventoryItem.update({ where: { serialNumber }, data }).catch(() => undefined);
     return;
   }
 

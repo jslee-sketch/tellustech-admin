@@ -13,6 +13,6 @@
 //   PATCH = 버그픽스·UI 개선·i18n·문서 업데이트
 // ============================================================
 
-export const VERSION = "v2.9.3";
+export const VERSION = "v2.9.4";
 export const BUILD_DATE = "2026-05-04";
-export const VERSION_NOTE = "입출고 OUT 도착창고 필드 추가 (외부 거래처/Internal 모두) + IN 도착창고 외부창고 옵션 노출 + QR 라벨 마스터 검증 (registered S/N만 QR 생성·item 일치 확인) + S/N 정합성 backfill (123 orphan 자동 마스터 등록) + production 시드+검증 (308 created)";
+export const VERSION_NOTE = "입출고 등록 로직 재구성 (S/N 우선 입력 → 품목 자동 매핑 + 마스터 상태 배지) + 라인 default 빈 배열 + 라인별 itemId/sn/qty 필수 검증 + 정책 D (archived resurrect) + 정책 E (외부 archived 재입고/이동 OK·출고 NG) + 정책 H (입고창고 폴백 toWh→client) + 서버 S/N-품목 일치 검증 (Bulk API)";

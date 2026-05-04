@@ -14,6 +14,7 @@ export type TxnRow = {
   fromWarehouseName: string | null;
   toWarehouseCode: string | null;
   toWarehouseName: string | null;
+  inboundLabel?: string | null;
   owner: string;
   serialNumber: string | null;
   txnType: string;
@@ -145,7 +146,11 @@ export function TransactionsClient({ initialData, lang }: { initialData: TxnRow[
     {
       key: "toWarehouseCode",
       label: t("col.warehouseIn", lang),
-      render: (_, row) => row.toWarehouseCode ? <span className="font-mono text-[11px]">{row.toWarehouseCode}</span> : <span className="text-[color:var(--tts-muted)]">—</span>,
+      render: (_, row) => row.inboundLabel
+        ? <span className="font-mono text-[11px]">{row.inboundLabel}</span>
+        : (row.toWarehouseCode
+          ? <span className="font-mono text-[11px]">{row.toWarehouseCode}</span>
+          : <span className="text-[color:var(--tts-muted)]">—</span>),
     },
     {
       key: "owner",

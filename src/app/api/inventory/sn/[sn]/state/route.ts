@@ -59,7 +59,17 @@ export async function GET(
 
     if (master.archivedAt) {
       state = "ARCHIVED";
-      // 반환·매출 완료 — 추천 없음 (재입고 시 신규 흐름)
+      // 정책 E — 외부 자산 archived 후 재입고/이동 가능, 출고 불가
+      if (master.ownerType === "EXTERNAL_CLIENT") {
+        recommendations.push(
+          { txnType: "IN", refModule: "RENTAL", subKind: "BORROW", labelKey: "txn.combo.rentalInBorrow", reason: "외부 자산 재입고 (다시 빌림)" },
+          { txnType: "IN", refModule: "REPAIR", subKind: "REQUEST", labelKey: "txn.combo.repairInRequest", reason: "외부 자산 재 수리 의뢰" },
+          { txnType: "IN", refModule: "CALIB", subKind: "REQUEST", labelKey: "txn.combo.calibInRequest", reason: "외부 자산 재 교정 의뢰" },
+          { txnType: "IN", refModule: "DEMO", subKind: "BORROW", labelKey: "txn.combo.demoInBorrow", reason: "외부 자산 재 데모" },
+          { txnType: "TRANSFER", refModule: "RENTAL", subKind: "OTHER", labelKey: "txn.combo.transferRental", reason: "외부 거래처 ↔ 외부 거래처 이동" },
+        );
+      }
+      // 자사 자산 archived (매각·폐기 완료) — 추천 없음
     } else if (master.ownerType === "COMPANY") {
       if (master.currentLocationClientId) {
         // 자사 자산이 외부에 위탁/렌탈 중 → 회수

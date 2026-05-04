@@ -1746,6 +1746,15 @@ Xử lý bằng logic bán/mua hàng giữa các khách hàng. Đăng ký đồn
 
 # Phụ lục K — Lịch sử thay đổi (Bản bổ sung 2026-05)
 
+- **v2.9.4 · 2026-05-04**: Tổ chức lại logic đăng ký xuất nhập kho — S/N ưu tiên + xác minh trạng thái master + 7 chính sách.
+  - **Sắp xếp lại form**: dòng trước (cũ: loại/kịch bản trước). Dòng mặc định rỗng (cũ: 1 dòng tự động).
+  - **Tự ánh xạ S/N → mặt hàng**: SerialCombobox.onPick → `/api/inventory/sn/[sn]/state` → itemId/itemCode/itemName tự đặt + khóa readonly.
+  - **Badge trạng thái master**: mỗi dòng hiển thị chip OWN_IN_STOCK / ARCHIVED / NEW...
+  - **Bắt buộc dòng** (G): itemId + S/N + số lượng ≥ 1.
+  - **Chính sách D (hồi sinh)**: archivedAt resurrect khi nhập lại.
+  - **Chính sách E (TS bên ngoài đã ARCHIVED)**: chỉ cho IN/TRANSFER, chặn OUT.
+  - **Chính sách H (kho đến fallback)**: cột hiển thị toWarehouseCode → toClientCode → clientCode.
+  - **Khớp S/N-mặt hàng phía server (B)**: Bulk API từ chối khi mismatch.
 - **v2.9.3 · 2026-05-04**: Trường kho đến cho xuất kho + xác minh master cho nhãn QR + backfill S/N mồ côi.
   - **Trường kho đến (OUT)**: `/inventory/transactions/new` chế độ OUT có thêm **`Kho đến`** — cả kho nội bộ và kho ngoài đều cho chọn (gắn nhãn "(ngoài)").
   - **Xác minh master nhãn QR**: `/inventory/labels` nút [+ Thêm] kiểm tra InventoryItem master qua `/api/inventory/sn/[sn]/state` — chặn S/N chưa đăng ký + cảnh báo khi mặt hàng không khớp. Không thể in nhãn tùy ý mà không qua nhập kho/mua trước.

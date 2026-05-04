@@ -15,15 +15,32 @@ type Props = {
 type LineRow = {
   key: string;
   itemId: string;
+  itemCode?: string;
+  itemName?: string;
   serialNumber: string;
   quantity: string;
   targetEquipmentSN: string;
   note: string;
+  masterState?: "NEW" | "OWN_IN_STOCK" | "OWN_AT_EXTERNAL" | "EXTERNAL_IN_STOCK" | "EXTERNAL_AT_VENDOR" | "ARCHIVED" | null;
+  masterOwnerType?: "COMPANY" | "EXTERNAL_CLIENT" | null;
+  masterArchived?: boolean;
+  masterMessage?: string | null;
+  masterChecking?: boolean;
 };
 
 let _key = 0;
 const newKey = () => `r${++_key}`;
 const blankLine = (): LineRow => ({ key: newKey(), itemId: "", serialNumber: "", quantity: "1", targetEquipmentSN: "", note: "" });
+
+// state → 사용자 표시용 라벨
+const STATE_LABEL: Record<NonNullable<LineRow["masterState"]>, { label: string; tone: "success" | "warn" | "info" | "danger" }> = {
+  NEW: { label: "신규 (마스터 미등록)", tone: "info" },
+  OWN_IN_STOCK: { label: "자사 재고 (창고 내)", tone: "success" },
+  OWN_AT_EXTERNAL: { label: "자사 자산 (외부 위탁 중)", tone: "warn" },
+  EXTERNAL_IN_STOCK: { label: "외부 자산 (자사 보관)", tone: "info" },
+  EXTERNAL_AT_VENDOR: { label: "외부 자산 (외주 위탁)", tone: "warn" },
+  ARCHIVED: { label: "ARCHIVED (반납·매각·폐기 완료)", tone: "danger" },
+};
 
 // 진리표 cascading: txnType → 가능한 (referenceModule, subKind) 조합
 type Combo = { refModule: string; subKind: string; labelKey: string; ownerHint?: "COMPANY" | "EXTERNAL" | "AUTO" };
@@ -85,8 +102,8 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
   const [toClientId, setToClientId] = useState("");
   const [headerNote, setHeaderNote] = useState("");
 
-  // ── 라인 ──
-  const [lines, setLines] = useState<LineRow[]>([blankLine()]);
+  // ── 라인 ── (default 빈 배열 — 사용자가 명시적으로 라인 추가해야 함)
+  const [lines, setLines] = useState<LineRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
@@ -128,8 +145,60 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
   }
   function addLine() { setLines((cur) => [...cur, blankLine()]); }
   function addLines(n: number) { setLines((cur) => [...cur, ...Array.from({ length: n }, blankLine)]); }
-  function removeLine(idx: number) { setLines((cur) => (cur.length <= 1 ? cur : cur.filter((_, i) => i !== idx))); }
-  function clearLines() { setLines([blankLine()]); }
+  function removeLine(idx: number) { setLines((cur) => cur.filter((_, i) => i !== idx)); }
+  function clearLines() { setLines([]); }
+
+  // S/N 픽 시 마스터 상태 조회 + 자동 매핑
+  async function onPickSerial(idx: number, opt: { serialNumber: string; itemId: string; itemCode?: string; itemName?: string }) {
+    updateLine(idx, {
+      serialNumber: opt.serialNumber,
+      itemId: opt.itemId,
+      itemCode: opt.itemCode,
+      itemName: opt.itemName,
+      masterChecking: true,
+      masterMessage: null,
+    });
+    try {
+      const r = await fetch(`/api/inventory/sn/${encodeURIComponent(opt.serialNumber)}/state`).then((x) => x.json());
+      const m = r?.master ?? r?.data?.master;
+      const state = (r?.state ?? r?.data?.state ?? null) as LineRow["masterState"];
+      updateLine(idx, {
+        masterChecking: false,
+        masterState: state,
+        masterOwnerType: m?.ownerType ?? null,
+        masterArchived: !!m?.archivedAt,
+        masterMessage: state ? STATE_LABEL[state]?.label ?? null : null,
+      });
+    } catch {
+      updateLine(idx, { masterChecking: false, masterMessage: t("msg.masterCheckFailed", lang) });
+    }
+  }
+  // 직접 S/N 입력(blur) 시도 마스터 조회
+  async function onSerialBlur(idx: number, sn: string) {
+    if (!sn || !sn.trim()) return;
+    updateLine(idx, { masterChecking: true, masterMessage: null });
+    try {
+      const r = await fetch(`/api/inventory/sn/${encodeURIComponent(sn.trim())}/state`).then((x) => x.json());
+      const m = r?.master ?? r?.data?.master;
+      const state = (r?.state ?? r?.data?.state ?? null) as LineRow["masterState"];
+      const patch: Partial<LineRow> = {
+        masterChecking: false,
+        masterState: state,
+        masterOwnerType: m?.ownerType ?? null,
+        masterArchived: !!m?.archivedAt,
+        masterMessage: state ? STATE_LABEL[state]?.label ?? null : null,
+      };
+      // master 가 있으면 itemId 자동 셋팅 (마스터 itemCode 우선) — S/N 1개 = 품목 1개 정책
+      if (m?.itemId) {
+        patch.itemId = m.itemId;
+        patch.itemCode = m.itemCode ?? "";
+        patch.itemName = m.itemName ?? "";
+      }
+      updateLine(idx, patch);
+    } catch {
+      updateLine(idx, { masterChecking: false, masterMessage: t("msg.masterCheckFailed", lang) });
+    }
+  }
 
   function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     const text = e.clipboardData.getData("text");
@@ -166,10 +235,29 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
       setSubmitting(false);
       return;
     }
-    if (snRequiredOnLines) {
-      const missing = usable.findIndex((l) => !l.serialNumber.trim());
-      if (missing >= 0) {
-        setError(t("msg.snMissingAtLine", lang).replace("{n}", String(missing + 1)));
+    // 라인 모두 필수: 품목 + S/N + 수량 (정책 G)
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      if (!l.itemId) { setError(`${i + 1}행: 품목을 선택하세요`); setSubmitting(false); return; }
+      if (snRequiredOnLines && !l.serialNumber.trim()) { setError(`${i + 1}행: S/N을 입력하세요`); setSubmitting(false); return; }
+      const q = Number(l.quantity || "0");
+      if (!Number.isFinite(q) || q < 1) { setError(`${i + 1}행: 수량은 1 이상`); setSubmitting(false); return; }
+    }
+    // 정책 E — ARCHIVED + EXTERNAL_CLIENT 자산은 OUT 차단 (재입고/이동만 가능)
+    if (txnType === "OUT") {
+      const blockedIdx = lines.findIndex((l) => l.masterArchived && l.masterOwnerType === "EXTERNAL_CLIENT");
+      if (blockedIdx >= 0) {
+        setError(`${blockedIdx + 1}행: 외부 자산이 반납 완료(ARCHIVED) 상태 — 출고 불가 (재입고/이동만 가능)`);
+        setSubmitting(false);
+        return;
+      }
+    }
+    // 정책 C — IN(매입 등 마스터 신규 생성)이 아닌데 OUT/TRANSFER 인 경우, 마스터 없는 S/N 차단
+    // 단 정책: TRANSFER 의 경우 마스터 없는 S/N 도 허용 (이번에 NEW 등록되는 것으로 간주)
+    if (txnType === "OUT") {
+      const noMaster = lines.findIndex((l) => l.masterState === "NEW" || l.masterState === null);
+      if (noMaster >= 0) {
+        setError(`${noMaster + 1}행: 출고할 자산이 마스터에 없음 — 먼저 입고/매입 등록 필요`);
         setSubmitting(false);
         return;
       }
@@ -396,16 +484,36 @@ export function TransactionNewForm({ items: _items, warehouses, lang }: Props) {
           {lines.map((row, idx) => (
             <div key={row.key} className="flex flex-wrap items-start gap-2 rounded border border-[color:var(--tts-border)]/40 bg-[color:var(--tts-card)] p-2 md:flex-nowrap">
               <span className="w-8 shrink-0 pt-2 font-mono text-[12px] font-bold text-[color:var(--tts-muted)]">{idx + 1}</span>
-              <div className="flex-1 min-w-[280px]">
-                <ItemCombobox value={row.itemId} onChange={(v) => updateLine(idx, { itemId: v })} lang={lang} />
-              </div>
-              <div className="w-full md:w-[220px] shrink-0">
+              {/* S/N 우선 입력 — 마스터 조회 → 품목 자동 매핑. 사용자가 S/N 픽 후엔 품목 readonly. */}
+              <div className="w-full md:w-[240px] shrink-0">
                 <SerialCombobox
                   value={row.serialNumber}
-                  onChange={(v) => updateLine(idx, { serialNumber: v })}
+                  onChange={(v) => updateLine(idx, { serialNumber: v, itemId: v ? row.itemId : "" })}
+                  onPick={(opt) => onPickSerial(idx, opt)}
+                  onBlur={() => onSerialBlur(idx, row.serialNumber)}
                   itemId={row.itemId || undefined}
                   lang={lang}
                 />
+                {/* 마스터 상태 배지 */}
+                {row.masterChecking && <div className="mt-1 text-[10px] text-[color:var(--tts-sub)]">조회 중…</div>}
+                {!row.masterChecking && row.masterMessage && (
+                  <div className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                    row.masterState === "OWN_IN_STOCK" ? "bg-emerald-500/20 text-emerald-600" :
+                    row.masterState === "ARCHIVED" ? "bg-rose-500/20 text-rose-600" :
+                    row.masterState === "OWN_AT_EXTERNAL" || row.masterState === "EXTERNAL_AT_VENDOR" ? "bg-amber-500/20 text-amber-700" :
+                    "bg-blue-500/20 text-blue-600"
+                  }`}>{row.masterMessage}</div>
+                )}
+              </div>
+              <div className="flex-1 min-w-[280px]">
+                {/* S/N 픽 후 품목은 자동 매핑되어 표시 (readonly). 직접 변경 불가 — 정책 B */}
+                {row.itemId && row.itemCode ? (
+                  <div className="rounded border border-[color:var(--tts-border)] bg-[color:var(--tts-input)]/50 px-3 py-2 text-[12px]">
+                    <span className="font-mono font-bold">{row.itemCode}</span> · {row.itemName}
+                  </div>
+                ) : (
+                  <ItemCombobox value={row.itemId} onChange={(v) => updateLine(idx, { itemId: v })} lang={lang} />
+                )}
               </div>
               <div className="w-20 shrink-0">
                 <TextInput

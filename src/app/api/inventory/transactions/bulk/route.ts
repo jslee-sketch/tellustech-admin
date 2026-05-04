@@ -199,10 +199,21 @@ export async function POST(request: Request) {
       const masters = sns.length > 0
         ? await prisma.inventoryItem.findMany({
           where: { serialNumber: { in: sns } },
-          select: { serialNumber: true, warehouseId: true, ownerType: true, archivedAt: true },
+          select: { serialNumber: true, itemId: true, warehouseId: true, ownerType: true, archivedAt: true },
         })
         : [];
       const masterBySn = new Map(masters.map((m) => [m.serialNumber, m]));
+
+      // 정책 B (S/N 1개 = 품목 1개) — 마스터에 등록된 S/N 의 itemId 와 입력 itemId 가 일치해야 함
+      // 예외: TRANSFER 의 경우 마스터 미등록 신규 S/N 도 허용 (이번에 NEW 등록되는 것으로 간주)
+      for (let i = 0; i < lines.length; i++) {
+        const sn = lines[i].serialNumber;
+        if (!sn) continue;
+        const m = masterBySn.get(sn);
+        if (m && m.itemId !== lines[i].itemId) {
+          return badRequest("invalid_input", { field: `items[${i}].itemId`, reason: "sn_item_mismatch", masterItemId: m.itemId });
+        }
+      }
 
       if (txnType === "OUT" && subKind !== "CONSUMABLE") {
         for (let i = 0; i < lines.length; i++) {
@@ -210,6 +221,10 @@ export async function POST(request: Request) {
           if (!sn) continue;
           const m = masterBySn.get(sn);
           if (!m) return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "sn_not_in_inventory" });
+          // 정책 E — 외부 자산 archived 후 출고 불가 (재입고/이동만 가능)
+          if (m.archivedAt && m.ownerType === "EXTERNAL_CLIENT") {
+            return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "external_archived_no_out" });
+          }
           if (m.archivedAt) return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "sn_archived" });
           if (fromWarehouseId && m.warehouseId !== fromWarehouseId) {
             return badRequest("invalid_input", { field: `items[${i}].serialNumber`, reason: "sn_warehouse_mismatch" });
